@@ -1,0 +1,795 @@
+/*
+ * HTS – Gestaltung im Stil von mytischtennis.de:
+ * dunkelblaue Kopfleiste mit waagerechtem Menü, Türkis als Akzent, weiße Karten auf hellgrauem Grund,
+ * Pillen-Knöpfe und abgerundete Zeilen.
+ */
+.root {
+    -hts-navy: #173a6c;
+    -hts-navy-dark: #10294d;
+    -hts-turquoise: #6fd1d4;
+    -hts-turquoise-light: #dff5f6;
+    -hts-text: #2b2b2b;
+    -hts-muted: #6b7280;
+    -hts-line: #e4e6ea;
+    -hts-bg: #f7f7f7;
+    -hts-row: #f0f0f0;
+    -hts-green: #2ea836;
+    -fx-font-size: 13px;
+    -fx-font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    -fx-background-color: -hts-bg;
+    -fx-text-fill: -hts-text;
+    -fx-accent: -hts-turquoise;
+    -fx-focus-color: -hts-turquoise;
+    -fx-faint-focus-color: transparent;
+}
+
+/* --- Icons --- */
+.icon {
+    -fx-stroke: -hts-navy;
+}
+
+/* --- Kopfleiste --- */
+.app-header {
+    -fx-background-color: -hts-navy;
+    -fx-padding: 14 40 0 40;
+}
+.header-top {
+    -fx-padding: 4 0 10 0;
+}
+.logo-ball {
+    -fx-fill: -hts-turquoise;
+}
+.logo-text {
+    -fx-text-fill: white;
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+}
+.logo-sub {
+    -fx-text-fill: -hts-turquoise;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+.header-menu {
+    -fx-padding: 4 0 0 0;
+}
+.button.menu-item {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent transparent transparent;
+    -fx-border-width: 0 0 3 0;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-padding: 10 18 12 18;
+    -fx-cursor: hand;
+}
+.button.menu-item .icon {
+    -fx-stroke: white;
+}
+.button.menu-item:hover {
+    -fx-text-fill: -hts-turquoise;
+}
+.button.menu-item:hover .icon {
+    -fx-stroke: -hts-turquoise;
+}
+.button.menu-item.active {
+    -fx-border-color: transparent transparent -hts-turquoise transparent;
+    -fx-text-fill: white;
+}
+.button.round-tool {
+    -fx-background-color: -hts-turquoise;
+    -fx-background-radius: 999;
+    -fx-border-color: transparent;
+    -fx-min-width: 46;
+    -fx-min-height: 46;
+    -fx-max-width: 46;
+    -fx-max-height: 46;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+.button.round-tool:hover {
+    -fx-background-color: derive(-hts-turquoise, 15%);
+}
+.save-state {
+    -fx-font-size: 12px;
+    -fx-padding: 0 8 0 0;
+}
+.save-state.clean {
+    -fx-text-fill: -hts-turquoise;
+}
+.save-state.dirty {
+    -fx-text-fill: #ffd27a;
+}
+
+/* --- Schaltflächen --- */
+.button {
+    -fx-background-color: white;
+    -fx-border-color: -hts-line;
+    -fx-border-radius: 999;
+    -fx-background-radius: 999;
+    -fx-padding: 6 14 6 14;
+    -fx-text-fill: -hts-navy;
+    -fx-font-weight: bold;
+    -fx-graphic-text-gap: 8;
+    -fx-cursor: hand;
+}
+.button:hover {
+    -fx-background-color: -hts-turquoise-light;
+}
+.button:disabled {
+    -fx-opacity: 0.4;
+}
+.button.navy-pill, .button.accent {
+    -fx-background-color: -hts-navy;
+    -fx-border-color: -hts-navy;
+    -fx-text-fill: white;
+    -fx-padding: 9 22 9 22;
+}
+.button.navy-pill:hover, .button.accent:hover {
+    -fx-background-color: -hts-navy-dark;
+}
+.button.navy-pill .icon, .button.accent .icon {
+    -fx-stroke: white;
+}
+.button.pill {
+    -fx-background-color: white;
+    -fx-border-color: -hts-line;
+    -fx-padding: 7 16 7 16;
+    -fx-font-size: 12px;
+}
+.button.round-button {
+    -fx-background-color: -hts-turquoise;
+    -fx-border-color: transparent;
+    -fx-background-radius: 999;
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-max-width: 36;
+    -fx-max-height: 36;
+    -fx-padding: 0;
+    -fx-font-size: 16px;
+    -fx-text-fill: -hts-navy;
+}
+.button.round-small, .button.icon-button {
+    -fx-background-color: -hts-row;
+    -fx-border-color: transparent;
+    -fx-background-radius: 999;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-padding: 0;
+}
+.button.round-small:hover, .button.icon-button:hover {
+    -fx-background-color: -hts-turquoise;
+}
+.dialog-pane .button {
+    -fx-padding: 6 18 6 18;
+}
+.dialog-pane .button:default {
+    -fx-background-color: -hts-navy;
+    -fx-text-fill: white;
+}
+.dialog-pane > .header-panel {
+    -fx-background-color: white;
+}
+.dialog-pane > .header-panel .label {
+    -fx-text-fill: -hts-navy;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+/* --- Seiten --- */
+.content {
+    -fx-background-color: -hts-bg;
+}
+.page-header {
+    -fx-padding: 26 40 12 40;
+}
+.page-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -hts-navy;
+}
+.page-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: -hts-navy;
+}
+.page-actions {
+    -fx-padding: 0 40 14 40;
+}
+.started-label {
+    -fx-text-fill: -hts-navy;
+    -fx-font-size: 14px;
+}
+.live-dot {
+    -fx-fill: -hts-green;
+}
+.status-bar {
+    -fx-background-color: white;
+    -fx-border-color: -hts-line transparent transparent transparent;
+}
+.status-bar .label {
+    -fx-text-fill: -hts-muted;
+    -fx-font-size: 12px;
+}
+
+/* --- Karten --- */
+.card {
+    -fx-background-color: white;
+    -fx-background-radius: 14;
+    -fx-padding: 18 20 18 20;
+    -fx-effect: dropshadow(gaussian, rgba(16, 41, 77, 0.08), 14, 0, 0, 2);
+}
+.card-heading {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -hts-navy;
+}
+.card-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -hts-navy;
+}
+.arrow-circle {
+    -fx-background-color: -hts-turquoise;
+    -fx-background-radius: 999;
+    -fx-min-width: 34;
+    -fx-min-height: 34;
+    -fx-max-width: 34;
+    -fx-max-height: 34;
+}
+.chip {
+    -fx-background-radius: 999;
+    -fx-padding: 3 10 3 10;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+.chip-planned {
+    -fx-background-color: -hts-row;
+    -fx-text-fill: -hts-muted;
+}
+.chip-started {
+    -fx-background-color: -hts-navy;
+    -fx-text-fill: white;
+    -fx-graphic-text-gap: 6;
+}
+
+/* --- Turnierübersicht --- */
+.overview .list-view, .tournament-list {
+    -fx-background-color: transparent;
+    -fx-padding: 0 16 0 16;
+}
+.tournament-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 6 0 6 0;
+}
+.tournament-list .list-cell:selected .card {
+    -fx-effect: dropshadow(gaussian, rgba(111, 209, 212, 0.9), 12, 0.3, 0, 0);
+}
+.tournament-list .list-cell:selected .label {
+    -fx-text-fill: -hts-text;
+}
+.tournament-list .list-cell:selected .card-title {
+    -fx-text-fill: -hts-navy;
+}
+
+/* --- Tabellen --- */
+.table-view {
+    -fx-background-color: white;
+    -fx-border-color: transparent;
+    -fx-table-cell-border-color: transparent;
+    -fx-padding: 0;
+}
+.table-view .column-header-background {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent -hts-line transparent;
+}
+.table-view .column-header, .table-view .filler {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.table-view .column-header .label {
+    -fx-font-weight: bold;
+    -fx-text-fill: -hts-navy;
+}
+.table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #f2f2f2 transparent;
+}
+.table-row-cell:hover {
+    -fx-background-color: #f6f6f6;
+}
+.table-row-cell:selected {
+    -fx-background-color: -hts-turquoise-light;
+    -fx-background: -hts-turquoise-light;
+}
+.table-row-cell:selected .table-cell {
+    -fx-text-fill: -hts-navy;
+}
+.table-row-cell.waiting-list .table-cell {
+    -fx-text-fill: #9aa0a6;
+    -fx-font-style: italic;
+}
+.table-row-cell.misfit .table-cell {
+    -fx-text-fill: #c0620b;
+}
+.table-row-cell.paired .table-cell {
+    -fx-text-fill: #9aa0a6;
+}
+
+/* Teilnehmendenliste in einer Karte */
+.workspace .search-bar {
+    -fx-background-color: white;
+    -fx-background-radius: 14 14 0 0;
+    -fx-border-color: transparent;
+    -fx-padding: 14 20 10 20;
+}
+.workspace .search-bar .label {
+    -fx-text-fill: -hts-navy;
+    -fx-font-weight: bold;
+}
+.text-field, .combo-box, .date-picker > .text-field {
+    -fx-background-color: -hts-row;
+    -fx-background-radius: 999;
+    -fx-border-color: transparent;
+    -fx-padding: 6 12 6 12;
+}
+.combo-box .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0 4 0 4;
+}
+.text-field:focused, .combo-box:focused {
+    -fx-background-color: white;
+    -fx-border-color: -hts-turquoise;
+    -fx-border-radius: 999;
+}
+.dialog-pane .text-field, .dialog-pane .combo-box {
+    -fx-background-color: white;
+    -fx-border-color: -hts-line;
+    -fx-border-radius: 999;
+}
+
+/* --- Klassen --- */
+.list-view {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 8 10 8 10;
+}
+.list-cell:filled:hover {
+    -fx-background-color: #f6f6f6;
+    -fx-background-radius: 10;
+}
+.list-cell:filled:selected {
+    -fx-background-color: -hts-turquoise-light;
+    -fx-background-radius: 10;
+}
+.list-cell:filled:selected .label {
+    -fx-text-fill: -hts-navy;
+}
+.class-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -hts-navy;
+}
+.class-name {
+    -fx-font-weight: bold;
+    -fx-text-fill: -hts-navy;
+}
+.badge {
+    -fx-background-radius: 999;
+    -fx-padding: 2 9 2 9;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+.badge-singles {
+    -fx-background-color: -hts-row;
+    -fx-text-fill: -hts-navy;
+}
+.badge-doubles {
+    -fx-background-color: -hts-navy;
+    -fx-text-fill: white;
+}
+.plain-split, .plain-split > .split-pane-divider {
+    -fx-background-color: transparent;
+    -fx-padding: 0 5 0 5;
+}
+
+/* --- Doppel --- */
+.pairs-scroll, .pairs-scroll > .viewport {
+    -fx-background-color: transparent;
+    -fx-background: white;
+}
+.pair-card {
+    -fx-background-color: -hts-row;
+    -fx-background-radius: 999;
+    -fx-padding: 6 8 6 14;
+}
+.pair-card.incomplete {
+    -fx-background-color: #fff6e5;
+}
+.pair-card.waiting .slot {
+    -fx-text-fill: #9aa0a6;
+    -fx-font-style: italic;
+}
+.pair-number {
+    -fx-text-fill: -hts-navy;
+    -fx-font-weight: bold;
+}
+.slot {
+    -fx-background-color: white;
+    -fx-background-radius: 999;
+    -fx-padding: 6 12 6 12;
+    -fx-text-fill: -hts-navy;
+    -fx-font-weight: bold;
+    -fx-cursor: open-hand;
+}
+.slot.slot-misfit {
+    -fx-text-fill: #c0620b;
+}
+.slot-empty {
+    -fx-background-color: transparent;
+    -fx-border-color: -hts-turquoise;
+    -fx-border-style: segments(5, 4);
+    -fx-border-radius: 999;
+    -fx-padding: 5 12 5 12;
+    -fx-text-fill: -hts-muted;
+}
+.drop-zone {
+    -fx-border-color: -hts-turquoise;
+    -fx-border-style: segments(6, 5);
+    -fx-border-width: 2;
+    -fx-border-radius: 14;
+    -fx-padding: 14;
+    -fx-text-fill: -hts-navy;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+}
+.drop-hover {
+    -fx-background-color: -hts-turquoise-light;
+    -fx-background-radius: 14;
+}
+.pair-card.drop-hover {
+    -fx-background-color: -hts-turquoise;
+}
+.list-cell.drop-hover {
+    -fx-background-color: -hts-turquoise;
+    -fx-background-radius: 10;
+}
+
+/* --- Texte --- */
+.label.hint, .label.criteria {
+    -fx-text-fill: -hts-muted;
+}
+.label.hint .icon {
+    -fx-stroke: -hts-muted;
+}
+.label.warning {
+    -fx-text-fill: #8a5a00;
+}
+.label.error {
+    -fx-text-fill: #c8102e;
+}
+
+/* --- Auswahllisten (ComboBox) deckend, damit nichts darunter durchscheint --- */
+.combo-box-popup > .list-view {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-color: -hts-line;
+    -fx-border-radius: 10;
+    -fx-effect: dropshadow(gaussian, rgba(16, 41, 77, 0.25), 14, 0, 0, 3);
+    -fx-padding: 4;
+}
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell {
+    -fx-background-color: white;
+    -fx-padding: 6 12 6 12;
+    -fx-text-fill: -hts-text;
+}
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:hover,
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected {
+    -fx-background-color: -hts-turquoise-light;
+    -fx-text-fill: -hts-navy;
+}
+.context-menu {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(16, 41, 77, 0.25), 12, 0, 0, 3);
+}
+
+/* --- Höchstzahl überschritten --- */
+.table-row-cell.over-limit {
+    -fx-background-color: #fde8e8;
+}
+.table-row-cell.over-limit .table-cell {
+    -fx-text-fill: #b42318;
+    -fx-font-weight: bold;
+}
+.pair-card.over-limit {
+    -fx-background-color: #fde8e8;
+}
+.avg-ttr {
+    -fx-text-fill: -hts-navy;
+    -fx-font-size: 12px;
+}
+
+/* --- Auslosung / KO-Übersicht --- */
+.bracket-scroll, .bracket-scroll > .viewport {
+    -fx-background-color: white;
+    -fx-background: white;
+}
+.round-title {
+    -fx-text-fill: -hts-navy;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+.match-card {
+    -fx-background-color: -hts-row;
+    -fx-background-radius: 12;
+    -fx-padding: 6 12 6 12;
+    -fx-border-color: transparent transparent transparent -hts-turquoise;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 12;
+}
+.match-card.match-bye {
+    -fx-opacity: 0.7;
+    -fx-border-color: transparent;
+}
+.match-head {
+    -fx-text-fill: -hts-muted;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+.match-name {
+    -fx-text-fill: -hts-navy;
+    -fx-font-weight: bold;
+}
+.match-placeholder {
+    -fx-text-fill: -hts-muted;
+    -fx-font-style: italic;
+}
+.match-bye-label {
+    -fx-text-fill: #9aa0a6;
+}
+.seed {
+    -fx-text-fill: white;
+    -fx-background-color: -hts-navy;
+    -fx-background-radius: 999;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-padding: 1 0 1 0;
+}
+.badge-warn {
+    -fx-background-color: #ffe7b3;
+    -fx-text-fill: #7a4b00;
+}
+
+/* --- Gruppen / Spielliste --- */
+.group-card {
+    -fx-background-color: -hts-row;
+    -fx-background-radius: 14;
+    -fx-padding: 12 14 12 14;
+}
+.group-row {
+    -fx-background-color: white;
+    -fx-background-radius: 999;
+    -fx-padding: 5 10 5 6;
+}
+.pos {
+    -fx-text-fill: -hts-muted;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+}
+.result-tabs .tab-header-background {
+    -fx-background-color: white;
+}
+.result-tabs .tab {
+    -fx-background-color: transparent;
+    -fx-padding: 6 14 6 14;
+}
+.result-tabs .tab .tab-label {
+    -fx-text-fill: -hts-muted;
+    -fx-font-weight: bold;
+}
+.result-tabs .tab:selected {
+    -fx-border-color: transparent transparent -hts-turquoise transparent;
+    -fx-border-width: 0 0 3 0;
+}
+.result-tabs .tab:selected .tab-label {
+    -fx-text-fill: -hts-navy;
+}
+.lock-banner {
+    -fx-background-color: #fff6e5;
+    -fx-background-radius: 12;
+    -fx-padding: 8 12 8 14;
+}
+.lock-banner .label {
+    -fx-text-fill: #7a4b00;
+}
+.spinner .text-field {
+    -fx-background-radius: 999 0 0 999;
+}
+
+/* --- Spielstatus --- */
+.chip.status-planned {
+    -fx-background-color: -hts-row;
+    -fx-text-fill: -hts-muted;
+}
+.chip.status-queued {
+    -fx-background-color: #fff1cc;
+    -fx-text-fill: #7a4b00;
+}
+.chip.status-active {
+    -fx-background-color: -hts-turquoise;
+    -fx-text-fill: -hts-navy;
+}
+.chip.status-done {
+    -fx-background-color: -hts-navy;
+    -fx-text-fill: white;
+}
+.chip-ready {
+    -fx-background-color: -hts-turquoise;
+    -fx-text-fill: -hts-navy;
+}
+.chip-free {
+    -fx-background-color: #e3f4e8;
+    -fx-text-fill: #1e7b3c;
+}
+.winner {
+    -fx-font-weight: bold;
+    -fx-text-fill: #1e7b3c;
+}
+.loser {
+    -fx-text-fill: -hts-muted;
+}
+.label.result {
+    -fx-text-fill: -hts-navy;
+    -fx-font-weight: bold;
+}
+
+/* --- Klassenseite: innere Bereiche --- */
+.inner-card {
+    -fx-background-color: white;
+    -fx-border-color: -hts-line;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 12;
+}
+
+/* --- Gruppenspiele neben der Gruppe --- */
+.group-matches {
+    -fx-background-color: white;
+    -fx-border-color: -hts-line;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 10 12 10 12;
+}
+.group-match-row {
+    -fx-background-color: -hts-row;
+    -fx-background-radius: 999;
+    -fx-padding: 4 10 4 10;
+}
+
+/* --- Tische --- */
+.table-card {
+    -fx-background-color: white;
+    -fx-border-color: -hts-turquoise;
+    -fx-border-width: 0 0 0 5;
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-padding: 14 16 14 16;
+    -fx-effect: dropshadow(gaussian, rgba(16, 41, 77, 0.08), 10, 0, 0, 2);
+}
+.table-card.table-free {
+    -fx-border-color: #b9e3c4;
+}
+.table-player {
+    -fx-text-fill: -hts-navy;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+.queue-row {
+    -fx-background-color: -hts-row;
+    -fx-background-radius: 12;
+    -fx-padding: 6 10 6 10;
+}
+.button.menu-item:disabled {
+    -fx-opacity: 0.4;
+}
+
+/* --- Ergebniserfassung (0.10) --- */
+.set-field { -fx-font-size: 14px; -fx-font-weight: bold; }
+.set-field.set-invalid { -fx-background-color: #fdecec; -fx-border-color: #d32f2f; -fx-border-width: 1.5; -fx-border-radius: 3; }
+.set-field.set-a { -fx-background-color: #e6f6f4; }
+.set-field.set-b { -fx-background-color: #eef1f8; }
+.result-summary { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #0b1f3a; }
+
+/* --- Gruppentabellen --- */
+.table-head { -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #6b7a90; }
+.table-num { -fx-font-family: "Consolas", monospace; -fx-text-fill: #333; }
+.qualified { -fx-background-color: #dff5ef; -fx-text-fill: #0a6b57; }
+.clickable { -fx-cursor: hand; }
+.clickable:hover { -fx-background-color: #f2fbfa; }
+
+/* --- Phasen & Endergebnis (0.11) --- */
+.chip-paused { -fx-background-color: #fff3d6; -fx-text-fill: #8a5a00; }
+.chip-finished { -fx-background-color: #0b1f3a; -fx-text-fill: white; }
+.place-1 { -fx-font-weight: bold; -fx-text-fill: #b8860b; }
+.place-2 { -fx-font-weight: bold; -fx-text-fill: #6b7a90; }
+.place-3 { -fx-font-weight: bold; -fx-text-fill: #a0522d; }
+.row-open .table-cell { -fx-text-fill: #6b7a90; }
+
+/* --- 0.13: kleine Knöpfe, Tischzuordnung --- */
+.small-pill { -fx-font-size: 11px; -fx-padding: 3 9 3 9; }
+.table-only { -fx-text-fill: #8a5a00; -fx-font-weight: bold; -fx-cursor: hand; }
+.table-all { -fx-cursor: hand; }
+
+/* --- 0.14: Vereinsgleichheit, Drag & Drop in der Auslosung --- */
+.club-clash { -fx-text-fill: #c62828; -fx-underline: true; }
+.chip-clash { -fx-background-color: #fdecec; -fx-text-fill: #c62828; -fx-font-weight: bold; }
+.draggable { -fx-cursor: open-hand; }
+.group-card.drop-hover, .match-card.drop-hover { -fx-border-color: #00a5a8; -fx-border-width: 2; -fx-border-radius: 6; }
+.match-name.drop-hover, .label.drop-hover { -fx-background-color: #d9f3f2; }
+.table-info { -fx-font-weight: bold; -fx-text-fill: #0b1f3a; }
+
+/* --- 0.16: pausierte Spiele --- */
+.status-paused { -fx-background-color: #fff3d6; -fx-text-fill: #8a5a00; }
+.table-card.table-paused { -fx-border-color: #f0b429; }
+
+/* --- 0.16.1: dunkelblaue Knöpfe in normaler Größe --- */
+.button.navy-pill.compact { -fx-padding: 7 16 7 16; -fx-font-size: 12px; }
+
+/* --- 0.16.2: Turniername in der Kopfleiste --- */
+.header-context {
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 0 18;
+    -fx-border-color: transparent transparent transparent -hts-turquoise;
+    -fx-border-width: 0 0 0 2;
+}
+
+/* 0.21.0: Suchtreffer in der Gruppenphase */
+.search-hit { -fx-background-color: #fff1b8; -fx-background-radius: 4; -fx-padding: 0 4 0 4; }
+.chip-test { -fx-background-color: #ffe7c2; -fx-text-fill: #8a4b00; -fx-font-weight: bold; }
+/* 0.22.0: Satzergebnisse in der Gruppenansicht */
+.clickable-result { -fx-cursor: hand; -fx-underline: true; }
+.set-details { -fx-text-fill: #4a5a6a; -fx-font-size: 12px; -fx-padding: 2 10 6 76; }
+/* 0.23.0: KO-Karten mit ausgeschriebenen Namen */
+.card-club { -fx-text-fill: #7a8594; -fx-font-size: 11px; -fx-text-overrun: ellipsis; }
+.match-card .side-b { -fx-border-color: #d3d7dc transparent transparent transparent; -fx-border-width: 1 0 0 0; -fx-padding: 4 0 0 0; }
+.card-sets { -fx-text-fill: #4a5a6a; -fx-font-size: 11px; }
+/* 0.24.0: Abzeichen „Doppel“ bleibt auch in ausgewählten Zeilen lesbar */
+.list-cell:filled:selected .badge-doubles { -fx-text-fill: white; }
+.list-cell:filled:selected .badge-singles { -fx-text-fill: -hts-navy; }
+/* 0.25.0: Spaltentitel wie die Werte ausrichten */
+.table-view .column-header.col-left .label { -fx-alignment: CENTER_LEFT; -fx-padding: 0 0 0 4; }
+.table-view .column-header.col-center .label { -fx-alignment: CENTER; }
+
+/* --- 0.27: Kartenrand nach Status (kommend grau, läuft türkis, pausiert gelb, beendet schwarz) --- */
+.match-card.card-upcoming { -fx-border-color: transparent transparent transparent #b0b6bd; }
+.match-card.card-running { -fx-border-color: transparent transparent transparent -hts-turquoise; }
+.match-card.card-paused { -fx-border-color: transparent transparent transparent #f0b429; }
+.match-card.card-done { -fx-border-color: transparent transparent transparent #111111; }
+.match-card.match-bye { -fx-border-color: transparent; }
+.group-card.drop-hover, .match-card.drop-hover { -fx-border-color: #00a5a8; -fx-border-width: 2; -fx-border-radius: 6; }
+
+/* --- 0.27: Tische deaktivieren --- */
+.table-card.table-disabled { -fx-border-color: #111111; -fx-background-color: #f4f5f6; }
+.chip-disabled { -fx-background-color: #111111; -fx-text-fill: white; -fx-background-radius: 999; -fx-padding: 2 10 2 10; -fx-font-size: 11px; -fx-font-weight: bold; }
+
+/* --- 0.28: Suche, fixierte Rundentitel, Platz-3-Schalter, Tischnamen --- */
+.bracket-titlebar { -fx-background-color: white; }
+.match-card.search-dim { -fx-opacity: 0.3; }
+.match-card.search-current { -fx-effect: dropshadow(gaussian, #00a5a8, 7, 0.85, 0, 0); }
+.label.search-current { -fx-background-color: #d9f3f2; -fx-border-color: #00a5a8; -fx-border-width: 1.5; -fx-border-radius: 4; -fx-background-radius: 4; }
+.mini-switch { -fx-background-radius: 999; -fx-min-width: 26; -fx-pref-width: 26; -fx-max-width: 26; -fx-min-height: 14; -fx-pref-height: 14; -fx-max-height: 14; }
+.mini-switch.on { -fx-background-color: -hts-turquoise; }
+.mini-switch.off { -fx-background-color: #b4b2a9; }
+.button.switch-pill { -fx-graphic-text-gap: 8; }
+.table-name { -fx-cursor: hand; }
+.table-name:hover { -fx-underline: true; }
+.table-card .table-all, .table-card .table-only { -fx-cursor: hand; }

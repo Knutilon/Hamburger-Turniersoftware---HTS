@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE tournament SYSTEM "http://www.datenautomaten.nu/dtd/nuLiga/TournamentPortal.dtd">
+<tournament name="HTS Testturnier Hamburg" start-date="2026-11-14" end-date="2026-11-15" tournament-id="TEST-0001" winning-sets="3" winning-sets-text="3 Gewinnsätze" multiple-participations-same-day="true" multiple-participations-same-time="false" table-count="16" tournament-type="Einzel und Doppel">
+  <tournament-location name="Sporthalle Elbufer" street="Am Deich 1" zip-code="20000" city="Hamburg"/>
+  <competition competition-id="C1" age-group="Herren" type="Einzel" start-date="2026-11-14 10:00" ttr-from="0" ttr-to="9999" entry-fee="8.0" sex="male" preliminary-round-playmode="Gruppen" final-round-playmode="KO">
+    <players>
+      <player type="single" id="PLAYER1">
+        <person firstname="Jonas" lastname="Brückner" birthyear="1994" sex="1" club-name="TTC Elbufer" club-nr="1001" club-federation-nickname="HaTTV" internal-nr="NU1000001" licence-nr="101001" ttr="1712" ttr-match-count="230" nationality="DE" region="Hamburg"/>
+      </player>
+      <player type="single" id="PLAYER2">
+        <person firstname="Malte" lastname="Østergaard" birthyear="1988" sex="1" club-name="SV Alsterblick" club-nr="1002" club-federation-nickname="HaTTV" internal-nr="NU1000002" licence-nr="101002" ttr="1655" ttr-match-count="410" nationality="DK"/>
+      </player>
+      <player type="single" id="PLAYER3">
+        <person firstname="Kemal" lastname="Yildiz" birthyear="2001" sex="1" club-name="TSV Speicherstadt" club-nr="1003" club-federation-nickname="HaTTV" internal-nr="NU1000003" licence-nr="101003" ttr="1590" ttr-match-count="120" nationality="DE"/>
+      </player>
+      <player type="single" id="PLAYER4" waiting-list-player="true">
+        <person firstname="Finn" lastname="Möller" birthyear="2008" sex="1" club-name="TTC Elbufer" club-nr="1001" club-federation-nickname="HaTTV" internal-nr="NU1000004" licence-nr="101004" ttr="1402" ttr-match-count="75" nationality="DE"/>
+      </player>
+    </players>
+  </competition>
+  <competition competition-id="C2" age-group="Damen" type="Einzel" start-date="2026-11-14 10:00" ttr-from="0" ttr-to="1500" sex="female">
+    <players>
+      <player type="single" id="PLAYER5">
+        <person firstname="Lea" lastname="Schäfer" birthyear="1999" sex="2" club-name="SV Alsterblick" club-nr="1002" club-federation-nickname="HaTTV" internal-nr="NU1000005" licence-nr="101005" ttr="1388" ttr-match-count="190" nationality="DE"/>
+      </player>
+      <player type="single" id="PLAYER9" waiting-list-player="true">
+        <person firstname="Svenja" lastname="Kröger" birthyear="2003" sex="2" club-name="Hammer SC" club-nr="1004" club-federation-nickname="HaTTV" internal-nr="NU1000009" licence-nr="101009" ttr="1297" ttr-match-count="88" nationality="DE"/>
+      </player>
+      <player type="single" id="PLAYER6">
+        <person firstname="Ines" lastname="García" birthyear="1996" sex="2" club-name="TSV Speicherstadt" club-nr="1003" club-federation-nickname="HaTTV" internal-nr="NU1000006" licence-nr="101006" ttr="1451" ttr-match-count="260" nationality="ES"/>
+      </player>
+    </players>
+  </competition>
+  <competition competition-id="C3" age-group="Herren" type="Doppel" start-date="2026-11-15 10:00">
+    <players>
+      <player type="double" id="PLAYER7">
+        <person firstname="Jonas" lastname="Brückner" birthyear="1994" sex="1" club-name="TTC Elbufer" club-nr="1001" club-federation-nickname="HaTTV" internal-nr="NU1000001" licence-nr="101001" ttr="1712" ttr-match-count="230"/>
+        <person firstname="Finn" lastname="Möller" birthyear="2008" sex="1" club-name="TTC Elbufer" club-nr="1001" club-federation-nickname="HaTTV" internal-nr="NU1000004" licence-nr="101004" ttr="1402" ttr-match-count="75"/>
+      </player>
+      <player type="double" id="PLAYER8">
+        <person firstname="Paul" lastname="Behrens" birthyear="1979" sex="1" club-name="Hammer SC" club-nr="1004" club-federation-nickname="HaTTV" internal-nr="NU1000008" licence-nr="101008" ttr="1530" ttr-match-count="640"/>
+        <person firstname="Malte" lastname="Østergaard" birthyear="1988" sex="1" club-name="SV Alsterblick" club-nr="1002" club-federation-nickname="HaTTV" internal-nr="NU1000002" licence-nr="101002" ttr="1655" ttr-match-count="410"/>
+      </player>
+    </players>
+  </competition>
+</tournament>
