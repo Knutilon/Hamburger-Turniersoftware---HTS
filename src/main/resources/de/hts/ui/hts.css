@@ -793,3 +793,19 @@
 .table-name { -fx-cursor: hand; }
 .table-name:hover { -fx-underline: true; }
 .table-card .table-all, .table-card .table-only { -fx-cursor: hand; }
+.info-signature { -fx-font-family: "Segoe Script", "Brush Script MT", cursive; -fx-font-size: 18px; -fx-text-fill: -hts-navy; }
+
+/* --- 0.29: Präsentationsansicht (zweiter Bildschirm) --- */
+.pres-root { -fx-background-color: white; }
+.pres-bar { -fx-background-color: -hts-navy; -fx-padding: 14 28 14 28; }
+.pres-bar .label { -fx-text-fill: white; }
+.pres-tournament { -fx-font-size: 20px; -fx-font-weight: bold; }
+.pres-title { -fx-font-size: 26px; -fx-font-weight: bold; }
+.pres-page { -fx-font-size: 18px; -fx-opacity: 0.85; }
+.pres-clock { -fx-font-size: 26px; -fx-font-weight: bold; }
+.pres-chip { -fx-background-color: rgba(255,255,255,0.18); -fx-background-radius: 999; -fx-padding: 3 12 3 12; -fx-font-size: 15px; }
+.pres-progress { -fx-pref-height: 6; -fx-accent: -hts-turquoise; }
+.pres-progress .track { -fx-background-color: #e7ebef; -fx-background-radius: 0; -fx-background-insets: 0; }
+.pres-progress .bar { -fx-background-radius: 0; -fx-background-insets: 0; -fx-padding: 3; }
+.pres-body { -fx-background-color: white; }
+.pres-empty { -fx-font-size: 24px; -fx-text-fill: -hts-muted; }

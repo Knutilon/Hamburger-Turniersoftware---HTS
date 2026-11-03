@@ -2,6 +2,26 @@
 
 Turniersoftware für Tischtennis, Java 21 + JavaFX.
 
+Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Public License v3.0](LICENSE) ·
+Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
+(Label „Feature“ bzw. „bug“).
+
+## Neu in 0.29.0
+
+- **Präsentationsansicht (zweiter Bildschirm):** neuer Menüpunkt. Erkennt HTS einen zweiten Bildschirm, läuft dort
+  randlos eine reine Anzeige mit großer Schrift (Esc beendet; „Vorschau im Fenster“ zum Ausprobieren). Die Ansichten
+  wechseln nach einstellbarer Zeit (Standard 20 Sekunden): laufende Phasen, Tische, die nächsten 16 Spiele, beendete
+  Phasen, Endergebnisse. Jede Ansicht lässt sich aus der Rotation nehmen; große Felder verteilen sich auf Seiten.
+- **Kopfbereich kompakter:** „● Gestartet …“ steht unter dem Seitentitel neben Turniername und Datum; „Klasse
+  anlegen“ und die Startknöpfe stehen rechts oben – mehr Platz für Klassenliste und Klassenansicht.
+- **Klasse auswählen** öffnet die aktuellste Phase (beendete Klasse: „Endergebnis“, noch nicht ausgelost:
+  „Teilnehmende der Klasse“).
+- **Info-Knopf (i)** rechts oben: Version, Signatur, Lizenz GPL 3.0, Links zur Feature- und Bug-Sammlung auf GitHub,
+  Lizenzen der mitgelieferten Bibliotheken. HTS steht jetzt unter der GPL 3.0 (Datei LICENSE).
+- **Gruppen-Setzung „Gruppenkopf gesetzt“:** TTR-Nr. 1 in Gruppe A, Nr. 2 in B …, die übrigen Plätze wie bei den
+  Stärkegruppen. Die anderen heißen jetzt „TTR Setzung (Schlange)“ und „TTR Setzung (Stärkegruppen)“.
+- **Modus festlegen:** eigene Zeile „Vereinsgleichheit beachten“ mit Checkbox; Auswahllisten gleich breit.
+
 ## Neu in 0.28.0
 
 - **Suche über Vorname, Nachname und Verein** in allen Suchfeldern (Gruppen, KO, Klassen, Spiele): mehrere Wörter

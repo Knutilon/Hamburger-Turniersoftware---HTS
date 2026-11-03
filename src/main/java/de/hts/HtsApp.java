@@ -17,7 +17,25 @@ public class HtsApp extends Application {
 
     public static final String NAME = "Hamburger Turniersoftware";
     public static final String SHORT_NAME = "HTS";
-    public static final String VERSION = "0.28.0";
+    public static final String VERSION = "0.29.0";
+
+    /** Repository auf GitHub (Quellcode, Feature- und Bug-Sammlung) */
+    public static final String REPO_URL = "https://github.com/Knutilon/Hamburger-Turniersoftware---HTS";
+
+    private static javafx.application.HostServices hostServices;
+
+    /** Link im Standardbrowser öffnen. */
+    public static void openLink(String url) {
+        try {
+            if (hostServices != null) {
+                hostServices.showDocument(url);
+                return;
+            }
+            if (java.awt.Desktop.isDesktopSupported()) java.awt.Desktop.getDesktop().browse(java.net.URI.create(url));
+        } catch (Exception | Error ignored) {
+            // kein Browser verfügbar
+        }
+    }
 
     private final TournamentStore store = TournamentStore.defaultStore();
     private final StackPane root = new StackPane();
@@ -28,6 +46,7 @@ public class HtsApp extends Application {
     @Override
     public void start(Stage stage) {
         this.stage = stage;
+        hostServices = getHostServices();
         overview = new OverviewView(stage, store, this::openTournament);
 
         Scene scene = new Scene(root, 1200, 760);

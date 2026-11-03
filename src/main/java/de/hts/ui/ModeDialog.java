@@ -32,7 +32,8 @@ import java.util.Random;
 final class ModeDialog extends Dialog<Boolean> {
 
     private enum Seed {
-        TTR("nach Setzung (TTR)"), SNAKE("Setzung (Schlange)"), POTS("Setzung (Stärkegruppen)"), RANDOM("zufällig");
+        TTR("nach Setzung (TTR)"), SNAKE("TTR Setzung (Schlange)"), POTS("TTR Setzung (Stärkegruppen)"),
+        HEADS("Gruppenkopf gesetzt"), RANDOM("zufällig");
         final String label;
 
         Seed(String l) {
@@ -102,7 +103,8 @@ final class ModeDialog extends Dialog<Boolean> {
             }
         });
 
-        CheckBox clubs = new CheckBox("Vereinsgleichheit bei der Auslosung beachten");
+        CheckBox clubs = new CheckBox();          // Beschriftung steht links in der Beschriftungsspalte
+        clubs.setTooltip(new javafx.scene.control.Tooltip("Vereinsgleichheit bei der Auslosung beachten"));
         clubs.setSelected(c.isAvoidSameClub());
         Label clubsHint = new Label();
         clubsHint.getStyleClass().add("hint");
@@ -117,18 +119,25 @@ final class ModeDialog extends Dialog<Boolean> {
         grid.setVgap(10);
         Label lMode = new Label("Modus:"), lSeed = new Label("Setzung:"), lGroups = new Label("Gruppen:"),
                 lTb = new Label("Bei gleichem Spielverhältnis:"), lRounds = new Label("Anzahl Runden:"),
-                lSets = new Label("Gewinnsätze:");
-        for (Label l : new Label[]{lMode, lSeed, lGroups, lTb, lRounds, lSets}) l.getStyleClass().add("class-name");
+                lSets = new Label("Gewinnsätze:"), lClubs = new Label("Vereinsgleichheit beachten:");
+        for (Label l : new Label[]{lMode, lSeed, lGroups, lTb, lRounds, lSets, lClubs}) l.getStyleClass().add("class-name");
+        // Auswahllisten einheitlich breit (an der längsten Option ausgerichtet)
+        for (javafx.scene.control.ComboBox<?> cb : List.of(mode, seed, sets)) {
+            cb.setPrefWidth(320);
+            cb.setMinWidth(320);
+            cb.setMaxWidth(320);
+        }
         HBox groupsBox = new HBox(8, bySize, size, new Label("oder"), byCount, count);
         groupsBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         HBox tbBox = new HBox(12, tbSets, tbH2h);
         grid.addRow(0, lMode, mode);
         grid.addRow(1, lSeed, seed);
         grid.addRow(2, lGroups, groupsBox);
-        grid.addRow(3, lTb, tbBox);
-        grid.addRow(4, lRounds, rounds);
-        grid.addRow(5, lSets, sets);
-        VBox content = new VBox(12, grid, clubs, clubsHint, preview);
+        grid.addRow(3, lClubs, clubs);
+        grid.addRow(4, lTb, tbBox);
+        grid.addRow(5, lRounds, rounds);
+        grid.addRow(6, lSets, sets);
+        VBox content = new VBox(12, grid, clubsHint, preview);
         content.setPadding(new Insets(10));
         content.setPrefWidth(640);
         getDialogPane().setContent(content);
@@ -139,13 +148,14 @@ final class ModeDialog extends Dialog<Boolean> {
             busy[0] = true;
             TournamentMode m = mode.getValue();
             boolean groups = m == TournamentMode.GROUPS, swiss = m == TournamentMode.SWISS;
-            List<Seed> options = groups ? List.of(Seed.SNAKE, Seed.POTS, Seed.RANDOM) : List.of(Seed.TTR, Seed.RANDOM);
+            List<Seed> options = groups ? List.of(Seed.SNAKE, Seed.POTS, Seed.HEADS, Seed.RANDOM) : List.of(Seed.TTR, Seed.RANDOM);
             Seed cur = seed.getValue();
             if (!seed.getItems().equals(options)) {
                 seed.getItems().setAll(options);
                 if (cur == null) {
                     boolean seededBefore = !c.isDrawn() || c.isDrawSeeded();
-                    cur = !seededBefore ? Seed.RANDOM : groups ? (c.getGroupSeeding() == GroupDraw.Seeding.POTS ? Seed.POTS : Seed.SNAKE) : Seed.TTR;
+                    cur = !seededBefore ? Seed.RANDOM : groups ? (c.getGroupSeeding() == GroupDraw.Seeding.POTS ? Seed.POTS
+                            : c.getGroupSeeding() == GroupDraw.Seeding.HEADS ? Seed.HEADS : Seed.SNAKE) : Seed.TTR;
                 } else if (!options.contains(cur)) {
                     cur = cur == Seed.RANDOM ? Seed.RANDOM : options.get(0);
                 }
@@ -164,6 +174,8 @@ final class ModeDialog extends Dialog<Boolean> {
                 count.getValueFactory().setValue(1);
                 clubs.setVisible(false);
                 clubs.setManaged(false);
+                lClubs.setVisible(false);
+                lClubs.setManaged(false);
                 clubsHint.setVisible(false);
                 clubsHint.setManaged(false);
             }
@@ -173,11 +185,18 @@ final class ModeDialog extends Dialog<Boolean> {
             rounds.setManaged(swiss);
             size.setDisable(!bySize.isSelected());
             count.setDisable(bySize.isSelected());
-            clubs.setDisable(swiss);
+            if (!dbl) {              // Schweizer System: Vereine spielen keine Rolle → Zeile ausblenden
+                for (javafx.scene.Node x : new javafx.scene.Node[]{lClubs, clubs}) {
+                    x.setVisible(!swiss);
+                    x.setManaged(!swiss);
+                }
+            }
             Seed s = seed.getValue();
             clubsHint.setText(swiss ? "Im Schweizer System wird nach der Tabelle gepaart – Vereine spielen dabei keine Rolle."
                     : m == TournamentMode.KNOCKOUT ? "KO-System: Vereinskameraden treffen nicht schon in der 1. Runde aufeinander – "
                     + "der schwächer Gesetzte tauscht mit dem Nächstplatzierten, solange das möglich ist."
+                    : s == Seed.HEADS ? "Gruppenkopf gesetzt: TTR-Nr. 1 in Gruppe A, Nr. 2 in B usw.; danach wie Stärkegruppen – möglichst "
+                    + "jemand ohne Vereinsgleichheit aus derselben Stärkegruppe. Gruppenköpfe werden nie getauscht."
                     : s == Seed.POTS ? "Stärkegruppen: aus derselben Stärkegruppe wird möglichst jemand ohne Vereinsgleichheit gezogen; "
                     + "geht das nicht, wird nach Stärkegruppe verteilt."
                     : "Schlange: der nächste Platz geht an den Nächststärkeren ohne Vereinsgleichheit in dieser Gruppe; "
@@ -196,7 +215,7 @@ final class ModeDialog extends Dialog<Boolean> {
                     String sizes = n % g == 0 ? g + " Gruppen à " + bigSize : big + " × " + bigSize + " und " + small + " × " + (bigSize - 1);
                     int games = big * bigSize * (bigSize - 1) / 2 + (n % g == 0 ? 0 : small * (bigSize - 1) * (bigSize - 2) / 2);
                     text = "→ " + sizes + " · " + games + " Gruppenspiele";
-                    if (s == Seed.POTS) {
+                    if (s == Seed.POTS || s == Seed.HEADS) {
                         int pots = n / g;
                         StringBuilder sb = new StringBuilder(" · Stärkegruppen: ");
                         for (int k = 0; k < pots; k++) {
@@ -234,7 +253,7 @@ final class ModeDialog extends Dialog<Boolean> {
             c.setGroupsBySize(bySize.isSelected());
             c.setGroupSize(size.getValue());
             c.setGroupCount(count.getValue());
-            c.setGroupSeeding(s == Seed.POTS ? GroupDraw.Seeding.POTS : GroupDraw.Seeding.SNAKE);
+            c.setGroupSeeding(s == Seed.POTS ? GroupDraw.Seeding.POTS : s == Seed.HEADS ? GroupDraw.Seeding.HEADS : GroupDraw.Seeding.SNAKE);
             c.setAvoidSameClub(!dbl && clubs.isSelected());
             try {
                 t.setWinningSets(c, sets.getValue() == null ? 3 : sets.getValue());

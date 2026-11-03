@@ -150,7 +150,10 @@ public final class ClassesView {
         classList.setItems(new FilteredList<>(tournament.getClasses(), pc -> !pc.isPhase()));
         classList.setCellFactory(lv -> new ClassCell());
         classList.setPlaceholder(new Label("Noch keine Klassen.\n„Klasse anlegen“ legt eine an."));
-        classList.getSelectionModel().selectedItemProperty().addListener((o, a, b) -> showClass(b));
+        classList.getSelectionModel().selectedItemProperty().addListener((o, a, b) -> {
+            showClass(b);
+            if (b != null && b != a) openDefaultTab(b);
+        });
         classList.setOnMouseClicked(e -> {
             if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) editClass();
         });
@@ -481,6 +484,17 @@ public final class ClassesView {
         tournament.getClasses().stream().filter(c -> !c.isDoubles() && !c.isPhase()).forEach(items::add);
         singlesFilter.getItems().setAll(items);
         singlesFilter.setValue(items.contains(current) ? current : null);
+    }
+
+    /**
+     * Beim Auswählen einer Klasse: beendete Klasse → „Endergebnis“, ausgeloste Klasse → aktuellste Phase,
+     * sonst „Teilnehmende der Klasse“.
+     */
+    private void openDefaultTab(PlayingClass c) {
+        Tab target = c.isFinished() && classTabs.getTabs().contains(resultTab) ? resultTab
+                : !phaseTabs.isEmpty() ? phaseTabs.get(phaseTabs.size() - 1) : participantsTab;
+        if (classTabs.getSelectionModel().getSelectedItem() != target) classTabs.getSelectionModel().select(target);
+        else showSelectedTab();
     }
 
     private void showClass(PlayingClass c) {

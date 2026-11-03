@@ -1,51 +1,34 @@
-# Zwischenstand HTS 0.28.0 (03.11.2026)
+# Zwischenstand HTS 0.29.0 (03.11.2026)
 
-## Feature-Sammlung für 0.29.0 (NICHT kompilieren, Doku NICHT anfassen – bis „… kompilieren“)
+## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
-1. Kopfbereich der Seiten Klassen, Tische, Spiele einheitlich und kompakter – Vorschlag ANGENOMMEN.
-   AUSNAHME (BESTÄTIGT): Seite „Teilnehmende“ – deren Knopfzeile bleibt wie bisher unter dem Titel.
-   a) Links: Seitentitel, darunter die Unterzeile „Turniername · Datum · ● Gestartet 14:05 Uhr“ („Gestartet …“
-      wandert aus der rechten Ecke hierher; Startdatum nur, wenn abweichend vom Turnierdatum).
-   b) Rechts oben in der Titelzeile: die Knöpfe der Seite (Klassen: „Klasse anlegen“; Tische/Spiele entsprechend)
-      und dahinter die Knöpfe
-      aus dem Startbereich („Turnier starten“ bzw. „Bereite Klassen starten“, „Ergebnisse exportieren“) – BESTÄTIGT.
-   c) Die bisherige eigene Knopfzeile unter dem Titel entfällt (außer „Teilnehmende“) → Inhalte (z. B. Klassenübersicht und
-      Ansicht der Klasse) reichen weiter nach oben und werden größer.
-   Reicht die Breite nicht, brechen die Knöpfe rechtsbündig um (Reihenfolge bleibt).
-   Annahme (offen): auch auf „Teilnehmende“ steht „● Gestartet …“ in der Unterzeile und die Startknöpfe („Turnier
-   starten“ usw.) rechts oben – nur deren eigene Knopfzeile bleibt unverändert.
-2. Zweiter Bildschirm („Second Screen“, Anzeige für Publikum/Spieler): Wird ein zweiter Bildschirm erkannt, kann die
-   Turnierleitung dort eine Anzeige des aktuellen Standes laufen lassen. Die laufenden Klassen rotieren automatisch
-   alle 20 Sekunden zur nächsten Klasse.
-   Annahmen (1)–(4) durch die Ergänzungen unten bestätigt bzw. präzisiert (Start über „Präsentationsansicht“): (1) Knopf „Zweiter Bildschirm“ in der Kopfleiste, nur sichtbar/aktiv, wenn Windows einen zweiten
-   Bildschirm meldet; öffnet ein randloses Vollbildfenster auf diesem Bildschirm, Schließen per Knopf oder Esc.
-   (2) „Laufende Klassen“ = gestartet und noch nicht beendet, angehaltene eingeschlossen; je Klasse die aktuelle Phase:
-   Gruppen → Tabellen aller Gruppen, KO → KO-Baum, Qualifikation → Runden/Stufen, Schweizer System → Tabelle.
-   (3) Reine Anzeige ohne Bedienung, große Schrift, aktualisiert sich bei jedem Ergebnis; passt eine Klasse nicht
-   auf den Bildschirm, wird sie verkleinert bzw. auf mehrere Seiten à 20 Sekunden verteilt.
-   (4) Kopfzeile der Anzeige: Turniername, Klasse + Phase, Uhrzeit, Fortschritt der Rotation.
-   ERGÄNZT: Auch die BEENDETEN Phasen der Klassen werden angezeigt (z. B. die abgeschlossene Gruppenphase, während
-   Phase 2 läuft) – jede Phase ist eine eigene Station der Rotation, Kennzeichnung „abgeschlossen“.
-   BESTÄTIGT/ERGÄNZT:
-   - Wechselzeit einstellbar (Standard 20 Sekunden).
-   - Tischansicht als eigene Station(en): die aktuellen Tische mit laufender Partie (Tischname, Klasse, Phase/Runde,
-     Namen, Status); reichen die Tische nicht auf eine Seite, mehrere Seiten nacheinander.
-   - Station „Die nächsten 16 Spiele“ auf einer Seite (Reihenfolge der Warteschlange: Klasse, Phase/Runde, Spiel-Nr.,
-     Namen).
-   - Die Turnierleitung kann einzelne Ansichten (je Klasse/Phase, Tischansicht, nächste 16 Spiele) aus der
-     Rotation nehmen.
-   - Dafür neuer Reiter/Menüpunkt „Präsentationsansicht“ (neben Teilnehmende, Klassen, Tische, Spiele): Liste aller
-     Stationen mit Häkchen an/aus, Wechselzeit, Knopf Anzeige auf dem zweiten Bildschirm starten/beenden.
-   - BESTÄTIGT: Komplett beendete Klassen bleiben in der Rotation (mit ihren Phasen und dem Endergebnis).
-   - BESTÄTIGT Reihenfolge: zuerst alle laufenden Klassen mit ihrer laufenden Phase, danach die beendeten Phasen
-     (laufender wie beendeter Klassen), danach die Endergebnisse beendeter Klassen.
-   BESTÄTIGT: Tischansicht und „Die nächsten 16 Spiele“ kommen direkt nach den laufenden Phasen, vor den
-   beendeten Phasen; innerhalb jeder Gruppe Klassen in der Reihenfolge der Klassenliste.
-3. Klassenliste (Seite „Klassen“): Beim Auswählen einer Klasse öffnet sich nicht mehr immer der Reiter „Teilnehmende
-   der Klasse“, sondern der Reiter der aktuellsten Phase (Phase 2, falls vorhanden, sonst Phase 1). Ist Phase 1 noch
-   nicht ausgelost, bleibt es „Teilnehmende der Klasse“.
-   Annahme (offen): Bei einer beendeten Klasse öffnet sich ebenfalls die letzte Phase (nicht „Endergebnis“); der
-   Reiter lässt sich wie bisher von Hand wechseln.
+Bei jedem „kompilieren“: Quellcode (src, pom.xml, README.md, ZWISCHENSTAND.md, docs, samples, .gitignore,
+„HTS starten.bat“) als EIN Commit „HTS x.y.z“ auf main in https://github.com/Knutilon/Hamburger-Turniersoftware---HTS
+(Klon /home/claude/hamburger-turniersoftware---hts, push mit -c push.negotiate=false). Keine Releases/Tags, keine
+alte Versionshistorie. Windows-ZIP weiter per Datei. Repo ist öffentlich. 0.28.0 hochgeladen (Commit b4cb270).
+WUNSCH (03.11.2026, ab der nächsten Version): zusätzlich Release je Version mit dem Windows-ZIP und dem Nutzer statt
+des ZIPs den Link zum aktuellen Release nennen. PROBLEM: Release anlegen ist aus der Sitzung gesperrt (HTTP 403 „not
+permitted for this session type“), Tags-Push ebenfalls.
+ENTSCHIEDEN (Weg 2): Commit „HTS x.y.z“ hochladen; dem Nutzer das Windows-ZIP schicken plus vorausgefüllten Link
+https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.Y.Z&target=main&title=HTS%20X.Y.Z
+(+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
+Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
+
+## Feature-Sammlung für 0.30.0
+
+(noch leer)
+
+0.29.0 (6 Punkte umgesetzt; Doku NICHT aktualisiert – Stand 0.28.0, nur auf Zuruf):
+WorkspaceView: Kopfbereich (topActions rechts oben in FlowPane mit startBox, startedInfo in der Unterzeile, pageActions
+nur noch bei „Teilnehmende“), Menüpunkt „Präsentationsansicht“. ClassesView.openDefaultTab (Endergebnis / letzte
+Phase / Teilnehmende). InfoDialog (Icons.INFO, HtsApp.REPO_URL/openLink, Labels „Feature“ (angelegt) und „bug“
+(GitHub-Standard)), LICENSE (GPL-3.0), hts-dist: LICENSE.txt, Lizenzen/LIESMICH.txt, JavaFX-und-Java-Laufzeit-LICENSE.txt.
+GroupDraw.Seeding.HEADS „Gruppenkopf gesetzt“ (Köpfe fest A, B, …, Rest wie POTS, Nachbessern tauscht keine Köpfe),
+Umbenennung „TTR Setzung (…)“. ModeDialog: Zeile „Vereinsgleichheit beachten:“ + Checkbox, Combos 320 px.
+Präsentation: tournament/PresentationPlan (Stationen + Reihenfolge), Tournament.presentationSeconds/-Off/changeCount
+(persistiert „pres-secs“, „pres-off“), ui/PresentationView (Seite), ui/PresentationShow (Fenster, Rotation, FitPane
+mit Seiten, Tische/nächste 16/Endergebnis-Seiten), DrawView.forPresentation + present*-Methoden (KO max. 4 Spalten
+ab erster offener Runde). Tests: Version029Test. UI unter Xvfb gerendert (Klassen, Info, Modus, Präsentation).
 
 0.28.0 (8 Punkte umgesetzt). DOKU AKTUALISIERT auf 0.28.0 (03.11.2026, auf Zuruf): docs/HTS-Dokumentation.md und
 Claude-Docs-Dokument (Abschnitt Leistung/Hardware mit Messwerten, Phasenbild auf 2 Phasen). Weitere Doku-Updates nur auf Zuruf.

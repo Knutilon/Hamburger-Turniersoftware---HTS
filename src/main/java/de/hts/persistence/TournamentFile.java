@@ -81,7 +81,7 @@ public final class TournamentFile {
 
     private static Map<String, String> readFolders(Element root) {
         Map<String, String> m = new java.util.LinkedHashMap<>();
-        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off")) {
+        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off")) {
             String v = root.getAttribute(k);
             if (v != null && !v.isBlank()) m.put(k, v);
         }
@@ -150,6 +150,8 @@ public final class TournamentFile {
                 m.put("tables-off", String.join(",", t.getDisabledTables().stream().map(String::valueOf).toList()));
             }
             t.getTableNames().forEach((nr, name) -> m.put(TABLE_NAME_KEY + nr, name));
+            if (t.getPresentationSeconds() != 20) m.put("pres-secs", String.valueOf(t.getPresentationSeconds()));
+            if (!t.getPresentationOff().isEmpty()) m.put("pres-off", String.join("|", t.getPresentationOff()));
             return m;
         }
 
@@ -183,6 +185,14 @@ public final class TournamentFile {
                         // unlesbar: Standardname
                     }
                 });
+                try {
+                    if (folders.get("pres-secs") != null) t.setPresentationSeconds(Integer.parseInt(folders.get("pres-secs").trim()));
+                } catch (NumberFormatException ignored) {
+                    // Standard 20 s
+                }
+                if (folders.get("pres-off") != null) {
+                    for (String k : folders.get("pres-off").split("\\|")) if (!k.isBlank()) t.setPresentationOn(k, false);
+                }
                 String off = folders.get("tables-off");
                 if (off != null) {
                     for (String x : off.split(",")) {

@@ -49,9 +49,11 @@ public final class GroupDraw {
         /** komplett zufällig */
         RANDOM("zufällig"),
         /** Schlangensystem nach TTR */
-        SNAKE("Setzung (Schlange)"),
+        SNAKE("TTR Setzung (Schlange)"),
         /** Stärkegruppen (Töpfe) nach TTR; aus jeder Stärkegruppe mindestens eine/r je Gruppe */
-        POTS("Setzung (Stärkegruppen)");
+        POTS("TTR Setzung (Stärkegruppen)"),
+        /** Gruppenköpfe fest (TTR-Nr. 1 → Gruppe A, Nr. 2 → B, …), die übrigen Plätze wie bei den Stärkegruppen */
+        HEADS("Gruppenkopf gesetzt");
 
         private final String label;
 
@@ -84,6 +86,8 @@ public final class GroupDraw {
      *       Stärkegruppe nimmt den Rest auf (z. B. 9–15). Jede Gruppe bekommt je Stärkegruppe eine/n per Los, aus der
      *       letzten so viele, bis die Gruppe voll ist. Mit {@code avoidClubs} wird bevorzugt jemand ohne
      *       Vereinsgleichheit aus derselben Stärkegruppe gezogen.</li>
+     *   <li>{@link Seeding#HEADS}: wie Stärkegruppen, aber die erste Stärkegruppe wird nicht gelost: TTR-Nr. 1 kommt
+     *       in Gruppe A, Nr. 2 in Gruppe B usw. Gruppenköpfe werden auch beim Nachbessern nie getauscht.</li>
      *   <li>{@link Seeding#RANDOM}: zufällige Reihenfolge, verteilt wie die Schlange (mit {@code avoidClubs} ebenso
      *       unter Beachtung der Vereine).</li>
      * </ul>
@@ -108,7 +112,7 @@ public final class GroupDraw {
         List<List<Entrant>> result = new ArrayList<>();
         for (int g = 0; g < groups; g++) result.add(new ArrayList<>());
 
-        if (seeding == Seeding.POTS) {
+        if (seeding == Seeding.POTS || seeding == Seeding.HEADS) {
             int pots = n / groups;                         // ≥ 2 (validate)
             List<Integer> order = new ArrayList<>();
             for (int g = 0; g < groups; g++) order.add(g);
@@ -116,7 +120,10 @@ public final class GroupDraw {
                 int from = k * groups, to = k == pots - 1 ? n : from + groups;
                 List<Entrant> pot = new ArrayList<>(ranking.subList(from, to));
                 Collections.shuffle(pot, random);
-                if (k < pots - 1) {
+                if (k == 0 && seeding == Seeding.HEADS) {
+                    // Gruppenköpfe fest: Nr. 1 in Gruppe A, Nr. 2 in Gruppe B, …
+                    for (int g = 0; g < groups; g++) result.get(g).add(ranking.get(g));
+                } else if (k < pots - 1) {
                     Collections.shuffle(order, random);
                     assignPot(pot, order, result, avoidClubs);
                 } else {
@@ -152,7 +159,7 @@ public final class GroupDraw {
                 group.add(chosen);
             }
         }
-        if (avoidClubs) repairClubClashes(result, ranking, groups, seeding == Seeding.POTS, n, random);
+        if (avoidClubs) repairClubClashes(result, ranking, groups, seeding == Seeding.POTS || seeding == Seeding.HEADS, n, random);
         // Mitglieder je Gruppe in Setzreihenfolge (Gruppenkopf zuerst)
         for (List<Entrant> g : result) g.sort(Comparator.comparingInt(ranking::indexOf));
         return result;

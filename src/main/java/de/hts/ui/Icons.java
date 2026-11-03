@@ -32,6 +32,7 @@ public final class Icons {
     /** Würfel (Testmodus: Spiele simulieren) */
     public static final String DICE = "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z "
             + "M7.5 8h1 M15.5 8h1 M11.5 12h1 M7.5 16h1 M15.5 16h1";
+    public static final String INFO = "M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20z M12 11v6 M12 7.2v.6";
     public static final String HOME = "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10";
     public static final String ARROW_RIGHT = "M5 12h14 M12 5l7 7-7 7";
     public static final String CLOCK = "M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20z M12 6v6l4 2";

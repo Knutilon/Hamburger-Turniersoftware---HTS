@@ -124,6 +124,12 @@ public final class DrawView {
     private final Button thirdBtn = new Button("Spiel um Platz 3");
     private final Button nextPhaseBtn = new Button();
     private HBox topRow;
+    /** reine Anzeige für den zweiten Bildschirm: nichts bearbeitbar, keine Knöpfe in den Karten */
+    private boolean presentation;
+    /** KO-Baum erst ab dieser Runde zeichnen (Präsentation) */
+    private int fromRound;
+    /** KO-Baum höchstens so viele Spalten (Präsentation), 0 = alle */
+    private int maxColumns;
     private javafx.scene.layout.FlowPane actionRow;
 
     /**
@@ -532,6 +538,70 @@ public final class DrawView {
         afterShow();
     }
 
+    // --- Präsentation (zweiter Bildschirm): reine Anzeige -------------------------------
+
+    /** Eine DrawView nur zum Zeichnen für die Präsentationsansicht (nichts bearbeitbar). */
+    public static DrawView forPresentation(Tournament t) {
+        DrawView d = new DrawView(t, s -> { }, () -> { }, c -> { }, n -> { });
+        d.presentation = true;
+        return d;
+    }
+
+    private void prepare(PlayingClass c) {
+        current = c;
+        clashIds = java.util.Set.of();
+        hitNodes.clear();
+        sticky = null;
+    }
+
+    /** Gruppentabellen der Gruppen {@code from} bis ausschließlich {@code to} nebeneinander. */
+    public Node presentGroups(PlayingClass c, int from, int to) {
+        prepare(c);
+        List<List<Entrant>> groups = tournament.groupsOf(c);
+        List<Match> all = tournament.matchesOf(c);
+        javafx.scene.layout.GridPane f = new javafx.scene.layout.GridPane();
+        f.setHgap(18);
+        f.setVgap(18);
+        int n = Math.min(to, groups.size()) - from;
+        int cols = n <= 2 ? Math.max(1, n) : n <= 4 ? 2 : 3;
+        for (int g = from; g < Math.min(to, groups.size()); g++) {
+            int gi = g, k = g - from;
+            Node card = groupCard("Gruppe " + GroupDraw.groupName(g), g, groups.get(g),
+                    all.stream().filter(m -> m.getGroupIndex() == gi).toList());
+            if (card instanceof Region r) r.setMaxHeight(Double.MAX_VALUE);
+            f.add(card, k % cols, k / cols);
+        }
+        return f;
+    }
+
+    /** KO-Baum ab Runde {@code from} (0 = erste Runde). */
+    public Node presentBracket(PlayingClass c, int from, int columns) {
+        prepare(c);
+        fromRound = from;
+        maxColumns = columns;
+        try {
+            return buildBracket(c);
+        } finally {
+            fromRound = 0;
+            maxColumns = 0;
+        }
+    }
+
+    public Node presentQualification(PlayingClass c) {
+        prepare(c);
+        return buildQualification(c);
+    }
+
+    public Node presentSwiss(PlayingClass c) {
+        prepare(c);
+        return groupCard("Tabelle", 0, tournament.groupsOf(c).get(0), tournament.matchesOf(c));
+    }
+
+    public Node presentPlacement(PlayingClass c) {
+        prepare(c);
+        return buildPlacement(c);
+    }
+
     // --- Suche: Treffer zählen, Enter springt weiter -------------------------------
 
     private String searchQuery() {
@@ -907,7 +977,7 @@ public final class DrawView {
         HBox.setHgrow(sp, Priority.ALWAYS);
         HBox cardHead = new HBox(8, head, sp, games);
         cardHead.setAlignment(Pos.CENTER_LEFT);
-        if (current.getMode() == TournamentMode.GROUPS && current.isDrawn()) {
+        if (!presentation && current.getMode() == TournamentMode.GROUPS && current.isDrawn()) {
             Button print = new Button("Drucken");
             print.getStyleClass().add("pill");
             print.setTooltip(new Tooltip("Nur diese Gruppe als PDF anzeigen (speichern/drucken): Tabelle und Gruppenspiele, aktueller Stand"));
@@ -1186,10 +1256,12 @@ public final class DrawView {
                         || (m != null && (hit.test(m.getA()) || hit.test(m.getB()))));
             }
         }
-        for (int r = 0; r < rounds.size(); r++) {
+        final int f0 = Math.max(0, Math.min(fromRound, rounds.size() - 1));
+        final int rEnd = maxColumns > 0 ? Math.min(rounds.size(), f0 + maxColumns) : rounds.size();
+        for (int r = f0; r < rEnd; r++) {
             KnockoutBracket.Round round = rounds.get(r);
-            double x = r * (MATCH_WIDTH + gap);
-            double unit = (cardH + MATCH_GAP) * Math.pow(2, r);
+            double x = (r - f0) * (MATCH_WIDTH + gap);
+            double unit = (cardH + MATCH_GAP) * Math.pow(2, r - f0);
             Label roundTitle = new Label(round.name());
             roundTitle.getStyleClass().add("round-title");
             roundTitle.relocate(x, 4);
@@ -1203,7 +1275,7 @@ public final class DrawView {
                     if (hitAt[r][i]) hitNodes.add(card);
                 }
                 cards.add(card);
-                if (r + 1 < rounds.size()) {
+                if (r + 1 < rEnd) {
                     // Verbindung zum Folgespiel: waagerecht, senkrecht, waagerecht (Pfad eines Treffers kräftig)
                     double nUnit = unit * 2;
                     double ny = top + nUnit * (i / 2) + nUnit / 2;
@@ -1220,9 +1292,9 @@ public final class DrawView {
             }
         }
         Match thirdMatch = tournament.thirdPlaceMatch(c);
-        if (thirdMatch != null && !rounds.isEmpty()) {
+        if (thirdMatch != null && !rounds.isEmpty() && rEnd == rounds.size()) {
             // unter der Spalte „Finale“: Titel „Spiel um Platz 3“, darunter die Karte (Kopf „Spiel n“) – ohne Verbindungslinie
-            double x = (rounds.size() - 1) * (MATCH_WIDTH + gap);
+            double x = (rounds.size() - 1 - f0) * (MATCH_WIDTH + gap);
             double ty = finalTop + cardH + 28;
             Label t3 = new Label(Tournament.THIRD_PLACE_STAGE);
             t3.getStyleClass().add("round-title");
@@ -1239,11 +1311,11 @@ public final class DrawView {
             height = Math.max(height, ty + 26 + cardH + (thirdMatch.getStatus() == MatchStatus.DONE ? 22 : 0));
         }
         // leichte, gestrichelte Trennlinien zwischen den Runden
-        for (int r = 0; r + 1 < rounds.size(); r++) {
-            double sx = r * (MATCH_WIDTH + gap) + MATCH_WIDTH + gap * 0.72;
+        for (int r = f0; r + 1 < rEnd; r++) {
+            double sx = (r - f0) * (MATCH_WIDTH + gap) + MATCH_WIDTH + gap * 0.72;
             lines.add(bracketLine(sx, 0, sx, height + 6, "bracket-separator"));
         }
-        double width = rounds.size() * (MATCH_WIDTH + gap) - gap;
+        double width = (rEnd - f0) * (MATCH_WIDTH + gap) - gap;
         titleBar.setPrefSize(width + gap, top - 4);
         titleBar.setMinSize(width + gap, top - 4);
         titleBar.setMaxSize(width + gap, top - 4);
@@ -1351,7 +1423,7 @@ public final class DrawView {
                 }
                 onChanged.run();
             });
-            box.getChildren().add(extra);
+            if (!presentation) box.getChildren().add(extra);
         }
         for (int r = 1; r <= rounds; r++) {
             final int round = r;
@@ -1452,7 +1524,7 @@ public final class DrawView {
     }
 
     private boolean qualEditable() {
-        return current != null && current.getMode() == TournamentMode.QUALIFICATION && !tournament.rootOf(current).isFinished();
+        return !presentation && current != null && current.getMode() == TournamentMode.QUALIFICATION && !tournament.rootOf(current).isFinished();
     }
 
     /** Karte für das Spiel um Platz 3 (unter dem KO-Baum). */
@@ -1595,12 +1667,12 @@ public final class DrawView {
     private static final String DND_QUAL = "hts-qual:";
 
     private boolean groupEditable() {
-        return current != null && !current.isStarted() && current.getMode() == TournamentMode.GROUPS;
+        return !presentation && current != null && !current.isStarted() && current.getMode() == TournamentMode.GROUPS;
     }
 
     /** KO: vor dem Start frei; während der Phase für Erstrundenspiele, die noch nicht laufen bzw. gespielt sind. */
     private boolean koEditable() {
-        return current != null && (current.getMode() == TournamentMode.KNOCKOUT)
+        return !presentation && current != null && (current.getMode() == TournamentMode.KNOCKOUT)
                 && !tournament.rootOf(current).isFinished();
     }
 
@@ -1686,7 +1758,7 @@ public final class DrawView {
 
     /** Doppelklick: Ergebnis eintragen (aktiv/eingereiht) bzw. korrigieren (abgeschlossen). */
     private void installResultEntry(Node node, Match m) {
-        if (!ResultEntry.isEditable(m)) return;
+        if (presentation || !ResultEntry.isEditable(m)) return;
         node.getStyleClass().add("clickable");
         node.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {

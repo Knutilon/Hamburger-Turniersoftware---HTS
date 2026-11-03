@@ -2617,6 +2617,32 @@ public final class Tournament {
     /** Aufrufen, wenn ein Spieler oder eine Klasse selbst geändert wurde. */
     public void markModified() {
         modified.set(true);
+        changeCount++;
+    }
+
+    private long changeCount;
+
+    /** Zähler, der bei jeder Änderung steigt (z. B. für die Präsentationsansicht). */
+    public long getChangeCount() { return changeCount; }
+
+    // --- Präsentationsansicht (zweiter Bildschirm) ---
+    private int presentationSeconds = 20;
+    private final java.util.Set<String> presentationOff = new java.util.TreeSet<>();
+
+    public int getPresentationSeconds() { return presentationSeconds; }
+
+    public void setPresentationSeconds(int s) {
+        presentationSeconds = Math.max(5, Math.min(600, s));
+        markModified();
+    }
+
+    /** Aus der Rotation genommene Ansichten (Schlüssel wie „phase:Herren A“, „tables“, „next16“, „result:Herren A“). */
+    public java.util.Set<String> getPresentationOff() { return java.util.Collections.unmodifiableSet(presentationOff); }
+
+    public void setPresentationOn(String key, boolean on) {
+        if (on) presentationOff.remove(key);
+        else presentationOff.add(key);
+        markModified();
     }
 
     public void markSaved() {

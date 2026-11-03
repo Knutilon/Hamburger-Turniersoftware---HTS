@@ -53,6 +53,7 @@ public final class OverviewView {
         appHeader.addMenuItem("tournaments", "Turniere", null, this::refresh);
         appHeader.select("tournaments");
         appHeader.addTool(Icons.PLUS, "Neues Turnier", this::createTournament);
+        InfoDialog.install(appHeader, () -> stage);
 
         // Seitenkopf
         Label title = new Label("Meine Turniere");

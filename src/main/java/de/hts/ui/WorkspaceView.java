@@ -51,7 +51,7 @@ public final class WorkspaceView {
     private static final String PREF_LAST_IMPORT_DIR = "lastImportDir";
     private static final DateTimeFormatter START_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm 'Uhr'");
 
-    private enum Page { PARTICIPANTS, CLASSES, TABLES, MATCHES }
+    private enum Page { PARTICIPANTS, CLASSES, TABLES, MATCHES, PRESENTATION }
 
     private final Stage stage;
     private final TournamentStore store;
@@ -64,6 +64,7 @@ public final class WorkspaceView {
     private final ClassesView classes;
     private final TablesView tablesView;
     private final MatchesView matchesView;
+    private final PresentationView presentationView;
     private Button matchesMenu;
     private Page currentPage = Page.PARTICIPANTS;
 
@@ -74,6 +75,10 @@ public final class WorkspaceView {
     private final Label statusLabel = new Label("Bereit.");
     private final Label saveState = new Label();
     private final HBox startBox = new HBox(6);
+    /** Knöpfe der Seite rechts oben in der Titelzeile (alle Seiten außer „Teilnehmende“) */
+    private final HBox topActions = new HBox(8);
+    /** „· ● Gestartet 14:05 Uhr“ in der Unterzeile */
+    private final Label startedInfo = new Label();
     private final AppHeader header = new AppHeader();
     private boolean autosaveScheduled;
 
@@ -86,6 +91,7 @@ public final class WorkspaceView {
         this.classes = new ClassesView(tournament, this::setStatus, participants::refresh, this::onRunningChanged);
         this.tablesView = new TablesView(tournament, this::setStatus, this::onRunningChanged);
         this.matchesView = new MatchesView(tournament, this::setStatus, this::onRunningChanged);
+        this.presentationView = new PresentationView(tournament, this::setStatus);
         // Spielzettel drucken, sobald ein Spiel an einen Tisch geht
         tournament.addActivationListener(m -> {
             if (Reports.isAutoPrintSlips()) {
@@ -134,6 +140,7 @@ public final class WorkspaceView {
 
     /** Vor dem Verlassen bzw. Schließen: offene Änderungen speichern. @return {@code true}, wenn verlassen werden darf */
     public boolean prepareLeave() {
+        presentationView.stop();
         if (!tournament.isModified()) return true;
         if (save()) return true;
         Alert a = new Alert(Alert.AlertType.WARNING,
@@ -152,6 +159,7 @@ public final class WorkspaceView {
         header.addMenuItem("classes", "Klassen", null, () -> showPage(Page.CLASSES));
         header.addMenuItem("tables", "Tische", null, () -> showPage(Page.TABLES));
         matchesMenu = header.addMenuItem("matches", "Spiele", null, () -> showPage(Page.MATCHES));
+        header.addMenuItem("presentation", "Präsentationsansicht", null, () -> showPage(Page.PRESENTATION));
         matchesMenu.setDisable(!tournament.isRunning());
         matchesMenu.setTooltip(new javafx.scene.control.Tooltip("Verfügbar, sobald das Turnier oder eine Klasse gestartet ist"));
         // Speichern geschieht automatisch – kein eigener Knopf; oben links steht das geöffnete Turnier
@@ -169,6 +177,7 @@ public final class WorkspaceView {
                             + (tournament.getDate() == null ? "" : "  ·  " + tournament.getDate().format(TournamentDialog.DATE)),
                     tournament.nameProperty(), tournament.dateProperty()));
         }
+        InfoDialog.install(header, () -> stage);
         return header.getRoot();
     }
 
@@ -179,12 +188,16 @@ public final class WorkspaceView {
     private void updateStartBox() {
         startBox.getChildren().clear();
         if (tournament.isStarted()) {
-            Circle dot = new Circle(6);
+            Circle dot = new Circle(5);
             dot.getStyleClass().add("live-dot");
-            Label l = new Label("Gestartet " + tournament.getStartedAt().format(START_FORMAT), dot);
-            l.getStyleClass().add("started-label");
-            l.setGraphicTextGap(8);
-            startBox.getChildren().add(l);
+            // Startinfo in der Unterzeile: Datum nur, wenn es vom Turnierdatum abweicht
+            java.time.LocalDateTime at = tournament.getStartedAt();
+            boolean sameDay = tournament.getDate() != null && tournament.getDate().equals(at.toLocalDate());
+            startedInfo.setText("Gestartet " + (sameDay ? at.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm 'Uhr'"))
+                    : at.format(START_FORMAT)));
+            startedInfo.setGraphic(dot);
+            startedInfo.setGraphicTextGap(6);
+            startedInfo.setVisible(true);
             if (tournament.isCompletelyFinished()) {
                 javafx.scene.control.MenuButton export = new javafx.scene.control.MenuButton("Ergebnisse exportieren", Icons.of(Icons.START, 14));
                 export.getStyleClass().add("navy-pill");
@@ -202,6 +215,7 @@ public final class WorkspaceView {
                 startBox.getChildren().add(more);
             }
         } else {
+            startedInfo.setVisible(false);
             Button start = new Button("Turnier starten", Icons.of(Icons.START, 16));
             start.getStyleClass().add("navy-pill");
             start.setOnAction(e -> startTournament());
@@ -219,20 +233,36 @@ public final class WorkspaceView {
                         + (tournament.getDate() == null ? "ohne Datum" : tournament.getDate().format(TournamentDialog.DATE)),
                 tournament.nameProperty(), tournament.dateProperty()));
         tournamentLine.getStyleClass().add("page-subtitle");
-        VBox titles = new VBox(2, pageTitle, tournamentLine);
+        startedInfo.getStyleClass().addAll("page-subtitle", "started-info");
+        startedInfo.managedProperty().bind(startedInfo.visibleProperty());
+        Label sep = new Label("·");
+        sep.getStyleClass().add("page-subtitle");
+        sep.visibleProperty().bind(startedInfo.visibleProperty());
+        sep.managedProperty().bind(sep.visibleProperty());
+        HBox subLine = new HBox(8, tournamentLine, sep, startedInfo);
+        subLine.setAlignment(Pos.CENTER_LEFT);
+        VBox titles = new VBox(2, pageTitle, subLine);
+        titles.setMinWidth(Region.USE_PREF_SIZE);
 
         startBox.setAlignment(Pos.CENTER_RIGHT);
         tournament.startedAtProperty().addListener((o, a, b) -> updateStartBox());
         updateStartBox();
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox titleRow = new HBox(12, titles, spacer, startBox);
+        // rechts oben: Knöpfe der Seite, dahinter die Startknöpfe – bei wenig Platz rechtsbündig umbrechen
+        topActions.setAlignment(Pos.CENTER_RIGHT);
+        topActions.managedProperty().bind(topActions.visibleProperty());
+        javafx.scene.layout.FlowPane right = new javafx.scene.layout.FlowPane(10, 6, topActions, startBox);
+        right.setAlignment(Pos.CENTER_RIGHT);
+        right.setRowValignment(javafx.geometry.VPos.CENTER);
+        right.setMinWidth(0);
+        HBox.setHgrow(right, Priority.ALWAYS);
+        HBox titleRow = new HBox(12, titles, right);
         titleRow.setAlignment(Pos.CENTER_LEFT);
         titleRow.getStyleClass().add("page-header");
 
         pageActions.setAlignment(Pos.CENTER_LEFT);
         pageActions.getStyleClass().add("page-actions");
+        pageActions.managedProperty().bind(pageActions.visibleProperty());
 
         Region sbSpacer = new Region();
         HBox.setHgrow(sbSpacer, Priority.ALWAYS);
@@ -251,6 +281,8 @@ public final class WorkspaceView {
     private void showPage(Page page) {
         currentPage = page;
         pageActions.getChildren().clear();
+        topActions.getChildren().clear();
+        pageActions.setVisible(page == Page.PARTICIPANTS);   // eigene Knopfzeile nur noch bei „Teilnehmende“
         if (page == Page.PARTICIPANTS) {
             header.select("participants");
             pageTitle.setText("Teilnehmende");
@@ -274,6 +306,11 @@ public final class WorkspaceView {
             pageTitle.setText("Tische");
             pageContent.getChildren().setAll(tablesView.getRoot());
             tablesView.refresh();
+        } else if (page == Page.PRESENTATION) {
+            header.select("presentation");
+            pageTitle.setText("Präsentationsansicht");
+            pageContent.getChildren().setAll(presentationView.getRoot());
+            presentationView.refresh();
         } else if (page == Page.MATCHES) {
             header.select("matches");
             pageTitle.setText("Spiele");
@@ -285,7 +322,7 @@ public final class WorkspaceView {
             Button add = new Button("Klasse anlegen", Icons.of(Icons.PLUS, 16));
             add.getStyleClass().add("navy-pill");
             add.setOnAction(e -> classes.newClass());
-            pageActions.getChildren().addAll(add);
+            topActions.getChildren().addAll(add);
             pageContent.getChildren().setAll(classes.getRoot());
             classes.refresh();
         }
