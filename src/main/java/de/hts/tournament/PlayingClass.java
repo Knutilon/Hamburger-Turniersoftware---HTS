@@ -170,6 +170,21 @@ public final class PlayingClass {
     }
 
     /** Setzt das Ergebnis einer Gruppenauslosung (eine evtl. KO-Auslosung entfällt). */
+    /** Fester Losschlüssel der Klasse (letztes Kriterium bei völliger Gleichheit in Tabellen); 0 = nicht gesetzt. */
+    private long lotSeed;
+
+    public long getLotSeed() { return lotSeed; }
+    public void setLotSeed(long seed) { this.lotSeed = seed; }
+
+    /**
+     * Festes Los einer/eines Teilnehmenden: einmal je Gruppe/Klasse bestimmt und gespeichert (über den Losschlüssel),
+     * damit die Tabelle bei Gleichheit nicht springt. Kleinerer Wert = besser.
+     */
+    public int lotOf(String entrantId) {
+        long seed = lotSeed != 0 ? lotSeed : (long) name.hashCode() * 0x9E3779B97F4A7C15L + 1;
+        return new java.util.Random(seed ^ ((long) entrantId.hashCode() * 0xC2B2AE3D27D4EB4FL)).nextInt();
+    }
+
     public void setGroups(java.util.List<java.util.List<String>> groups, boolean seeded) {
         java.util.List<java.util.List<String>> copy = new java.util.ArrayList<>();
         if (groups != null) for (java.util.List<String> g : groups) copy.add(java.util.List.copyOf(g));

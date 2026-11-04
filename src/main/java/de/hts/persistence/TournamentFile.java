@@ -81,7 +81,7 @@ public final class TournamentFile {
 
     private static Map<String, String> readFolders(Element root) {
         Map<String, String> m = new java.util.LinkedHashMap<>();
-        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off")) {
+        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on")) {
             String v = root.getAttribute(k);
             if (v != null && !v.isBlank()) m.put(k, v);
         }
@@ -152,6 +152,7 @@ public final class TournamentFile {
             t.getTableNames().forEach((nr, name) -> m.put(TABLE_NAME_KEY + nr, name));
             if (t.getPresentationSeconds() != 20) m.put("pres-secs", String.valueOf(t.getPresentationSeconds()));
             if (!t.getPresentationOff().isEmpty()) m.put("pres-off", String.join("|", t.getPresentationOff()));
+            if (!t.getPresentationOn().isEmpty()) m.put("pres-on", String.join("|", t.getPresentationOn()));
             return m;
         }
 
@@ -192,6 +193,9 @@ public final class TournamentFile {
                 }
                 if (folders.get("pres-off") != null) {
                     for (String k : folders.get("pres-off").split("\\|")) if (!k.isBlank()) t.setPresentationOn(k, false);
+                }
+                if (folders.get("pres-on") != null) {
+                    for (String k : folders.get("pres-on").split("\\|")) if (!k.isBlank()) t.setPresentationOn(k, true);
                 }
                 String off = folders.get("tables-off");
                 if (off != null) {
@@ -323,6 +327,7 @@ public final class TournamentFile {
                 }
                 el.setAttribute("group-seeding", c.getGroupSeeding().name());
                 el.setAttribute("avoid-same-club", String.valueOf(c.isAvoidSameClub()));
+                if (c.getLotSeed() != 0) el.setAttribute("lot-seed", Long.toString(c.getLotSeed()));
                 if (c.getSwissRounds() > 0) el.setAttribute("swiss-rounds", String.valueOf(c.getSwissRounds()));
                 if (!c.getSwissByes().isEmpty()) {
                     el.setAttribute("swiss-byes", String.join(",", c.getSwissByes().stream().map(b -> b == null ? "-" : b).toList()));
@@ -552,6 +557,13 @@ public final class TournamentFile {
                 // unbekannt -> Standard
             }
             pc.setAvoidSameClub(!"false".equals(attr(el, "avoid-same-club")));
+            if (attr(el, "lot-seed") != null) {
+                try {
+                    pc.setLotSeed(Long.parseLong(attr(el, "lot-seed")));
+                } catch (NumberFormatException ignored) {
+                    // unbekannt -> Ersatzlos aus dem Klassennamen
+                }
+            }
             pc.setSwissRounds(intOr(el, "swiss-rounds", 0));
             String byes = attr(el, "swiss-byes");
             if (byes != null && !byes.isEmpty()) {

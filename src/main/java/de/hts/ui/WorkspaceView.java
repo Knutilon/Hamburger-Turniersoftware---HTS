@@ -582,22 +582,32 @@ public final class WorkspaceView {
         }
         rememberClickTtFile(file.toPath());
         int newClasses = 0;
-        java.util.Set<String> freshSingles = new java.util.HashSet<>();
         for (ClickTtXmlImporter.CompetitionInfo ci : result.competitions()) {
             Discipline d = ci.doubles() ? Discipline.DOUBLES : Discipline.SINGLES;
             var existing = tournament.findClass(ci.name());
             if (existing.isEmpty()) {
                 tournament.addClass(new PlayingClass(ci.name(), d, ClassType.guess(ci.name(), ci.sex()), null, null));
-                if (!ci.doubles()) freshSingles.add(ci.name());
                 newClasses++;
             } else if (ci.doubles() && !existing.get().isDoubles()) {
                 tournament.changeDiscipline(existing.get(), Discipline.DOUBLES);
             }
         }
-        // neu angelegte Einzelklassen: Gemeldete stehen zunächst unter „Verfügbar“ (Meldung „gemeldet“), nicht in der Klasse
-        Tournament.registerOnly(result.players(), freshSingles);
+        // Einzel: Gemeldete stehen direkt „In der Klasse“ (Nachrücker bleiben auf der Warteliste)
         Tournament.MergeResult merge = tournament.merge(result.players());
         int newPairs = importPairs(result.pairs());
+        // Doppel: wer keinen Partner aus der Datei hat, steht unter „Verfügbar“ statt als halbe Paarung
+        java.util.Map<String, Player> byKey = new java.util.HashMap<>();
+        tournament.getPlayers().forEach(p -> byKey.put(p.identityKey(), p));
+        for (ClickTtXmlImporter.CompetitionInfo ci : result.competitions()) {
+            if (!ci.doubles()) continue;
+            PlayingClass dc = tournament.findClass(ci.name()).orElse(null);
+            if (dc == null || !dc.isDoubles() || dc.isDrawn()) continue;
+            for (Player imported : result.players()) {
+                if (!imported.isInClass(ci.name()) && !imported.getRegistrations().contains(ci.name())) continue;
+                Player p = byKey.get(imported.identityKey());
+                if (p != null) tournament.registerWithoutPartner(p, dc);
+            }
+        }
         tournament.ensurePairsForEntries();
         participants.refresh();
         classes.refresh();

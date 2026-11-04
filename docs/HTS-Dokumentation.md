@@ -3,17 +3,18 @@
   Diese Datei ist die fortschreibbare Fassung der Dokumentation. Für neue Versionen:
   einfach diese Datei (am besten zusammen mit dem Quellcode-ZIP) wieder an Claude geben
   und um die Änderungen der neuen Version erweitern lassen.
-  Stand: 03.11.2026 · Programmversion 0.28.0
+  Stand: 04.11.2026 · Programmversion 0.30.0
 -->
 
 # HTS – Hamburger Turniersoftware: Dokumentation
 
-Stand: 03.11.2026 · Programmversion **0.28.0**
+Stand: 04.11.2026 · Programmversion **0.30.0**
 
 ## Versionsverlauf der Dokumentation
 
 | Datum | Programmversion | Änderung |
 | --- | --- | --- |
+| 04.11.2026 | 0.30.0 | Nachtrag 0.29.0 und 0.30.0: Präsentationsansicht für den zweiten Bildschirm (Auswahl je Klasse mit Status, Seiten ohne zerschnittene Karten, Gruppen im 2×2-Raster, Tische nach Auflösung), Info-Knopf und Lizenz GPL 3.0, kompakter Kopfbereich, Klasse öffnet die aktuellste Phase, Setzung „Gruppenkopf gesetzt“, Import (Einzel direkt in die Klasse, Doppel ohne Partner/in unter „Verfügbar“), Vereinsfilter nur noch im Doppel, Suche und automatisches Blättern bei den Doppelpaarungen, Doppel-TTR bei fehlenden Werten, festes Los als letztes Kriterium in Tabellen |
 | 03.11.2026 | 0.28.0 | Nachtrag der Versionen 0.21.0–0.28.0: Testturnier und Simulation, Turnier kopieren, fertiges Turnier aus click-TT importieren, Suche über Vorname/Nachname/Verein (auch im KO-Baum, Enter springt zum nächsten Treffer), KO-Baum mit Pfaden, fixierten Rundentiteln und Statusfarben, Schalter „Spiel um Platz 3“, Doppelregeln und „Partner zulosen“, Qualifikationsmodus neu (HEM-Logik, Nachrücker je Gruppe, freie Auslosung, Zusatzrunde), Tische benennen und deaktivieren, neue PDFs (KO-Turnierbaum, Gruppen zweispaltig), Leistung und Hardware |
 | 31.10.2026 | 0.20.0 | Spiel um Platz 3, Gewinnsätze je Klasse (3/4), „A1“-Kennungen im KO-Baum der Phase 2, Schweizer System ohne Folgephase, Vereinsgleichheit in der Qualifikation, neue Speicherorte „Dokumente\HTS Turniere“ |
 | 31.10.2026 | 0.19.0 | höchstens 2 Phasen je Klasse; Qualifikationsmodus neu: Nachrückerränge, Verlierer spielen weiter, Q = 0 möglich, geteilte Gruppenplätze |
@@ -22,7 +23,7 @@ Stand: 03.11.2026 · Programmversion **0.28.0**
 
 ## 1. Überblick
 
-HTS (Hamburger Turniersoftware) organisiert Tischtennisturniere von der Meldeliste bis zur click-TT-Ergebnisdatei. Diese Dokumentation beschreibt Version 0.28.0.
+HTS (Hamburger Turniersoftware) organisiert Tischtennisturniere von der Meldeliste bis zur click-TT-Ergebnisdatei. Diese Dokumentation beschreibt Version 0.30.0. HTS ist freie Software unter der GNU General Public License v3.0 (GPL 3.0); Wünsche und Fehler nimmt das GitHub-Projekt als Issue entgegen (Label „Feature“ bzw. „bug“).
 
 Das Programm deckt den ganzen Turniertag ab:
 
@@ -34,6 +35,7 @@ Das Programm deckt den ganzen Turniertag ab:
 - Endergebnisse als PDF und die Ergebnisdatei für den click-TT-Upload erzeugen
 - Qualifikationen nach dem Muster der Hamburger Einzelmeisterschaften (HEM): Vor- und Hauptqualifikation mit Nachrückerrängen
 - zum Üben: Testturniere, in denen alle Spiele per Knopfdruck simuliert werden
+- eine Präsentationsansicht für einen zweiten Bildschirm (Beamer, Fernseher) mit wechselnden Ansichten
 
 ### Systemvoraussetzungen
 
@@ -97,11 +99,11 @@ Gespeichert wird automatisch nach jeder Änderung.
 
 ## 2. Programmaufbau und Bedienung
 
-HTS hat zwei Ebenen: die Turnierübersicht und die Ansicht eines geöffneten Turniers mit vier Seiten.
+HTS hat zwei Ebenen: die Turnierübersicht und die Ansicht eines geöffneten Turniers mit fünf Seiten.
 
 ### Kopfleiste
 
-Die dunkelblaue Kopfleiste zeigt links das HTS-Logo und daneben das geöffnete Turnier („Turnier: Name · Datum“, bei Testturnieren „TESTTURNIER: …“). Darunter liegt das Menü, rechts oben der runde Knopf zurück zur Turnierübersicht. Bei Testturnieren steht daneben ein Würfel-Knopf (Abschnitt 3).
+Die dunkelblaue Kopfleiste zeigt links das HTS-Logo und daneben das geöffnete Turnier („Turnier: Name · Datum“, bei Testturnieren „TESTTURNIER: …“). Darunter liegt das Menü, rechts oben der runde Knopf zurück zur Turnierübersicht. Bei Testturnieren steht daneben ein Würfel-Knopf (Abschnitt 3). Ganz rechts steht immer der **Info-Knopf (i)**: Er zeigt Version, Signatur, die Lizenz (GPL 3.0), Links zur Feature- und Bug-Sammlung auf GitHub sowie die Lizenzen der mitgelieferten Bibliotheken. In der Turnierübersicht gibt es nur den Info-Knopf; neue Turniere legt der Knopf **Neues Turnier** auf der Seite an.
 
 | Menüpunkt | Zweck |
 | --- | --- |
@@ -110,6 +112,7 @@ Die dunkelblaue Kopfleiste zeigt links das HTS-Logo und daneben das geöffnete T
 | Klassen | Klassen anlegen, Teilnehmende zuordnen, Modus festlegen, Phasen und Endergebnis |
 | Tische | belegte und freie Tische, Warteschlange, Tischzuordnung, Tischnamen |
 | Spiele | alle Spiele klassenübergreifend, Suche, Ergebnisse und Korrekturen, Export-Markierung |
+| Präsentationsansicht | Anzeige auf einem zweiten Bildschirm starten, Wechselzeit und Ansichten wählen (Abschnitt 6) |
 
 „Spiele“ ist ausgegraut, bis das Turnier oder eine Klasse gestartet ist.
 
@@ -122,7 +125,7 @@ Die dunkelblaue Kopfleiste zeigt links das HTS-Logo und daneben das geöffnete T
 - **Doppelklick:** öffnet in Gruppenübersicht, KO-Baum und Spieleliste die Ergebniseingabe.
 - **Knöpfe** sind immer ausgeschrieben; wird es eng, bricht eine Knopfzeile um.
 - **Dialoge** passen ihre Größe dem Inhalt an.
-- **Kopfzeile der Turnieransicht:** „Turnier starten“, später die Startzeit, „Bereite Klassen starten“ und nach Turnierende „Ergebnisse exportieren“.
+- **Kopfbereich einer Seite:** Unter dem Seitentitel stehen Turniername, Datum und – sobald gestartet – „● Gestartet hh:mm Uhr“. Rechts oben stehen die Knöpfe der Seite: „Turnier starten“, „Bereite Klassen starten“, nach Turnierende „Ergebnisse exportieren“ und auf der Seite „Klassen“ **Klasse anlegen**.
 
 ## 3. Turniere und Teilnehmende
 
@@ -143,9 +146,9 @@ In der Turnierübersicht legt **Neues Turnier** ein Turnier an. Pflicht sind Nam
 Auf der Seite „Teilnehmende“ liest **XML der Teilnehmenden importieren** den Turnierexport aus click-TT ein.
 
 1. XML-Datei wählen; HTS zeigt eine Vorschau mit Teilnehmenden und Konkurrenzen.
-2. Nach dem Bestätigen werden fehlende Klassen angelegt. In **neu angelegten Einzelklassen** stehen die Gemeldeten zunächst unter „Verfügbar“ und werden von Hand in die Klasse gezogen; in bereits vorhandenen Klassen werden sie wie bisher direkt zugeordnet.
-3. Doppelmeldungen werden als Doppelpaarungen übernommen.
-4. Wartelisten-Meldungen kommen nicht in die Klasse, sondern auf die Warteliste.
+2. Nach dem Bestätigen werden fehlende Klassen angelegt. **Einzel:** Die Gemeldeten stehen direkt „In der Klasse“ – auch in neu angelegten Klassen.
+3. **Doppel:** In click-TT gemeldete Paare werden als Doppelpaarungen übernommen. Wer in der Datei **ohne Partner/in** gemeldet ist, wird kein halbes Doppel, sondern steht in der Doppelklasse unter „Verfügbar“ (zählt bei „Partner zulosen“ mit).
+4. Wartelisten-Meldungen (Nachrücker) kommen nicht in die Klasse, sondern auf die Warteliste.
 
 Ein erneuter Import ergänzt und aktualisiert, löscht aber niemanden. HTS legt eine Kopie der importierten Datei ab; sie ist die Grundlage für den späteren click-TT-Export (Abschnitt 10).
 
@@ -182,16 +185,22 @@ Jugendliche dürfen sich zusätzlich bei Erwachsenen bzw. Damen melden. Jahrgang
 - **Phase 1, Phase 2** – erscheinen erst nach „Modus festlegen“, z. B. „Phase 1 – Gruppenübersicht“, „Phase 2 – KO-System“
 - **Endergebnis** – erscheint erst, wenn die Klasse beendet ist
 
+Wer eine Klasse in der Liste wählt, landet direkt in der **aktuellsten Phase**; bei einer beendeten Klasse im „Endergebnis“, bei einer noch nicht ausgelosten Klasse unter „Teilnehmende der Klasse“.
+
 ### Teilnehmende zuordnen
 
 - **Verfügbar** (links) = nicht gemeldet, **In der Klasse** (rechts) = gemeldet.
 - Zuordnen per Drag & Drop, Doppelklick oder Pfeilknöpfe; eine Person kann in mehreren Klassen spielen.
-- Filter für beide Listen: Suche (Vorname, Nachname, Verein), Verein und Geschlecht; bei „Verfügbar“ zusätzlich „nur passende“ (Alter und Geschlecht der Klasse).
+- Filter: Suche (Vorname, Nachname, Verein) und Geschlecht; bei „Verfügbar“ zusätzlich „nur passende“ (Alter und Geschlecht der Klasse). Den Vereinsfilter gibt es nur in Doppelklassen – dort hilft er beim Zusammenstellen der Paare; im Einzel spielt die Reihenfolge keine Rolle.
 - Die Warteliste-Spalte zeigt, wer für diese Klasse auf der Warteliste stand.
 
 ### Doppel
 
-In einer Doppelklasse zieht man zwei Personen auf „Neues Doppel“ oder auf den freien Platz einer Paarung. Jede Paarung zeigt den Durchschnitts-TTR; unvollständige Paarungen sind ausgegraut und werden nicht ausgelost. Zurück in die Liste ziehen nimmt eine Person aus der Paarung.
+In einer Doppelklasse steht links „Verfügbar“ (mit Vereinsfilter), rechts „Doppelpaarungen“. Man zieht zwei Personen auf „Neues Doppel“ oder auf den freien Platz einer Paarung. Unvollständige Paarungen sind ausgegraut und werden nicht ausgelost. Zurück in die Liste ziehen nimmt eine Person aus der Paarung.
+
+- **TTR eines Doppels** (Setzung und Anzeige): der Mittelwert beider Werte. Hat eine Person keinen TTR, zählt der Wert der Partnerin bzw. des Partners; haben beide keinen, bekommt das Doppel 0 und wird zuletzt gesetzt – mehrere Doppel mit 0 ordnet das Los.
+- **Suche über den Doppelpaarungen:** findet Vorname, Nachname und Verein beider Personen. Angezeigt werden nur passende Paarungen (auch „ohne Partner/in“), die Nummern bleiben die ursprünglichen, der Titel zeigt z. B. „Doppelpaarungen (3 von 8 …)“. Drag & Drop funktioniert auch in der gefilterten Liste.
+- **Automatisches Blättern:** Zieht man eine Person an den oberen oder unteren Rand der Doppelpaarungen, blättert die Liste weiter.
 
 - **Partner zulosen** bildet aus allen, die in der Klasse noch ohne Partner/in sind, rein zufällig Doppel. Bei ungerader Zahl bleibt eine Person übrig; HTS weist darauf hin.
 - Doppel werden überall ausgeschrieben, je Person eine Zeile „Nachname, Vorname“ (Ergebnisdialog, KO-Baum, Spielzettel, PDFs); in der Klassenliste tragen Doppelklassen das Abzeichen „Doppel“.
@@ -206,14 +215,14 @@ Stehen die Teilnehmenden fest, öffnet **Teilnehmende fertig – Modus festlegen
 | --- | --- | --- |
 | Modus | alle | KO-System, Gruppenphase (jeder gegen jeden), Schweizer System |
 | Setzung | KO, Schweizer System | nach Setzung (TTR) oder zufällig |
-| Setzung | Gruppen | Setzung (Schlange), Setzung (Stärkegruppen) oder zufällig |
+| Setzung | Gruppen | TTR Setzung (Schlange), TTR Setzung (Stärkegruppen), Gruppenkopf gesetzt oder zufällig |
 | Gruppen | Gruppen | Gruppengröße oder Anzahl Gruppen |
 | Bei gleichem Spielverhältnis | Gruppen | Satz- und Ballverhältnis oder direkter Vergleich |
 | Anzahl Runden | Schweizer System | Vorschlag: Runden eines KO-Systems + 1 |
 | Gewinnsätze | alle | 3 (Best of 5, Standard) oder 4 (Best of 7) – gilt für alle Phasen der Klasse |
-| Vereinsgleichheit beachten | KO, Gruppen | an (Standard) oder aus |
+| Vereinsgleichheit beachten | KO, Gruppen | eigene Zeile mit Checkbox: an (Standard) oder aus |
 
-Doppel werden nach dem Durchschnitts-TTR gesetzt. Im Phasen-Reiter stehen danach **Neu auslosen** (gleiche Einstellungen) und **Auslosung verwerfen** (zurück zur Zuordnung, der Reiter verschwindet).
+Doppel werden nach dem Doppel-TTR gesetzt (Abschnitt 4). Die Auswahllisten im Dialog sind gleich breit. Im Phasen-Reiter stehen danach **Neu auslosen** (gleiche Einstellungen) und **Auslosung verwerfen** (zurück zur Zuordnung, der Reiter verschwindet).
 
 **Doppelklassen:** Bei mehr als 5 Doppeln ist Phase 1 immer ein KO-System. Bis 5 Doppel stehen KO-System oder „Gruppenphase“ (eine Gruppe, jeder gegen jeden) zur Wahl. Das Schweizer System gibt es für Doppel nicht, und Vereinsgleichheit spielt bei Doppeln keine Rolle.
 
@@ -237,6 +246,7 @@ So treffen sich Nr. 1 und 2 frühestens im Finale, Nr. 1/4 und 2/3 frühestens i
 ### Gruppenphase
 
 - **Schlange:** Nr. 1 kommt in Gruppe A, Nr. 2 in B usw.; danach rückwärts von der letzten Gruppe, dann wieder vorwärts.
+- **Gruppenkopf gesetzt:** TTR-Nr. 1 ist Kopf von Gruppe A, Nr. 2 von B usw.; die übrigen Plätze werden wie bei den Stärkegruppen gelost.
 - **Zufällig:** Die Gruppen werden ohne Rücksicht auf den TTR gelost.
 - **Stärkegruppen:** Bei 16 Teilnehmenden und 4 Gruppen sind das 1–4, 5–8, 9–12 und 13–16; die letzte Stärkegruppe nimmt einen Rest auf (bei 15: 9–15). Jede Gruppe bekommt aus jeder Stärkegruppe mindestens eine Person, gezogen per Los.
 - Ungleich große Gruppen sind erlaubt; die Vorschau im Dialog zeigt Gruppengrößen und Anzahl Spiele.
@@ -361,6 +371,26 @@ In der Warteschlange holt **an Tisch** ein Spiel sofort an einen freien Tisch.
 - In einer laufenden KO-Phase geht das Umsortieren nur für Spiele, die noch nicht begonnen haben.
 - Eine angehaltene Folgephase (Phase 2) kann **neu ausgelost** werden, wenn an keinem Tisch mehr ein Spiel von ihr läuft. Ihre Ergebnisse entfallen, die neue Auslosung bleibt angehalten.
 
+### Präsentationsansicht (zweiter Bildschirm)
+
+Die Seite **Präsentationsansicht** zeigt das Turnier auf einem zweiten Bildschirm (Beamer, Fernseher) – randlos, mit großer Schrift und ohne Bedienelemente. Erkennt HTS einen zweiten Bildschirm, startet **Auf zweitem Bildschirm starten** die Anzeige; **Vorschau im Fenster** zeigt dieselbe Anzeige zum Ausprobieren in einem normalen Fenster. **Esc** oder **Anzeige beenden** schließt sie. Die Anzeige aktualisiert sich bei jedem neuen Ergebnis.
+
+- **Wechselzeit:** Sekunden je Seite (5–600, Standard 20). Ein Balken unter der Kopfleiste zeigt den Ablauf.
+- **Ansichten in der Rotation:** ein eigener Block „Tische und Warteschlange“ (Tische, „Die nächsten 16 Spiele“), darunter **je Klasse** ein Status („nicht ausgelost“, „ausgelost“, „läuft“, „angehalten“, „beendet“) mit allen Phasen und – bei beendeten Klassen – dem Endergebnis. Jede Ansicht hat ein Häkchen. Laufende und beendete Klassen sind zunächst eingeschaltet, ausgeloste, noch nicht gestartete zunächst ausgeschaltet; nicht ausgeloste Klassen haben noch kein Häkchen. Die Auswahl wird mit dem Turnier gespeichert.
+- **Reihenfolge:** laufende Phasen, Tische und die nächsten 16 Spiele, beendete Phasen, Endergebnisse, zuletzt eingeschaltete, noch nicht gestartete Klassen – je Block in der Reihenfolge der Klassenliste.
+
+Die Seiten richten sich nach der **Auflösung des zweiten Bildschirms**. Nie wird eine Karte zwischen zwei Seiten zerschnitten; die Kopfleiste zeigt „Seite x / y“.
+
+| Ansicht | Aufteilung |
+| --- | --- |
+| Gruppen | höchstens 4 je Bildschirm in einem festen 2×2-Raster mit gleich großen Zellen (links oben, rechts oben, links unten, rechts unten); weniger Gruppen behalten ihren Platz, leere Zellen bleiben frei. Passen nur 2, stehen sie nebeneinander (bei ungerader Zahl die letzte links); eine einzelne Gruppe ohne Raster |
+| Tische | so groß wie möglich in einem Raster gleich großer Zellen; reicht der Platz nicht, mehrere Seiten mit nur ganzen Tischen |
+| KO-System | höchstens 4 Runden nebeneinander ab der ersten Runde mit offenem Spiel; reicht die Höhe nicht, je Seite ein Block der ersten gezeigten Runde (z. B. 8 Spiele) samt Folgespielen, die Rundentitel auf jeder Seite |
+| Qualifikation, Schweizer System, Platzierungsspiele | Seitenwechsel nur zwischen ganzen Karten bzw. Tabellenzeilen |
+| Endergebnis | 20 Plätze je Seite |
+
+Gruppen und Tische werden nie kleiner als die normale HTS-Schrift dargestellt – dann gibt es lieber mehr Seiten.
+
 ## 7. Ergebnisse erfassen und korrigieren
 
 Ergebnisse werden Satz für Satz eingetragen („1. Satz“, „2. Satz“ …, Spalte „Punkte“); das Satzverhältnis rechnet HTS selbst. Die erste Zahl gehört immer zur erstgenannten Partei. Gespielt wird auf 3 oder 4 Gewinnsätze – je nach Einstellung der Klasse („Modus festlegen“). Die Einstellung lässt sich ändern, solange in der Klasse noch kein Ergebnis eingetragen ist; Ergebnisdialog und Spielzettel (bis zu 7 Sätze) passen sich an.
@@ -434,10 +464,11 @@ Jede Gruppe zeigt Platz, Name, Verein, TTR, Spiele, Siege:Niederlagen (S:N), Sä
 
 - **Satz- und Ballverhältnis:** Satzdifferenz, dann Balldifferenz, dann gewonnene Sätze.
 - **Direkter Vergleich:** eine Tabelle nur aus den Spielen der Gleichplatzierten untereinander, danach Satz- und Balldifferenz aller Spiele.
+- **Letztes Mittel – das Los:** Ist danach immer noch alles gleich, entscheidet ein festes Los. Es wird einmal je Gruppe bestimmt und mit dem Turnier gespeichert, damit die Tabelle nicht springt. Der TTR zählt im Ergebnis nicht; er zählt nur im Qualifikationsmodus innerhalb einer Stufe. Solange in einer Gruppe noch kein Spiel beendet ist, bleibt die Reihenfolge der Auslosung stehen.
 
 ### Schweizer System
 
-Die Tabelle zeigt zusätzlich Punkte (Siege + Freilos), **BHZ** (Buchholz: Summe der Punkte aller Gegner) und **FBHZ** (Feinbuchholz: Summe der Buchholzzahlen aller Gegner). Reihenfolge: Punkte, Buchholz, Feinbuchholz, Satzdifferenz, Balldifferenz.
+Die Tabelle zeigt zusätzlich Punkte (Siege + Freilos), **BHZ** (Buchholz: Summe der Punkte aller Gegner) und **FBHZ** (Feinbuchholz: Summe der Buchholzzahlen aller Gegner). Reihenfolge: Punkte, Buchholz, Feinbuchholz, Satzdifferenz, Balldifferenz, gewonnene Sätze, zuletzt das feste Los.
 
 ### Phase abschließen
 
@@ -588,7 +619,7 @@ Die Export-Markierung gibt es nur auf der Seite „Spiele“ und nur für abgesc
 
 | Datei | Ort | Inhalt |
 | --- | --- | --- |
-| `<Turniername>.hts` | `Dokumente\HTS Turniere\<Turniername>\Turnierdatei` (oder per „Durchsuchen“ gewählt) | ein Turnier: Teilnehmende, Klassen, Paarungen, Auslosungen, Spiele, Tische (Anzahl, Namen, deaktivierte Tische), Tischzuordnung, Einstellungen der Klassen, Testturnier-Kennzeichen und Speicherorte (XML) |
+| `<Turniername>.hts` | `Dokumente\HTS Turniere\<Turniername>\Turnierdatei` (oder per „Durchsuchen“ gewählt) | ein Turnier: Teilnehmende, Klassen, Paarungen, Auslosungen (samt festem Los), Spiele, Tische (Anzahl, Namen, deaktivierte Tische), Tischzuordnung, Einstellungen der Klassen und der Präsentationsansicht, Testturnier-Kennzeichen und Speicherorte (XML) |
 | `<Turniername>.clicktt.xml` | neben der Turnierdatei | Kopie der importierten click-TT-Datei, Grundlage des Exports |
 | `Ergebnisse - <Name> - TT_MM_JJJJ.xml` | `…\<Turniername>\XML Export` (Standard) | click-TT-Ergebnisdatei |
 | PDF-Dateien | `…\<Turniername>\PDF Export` (Standard) | aus dem PDF-Viewer gespeichert |
@@ -599,6 +630,8 @@ Neuere Versionen müssen ältere Turnierdateien nicht unbedingt lesen können; e
 
 - Java 21 und JavaFX 21, ausgeliefert mit eigener Java-Laufzeit (Eclipse Temurin 21)
 - PDF: Apache PDFBox 3.0.5 (Apache-Lizenz 2.0, Hinweise im Ordner `Lizenzen`)
+- Lizenz: GNU General Public License v3.0 (Datei `LICENSE.txt`); die Lizenzen von JavaFX und der Java-Laufzeit liegen im Ordner `Lizenzen`
+- Quellcode und Issues: GitHub-Projekt „Hamburger-Turniersoftware---HTS“
 - Quellcode: Paket `de.hts` mit den Bereichen Teilnehmende, Turnier und Auslosung, Speichern, click-TT-Import und -Export, PDF und Oberfläche; dazu automatische Tests
 
 ### Bekannte Grenzen
@@ -620,7 +653,10 @@ Neuere Versionen müssen ältere Turnierdateien nicht unbedingt lesen können; e
 | Zusatzrunde | zuschaltbares weiteres Spiel der Verlierer der letzten Runde der KO-Qualifikation |
 | Testturnier | Übungsturnier, in dem alle offenen Spiele per Würfel-Knopf simuliert werden können |
 | Tischname | eigener Name eines Tisches (bis 30 Zeichen) statt „Tisch n“ |
-| Setzung | Reihenfolge nach TTR bzw. Durchschnitts-TTR (Phase 1) oder nach Platzierung (ab Phase 2) |
+| Setzung | Reihenfolge nach TTR bzw. Doppel-TTR (Phase 1) oder nach Platzierung (ab Phase 2) |
+| Gruppenkopf gesetzt | Gruppen-Setzung: TTR-Nr. 1 führt Gruppe A, Nr. 2 Gruppe B usw. |
+| Festes Los | letztes Kriterium bei völliger Gleichheit in Gruppentabellen und im Schweizer System; einmal bestimmt und gespeichert |
+| Präsentationsansicht | Anzeige auf einem zweiten Bildschirm mit wechselnden Ansichten |
 | Spiel um Platz 3 | zuschaltbares Spiel der beiden Halbfinalverlierer im KO-System; Gewinner 3., Verlierer 4. |
 | A1, D3 … | Kennung im KO-Baum ab Phase 2: Gruppenbuchstabe + Gruppenplatz aus Phase 1 |
 | Freilos | Platz ohne Gegner; die Partei kommt kampflos weiter (KO) bzw. erhält einen Sieg (Schweizer System) |

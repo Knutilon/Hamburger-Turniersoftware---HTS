@@ -93,7 +93,8 @@ class Version029Test {
         PlayingClass a2 = t.createNextPhase(a, TournamentMode.KNOCKOUT, 2, 4, new Random(5));   // A läuft in Phase 2
 
         List<String> keys = PresentationPlan.all(t).stream().map(PresentationPlan.Station::key).toList();
-        assertEquals(List.of("phase:" + a2.getName(), "tables", "next16", "phase:A", "phase:B", "result:B"), keys);
+        assertEquals(List.of("phase:" + a2.getName(), "tables", "next16", "phase:A", "phase:B", "result:B",
+                "phase:C nicht gestartet"), keys);
         assertTrue(PresentationPlan.all(t).get(3).finished(), "Phase 1 von A ist abgeschlossen");
 
         t.setPresentationOn("tables", false);

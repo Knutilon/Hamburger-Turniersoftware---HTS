@@ -6,6 +6,28 @@ Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Pub
 Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
 (Label „Feature“ bzw. „bug“).
 
+## Neu in 0.30.0
+
+- **Präsentationsansicht – Auswahl je Klasse:** Unter „Ansichten in der Rotation“ stehen alle Phasen aller Klassen,
+  gruppiert je Klasse mit Status („nicht ausgelost“, „ausgelost“, „läuft“, „angehalten“, „beendet“), dazu das
+  Endergebnis beendeter Klassen; „Tische“ und „Die nächsten 16 Spiele“ bilden einen eigenen Block. Ausgeloste, noch
+  nicht gestartete Klassen sind zunächst ausgeschaltet und laufen – eingeschaltet – am Ende der Rotation.
+- **Präsentationsansicht – Seiten nach Auflösung:** Keine Karte wird mehr zwischen zwei Seiten zerschnitten. KO-Bäume
+  teilen sich in Blöcke der ersten gezeigten Runde (z. B. 8 Spiele samt Folgespielen), die Rundentitel stehen auf
+  jeder Seite. Gruppen: höchstens 4 je Bildschirm im festen 2×2-Raster (passen nur 2: nebeneinander, die letzte
+  links). Tische: dynamisch skaliert, sonst mehrere Seiten mit ganzen Tischen. Nie kleiner als die normale Schrift.
+- **Import:** Einzel – Gemeldete stehen direkt „In der Klasse“ (auch in neuen Klassen), Nachrücker auf der
+  Warteliste. Doppel – Paare aus click-TT bleiben Paare; wer ohne Partner/in gemeldet ist, steht unter „Verfügbar“.
+- **Einzelklassen ohne Vereinsfilter** (Doppel behalten ihn); die linke Doppel-Liste heißt jetzt „Verfügbar“.
+- **Doppelpaarungen:** Suchfeld (Vorname, Nachname, Verein) mit „x von y“ im Titel, ursprüngliche Nummern, Drag &
+  Drop auch gefiltert; automatisches Blättern beim Ziehen an den Rand.
+- **Doppel-TTR:** fehlt einer Person der TTR, zählt der Wert der Partnerin / des Partners; ohne beide 0 (zuletzt
+  gesetzt, Gleichstand per Los).
+- **Festes Los als letztes Kriterium** in Gruppentabellen und im Schweizer System (einmal je Gruppe bestimmt und
+  gespeichert) statt Setzung/TTR. Der TTR zählt im Ergebnis nur noch im Qualifikationsmodus innerhalb einer Stufe.
+- **Turnierübersicht:** der runde „+“-Knopf oben entfällt („Neues Turnier“ auf der Seite bleibt).
+- Dokumentation auf 0.30.0 aktualisiert.
+
 ## Neu in 0.29.0
 
 - **Präsentationsansicht (zweiter Bildschirm):** neuer Menüpunkt. Erkennt HTS einen zweiten Bildschirm, läuft dort

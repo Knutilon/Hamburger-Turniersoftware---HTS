@@ -1,4 +1,4 @@
-# Zwischenstand HTS 0.29.0 (03.11.2026)
+# Zwischenstand HTS 0.30.0 (04.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -14,9 +14,27 @@ https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.
 (+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
-## Feature-Sammlung für 0.30.0
+## Feature-Sammlung für 0.31.0 (NICHT kompilieren – bis „… kompilieren“)
 
-(noch leer)
+(noch leer – neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
+
+## Umgesetzt
+
+0.30.0 (Issues #1–#11 umgesetzt, Commit „HTS 0.30.0“ mit Closes #1 … #11). DOKU AKTUALISIERT auf 0.30.0
+(04.11.2026, auf Zuruf): docs/HTS-Dokumentation.md und Claude-Docs-Dokument inkl. der 0.29.0-Änderungen.
+OverviewView ohne „+“-Knopf. ClassesView: Vereinsfilter nur im Doppel, „Verfügbar“ auch im Doppel, Suchfeld
+pairSearch über den Doppelpaarungen (rebuildPairs filtert, Nummern bleiben, Titel „x von y“), „Partner zulosen“
+neben dem Suchfeld, DrawView.installAutoScroll auf der Paar-ScrollPane. Import (WorkspaceView.onImportRead): Einzel
+direkt in die Klasse (registerOnly entfällt), Doppel ohne Partner → Tournament.registerWithoutPartner (Meldung ohne
+Paar, unter „Verfügbar“); drawPartners nimmt Gemeldete ohne Paar mit. DoublesPair.getAverageTtr: Partnerwert bzw. 0.
+Festes Los: PlayingClass.lotSeed/lotOf (persistiert „lot-seed“, bei drawGroups/drawSwiss/createNextPhase gesetzt,
+sonst aus dem Klassennamen), GroupStanding.compute/SwissSystem.standings mit ToIntFunction lot; vor dem ersten
+Ergebnis bleibt die Auslosungsreihenfolge. Präsentation: PresentationPlan mit ClassState/stateOf, Station.upcoming,
+isOn (Tournament.presentationOn + Off, persistiert „pres-on“/„pres-off“), ausgeloste nicht gestartete Klassen am
+Ende und standardmäßig aus; PresentationView je Klasse mit Status-Chip; PresentationShow: KO in Blöcken
+(DrawView.presentBracket mit blockFrom/blockSize), Gruppen in CellGrid 2×2/2×1/einzeln (presentGroupCard, Messung
+über measure()), Tische in CellGrid nach Auflösung, FitPane-Seitenumbruch nur zwischen ganzen Karten/Zeilen
+(pageStarts). Tests: Version030Test. UI unter Xvfb geprüft (Präsentation, Doppel-Suche).
 
 0.29.0 (6 Punkte umgesetzt; Doku NICHT aktualisiert – Stand 0.28.0, nur auf Zuruf):
 WorkspaceView: Kopfbereich (topActions rechts oben in FlowPane mit startBox, startedInfo in der Unterzeile, pageActions

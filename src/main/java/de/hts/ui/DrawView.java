@@ -130,6 +130,8 @@ public final class DrawView {
     private int fromRound;
     /** KO-Baum höchstens so viele Spalten (Präsentation), 0 = alle */
     private int maxColumns;
+    /** KO-Baum seitenweise (Präsentation): Spiele {@code blockFrom} … der ersten gezeigten Runde samt Folgespielen, 0 = alle */
+    private int blockFrom, blockSize;
     private javafx.scene.layout.FlowPane actionRow;
 
     /**
@@ -319,7 +321,7 @@ public final class DrawView {
     }
 
     /** Beim Ziehen (Drag &amp; Drop) nahe am oberen/unteren bzw. linken/rechten Rand automatisch weiterblättern. */
-    private static void installAutoScroll(ScrollPane sp) {
+    static void installAutoScroll(ScrollPane sp) {
         final double edge = 48, maxStep = 22;
         final double[] speed = new double[2];      // [0] waagerecht, [1] senkrecht (Pixel je Bild)
         final long[] last = new long[1];
@@ -576,15 +578,38 @@ public final class DrawView {
 
     /** KO-Baum ab Runde {@code from} (0 = erste Runde). */
     public Node presentBracket(PlayingClass c, int from, int columns) {
+        return presentBracket(c, from, columns, 0, 0);
+    }
+
+    /**
+     * KO-Baum ab Runde {@code from}, nur der Block {@code blockFrom} bis {@code blockFrom + blockSize} der Spiele dieser
+     * Runde samt ihrer Folgespiele (eine Seite der Präsentation; die Rundentitel stehen auf jeder Seite).
+     * {@code blockSize} ist eine Zweierpotenz, {@code blockFrom} ein Vielfaches davon; 0 = alle Spiele.
+     */
+    public Node presentBracket(PlayingClass c, int from, int columns, int blockFrom, int blockSize) {
         prepare(c);
         fromRound = from;
         maxColumns = columns;
+        this.blockFrom = blockFrom;
+        this.blockSize = blockSize;
         try {
             return buildBracket(c);
         } finally {
             fromRound = 0;
             maxColumns = 0;
+            this.blockFrom = 0;
+            this.blockSize = 0;
         }
+    }
+
+    /** Eine einzelne Gruppentabelle (Präsentation). */
+    public Node presentGroupCard(PlayingClass c, int g) {
+        prepare(c);
+        List<List<Entrant>> groups = tournament.groupsOf(c);
+        int gi = g;
+        Node card = groupCard("Gruppe " + GroupDraw.groupName(g), g, groups.get(g),
+                tournament.matchesOf(c).stream().filter(m -> m.getGroupIndex() == gi).toList());
+        return card;
     }
 
     public Node presentQualification(PlayingClass c) {
@@ -1266,8 +1291,14 @@ public final class DrawView {
             roundTitle.getStyleClass().add("round-title");
             roundTitle.relocate(x, 4);
             titleBar.getChildren().add(roundTitle);
-            for (int i = 0; i < round.matches().size(); i++) {
-                double cy = top + unit * i + unit / 2;
+            int lo = 0, hiEx = round.matches().size();
+            if (blockSize > 0) {
+                lo = blockFrom >> (r - f0);
+                hiEx = Math.min(round.matches().size(), lo + Math.max(1, blockSize >> (r - f0)));
+            }
+            final int lo0 = lo;
+            for (int i = lo; i < hiEx; i++) {
+                double cy = top + unit * (i - lo0) + unit / 2;
                 Node card = matchCard(round.matches().get(i), byPos.get(r + ":" + i), seedOf, r, i);
                 card.relocate(x, cy - cardH / 2);
                 if (searching) {
@@ -1278,7 +1309,7 @@ public final class DrawView {
                 if (r + 1 < rEnd) {
                     // Verbindung zum Folgespiel: waagerecht, senkrecht, waagerecht (Pfad eines Treffers kräftig)
                     double nUnit = unit * 2;
-                    double ny = top + nUnit * (i / 2) + nUnit / 2;
+                    double ny = top + nUnit * (i / 2 - lo0 / 2) + nUnit / 2;
                     double x1 = x + MATCH_WIDTH, xm = x1 + gap * 0.3, x2 = x + MATCH_WIDTH + gap;
                     boolean path = searching && hitAt[r][i] && hitAt[r + 1][i / 2];
                     String style = path ? "bracket-path-hit" : "bracket-connector";

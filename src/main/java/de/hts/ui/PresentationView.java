@@ -1,5 +1,6 @@
 package de.hts.ui;
 
+import de.hts.tournament.PlayingClass;
 import de.hts.tournament.PresentationPlan;
 import de.hts.tournament.PresentationPlan.Station;
 import de.hts.tournament.Tournament;
@@ -15,9 +16,11 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -70,8 +73,9 @@ public final class PresentationView {
 
         Label listHead = new Label("Ansichten in der Rotation");
         listHead.getStyleClass().add("card-heading");
-        Label listHint = new Label("Reihenfolge: laufende Phasen, Tische und die nächsten 16 Spiele, beendete Phasen, Endergebnisse – "
-                + "je Block in der Reihenfolge der Klassenliste. Häkchen entfernen nimmt eine Ansicht aus der Rotation.");
+        Label listHint = new Label("Reihenfolge der Rotation: laufende Phasen, Tische und die nächsten 16 Spiele, beendete Phasen, "
+                + "Endergebnisse, zuletzt ausgeloste, noch nicht gestartete Klassen – je Block in der Reihenfolge der Klassenliste. "
+                + "Häkchen entfernen nimmt eine Ansicht aus der Rotation; noch nicht gestartete Klassen sind zunächst ausgeschaltet.");
         listHint.getStyleClass().add("hint");
         listHint.setWrapText(true);
         ScrollPane sp = new ScrollPane(stations);
@@ -95,41 +99,79 @@ public final class PresentationView {
     public void refresh() {
         seconds.getValueFactory().setValue(tournament.getPresentationSeconds());
         stations.getChildren().clear();
-        String block = null;
-        for (Station s : PresentationPlan.all(tournament)) {
-            String b = switch (s.kind()) {
-                case PHASE -> s.finished() ? "Beendete Phasen" : "Laufende Phasen";
-                case TABLES, NEXT -> "Tische und Warteschlange";
-                case RESULT -> "Endergebnisse";
-            };
-            if (!b.equals(block)) {
-                Label h = new Label(b);
-                h.getStyleClass().add("round-title");
-                h.setPadding(new Insets(block == null ? 0 : 8, 0, 0, 0));
-                stations.getChildren().add(h);
-                block = b;
+        List<Station> all = PresentationPlan.all(tournament);
+
+        // eigener Block: Tische und Warteschlange
+        stations.getChildren().add(blockTitle("Tische und Warteschlange", true));
+        for (Station s : all) if (s.kind() == PresentationPlan.Kind.TABLES || s.kind() == PresentationPlan.Kind.NEXT) stations.getChildren().add(check(s));
+
+        // je Klasse: Zustand, alle Phasen und (beendet) das Endergebnis
+        List<PlayingClass> roots = tournament.getClasses().stream().filter(c -> !c.isPhase()).toList();
+        if (!roots.isEmpty()) stations.getChildren().add(blockTitle("Klassen", false));
+        for (PlayingClass root : roots) {
+            PresentationPlan.ClassState st = PresentationPlan.stateOf(tournament, root);
+            Label name = new Label(root.getName());
+            name.getStyleClass().add("class-name");
+            Label chip = new Label(st.getLabel());
+            chip.getStyleClass().addAll("chip", switch (st) {
+                case NOT_DRAWN -> "chip-planned";
+                case DRAWN -> "chip-ready";
+                case RUNNING -> "chip-started";
+                case PAUSED -> "chip-paused";
+                case FINISHED -> "chip-finished";
+            });
+            chip.setMinWidth(Region.USE_PREF_SIZE);
+            HBox head = new HBox(10, name, chip);
+            head.setAlignment(Pos.CENTER_LEFT);
+            head.setPadding(new Insets(6, 0, 0, 0));
+            stations.getChildren().add(head);
+            List<Station> mine = new ArrayList<>();
+            for (Station s : all) {
+                if (s.phase() == null) continue;
+                PlayingClass r = s.kind() == PresentationPlan.Kind.RESULT ? s.phase() : tournament.rootOf(s.phase());
+                if (r == root) mine.add(s);
             }
-            CheckBox cb = new CheckBox(label(s));
-            cb.setSelected(!tournament.getPresentationOff().contains(s.key()));
-            cb.setOnAction(e -> tournament.setPresentationOn(s.key(), cb.isSelected()));
-            stations.getChildren().add(cb);
-        }
-        if (PresentationPlan.all(tournament).stream().noneMatch(s -> s.kind() == PresentationPlan.Kind.PHASE)) {
-            Label l = new Label("Klassen erscheinen hier, sobald sie gestartet sind.");
-            l.getStyleClass().add("hint");
-            stations.getChildren().add(0, l);
+            // Phasen in ihrer Reihenfolge, das Endergebnis zuletzt
+            mine.sort(java.util.Comparator.comparingInt((Station s) -> s.kind() == PresentationPlan.Kind.RESULT ? 999
+                    : tournament.phaseNumber(s.phase())));
+            if (mine.isEmpty()) {
+                Label l = new Label("Erscheint hier, sobald die Klasse ausgelost ist.");
+                l.getStyleClass().add("hint");
+                l.setPadding(new Insets(0, 0, 0, 22));
+                stations.getChildren().add(l);
+            }
+            for (Station s : mine) {
+                CheckBox cb = check(s);
+                cb.setPadding(new Insets(0, 0, 0, 22));
+                stations.getChildren().add(cb);
+            }
         }
         updateButtons();
     }
 
+    private Label blockTitle(String text, boolean first) {
+        Label h = new Label(text);
+        h.getStyleClass().add("round-title");
+        h.setPadding(new Insets(first ? 0 : 10, 0, 0, 0));
+        return h;
+    }
+
+    private CheckBox check(Station s) {
+        CheckBox cb = new CheckBox(label(s));
+        cb.setSelected(PresentationPlan.isOn(tournament, s));
+        cb.setOnAction(e -> tournament.setPresentationOn(s.key(), cb.isSelected()));
+        if (s.upcoming()) cb.setTooltip(new Tooltip("Noch nicht gestartet – standardmäßig nicht in der Rotation; eingeschaltet erscheint "
+                + "die Auslosung am Ende der Rotation."));
+        return cb;
+    }
+
     private String label(Station s) {
         return switch (s.kind()) {
-            case PHASE -> tournament.rootOf(s.phase()).getName() + " · "
-                    + DrawView.phaseTabTitle(tournament.phaseNumber(s.phase()), s.phase())
-                    + (s.phase().isPaused() ? " (angehalten)" : "");
+            case PHASE -> DrawView.phaseTabTitle(tournament.phaseNumber(s.phase()), s.phase())
+                    + (s.upcoming() ? " (Auslosung)" : s.finished() ? " (abgeschlossen)" : s.phase().isPaused() ? " (angehalten)" : " (läuft)");
             case TABLES -> "Tische (laufende Partien, bei Bedarf mehrere Seiten)";
             case NEXT -> "Die nächsten 16 Spiele";
-            case RESULT -> s.phase().getName() + " · Endergebnis";
+            case RESULT -> "Endergebnis";
         };
     }
 

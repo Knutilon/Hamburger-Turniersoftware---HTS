@@ -148,8 +148,16 @@ public final class SwissSystem {
      * @param byes je Runde die ID mit Freilos (oder {@code null})
      */
     public static List<GroupStanding.Row> standings(List<Entrant> members, List<Match> matches, List<String> byes) {
+        return standings(members, matches, byes, null);
+    }
+
+    /** @param lot fest gespeichertes Los je Teilnehmer-ID als letztes Kriterium ({@code null} = Reihenfolge) */
+    public static List<GroupStanding.Row> standings(List<Entrant> members, List<Match> matches, List<String> byes,
+                                                    java.util.function.ToIntFunction<String> lot) {
         Map<String, Stat> stats = new LinkedHashMap<>();
-        for (int i = 0; i < members.size(); i++) stats.put(members.get(i).id(), new Stat(members.get(i), i));
+        for (int i = 0; i < members.size(); i++) {
+            stats.put(members.get(i).id(), new Stat(members.get(i), lot == null ? i : lot.applyAsInt(members.get(i).id())));
+        }
         for (String b : byes) if (b != null && stats.containsKey(b)) stats.get(b).byes++;
         for (Match m : matches) {
             if (m.getStatus() != MatchStatus.DONE || m.winner() == null) continue;

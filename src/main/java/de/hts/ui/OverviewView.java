@@ -52,7 +52,6 @@ public final class OverviewView {
         AppHeader appHeader = new AppHeader();
         appHeader.addMenuItem("tournaments", "Turniere", null, this::refresh);
         appHeader.select("tournaments");
-        appHeader.addTool(Icons.PLUS, "Neues Turnier", this::createTournament);
         InfoDialog.install(appHeader, () -> stage);
 
         // Seitenkopf

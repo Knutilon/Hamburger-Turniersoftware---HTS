@@ -236,6 +236,10 @@ public final class Tournament {
             Player x = p.getFirst() != null ? p.getFirst() : p.getSecond();
             if (x != null) singles.add(x);
         }
+        // Gemeldete ohne Partner/in (z. B. aus dem Import) stehen unter „Verfügbar“ und werden mit zugelost
+        for (Player x : players) {
+            if (x.getRegistrations().contains(c.getName()) && pairOf(x, c).isEmpty() && !singles.contains(x)) singles.add(x);
+        }
         if (singles.size() < 2) throw new IllegalStateException("Zum Zulosen braucht es mindestens 2 Teilnehmende ohne Partner/in.");
         java.util.Collections.shuffle(singles, random);
         Player left = singles.size() % 2 == 1 ? singles.remove(singles.size() - 1) : null;
@@ -330,6 +334,20 @@ public final class Tournament {
                 if (pairOf(p, c).isEmpty()) pairs.add(new DoublesPair(c.getName(), p, null));
             }
         }
+    }
+
+    /**
+     * Import in eine Doppelklasse: Wer keinen Partner aus der Datei hat, steht nicht als halbe Paarung in der Klasse,
+     * sondern als Gemeldete/r unter „Verfügbar“ (bis von Hand oder per „Partner zulosen“ gepaart).
+     */
+    public void registerWithoutPartner(Player p, PlayingClass c) {
+        requireDoubles(c);
+        java.util.Optional<DoublesPair> pair = pairOf(p, c);
+        if (pair.isPresent() && pair.get().isComplete()) return;
+        pair.ifPresent(pairs::remove);
+        p.removeFromClass(c.getName());
+        p.addRegistration(c.getName());
+        markModified();
     }
 
     /** Nur für das Laden aus einer Datei. */
@@ -472,6 +490,7 @@ public final class Tournament {
         c.setMode(TournamentMode.GROUPS);
         c.setSwissByes(List.of());
         c.setGroups(groups.stream().map(g -> g.stream().map(Entrant::id).toList()).toList(), seeded);
+        c.setLotSeed(random.nextLong() | 1L);
         c.setReady(false);
         createGroupMatches(c);
         markModified();
@@ -500,6 +519,7 @@ public final class Tournament {
         if (seeded) order.sort(java.util.Comparator.comparing((Entrant e) -> e.ttr() == null ? Integer.MIN_VALUE : e.ttr()).reversed());
         c.setMode(TournamentMode.SWISS);
         c.setGroups(List.of(order.stream().map(Entrant::id).toList()), seeded);
+        c.setLotSeed(random.nextLong() | 1L);
         c.setSwissByes(List.of());
         c.setReady(false);
         matches.removeIf(m -> m.getClassName().equals(c.getName()));
@@ -1258,8 +1278,12 @@ public final class Tournament {
         List<List<Entrant>> groups = groupsOf(c);
         if (groupIndex < 0 || groupIndex >= groups.size()) return List.of();
         List<Match> gm = matchesOf(c).stream().filter(m -> m.getGroupIndex() == groupIndex).toList();
-        if (c.getMode() == TournamentMode.SWISS) return SwissSystem.standings(groups.get(groupIndex), gm, c.getSwissByes());
-        return GroupStanding.compute(groups.get(groupIndex), gm, c.getTiebreak());
+        // letztes Kriterium bei völliger Gleichheit: festes, gespeichertes Los (nicht TTR/Setzung); solange noch kein
+        // Spiel beendet ist, bleibt die Reihenfolge der Auslosung stehen
+        boolean anyDone = gm.stream().anyMatch(m -> m.getStatus() == MatchStatus.DONE);
+        java.util.function.ToIntFunction<String> lot = anyDone ? c::lotOf : null;
+        if (c.getMode() == TournamentMode.SWISS) return SwissSystem.standings(groups.get(groupIndex), gm, c.getSwissByes(), lot);
+        return GroupStanding.compute(groups.get(groupIndex), gm, c.getTiebreak(), lot);
     }
 
     /** Alle Gruppenspiele abgeschlossen? */
@@ -1436,6 +1460,7 @@ public final class Tournament {
         PlayingClass next = new PlayingClass(name, c.getDiscipline(), c.getType(), null, null);
         next.setSourceClass(c.getName());      // vor addClass: erscheint so nicht in der Klassenliste
         addClass(next);
+        next.setLotSeed(random.nextLong() | 1L);
         next.setTiebreak(c.getTiebreak());
         next.setGroupsBySize(true);
         next.setGroupSize(c.getGroupSize());
@@ -2628,6 +2653,7 @@ public final class Tournament {
     // --- Präsentationsansicht (zweiter Bildschirm) ---
     private int presentationSeconds = 20;
     private final java.util.Set<String> presentationOff = new java.util.TreeSet<>();
+    private final java.util.Set<String> presentationOn = new java.util.TreeSet<>();
 
     public int getPresentationSeconds() { return presentationSeconds; }
 
@@ -2639,9 +2665,17 @@ public final class Tournament {
     /** Aus der Rotation genommene Ansichten (Schlüssel wie „phase:Herren A“, „tables“, „next16“, „result:Herren A“). */
     public java.util.Set<String> getPresentationOff() { return java.util.Collections.unmodifiableSet(presentationOff); }
 
+    /** Ausdrücklich eingeschaltete Ansichten (z. B. eine noch nicht gestartete Klasse, die standardmäßig fehlt). */
+    public java.util.Set<String> getPresentationOn() { return java.util.Collections.unmodifiableSet(presentationOn); }
+
     public void setPresentationOn(String key, boolean on) {
-        if (on) presentationOff.remove(key);
-        else presentationOff.add(key);
+        if (on) {
+            presentationOff.remove(key);
+            presentationOn.add(key);
+        } else {
+            presentationOff.add(key);
+            presentationOn.remove(key);
+        }
         markModified();
     }
 

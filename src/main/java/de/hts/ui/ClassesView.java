@@ -119,6 +119,8 @@ public final class ClassesView {
     private final StackPane rightContent = new StackPane();
     private final VBox singlesBox;
     private final VBox pairsList = new VBox(8);
+    /** Suche über den Doppelpaarungen (Vorname, Nachname, Verein) */
+    private final TextField pairSearch = new TextField();
     private final VBox doublesBox;
 
     /** Teilnehmende, die gerade gezogen werden (Drag &amp; Drop innerhalb dieses Fensters). */
@@ -200,6 +202,8 @@ public final class ClassesView {
         clubFilter.valueProperty().addListener((o, a, b) -> updateFilters());
         clubFilter.setTooltip(new Tooltip("Nach Verein filtern"));
         clubFilter.setPrefWidth(170);
+        // Einzel: kein Vereinsfilter (die Suche findet auch Vereine); Doppel: bleibt – hilft beim Paaren
+        clubFilter.managedProperty().bind(clubFilter.visibleProperty());
         sexFilter.getItems().setAll(de.hts.player.Sex.UNKNOWN, de.hts.player.Sex.FEMALE, de.hts.player.Sex.MALE);
         sexFilter.setValue(de.hts.player.Sex.UNKNOWN);
         sexFilter.setConverter(new StringConverter<>() {
@@ -223,6 +227,8 @@ public final class ClassesView {
         inClubFilter.valueProperty().addListener((o, a, b) -> updateFilters());
         inClubFilter.setTooltip(new Tooltip("Nach Verein filtern"));
         inClubFilter.setPrefWidth(170);
+        inClubFilter.setVisible(false);
+        inClubFilter.managedProperty().bind(inClubFilter.visibleProperty());
         inSexFilter.getItems().setAll(sexFilter.getItems());
         inSexFilter.setValue(de.hts.player.Sex.UNKNOWN);
         inSexFilter.setConverter(sexFilter.getConverter());
@@ -262,16 +268,22 @@ public final class ClassesView {
         ScrollPane scroll = new ScrollPane(pairsList);
         scroll.setFitToWidth(true);
         scroll.getStyleClass().add("pairs-scroll");
+        DrawView.installAutoScroll(scroll);              // beim Ziehen am Rand weiterblättern
+        pairSearch.setPromptText("Suchen: Vorname, Nachname, Verein");
+        pairSearch.textProperty().addListener((o, a, b) -> updateFilters());
         pairsList.setPadding(new Insets(2));
         partnerBtn.getStyleClass().add("pill");
         partnerBtn.setTooltip(new Tooltip("Alle Teilnehmenden ohne Partner/in einander rein zufällig zulosen – "
                 + "danach sind es normale Doppel (per Drag & Drop änderbar). Bei ungerader Zahl bleibt eine/r übrig."));
         partnerBtn.setOnAction(e -> drawPartners());
-        Region pairsSp = new Region();
-        HBox.setHgrow(pairsSp, Priority.ALWAYS);
-        HBox pairsHead = new HBox(10, pairsTitle, pairsSp, partnerBtn);
+        // Titel über die ganze Breite (Trefferzahl „3 von 8 …“), darunter Suche und „Partner zulosen“
+        HBox pairsHead = new HBox(10, pairsTitle);
         pairsHead.setAlignment(Pos.CENTER_LEFT);
-        doublesBox = new VBox(8, pairsHead, scroll);
+        HBox.setHgrow(pairSearch, Priority.ALWAYS);
+        partnerBtn.setMinWidth(Region.USE_PREF_SIZE);
+        HBox pairsTools = new HBox(10, pairSearch, partnerBtn);
+        pairsTools.setAlignment(Pos.CENTER_LEFT);
+        doublesBox = new VBox(8, pairsHead, pairsTools, scroll);
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
         rightContent.getChildren().addAll(singlesBox, doublesBox);
@@ -521,6 +533,8 @@ public final class ClassesView {
         doublesBox.setVisible(dbl);
         if (partnerColumn != null) partnerColumn.setVisible(dbl);
         filterRow.setVisible(dbl);
+        clubFilter.setVisible(dbl);
+        if (!dbl && clubFilter.getValue() != null && !ALL_CLUBS.equals(clubFilter.getValue())) clubFilter.setValue(ALL_CLUBS);
         if (!dbl) singlesFilter.setValue(null);
         if (has) {
             classTitle.setText(c.getName());
@@ -629,14 +643,15 @@ public final class ClassesView {
                 && matchesName(p, inQ));
         long inTotal = tournament.getPlayers().stream().filter(p -> p.isInClass(c.getName())).count();
 
-        availableTitle.setText((c.isDoubles() ? "Teilnehmende" : "Verfügbar") + " (" + available.size() + ")");
+        availableTitle.setText("Verfügbar (" + available.size() + ")");
         if (c.isDoubles()) {
             List<DoublesPair> pairs = tournament.pairsIn(c);
             long complete = pairs.stream().filter(DoublesPair::isComplete).count();
             long incomplete = pairs.size() - complete;
-            assignedTitle.setText("Doppelpaarungen (" + complete + maxSuffix(c)
+            int shown = rebuildPairs(c);
+            String pq = pairSearch.getText() == null ? "" : pairSearch.getText().trim();
+            assignedTitle.setText("Doppelpaarungen (" + (pq.isEmpty() ? "" : shown + " von ") + complete + maxSuffix(c)
                     + (incomplete > 0 ? ", " + incomplete + " ohne Partner/in" : "") + ")");
-            rebuildPairs(c);
         } else {
             assignedTitle.setText("In der Klasse (" + (assigned.size() == inTotal ? String.valueOf(inTotal)
                     : assigned.size() + " von " + inTotal) + maxSuffix(c) + ")");
@@ -694,15 +709,22 @@ public final class ClassesView {
         }
     }
 
-    private void rebuildPairs(PlayingClass c) {
-        long open = tournament.pairsIn(c).stream().filter(p -> !p.isComplete()).count();
+    /** @return Anzahl der angezeigten Paarungen (Suche) */
+    private int rebuildPairs(PlayingClass c) {
+        long open = tournament.pairsIn(c).stream().filter(p -> !p.isComplete()).count()
+                + tournament.getPlayers().stream().filter(p -> p.getRegistrations().contains(c.getName())
+                && tournament.pairOf(p, c).isEmpty()).count();
         partnerBtn.setDisable(open < 2 || c.isDrawn() || c.isStarted());
         partnerBtn.setText(open >= 2 ? "Partner zulosen (" + open + ")" : "Partner zulosen");
         pairsList.getChildren().clear();
-        int i = 1;
+        int i = 1, shown = 0;
+        String q = pairSearch.getText() == null ? "" : pairSearch.getText().trim();
         java.util.Set<String> over = tournament.overLimit(c);
         for (DoublesPair pair : tournament.pairsIn(c)) {
-            Node card = pairCard(c, pair, i++);
+            int number = i++;              // Nummer bleibt auch bei aktiver Suche die ursprüngliche
+            if (!q.isEmpty() && !PlayerFilter.matchesPerson(pair.getFirst(), q) && !PlayerFilter.matchesPerson(pair.getSecond(), q)) continue;
+            shown++;
+            Node card = pairCard(c, pair, number);
             if (over.contains(pair.getId())) {
                 card.getStyleClass().add("over-limit");
                 Tooltip.install(card, new Tooltip("Über der Höchstzahl von " + c.getMaxParticipants() + " Doppeln"));
@@ -710,6 +732,7 @@ public final class ClassesView {
             pairsList.getChildren().add(card);
         }
         pairsList.getChildren().add(newPairDropZone(c));
+        return shown;
     }
 
     private Node pairCard(PlayingClass c, DoublesPair pair, int number) {
@@ -740,7 +763,7 @@ public final class ClassesView {
         Label avgLabel = new Label(avg == null ? "Ø TTR –" : "Ø TTR " + avg);
         avgLabel.getStyleClass().add("avg-ttr");
         avgLabel.setMinWidth(78);
-        avgLabel.setTooltip(new Tooltip("Durchschnitts-TTR des Doppels: (TTR 1 + TTR 2) / 2"));
+        avgLabel.setTooltip(new Tooltip("TTR des Doppels für die Setzung: (TTR 1 + TTR 2) / 2; fehlt einer, zählt der Partnerwert; fehlen beide, 0"));
         HBox card = new HBox(10, nr, slot1, amp, slot2, avgLabel, remove);
         card.setAlignment(Pos.CENTER_LEFT);
         card.getStyleClass().add("pair-card");

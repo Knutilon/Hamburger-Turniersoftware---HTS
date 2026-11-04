@@ -80,8 +80,19 @@ public final class GroupStanding {
     }
 
     public static List<Row> compute(List<Entrant> members, List<Match> groupMatches, Tiebreak tiebreak) {
+        return compute(members, groupMatches, tiebreak, null);
+    }
+
+    /**
+     * @param lot fest gespeichertes Los je Teilnehmer-ID als letztes Kriterium bei völliger Gleichheit
+     *            ({@code null} = Reihenfolge der Gruppe)
+     */
+    public static List<Row> compute(List<Entrant> members, List<Match> groupMatches, Tiebreak tiebreak,
+                                    java.util.function.ToIntFunction<String> lot) {
         Map<String, Stat> stats = new LinkedHashMap<>();
-        for (int i = 0; i < members.size(); i++) stats.put(members.get(i).id(), new Stat(members.get(i), i));
+        for (int i = 0; i < members.size(); i++) {
+            stats.put(members.get(i).id(), new Stat(members.get(i), lot == null ? i : lot.applyAsInt(members.get(i).id())));
+        }
         List<Match> done = groupMatches.stream().filter(m -> m.getStatus() == MatchStatus.DONE && m.winner() != null).toList();
         for (Match m : done) add(stats, m);
 

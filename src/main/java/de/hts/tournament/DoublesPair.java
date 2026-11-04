@@ -34,9 +34,16 @@ public final class DoublesPair {
      * Durchschnitts-TTR des Doppels: (TTR 1 + TTR 2) / 2, gerundet.
      * {@code null}, solange die Paarung unvollständig ist oder ein TTR-Wert fehlt.
      */
+    /**
+     * TTR des Doppels für die Setzung: Durchschnitt beider Werte; fehlt einer, zählt der Wert des Partners; fehlen
+     * beide, 0 (wird als letztes gesetzt, mehrere mit 0 in zufälliger Reihenfolge).
+     */
     public Integer getAverageTtr() {
-        if (first == null || second == null || first.getTtr() == null || second.getTtr() == null) return null;
-        return (int) Math.round((first.getTtr() + second.getTtr()) / 2.0);
+        Integer a = first == null ? null : first.getTtr(), b = second == null ? null : second.getTtr();
+        if (a != null && b != null) return (int) Math.round((a + b) / 2.0);
+        if (a != null) return a;
+        if (b != null) return b;
+        return 0;
     }
 
     public String getClassName() {
