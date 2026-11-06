@@ -1,4 +1,4 @@
-# Zwischenstand HTS 0.33.0 (06.11.2026)
+# Zwischenstand HTS 0.34.0 (06.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -14,13 +14,56 @@ https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.
 (+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
-## Feature-Sammlung für 0.34.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 0.35.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
 
 (noch leer)
 
 ## Umgesetzt
+
+0.34.0 (Issues #29, #30). README „Neu in 0.34.0“ ergänzt, sonst Doku nicht aktualisiert.
+#30: PlayingClass.qualKoTotal (0 = je Gruppe) und qualKoCounts (KO-Teilnehmende je Gruppe, an der Phase; persistiert
+„qual-ko-total“, „qual-ko-counts“); Tournament.createQualificationPhase(c, direct, ko, koTotal, reserve, random),
+qualificationAvailable; Auswahl im Modus „insgesamt“ platzweise, letzter Platz nur teilweise: Auswahl nach Spiel-,
+Satz-, Punktverhältnis + Los (tierOrder ohne TTR), Feldreihenfolge mit TTR; qualSkip je Gruppe für Nachrücker ohne
+Spiel (ab erstem Nicht-KO-Teilnehmenden) und für das Endergebnis (rankGroups mit Skip je Gruppe – übrige Dritte nur
+„Gruppe X, Platz 3“). PhaseCloseDialog: Auswahl „je Gruppe/insgesamt“, Feld rot (CSS .field-error) + Text darunter,
+„Phase abschließen“ gesperrt. Zusammenfassung „24 insgesamt in der KO-Qualifikation“.
+#29: overviewBox mindestens so breit wie der Sichtbereich; Qualifikationskarten über fillRows gleichmäßig verteilt
+(Mindestbreite 330), Name kürzbar, TTR/Sätze und Tischname nie abgeschnitten.
+Tests: Version034Test (HEM männlich 16 Gruppen/24 insgesamt, Nachrücker je Gruppe, HEM weiblich) – 183 bestanden.
+Feature-Sammlung 0.34.0 (zur Nachverfolgung):
+
+   1. QUALIFIKATIONSANSICHT: GANZE BREITE NUTZEN (06.11.2026, Issue #29): Die Spielkarten der Qualifikationsrunden
+      brechen schon nach 3 Karten um (rechts bleibt viel Platz frei), Namen/Vereine und TTR werden abgeschnitten
+      („SG Farmsen-Bramf…“, „1…“). Ursache: Die Ansicht ist nur so breit wie ihr breitester Inhalt (Liste mit
+      Mindestbreite 980), nicht wie das Fenster. Umsetzung: Inhalt an die sichtbare Breite binden, Kartenreihen und
+      Listen über die volle Breite; Vorschlag: Karten wachsen gleichmäßig mit (mehr Karten je Reihe auf breiten
+      Bildschirmen, längere Namen sichtbar), TTR nie abschneiden. GEKLÄRT: Vorschlag angenommen („passt so“).
+
+   2. KO-QUALIFIKATION: ANZAHL INSGESAMT STATT JE GRUPPE (06.11.2026, Issue #30) – GEKLÄRT. Wunsch: Für die KO-Runde
+      wahlweise „Plätze je Gruppe“ (wie bisher) oder „Anzahl der Topplatzierten insgesamt“ angeben. Beispiel: 16
+      Gruppen, Gruppenerste direkt qualifiziert, 24 Topplatzierte in die KO-Runde → alle 16 Gruppenzweiten und die
+      8 besten Gruppendritten. Rangfolge über die Gruppen hinweg: Spiel-, Satz-, Punktverhältnis, dann Los.
+      Antworten (06.11.2026): (1) Einstellung im Dialog „Phase abschließen“ bei „In die KO-Qualifikation“: Auswahl
+      „je Gruppe“/„insgesamt“ + Zahl; nur für die KO-Runde. (2) Auswahl der KO-Teilnehmenden bei völligem Gleichstand
+      per Los; Nachrücker-Reihenfolge Rang 1 bleibt beim TTR. (3) Geht die Zahl nicht auf: nächste Phase kann nicht
+      angelegt werden – das Feld wird optisch hervorgehoben (rot umrandet) und ein Text erklärt, warum. (4) Die nicht
+      ausgewählten Gruppendritten (im Beispiel 8) sind weder Nachrücker noch qualifiziert – nur „Platzierte“ (Platz
+      nach Gruppenplatzierung wie alle anderen).
+      (5) Übrige Regeln unverändert. (6) Nachrücker ohne Spiel: Steht „Nachrücker je Gruppe“ auf 0, sind die nicht
+      ausgewählten Dritten nur Platzierte. Steht dort eine Zahl n, gilt sie je Gruppe ab dem ersten Nicht-KO-Teilnehmenden
+      dieser Gruppe: Gruppe, deren Dritter nicht in der KO ist → Dritter (und ggf. Folgende) sind Nachrücker; Gruppe, deren
+      Dritter in der KO ist → ab dem Vierten. GEKLÄRT.
+
+      PRÜFUNG HEM-MODI (06.11.2026, vom Nutzer bestätigt): Männlich (16 Gruppen: Erste direkt, 24 insgesamt in die KO =
+      alle Zweiten + 8 beste Dritte, 2 KO-Runden, Verlierer Runde 2 = Nachrücker 1. Ranges (6), Verlierer Runde 1 =
+      Nachrücker 2. Ranges, übrige Dritte nur Platzierte) und Weiblich (4 Gruppen: Plätze 1–3 direkt, 4./5. Nachrücker
+      ohne Spiel) sind mit 0.33.0 + #30 abbildbar. Bestätigte Annahmen: Runde 1 mit Feldhälften (8 der 12 besten
+      Zweiten gegen die Dritten, übrige 4 gegen die 4 schwächsten Zweiten); Rang 1 nach Gruppenplatz, Verhältnissen,
+      TTR; Damen-Ersatzplätze alle Vierten vor allen Fünften, innerhalb nach TTR.
+
 
 0.33.0 (Issues #21–#26, #28 umgesetzt; #27 war ein Duplikat). README „Neu in 0.33.0“ ergänzt, sonst Doku NICHT
 aktualisiert (nur auf Zuruf). Offene Frage B (ungerade Zahl in der Zusatzrunde) ohne Antwort → wie angekündigt

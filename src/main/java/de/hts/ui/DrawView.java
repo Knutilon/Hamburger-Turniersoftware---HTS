@@ -369,6 +369,9 @@ public final class DrawView {
         scroll.getStyleClass().add("bracket-scroll");
         scroll.setFitToWidth(false);
         overviewBox.setPadding(new Insets(4));
+        // 0.34: mindestens so breit wie der sichtbare Bereich (breitere Inhalte wie der KO-Baum scrollen weiterhin)
+        overviewBox.minWidthProperty().bind(javafx.beans.binding.Bindings.createDoubleBinding(
+                () -> Math.max(0, scroll.getViewportBounds().getWidth() - 2), scroll.viewportBoundsProperty()));
         VBox.setVgrow(scroll, Priority.ALWAYS);
         root.getChildren().addAll(controls, warning, scroll);
         installAutoScroll(scroll);
@@ -868,7 +871,7 @@ public final class DrawView {
                 onOpenClass.accept(RESULT_TAB);
             } else {
                 PlayingClass next = choice.kind() == TournamentMode.QUALIFICATION
-                        ? tournament.createQualificationPhase(c, choice.qualifiers(), choice.koPerGroup(), choice.koRounds(), choice.reserve(), random)
+                        ? tournament.createQualificationPhase(c, choice.qualifiers(), choice.koPerGroup(), choice.koTotal(), choice.reserve(), random)
                         : tournament.createNextPhase(c, choice.kind(), choice.qualifiers(), choice.groupSize(), random);
                 status.accept("Phase " + tournament.phaseNumber(next) + " (" + tabTitle(next) + ") erstellt, nach Platzierung ausgelost"
                         + (next.isStarted() ? " und gestartet – die Spiele sind eingereiht." : "."));
@@ -1623,6 +1626,7 @@ public final class DrawView {
                     : "Qualifikation Runde " + r);
             title.getStyleClass().add("round-title");
             javafx.scene.layout.FlowPane cards = new javafx.scene.layout.FlowPane(14, 10);
+            fillRows(cards);
             boolean editable = r == rounds && qualEditable();
             for (Match m : tournament.matchesOf(c)) {
                 if (m.getRound() != round) continue;
@@ -1652,6 +1656,25 @@ public final class DrawView {
                     tierRule(c, tiers.get(t))));
         }
         return box;
+    }
+
+    /**
+     * 0.34: Karten einer Reihe wachsen gleichmäßig mit, sodass die ganze Breite genutzt wird – so viele Karten je
+     * Reihe wie in Mindestbreite passen, dann auf die volle Breite verteilt.
+     */
+    private static void fillRows(javafx.scene.layout.FlowPane fp) {
+        Runnable layout = () -> {
+            double w = fp.getWidth() - fp.getInsets().getLeft() - fp.getInsets().getRight();
+            if (w <= 0) return;
+            double gap = fp.getHgap();
+            int n = Math.max(1, (int) ((w + gap) / (MATCH_WIDTH + gap)));
+            double cw = Math.floor((w - gap * (n - 1)) / n) - 1;
+            for (Node child : fp.getChildren()) {
+                if (child instanceof Region region && region.getPrefWidth() != cw) region.setPrefWidth(cw);
+            }
+        };
+        fp.widthProperty().addListener((o, a, b) -> layout.run());
+        fp.getChildren().addListener((javafx.collections.ListChangeListener<Node>) ch -> layout.run());
     }
 
     /** Sortierregel einer Nachrücker-Stufe als Hinweis neben der Überschrift. */
@@ -1735,7 +1758,12 @@ public final class DrawView {
         head.getStyleClass().add("match-head");
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
-        headRow.getChildren().addAll(head, sp, tableInfo(m), statusChip(m.getStatus()));
+        Node table = tableInfo(m);
+        if (table instanceof Region tr) {                    // „Tisch 12“ nie abschneiden (Breite erst nach dem CSS bekannt)
+            tr.setPrefWidth(Region.USE_COMPUTED_SIZE);
+            tr.setMinWidth(Region.USE_PREF_SIZE);
+        }
+        headRow.getChildren().addAll(head, sp, table, statusChip(m.getStatus()));
         headRow.setAlignment(Pos.CENTER_LEFT);
         boolean rowEditable = editable && (c.isPaused() || (m.getStatus() != MatchStatus.DONE && !m.getStatus().atTable()));
         VBox card = new VBox(3, headRow, qualRow(c, idx.get(m.getA()), m, true, rowEditable),
@@ -1755,7 +1783,9 @@ public final class DrawView {
         grp.setMinWidth(22);
         Label name = new Label(withClub(e));
         name.getStyleClass().add("match-name");
-        name.setMaxWidth(MATCH_WIDTH - 80);
+        name.setMinWidth(0);
+        name.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(name, Priority.SOMETIMES);
         handicapBadge(name, tournament, m, e.id());
         name.setTooltip(new Tooltip(e.name() + (e.detail() != null ? "\n" + e.detail() : "")
                 + (e.ttr() != null ? "\nTTR " + e.ttr() : "") + (g != null ? "\nGruppe " + GroupDraw.groupName(g) : "")));
@@ -1768,6 +1798,8 @@ public final class DrawView {
         } else if (e.ttr() != null) {
             right.setText(String.valueOf(e.ttr()));
         }
+        right.setMinWidth(Region.USE_PREF_SIZE);             // TTR bzw. Sätze nie abschneiden
+        grp.setMinWidth(Math.max(22, grp.getMinWidth()));
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox row = new HBox(6, grp, name, spacer, right);
@@ -2124,8 +2156,9 @@ public final class DrawView {
             case SWISS -> "Schweizer System · " + tournament.swissRounds(c) + " Runden";
             case PLACEMENT -> "Platzierungsspiele";
             case QUALIFICATION -> "Qualifikationsmodus · " + c.getQualDirect() + " direkt je Gruppe, "
-                    + (c.getQualKo() > 0 && !c.getQualField().isEmpty()
-                    ? c.getQualKo() + " je Gruppe in der KO-Qualifikation, qualifiziert nach " + c.getQualRounds()
+                    + ((c.getQualKo() > 0 || c.getQualKoTotal() > 0) && !c.getQualField().isEmpty()
+                    ? (c.getQualKoTotal() > 0 ? c.getQualKoTotal() + " insgesamt" : c.getQualKo() + " je Gruppe")
+                    + " in der KO-Qualifikation, qualifiziert nach " + c.getQualRounds()
                     + (c.getQualRounds() == 1 ? " Sieg" : " Siegen") + (c.isQualExtra() ? " · mit Zusatzrunde" : "")
                     : "keine KO-Qualifikation");
             case NONE -> "";

@@ -852,3 +852,10 @@
 .qual-club { -fx-fill: #7a8594; -fx-font-size: 12px; }
 .qual-place { -fx-background-color: #eef0f3; -fx-background-radius: 4; -fx-text-fill: #4a5a6a; -fx-font-size: 11px; -fx-padding: 1 4 1 4; }
 .qual-ttr { -fx-text-fill: #4a5a6a; -fx-font-size: 12px; }
+
+/* --- 0.34: Eingabefeld mit Fehler (z. B. KO-Qualifikation geht nicht auf) --- */
+.spinner.field-error, .spinner.field-error .text-field {
+    -fx-border-color: #d64545; -fx-border-width: 2; -fx-border-radius: 4; -fx-background-radius: 4;
+}
+.spinner.field-error .text-field { -fx-border-width: 0; }
+.field-error-text { -fx-text-fill: #b42318; -fx-font-size: 12px; }

@@ -326,6 +326,10 @@ public final class TournamentFile {
                     el.setAttribute("qual", c.getQualDirect() + "," + c.getQualKo() + "," + c.getQualRounds() + "," + c.getQualReserve());
                 }
                 if (!c.getQualifiedDirect().isEmpty()) el.setAttribute("qualified-direct", String.join(",", c.getQualifiedDirect()));
+                if (c.getQualKoTotal() > 0) el.setAttribute("qual-ko-total", String.valueOf(c.getQualKoTotal()));
+                if (!c.getQualKoCounts().isEmpty()) {
+                    el.setAttribute("qual-ko-counts", String.join(",", c.getQualKoCounts().stream().map(String::valueOf).toList()));
+                }
                 if (!c.getSeedLabels().isEmpty()) {
                     List<String> sl = new java.util.ArrayList<>();
                     c.getSeedLabels().forEach((id, l) -> sl.add(id + "=" + l));
@@ -545,6 +549,12 @@ public final class TournamentFile {
                 String[] q = attr(el, "qual").split(",");
                 if (q.length >= 3) pc.setQualification(Integer.parseInt(q[0].trim()), Integer.parseInt(q[1].trim()), Integer.parseInt(q[2].trim()));
                 if (q.length >= 4) pc.setQualReserve(Integer.parseInt(q[3].trim()));
+            }
+            if (attr(el, "qual-ko-total") != null) pc.setQualKoTotal(Integer.parseInt(attr(el, "qual-ko-total").trim()));
+            if (attr(el, "qual-ko-counts") != null && !attr(el, "qual-ko-counts").isBlank()) {
+                List<Integer> kc = new java.util.ArrayList<>();
+                for (String e : attr(el, "qual-ko-counts").split(",")) kc.add(Integer.parseInt(e.trim()));
+                pc.setQualKoCounts(kc);
             }
             if (attr(el, "qualified-direct") != null && !attr(el, "qualified-direct").isBlank()) {
                 pc.setQualifiedDirect(List.of(attr(el, "qualified-direct").split(",")));

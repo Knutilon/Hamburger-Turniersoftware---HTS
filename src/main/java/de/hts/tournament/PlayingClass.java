@@ -271,6 +271,14 @@ public final class PlayingClass {
     public void setQualification(int direct, int ko, int rounds) { qualDirect = Math.max(0, direct); qualKo = Math.max(0, ko); qualRounds = Math.max(0, rounds); }
     /** Qualifikation: Nachrücker je Gruppe direkt aus der Gruppenphase (ohne Spiel), z. B. Dritte + Vierte = 2. */
     private int qualReserve;
+    /** 0.34: KO-Qualifikation „insgesamt“ – Anzahl der Topplatzierten über alle Gruppen (0 = Plätze je Gruppe). */
+    private int qualKoTotal;
+    public int getQualKoTotal() { return qualKoTotal; }
+    public void setQualKoTotal(int n) { qualKoTotal = Math.max(0, n); }
+    /** 0.34: je Gruppe (Phase 1) die Zahl der Teilnehmenden in der KO-Qualifikation (an der Qualifikationsphase). */
+    private java.util.List<Integer> qualKoCounts = new java.util.ArrayList<>();
+    public java.util.List<Integer> getQualKoCounts() { return java.util.Collections.unmodifiableList(qualKoCounts); }
+    public void setQualKoCounts(java.util.List<Integer> l) { qualKoCounts = new java.util.ArrayList<>(l == null ? java.util.List.of() : l); }
     public int getQualReserve() { return qualReserve; }
     public void setQualReserve(int n) { qualReserve = Math.max(0, n); }
     public java.util.List<String> getQualifiedDirect() { return java.util.Collections.unmodifiableList(qualifiedDirect); }

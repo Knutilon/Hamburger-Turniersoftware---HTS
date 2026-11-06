@@ -13,6 +13,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
@@ -28,7 +29,9 @@ import java.util.List;
 final class PhaseCloseDialog extends Dialog<PhaseCloseDialog.Choice> {
 
     /** @param finish {@code true} = Endergebnis; sonst neue Phase {@code kind} */
-    record Choice(boolean finish, TournamentMode kind, int qualifiers, int groupSize, int koPerGroup, int koRounds, int reserve) {
+    /** @param koTotal {@code true}: {@code koPerGroup} ist die Anzahl der Topplatzierten insgesamt (0.34) */
+    record Choice(boolean finish, TournamentMode kind, int qualifiers, int groupSize, int koPerGroup, int koRounds, int reserve,
+                  boolean koTotal) {
     }
 
     PhaseCloseDialog(Window owner, Tournament t, PlayingClass c) {
@@ -89,9 +92,24 @@ final class PhaseCloseDialog extends Dialog<PhaseCloseDialog.Choice> {
         Spinner<Integer> groupSize = new Spinner<>(2, 64, Math.max(2, c.getGroupSize()));
         groupSize.setEditable(true);
         groupSize.setPrefWidth(80);
-        Spinner<Integer> koPer = new Spinner<>(0, Math.max(1, maxGroup), Math.min(2, maxGroup));
+        int allEntrants = c.getGroups().stream().mapToInt(List::size).sum();
+        Spinner<Integer> koPer = new Spinner<>(0, Math.max(1, allEntrants), Math.min(2, maxGroup));
         koPer.setEditable(true);
         koPer.setPrefWidth(80);
+        ComboBox<String> koMode = new ComboBox<>();
+        koMode.getItems().setAll("je Gruppe", "insgesamt");
+        koMode.setValue("je Gruppe");
+        koMode.setTooltip(new Tooltip("je Gruppe: Plätze je Gruppe, z. B. 2 = Zweite und Dritte\n"
+                + "insgesamt: Anzahl der Topplatzierten über alle Gruppen, z. B. 24 bei 16 Gruppen = alle Zweiten und die 8 besten "
+                + "Dritten (Spiel-, Satz-, Punktverhältnis, Gleichstand: Los)"));
+        javafx.scene.layout.HBox koBox = new javafx.scene.layout.HBox(8, koPer, koMode);
+        koBox.setAlignment(Pos.CENTER_LEFT);
+        Label koError = new Label();
+        koError.getStyleClass().add("field-error-text");
+        koError.setWrapText(true);
+        koError.setMaxWidth(460);
+        koError.managedProperty().bind(koError.visibleProperty());
+        koError.setVisible(false);
         Spinner<Integer> reserve = new Spinner<>(0, Math.max(1, maxGroup), 0);
         reserve.setEditable(true);
         reserve.setPrefWidth(80);
@@ -109,9 +127,11 @@ final class PhaseCloseDialog extends Dialog<PhaseCloseDialog.Choice> {
         opts.addRow(0, new Label("Phasentyp:"), kind);
         opts.addRow(1, qLabel, qualifiers);
         opts.addRow(2, gLabel, groupSize);
-        opts.addRow(3, kLabel, koPer);
-        opts.addRow(4, nLabel, reserve);
-        opts.add(preview, 0, 5, 2, 1);
+        for (Label l : new Label[]{qLabel, gLabel, kLabel, nLabel}) l.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        opts.addRow(3, kLabel, koBox);
+        opts.add(koError, 1, 4);
+        opts.addRow(5, nLabel, reserve);
+        opts.add(preview, 0, 6, 2, 1);
         ButtonType ok = new ButtonType("Phase abschließen", ButtonBar.ButtonData.OK_DONE);
         getDialogPane().getButtonTypes().addAll(ok, ButtonType.CANCEL);
         javafx.beans.property.BooleanProperty blocked = new javafx.beans.property.SimpleBooleanProperty(false);
@@ -128,19 +148,31 @@ final class PhaseCloseDialog extends Dialog<PhaseCloseDialog.Choice> {
             qLabel.setText(quali ? "Direkt qualifiziert je Gruppe:" : swiss ? "Aufsteiger insgesamt:" : "Aufsteiger je Gruppe:");
             qLabel.setVisible(!placement);
             qualifiers.setVisible(!placement);
-            for (javafx.scene.Node x : new javafx.scene.Node[]{kLabel, koPer, nLabel, reserve}) {
+            for (javafx.scene.Node x : new javafx.scene.Node[]{kLabel, koBox, nLabel, reserve}) {
                 x.setVisible(quali);
                 x.setManaged(quali);
             }
-            int koCount = 0;
-            for (List<String> g : c.getGroups()) {
-                int q0 = Math.min(g.size(), qualifiers.getValue() == null ? 0 : qualifiers.getValue());
-                koCount += Math.min(g.size(), q0 + (koPer.getValue() == null ? 0 : koPer.getValue())) - q0;
-            }
-            String fieldProblem = Tournament.qualificationFieldProblem(koCount);
+            boolean total = "insgesamt".equals(koMode.getValue());
             int q0Check = qualifiers.getValue() == null ? 0 : qualifiers.getValue();
-            boolean qualiBlocked = quali && (fieldProblem != null || (q0Check == 0 && koCount < 3));
+            int kpValue = koPer.getValue() == null ? 0 : koPer.getValue();
+            int available = Tournament.qualificationAvailable(c, q0Check);
+            int koCount = total ? kpValue : Tournament.qualificationKoCount(c, q0Check, kpValue);
+            String fieldProblem = total && kpValue > available
+                    ? "Nach den direkt Qualifizierten stehen nur " + available + " Teilnehmende für die KO-Qualifikation zur Verfügung."
+                    : Tournament.qualificationFieldProblem(koCount);
+            if (fieldProblem == null && q0Check == 0 && koCount < 3) {
+                fieldProblem = "Ohne direkt Qualifizierte braucht die KO-Qualifikation mindestens 3 Teilnehmende.";
+            }
+            boolean qualiBlocked = quali && fieldProblem != null;
             blocked.set(nx && qualiBlocked);
+            // 0.34: das Feld rot hervorheben und darunter erklären, warum es nicht weitergeht
+            if (qualiBlocked) {
+                if (!koPer.getStyleClass().contains("field-error")) koPer.getStyleClass().add("field-error");
+            } else {
+                koPer.getStyleClass().remove("field-error");
+            }
+            koError.setText(qualiBlocked ? "⚠ " + fieldProblem : "");
+            koError.setVisible(quali && qualiBlocked);
             gLabel.setVisible(k == TournamentMode.GROUPS);
             groupSize.setVisible(k == TournamentMode.GROUPS);
             gLabel.setManaged(gLabel.isVisible());
@@ -163,11 +195,14 @@ final class PhaseCloseDialog extends Dialog<PhaseCloseDialog.Choice> {
                 case QUALIFICATION -> {
                     int q0 = qualifiers.getValue() == null ? 0 : qualifiers.getValue();
                     int kp = koPer.getValue() == null ? 0 : koPer.getValue();
+                    boolean totalMode = "insgesamt".equals(koMode.getValue());
                     StringBuilder sb = new StringBuilder("→ ");
                     sb.append(q0 > 0 ? (q0 == 1 ? "Platz 1" : "Plätze 1–" + q0) + " jeder Gruppe direkt qualifiziert (untereinander nach TTR)"
                             : "Niemand direkt qualifiziert");
                     if (kp > 0 && koCount > 0) {
-                        sb.append(kp == 1 ? "; Platz " + (q0 + 1) + " spielt" : "; Plätze " + (q0 + 1) + "–" + (q0 + kp) + " spielen")
+                        sb.append(totalMode ? "; die " + kp + " Topplatzierten nach den direkt Qualifizierten (über alle Gruppen nach "
+                                + "Gruppenplatz, Spiel-, Satz-, Punktverhältnis, Gleichstand Los) spielen"
+                                : kp == 1 ? "; Platz " + (q0 + 1) + " spielt" : "; Plätze " + (q0 + 1) + "–" + (q0 + kp) + " spielen")
                                 .append(" eine KO-Qualifikation (")
                                 .append(koCount).append(" Teilnehmende). Runde 1: besser gegen schlechter Platzierte (möglichst andere "
                                 + "Gruppe), Freilos für den Stärksten nach der Gruppenphase; Runde 2 frei gelost. Wer 2 Spiele gewinnt "
@@ -176,13 +211,15 @@ final class PhaseCloseDialog extends Dialog<PhaseCloseDialog.Choice> {
                                 + "zuschalten – deren Gewinner sind ebenfalls qualifiziert.");
                     }
                     int rv = reserve.getValue() == null ? 0 : reserve.getValue();
-                    if (rv > 0) {
+                    if (rv > 0 && totalMode) {
+                        sb.append(" Je Gruppe sind die ").append(rv == 1 ? "nächste Person" : "nächsten " + rv)
+                                .append(" nach dem letzten KO-Teilnehmenden Nachrücker ohne Spiel (zuerst nach Gruppenplatz, dann TTR).");
+                    } else if (rv > 0) {
                         sb.append(" Plätze ").append(q0 + kp + 1).append("–").append(q0 + kp + rv)
                                 .append(" jeder Gruppe sind Nachrücker ohne Spiel (zuerst nach Gruppenplatz, dann TTR).");
                     }
                     sb.append(" Alle anderen erhalten den Platz ihrer Gruppenplatzierung (gleiche Gruppenplätze teilen sich den Platz).");
-                    if (fieldProblem != null) sb.append("\n⚠ ").append(fieldProblem);
-                    else if (q0 == 0 && koCount < 3) sb.append("\n⚠ Ohne direkt Qualifizierte braucht die KO-Qualifikation mindestens 3 Teilnehmende.");
+                    if (fieldProblem != null) sb.append("\n⚠ Phase 2 kann so nicht angelegt werden – siehe Hinweis am Feld „In die KO-Qualifikation“.");
                     yield sb.toString();
                 }
                 default -> "";
@@ -194,6 +231,11 @@ final class PhaseCloseDialog extends Dialog<PhaseCloseDialog.Choice> {
         qualifiers.valueProperty().addListener((o, a, b) -> update.run());
         groupSize.valueProperty().addListener((o, a, b) -> update.run());
         koPer.valueProperty().addListener((o, a, b) -> update.run());
+        koMode.valueProperty().addListener((o, a, b) -> {
+            boolean tot = "insgesamt".equals(b);
+            kLabel.setText(tot ? "In die KO-Qualifikation insgesamt:" : "In die KO-Qualifikation je Gruppe:");
+            update.run();
+        });
         reserve.valueProperty().addListener((o, a, b) -> update.run());
 
         VBox content = new VBox(10, finish, indent(finishHint), next);
@@ -219,9 +261,9 @@ final class PhaseCloseDialog extends Dialog<PhaseCloseDialog.Choice> {
         DialogSizing.fit(this);
         setResultConverter(bt -> {
             if (bt != ok) return null;
-            if (finish.isSelected()) return new Choice(true, TournamentMode.NONE, 0, 0, 0, 0, 0);
+            if (finish.isSelected()) return new Choice(true, TournamentMode.NONE, 0, 0, 0, 0, 0, false);
             return new Choice(false, kind.getValue(), qualifiers.getValue(), groupSize.getValue(), koPer.getValue(), Tournament.QUAL_WINS,
-                    reserve.getValue());
+                    reserve.getValue(), "insgesamt".equals(koMode.getValue()));
         });
     }
 

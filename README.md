@@ -6,6 +6,18 @@ Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Pub
 Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
 (Label „Feature“ bzw. „bug“).
 
+## Neu in 0.34.0
+
+- **KO-Qualifikation „insgesamt“:** Im Dialog „Phase abschließen“ lässt sich für die KO-Qualifikation wählen, ob die
+  Zahl „je Gruppe“ (wie bisher) oder „insgesamt“ gilt. Beispiel HEM: 16 Gruppen, Gruppenerste direkt, 24 insgesamt
+  → alle Gruppenzweiten und die 8 besten Gruppendritten (Spiel-, Satz-, Punktverhältnis, Gleichstand Los). Die
+  übrigen Dritten sind nur Platzierte; „Nachrücker je Gruppe (ohne Spiel)“ zählt ab dem ersten Nicht-KO-Teilnehmenden
+  jeder Gruppe.
+- **Geht die KO-Qualifikation nicht auf**, wird das Feld rot hervorgehoben, darunter steht der Grund und „Phase
+  abschließen“ ist gesperrt.
+- **Qualifikationsansicht nutzt die ganze Breite:** Die Spielkarten wachsen mit dem Fenster (mehr Karten je Reihe,
+  längere Namen sichtbar); TTR und Tischname werden nicht mehr abgeschnitten.
+
 ## Neu in 0.33.0
 
 - **Qualifikationsmodus überarbeitet:** Wer in der KO-Qualifikation 2 Spiele gewinnt, ist qualifiziert (die

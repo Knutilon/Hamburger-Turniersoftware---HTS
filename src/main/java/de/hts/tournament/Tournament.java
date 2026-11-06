@@ -1541,8 +1541,20 @@ public final class Tournament {
             }
             List<Entrant> ko = new java.util.ArrayList<>();
             java.util.Map<String, Integer> placeOf = new java.util.LinkedHashMap<>();
-            for (int place = q; place < q + k; place++) {
-                for (Entrant e : tier(tables, place, next, idMap, groupOf, random)) {
+            int[] koPerGroup = new int[groupCount];
+            int total = c.getQualKoTotal();
+            int maxSize = tables.stream().mapToInt(List::size).max().orElse(0);
+            int remaining = total;
+            for (int place = q; total > 0 ? place < maxSize && remaining > 0 : place < q + k; place++) {
+                List<Integer> order = tierOrder(tables, place, random, true);
+                if (total > 0 && order.size() > remaining) {
+                    // nur die besten dieser Gruppenplätze: Spiel-, Satz-, Punktverhältnis, Gleichstand Los
+                    java.util.Set<Integer> chosen = new java.util.HashSet<>(tierOrder(tables, place, random, false).subList(0, remaining));
+                    order.removeIf(g -> !chosen.contains(g));
+                }
+                remaining -= order.size();
+                for (int g : order) koPerGroup[g]++;
+                for (Entrant e : carry(tables, place, order, next, idMap, groupOf)) {
                     ko.add(e);
                     placeOf.put(e.id(), place + 1);
                     labels.put(e.id(), GroupDraw.groupName(groupOf.get(e.id())) + (place + 1));
@@ -1550,6 +1562,8 @@ public final class Tournament {
             }
             next.setMode(TournamentMode.QUALIFICATION);
             next.setQualification(q, k, c.getQualRounds());
+            next.setQualKoTotal(total);
+            next.setQualKoCounts(java.util.Arrays.stream(koPerGroup).boxed().toList());
             next.setQualReserve(c.getQualReserve());
             next.setQualifiedDirect(direct.stream().map(Entrant::id).toList());
             java.util.LinkedHashMap<String, Integer> field = new java.util.LinkedHashMap<>();
@@ -1637,22 +1651,38 @@ public final class Tournament {
     /** Alle Gruppen-x-ten (place, 0-basiert), die besten zuerst (Spiel-, Satz-, Punktverhältnis, dann TTR; Gleichstand: Los). */
     private List<Entrant> tier(List<List<GroupStanding.Row>> tables, int place, PlayingClass next, java.util.Map<String, String> idMap,
                                java.util.Map<String, Integer> groupOf, java.util.Random random) {
-        List<int[]> t = new java.util.ArrayList<>();
-        for (int g = 0; g < tables.size(); g++) if (place < tables.get(g).size()) t.add(new int[]{g});
+        return carry(tables, place, tierOrder(tables, place, random, true), next, idMap, groupOf);
+    }
+
+    /**
+     * Gruppen-Indizes der Gruppen-x-ten (place, 0-basiert), die besten zuerst: Spiel-, Satz-, Punktverhältnis, dann –
+     * mit {@code ttr} – TTR; bei Gleichstand entscheidet das Los.
+     */
+    private static List<Integer> tierOrder(List<List<GroupStanding.Row>> tables, int place, java.util.Random random, boolean ttr) {
+        List<Integer> t = new java.util.ArrayList<>();
+        for (int g = 0; g < tables.size(); g++) if (place < tables.get(g).size()) t.add(g);
         java.util.Collections.shuffle(t, random);
-        t.sort(java.util.Comparator.comparingDouble((int[] x) -> -gameRatio(tables.get(x[0]).get(place)))
-                .thenComparingDouble(x -> -ratio(tables.get(x[0]).get(place).setsWon(), tables.get(x[0]).get(place).setsLost()))
-                .thenComparingDouble(x -> -ratio(tables.get(x[0]).get(place).pointsWon(), tables.get(x[0]).get(place).pointsLost()))
-                .thenComparingInt(x -> {
-                    Integer ttr = tables.get(x[0]).get(place).entrant().ttr();
-                    return ttr == null ? Integer.MAX_VALUE : -ttr;
-                }));
+        java.util.Comparator<Integer> cmp = java.util.Comparator.comparingDouble((Integer x) -> -gameRatio(tables.get(x).get(place)))
+                .thenComparingDouble(x -> -ratio(tables.get(x).get(place).setsWon(), tables.get(x).get(place).setsLost()))
+                .thenComparingDouble(x -> -ratio(tables.get(x).get(place).pointsWon(), tables.get(x).get(place).pointsLost()));
+        if (ttr) {
+            cmp = cmp.thenComparingInt(x -> {
+                Integer v = tables.get(x).get(place).entrant().ttr();
+                return v == null ? Integer.MAX_VALUE : -v;
+            });
+        }
+        t.sort(cmp);
+        return t;
+    }
+
+    private List<Entrant> carry(List<List<GroupStanding.Row>> tables, int place, List<Integer> order, PlayingClass next,
+                                java.util.Map<String, String> idMap, java.util.Map<String, Integer> groupOf) {
         List<Entrant> out = new java.util.ArrayList<>();
-        for (int[] x : t) {
-            Entrant now = carryOver(next, tables.get(x[0]).get(place).entrant(), idMap);
+        for (int g : order) {
+            Entrant now = carryOver(next, tables.get(g).get(place).entrant(), idMap);
             if (now != null) {
                 out.add(now);
-                groupOf.put(now.id(), x[0]);
+                groupOf.put(now.id(), g);
             }
         }
         return out;
@@ -1703,16 +1733,39 @@ public final class Tournament {
 
     /** @param reserve Nachrücker je Gruppe direkt aus der Gruppenphase (ohne Spiel), nach Gruppenplatz, dann TTR */
     public PlayingClass createQualificationPhase(PlayingClass c, int direct, int ko, int rounds, int reserve, java.util.Random random) {
+        return createQualificationPhase(c, direct, ko, false, reserve, random);
+    }
+
+    /** Teilnehmende, die nach den direkt Qualifizierten noch für die KO-Qualifikation zur Verfügung stehen. */
+    public static int qualificationAvailable(PlayingClass c, int direct) {
+        int n = 0;
+        for (List<String> g : c.getGroups()) n += Math.max(0, g.size() - direct);
+        return n;
+    }
+
+    /**
+     * @param ko      Plätze je Gruppe ({@code koTotal = false}) bzw. Anzahl der Topplatzierten insgesamt ({@code koTotal =
+     *                true}, z. B. 24 bei 16 Gruppen = alle Zweiten + die 8 besten Dritten; Auswahl nach Spiel-, Satz-,
+     *                Punktverhältnis, Gleichstand: Los)
+     * @param reserve Nachrücker je Gruppe ohne Spiel, ab dem ersten Nicht-KO-Teilnehmenden der Gruppe
+     */
+    public PlayingClass createQualificationPhase(PlayingClass c, int direct, int ko, boolean koTotal, int reserve, java.util.Random random) {
         if (c.getMode() != TournamentMode.GROUPS || phaseNumber(c) != 1) {
             throw new IllegalStateException("Der Qualifikationsmodus folgt nur auf eine Gruppenphase in Phase 1.");
         }
-        int koCount = qualificationKoCount(c, direct, ko);
+        int available = qualificationAvailable(c, direct);
+        if (koTotal && ko > available) {
+            throw new IllegalArgumentException("Für die KO-Qualifikation stehen nur " + available + " Teilnehmende zur Verfügung.");
+        }
+        int koCount = koTotal ? ko : qualificationKoCount(c, direct, ko);
         if (direct < 1 && koCount < 3) throw new IllegalArgumentException("Ohne direkt Qualifizierte braucht die KO-Qualifikation mindestens 3 Teilnehmende.");
         String problem = qualificationFieldProblem(koCount);
         if (problem != null) throw new IllegalArgumentException(problem);
-        c.setQualification(direct, ko, koCount > 0 ? QUAL_WINS : 0);
+        c.setQualification(direct, koTotal ? 0 : ko, koCount > 0 ? QUAL_WINS : 0);
+        c.setQualKoTotal(koTotal ? ko : 0);
         c.setQualReserve(reserve);
-        c.setQualifiers(direct + ko);
+        int groups = Math.max(1, c.getGroups().size());
+        c.setQualifiers(direct + (koTotal ? (ko + groups - 1) / groups : ko));
         c.setNextPhase(TournamentMode.QUALIFICATION);
         try {
             return createNextPhase(c, random);
@@ -2087,11 +2140,11 @@ public final class Tournament {
         int n = c.getQualReserve();
         PlayingClass src = c.getSourceClass() == null ? null : findClass(c.getSourceClass()).orElse(null);
         if (n <= 0 || src == null) return List.of();
-        int from = c.getQualDirect() + c.getQualKo();
         List<Entrant> out = new java.util.ArrayList<>();
         java.util.Map<String, Integer> placeOf = new java.util.HashMap<>();
         for (int g = 0; g < src.getGroups().size(); g++) {
             List<GroupStanding.Row> rows = standings(src, g);
+            int from = qualSkip(c, g, rows.size(), false);        // ab dem ersten Nicht-KO-Teilnehmenden der Gruppe
             for (int p = from; p < from + n && p < rows.size(); p++) {
                 out.add(rows.get(p).entrant());
                 placeOf.put(rows.get(p).entrant().id(), p + 1);
@@ -2116,6 +2169,18 @@ public final class Tournament {
             }
         }
         return out;
+    }
+
+    /**
+     * Wie viele Plätze der Gruppe {@code g} die Qualifikationsphase belegt: direkt Qualifizierte + KO-Teilnehmende
+     * (+ mit {@code withReserve} die Nachrücker ohne Spiel).
+     */
+    private static int qualSkip(PlayingClass phase, int g, int groupSize, boolean withReserve) {
+        int direct = Math.min(groupSize, phase.getQualDirect());
+        List<Integer> counts = phase.getQualKoCounts();
+        int ko = g < counts.size() ? counts.get(g) : Math.min(groupSize, phase.getQualDirect() + phase.getQualKo()) - direct;
+        int skip = direct + ko;
+        return withReserve ? Math.min(groupSize, skip + phase.getQualReserve()) : skip;
     }
 
     /** Bezeichnung einer Nachrücker-Stufe: „Nachrücker 1. Ranges“, „Nachrücker 2. Ranges“ … */
@@ -2279,10 +2344,12 @@ public final class Tournament {
             case GROUPS, SWISS -> {
                 if (follow == null) yield rankGroups(c, 0, 0);
                 List<Placing> top = new java.util.ArrayList<>(rank(follow, depth + 1));
-                if (follow.getMode() != TournamentMode.PLACEMENT) {
-                    int skip = follow.getMode() == TournamentMode.QUALIFICATION
-                            ? follow.getQualDirect() + follow.getQualKo() + follow.getQualReserve() : c.getQualifiers();
-                    top.addAll(rankGroups(c, skip, top.size(), follow.getMode() == TournamentMode.QUALIFICATION));
+                if (follow.getMode() == TournamentMode.QUALIFICATION) {
+                    int[] skips = new int[c.getGroups().size()];
+                    for (int g = 0; g < skips.length; g++) skips[g] = qualSkip(follow, g, c.getGroups().get(g).size(), true);
+                    top.addAll(rankGroups(c, skips, top.size(), true));
+                } else if (follow.getMode() != TournamentMode.PLACEMENT) {
+                    top.addAll(rankGroups(c, c.getQualifiers(), top.size(), false));
                 }
                 yield top;
             }
@@ -2335,7 +2402,15 @@ public final class Tournament {
 
     /** @param samePlace alle Gruppen-x-ten bekommen denselben Platz (z. B. viermal „13.“), sonst einen Bereich „13.–16.“ */
     private List<Placing> rankGroups(PlayingClass c, int skipPlaces, int offset, boolean samePlace) {
+        int[] skips = new int[c.getGroups().size()];
+        java.util.Arrays.fill(skips, skipPlaces);
+        return rankGroups(c, skips, offset, samePlace);
+    }
+
+    /** Wie oben, je Gruppe mit eigener Zahl übersprungener Plätze (z. B. nur die besten Dritten in der KO-Qualifikation). */
+    private List<Placing> rankGroups(PlayingClass c, int[] skips, int offset, boolean samePlace) {
         int groupCount = c.getGroups().size();
+        int skipPlaces = java.util.Arrays.stream(skips).min().orElse(0);
         List<List<GroupStanding.Row>> tables = new java.util.ArrayList<>();
         int maxSize = 0;
         for (int g = 0; g < groupCount; g++) {
@@ -2349,11 +2424,12 @@ public final class Tournament {
             List<GroupStanding.Row> same = new java.util.ArrayList<>();
             List<Integer> groupIdx = new java.util.ArrayList<>();
             for (int g = 0; g < groupCount; g++) {
-                if (place <= tables.get(g).size()) {
+                if (place <= tables.get(g).size() && place > skips[g]) {
                     same.add(tables.get(g).get(place - 1));
                     groupIdx.add(g);
                 }
             }
+            if (same.isEmpty()) continue;
             int from = next, to = samePlace ? next : next + same.size() - 1;
             for (int k = 0; k < same.size(); k++) {
                 String info = (c.getMode() == TournamentMode.SWISS ? "Schweizer System, "
