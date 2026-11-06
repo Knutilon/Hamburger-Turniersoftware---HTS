@@ -319,7 +319,20 @@ public final class PlayingClass {
 
     public Discipline getDiscipline() { return discipline; }
     public void setDiscipline(Discipline d) { this.discipline = d == null ? Discipline.SINGLES : d; }
-    public boolean isDoubles() { return discipline == Discipline.DOUBLES; }
+    /** Parteien sind Paarungen bzw. Teams (Doppel, 2er/3er Turnier). */
+    public boolean isDoubles() { return discipline != Discipline.SINGLES; }
+    /** Echtes Doppel (nicht 2er/3er Turnier). */
+    public boolean isPureDoubles() { return discipline == Discipline.DOUBLES; }
+    /** Mannschaftskampf (2er/3er Turnier). */
+    public boolean isTeam() { return discipline.isTeam(); }
+    /** Personen je Paarung/Team (2 oder 3). */
+    public int teamSize() { return Math.max(2, discipline.size()); }
+
+    /** 2er/3er Turnier: mindestens eine Dame je Team. */
+    private boolean womanRequired;
+
+    public boolean isWomanRequired() { return womanRequired; }
+    public void setWomanRequired(boolean b) { womanRequired = b; }
 
     public ClassType getType() { return type; }
     public void setType(ClassType type) { this.type = type == null ? ClassType.ADULTS : type; }

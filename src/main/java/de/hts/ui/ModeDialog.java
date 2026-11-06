@@ -45,16 +45,16 @@ final class ModeDialog extends Dialog<Boolean> {
         initOwner(owner);
         int n = t.entrantsOf(c).size();
         setTitle("Modus festlegen – " + c.getName());
-        setHeaderText(c.getName() + ": " + n + (c.isDoubles() ? " Doppel" : " Teilnehmende")
+        setHeaderText(c.getName() + ": " + n + (c.isTeam() ? " Teams" : c.isDoubles() ? " Doppel" : " Teilnehmende")
                 + ". Modus und Optionen für Phase 1 wählen – „Auslosen“ erstellt Phase 1.");
 
         ComboBox<TournamentMode> mode = new ComboBox<>();
         boolean dbl = c.isDoubles();
-        boolean koOnly = dbl && n > Tournament.MAX_DOUBLES_GROUP;
+        boolean koOnly = c.isPureDoubles() && n > Tournament.MAX_DOUBLES_GROUP;
         if (koOnly) mode.getItems().setAll(TournamentMode.KNOCKOUT);                     // Doppel > 5: nur KO-System
         else if (dbl) mode.getItems().setAll(TournamentMode.GROUPS, TournamentMode.KNOCKOUT); // kein Schweizer System
         else mode.getItems().setAll(TournamentMode.KNOCKOUT, TournamentMode.GROUPS, TournamentMode.SWISS);
-        mode.setConverter(conv(m -> m == TournamentMode.GROUPS ? (dbl ? "Gruppenphase (eine Gruppe, jeder gegen jeden)"
+        mode.setConverter(conv(m -> m == TournamentMode.GROUPS ? (c.isPureDoubles() ? "Gruppenphase (eine Gruppe, jeder gegen jeden)"
                 : "Gruppenphase (jeder gegen jeden)") : m.getLabel()));
         TournamentMode initial = c.getMode() == TournamentMode.NONE || c.getMode() == TournamentMode.PLACEMENT ? TournamentMode.GROUPS : c.getMode();
         mode.setValue(mode.getItems().contains(initial) ? initial : mode.getItems().get(0));
@@ -165,13 +165,21 @@ final class ModeDialog extends Dialog<Boolean> {
                 x.setVisible(groups);
                 x.setManaged(groups);
             }
-            if (dbl) {               // Doppel: eine Gruppe, keine Gruppeneinstellungen, keine Vereinsgleichheit
+            if (c.isTeam()) {        // 2er/3er Turnier: Wertung fest (Begegnungen, Partien, Los), keine Gewinnsätze
+                for (javafx.scene.Node x : new javafx.scene.Node[]{lTb, tbBox, lSets, sets}) {
+                    x.setVisible(false);
+                    x.setManaged(false);
+                }
+            }
+            if (c.isPureDoubles()) { // Doppel: eine Gruppe, keine Gruppeneinstellungen
                 lGroups.setVisible(false);
                 lGroups.setManaged(false);
                 groupsBox.setVisible(false);
                 groupsBox.setManaged(false);
                 byCount.setSelected(true);
                 count.getValueFactory().setValue(1);
+            }
+            if (dbl) {               // Doppel und Teams: keine Vereinsgleichheit
                 clubs.setVisible(false);
                 clubs.setManaged(false);
                 lClubs.setVisible(false);
@@ -203,7 +211,7 @@ final class ModeDialog extends Dialog<Boolean> {
                     + "geht das nicht mehr, wird normal nach der Schlange verteilt.");
             // Vorschau
             String text;
-            if (groups && dbl) {
+            if (groups && c.isPureDoubles()) {
                 text = "→ eine Gruppe mit " + n + " Doppeln, jeder gegen jeden · " + (n * (n - 1) / 2) + " Spiele";
             } else if (groups) {
                 int g = bySize.isSelected() ? GroupDraw.groupCountForSize(Math.max(2, n), size.getValue()) : count.getValue();
@@ -262,7 +270,7 @@ final class ModeDialog extends Dialog<Boolean> {
                 e.consume();
                 return;
             }
-            c.setTiebreak(tbH2h.isSelected() ? GroupStanding.Tiebreak.HEAD_TO_HEAD : GroupStanding.Tiebreak.SETS_POINTS);
+            c.setTiebreak(tbH2h.isSelected() && !c.isTeam() ? GroupStanding.Tiebreak.HEAD_TO_HEAD : GroupStanding.Tiebreak.SETS_POINTS);
             c.setSwissRounds(rounds.getValue());
             boolean seeded = s != Seed.RANDOM;
             try {

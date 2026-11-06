@@ -1,4 +1,4 @@
-# Zwischenstand HTS 0.31.0 (06.11.2026)
+# Zwischenstand HTS 0.32.0 (06.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -14,16 +14,32 @@ https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.
 (+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
-## Feature-Sammlung für 0.32.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 0.33.0 (NICHT kompilieren – bis „… kompilieren“)
 
-(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
-
-1. OFFEN aus 0.31.0 (Issue #12): JavaFX 21 GA → 21.0.8 (neueste sicher frei verfügbare 21.0.x; Windows-Jars
-   javafx-base/-controls/-graphics-21.0.8-win.jar) und PDFBox/pdfbox-io/fontbox 3.0.5 → 3.0.8. Maven Central und
-   Gluon-/Apache-Downloads sind aus der Sitzung gesperrt → Nutzer um die 6 Jar-Dateien gebeten (06.11.2026). Danach
-   pom.xml angleichen (javafx.version 21.0.8, pdfbox 3.0.8), Fat-Jar neu bauen, Lizenzhinweise, ABHAENGIGKEITEN.md.
+(noch leer – neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
 
 ## Umgesetzt
+
+0.32.0 (Issues #12, #15–#20 umgesetzt). Doku NICHT aktualisiert (nur auf Zuruf). GRUNDSATZ: Abwärtskompatibilität von
+Turnierdateien muss nicht garantiert werden.
+Abhängigkeiten: JavaFX 21.0.8, PDFBox/pdfbox-io/fontbox 3.0.8 (Jars vom Nutzer, Maven Central; abgelegt im
+Scratchpad deps-0.32, build.sh kompiliert dagegen; Fat-Jar-Basis aus diesen Jars neu aufgebaut), pom.xml angeglichen,
+Lizenzen/LIESMICH + PDFBox-LICENSE/NOTICE, InfoDialog, docs/ABHAENGIGKEITEN.md.
+WorkspaceView: „Turnier starten“ deaktiviert ohne 2 Teilnehmende/1 Klasse/1 Tisch (Tooltip über Rahmen, Listener auf
+Teilnehmende/Klassen/Tischzahl). Overview: Chip „Fertiges Turnier per XML importiert“ (Tournament.importedFinished,
+„imported“, TournamentStore.importFinished setzt, copy löscht), CSS weiße Schrift für chip-started/-finished in
+markierten Zellen. ClassDialog: ComboBoxen (Spielart/Alter/Wer darf) an Name-Breite gebunden, im Vorgabeturnier ohne
+Alter, Spielarten 2er/3er nur im Vorgabeturnier, Checkbox „mindestens 1 Dame je Team“. HandicapView: neues
+Tabellen-Layout (headCell/dataCell, CSS .hc-sep gestrichelt nur in Datenzeilen).
+2er/3er Turnier: Discipline.TEAM2/TEAM3 (isTeam, size), PlayingClass.isDoubles() = Paarungen/Teams, isPureDoubles,
+teamSize, womanRequired (persistiert „team2“/„team3“, „woman-required“); DoublesPair mit third/capacity/members();
+Tournament.createTeam (Dame nach hinten), drawPartners für Teams (je Team eine Dame), Entrant.ofTeam (Nachnamen),
+Rubber/rubbersOf/teamPositions/defaultLineup/rubberHandicap/recordTeamResult (Aufstellung prüfen, Sieger je Partie,
+Korrektur mit FollowUpConflict), Match.lineupA/B (persistiert), getSetsText leer bei Teams, simulateAll für Teams,
+handicapProblems für Teams (Dame fehlt, Damen-Grenzen für Mixed). UI: ClassesView Teams (zweizeilige Karten, 3. Platz,
+„Teams zulosen“, „Neues Team“), ModeDialog (Gruppen/KO, keine Gewinnsätze/Tiebreak), DrawView Gruppentabelle
+„Partien“, TeamResultDialog + ResultEntry, PdfReports.teamSlip (A4, Vorgabe-Tabelle). Tests: Version032Test.
+UI unter Xvfb geprüft (Start-Knopf, Vorgaberegeln, Neue Klasse, Teams, Gruppe, Ergebnisdialog, A4-Zettel).
 
 0.31.0 (Issues #13, #14 umgesetzt; #12 teilweise – Temurin 21.0.13 eingebaut). Doku NICHT aktualisiert (nur auf Zuruf).
 Vorgabeturnier: tournament/HandicapRules (Mode CLASSES/DISTANCE, Serve, halve, Bounds je Erwachsene/Damen mit

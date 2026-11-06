@@ -109,8 +109,14 @@ public final class Tournament {
 
     public void removePlayers(Collection<Player> toRemove) {
         for (DoublesPair pair : List.copyOf(pairs)) {
-            if (toRemove.contains(pair.getFirst())) pair.setFirst(null);
-            if (toRemove.contains(pair.getSecond())) pair.setSecond(null);
+            if (pair.getFirst() != null && toRemove.contains(pair.getFirst())) pair.setFirst(null);
+            if (pair.getSecond() != null && toRemove.contains(pair.getSecond())) pair.setSecond(null);
+            if (pair.getThird() != null && toRemove.contains(pair.getThird())) pair.setThird(null);
+            // Lücken schließen (Reihenfolge der übrigen Mitglieder bleibt)
+            List<Player> rest = pair.members();
+            pair.setFirst(rest.size() > 0 ? rest.get(0) : null);
+            pair.setSecond(rest.size() > 1 ? rest.get(1) : null);
+            pair.setThird(rest.size() > 2 ? rest.get(2) : null);
             if (pair.isEmpty()) pairs.remove(pair);
         }
         players.removeAll(toRemove);
@@ -198,7 +204,7 @@ public final class Tournament {
         if (p.isInClass(c.getName())) return false;
         p.addToClass(c.getName());
         if (c.isDoubles() && pairOf(p, c).isEmpty()) {
-            pairs.add(new DoublesPair(c.getName(), p, null));
+            pairs.add(newPair(c, p, null));
         }
         markModified();
         return true;
@@ -220,7 +226,28 @@ public final class Tournament {
     }
 
     /** Ergebnis von {@link #drawPartners}: neu gebildete Doppel und wer übrig bleibt. */
-    public record PartnerDraw(List<DoublesPair> pairs, Player leftOver) {
+    public record PartnerDraw(List<DoublesPair> pairs, Player leftOver, List<Player> leftOvers) {
+        public PartnerDraw(List<DoublesPair> pairs, Player leftOver) {
+            this(pairs, leftOver, leftOver == null ? List.of() : List.of(leftOver));
+        }
+    }
+
+    private DoublesPair newPair(PlayingClass c, Player first, Player second) {
+        DoublesPair pair = new DoublesPair(c.getName(), first, second);
+        pair.setCapacity(c.teamSize());
+        return pair;
+    }
+
+    /** Team (bzw. Doppel) aus den angegebenen Personen bilden (2er: Dame automatisch auf Platz 2). */
+    public DoublesPair createTeam(PlayingClass c, List<Player> members) {
+        List<Player> ms = new java.util.ArrayList<>(members);
+        if (c.isTeam() && c.isWomanRequired()) {
+            // Dame(n) nach hinten: 2er Team → Dame ist Teilnehmende/r 2, 3er Team → Standard-Aufstellung H1, H2, D
+            ms.sort(java.util.Comparator.comparingInt(p -> p.getSex() == de.hts.player.Sex.FEMALE ? 1 : 0));
+        }
+        DoublesPair pair = createPair(c, ms.get(0), ms.size() > 1 ? ms.get(1) : null);
+        for (int i = 2; i < ms.size(); i++) addToPair(pair, ms.get(i));
+        return pair;
     }
 
     /**
@@ -233,20 +260,37 @@ public final class Tournament {
         List<Player> singles = new java.util.ArrayList<>();
         for (DoublesPair p : pairsIn(c)) {
             if (p.isComplete()) continue;
-            Player x = p.getFirst() != null ? p.getFirst() : p.getSecond();
-            if (x != null) singles.add(x);
+            singles.addAll(p.members());
         }
         // Gemeldete ohne Partner/in (z. B. aus dem Import) stehen unter „Verfügbar“ und werden mit zugelost
         for (Player x : players) {
             if (x.getRegistrations().contains(c.getName()) && pairOf(x, c).isEmpty() && !singles.contains(x)) singles.add(x);
         }
-        if (singles.size() < 2) throw new IllegalStateException("Zum Zulosen braucht es mindestens 2 Teilnehmende ohne Partner/in.");
+        int size = c.teamSize();
+        if (singles.size() < size) throw new IllegalStateException("Zum Zulosen braucht es mindestens " + size
+                + " Teilnehmende ohne " + (c.isTeam() ? "Team." : "Partner/in."));
         java.util.Collections.shuffle(singles, random);
-        Player left = singles.size() % 2 == 1 ? singles.remove(singles.size() - 1) : null;
         List<DoublesPair> made = new java.util.ArrayList<>();
-        for (int i = 0; i + 1 < singles.size(); i += 2) made.add(createPair(c, singles.get(i), singles.get(i + 1)));
+        if (c.isTeam() && c.isWomanRequired()) {
+            // je Team mindestens eine Dame: zuerst je Team eine Dame, dann auffüllen
+            List<Player> women = new java.util.ArrayList<>(singles.stream().filter(x -> x.getSex() == de.hts.player.Sex.FEMALE).toList());
+            List<Player> rest = new java.util.ArrayList<>(singles);
+            rest.removeAll(women);
+            int teams = Math.min(women.size(), singles.size() / size);
+            List<List<Player>> groups = new java.util.ArrayList<>();
+            for (int k = 0; k < teams; k++) groups.add(new java.util.ArrayList<>(List.of(women.remove(0))));
+            rest.addAll(women);
+            java.util.Collections.shuffle(rest, random);
+            for (List<Player> g : groups) while (g.size() < size && !rest.isEmpty()) g.add(rest.remove(0));
+            for (List<Player> g : groups) made.add(createTeam(c, g));
+            singles = rest;
+        } else {
+            int full = singles.size() / size * size;
+            for (int i = 0; i < full; i += size) made.add(createTeam(c, singles.subList(i, i + size)));
+            singles = new java.util.ArrayList<>(singles.subList(full, singles.size()));
+        }
         markModified();
-        return new PartnerDraw(made, left);
+        return new PartnerDraw(made, singles.isEmpty() ? null : singles.get(0), singles);
     }
 
     public List<DoublesPair> pairsIn(PlayingClass c) {
@@ -267,7 +311,7 @@ public final class Tournament {
         if (first == second) throw new IllegalArgumentException("Eine Person kann nicht mit sich selbst Doppel spielen.");
         detachFromPairs(first, c);
         if (second != null) detachFromPairs(second, c);
-        DoublesPair pair = new DoublesPair(c.getName(), first, second);
+        DoublesPair pair = newPair(c, first, second);
         pairs.add(pair);
         enter(first, c);
         if (second != null) enter(second, c);
@@ -288,7 +332,8 @@ public final class Tournament {
         detachFromPairs(p, c);
         if (!pairs.contains(pair)) pairs.add(pair); // falls sie durch das Herauslösen leer wurde
         if (pair.getFirst() == null) pair.setFirst(p);
-        else pair.setSecond(p);
+        else if (pair.getSecond() == null) pair.setSecond(p);
+        else pair.setThird(p);
         enter(p, c);
         markModified();
     }
@@ -301,9 +346,7 @@ public final class Tournament {
 
     /** Löst eine Paarung ganz auf. */
     public void removePair(DoublesPair pair) {
-        for (Player p : new Player[]{pair.getFirst(), pair.getSecond()}) {
-            if (p != null) p.removeFromClass(pair.getClassName());
-        }
+        for (Player p : pair.members()) p.removeFromClass(pair.getClassName());
         pairs.remove(pair);
         markModified();
     }
@@ -315,13 +358,13 @@ public final class Tournament {
      */
     public void changeDiscipline(PlayingClass c, Discipline d) {
         if (c.getDiscipline() == d) return;
+        boolean sameSize = c.isDoubles() && d != Discipline.SINGLES && c.teamSize() == Math.max(2, d.size());
         c.setDiscipline(d);
-        if (d == Discipline.DOUBLES) {
+        if (d == Discipline.SINGLES || !sameSize) pairs.removeIf(pair -> pair.getClassName().equals(c.getName()));
+        if (d != Discipline.SINGLES) {
             for (Player p : playersIn(c)) {
-                if (pairOf(p, c).isEmpty()) pairs.add(new DoublesPair(c.getName(), p, null));
+                if (pairOf(p, c).isEmpty()) pairs.add(newPair(c, p, null));
             }
-        } else {
-            pairs.removeIf(pair -> pair.getClassName().equals(c.getName()));
         }
         markModified();
     }
@@ -331,7 +374,7 @@ public final class Tournament {
         for (PlayingClass c : classes) {
             if (!c.isDoubles()) continue;
             for (Player p : playersIn(c)) {
-                if (pairOf(p, c).isEmpty()) pairs.add(new DoublesPair(c.getName(), p, null));
+                if (pairOf(p, c).isEmpty()) pairs.add(newPair(c, p, null));
             }
         }
     }
@@ -352,7 +395,15 @@ public final class Tournament {
 
     /** Nur für das Laden aus einer Datei. */
     public void restorePair(String id, String className, Player first, Player second) {
-        pairs.add(new DoublesPair(id, className, first, second));
+        restorePair(id, className, first, second, null);
+    }
+
+    /** Nur für das Laden aus einer Datei (3er Team mit drittem Mitglied). */
+    public void restorePair(String id, String className, Player first, Player second, Player third) {
+        DoublesPair pair = new DoublesPair(id, className, first, second);
+        pair.setCapacity(findClass(className).map(PlayingClass::teamSize).orElse(2));
+        pair.setThird(third);
+        pairs.add(pair);
     }
 
     private void enter(Player p, PlayingClass c) {
@@ -368,9 +419,13 @@ public final class Tournament {
     private void clearSlot(DoublesPair pair, Player p) {
         if (pair.getFirst() == p) {
             pair.setFirst(pair.getSecond());
-            pair.setSecond(null);
+            pair.setSecond(pair.getThird());
+            pair.setThird(null);
         } else if (pair.getSecond() == p) {
-            pair.setSecond(null);
+            pair.setSecond(pair.getThird());
+            pair.setThird(null);
+        } else if (pair.getThird() == p) {
+            pair.setThird(null);
         }
         if (pair.isEmpty()) pairs.remove(pair);
         markModified();
@@ -434,7 +489,7 @@ public final class Tournament {
     /** Parteien der Klasse für die Auslosung: Einzel = Personen, Doppel = vollständige Paarungen. */
     public List<Entrant> entrantsOf(PlayingClass c) {
         if (c.isDoubles()) {
-            return pairsIn(c).stream().filter(DoublesPair::isComplete).map(Entrant::of).toList();
+            return pairsIn(c).stream().filter(DoublesPair::isComplete).map(pr -> c.isTeam() ? Entrant.ofTeam(pr) : Entrant.of(pr)).toList();
         }
         return playersInOrder(c).stream().map(Entrant::of).toList();
     }
@@ -480,11 +535,11 @@ public final class Tournament {
     /** Lost die Gruppenphase aus (Schlangensystem, zufällig oder nach Setzung), speichert sie und legt die Spiele an. */
     public List<List<Entrant>> drawGroups(PlayingClass c, boolean seeded, java.util.Random random) {
         requireNotStarted(c);
-        if (c.isDoubles() && !c.isPhase() && entrantsOf(c).size() > MAX_DOUBLES_GROUP) {
+        if (c.isPureDoubles() && !c.isPhase() && entrantsOf(c).size() > MAX_DOUBLES_GROUP) {
             throw new IllegalStateException("Bei mehr als " + MAX_DOUBLES_GROUP + " Doppeln ist Phase 1 ein KO-System.");
         }
         // Doppel (Phase 1): genau eine Gruppe, jeder gegen jeden; Vereinsgleichheit spielt keine Rolle
-        int groupCount = c.isDoubles() && !c.isPhase() ? 1 : plannedGroupCount(c);
+        int groupCount = c.isPureDoubles() && !c.isPhase() ? 1 : plannedGroupCount(c);
         List<List<Entrant>> groups = GroupDraw.draw(entrantsOf(c), groupCount,
                 seeded ? c.getGroupSeeding() : GroupDraw.Seeding.RANDOM, c.isAvoidSameClub() && !c.isDoubles(), random);
         c.setMode(TournamentMode.GROUPS);
@@ -512,7 +567,7 @@ public final class Tournament {
     /** Lost die 1. Runde im Schweizer System aus; die weiteren Runden werden nach der Tabelle gepaart. */
     public void drawSwiss(PlayingClass c, boolean seeded, java.util.Random random) {
         requireNotStarted(c);
-        if (c.isDoubles()) throw new IllegalStateException("Das Schweizer System gibt es für Doppel nicht.");
+        if (c.isDoubles()) throw new IllegalStateException("Das Schweizer System gibt es für Doppel und 2er/3er Turniere nicht.");
         List<Entrant> entrants = entrantsOf(c);
         if (entrants.size() < 2) throw new IllegalArgumentException("Für das Schweizer System braucht es mindestens 2 Teilnehmende.");
         List<Entrant> order = new java.util.ArrayList<>(entrants);
@@ -740,7 +795,7 @@ public final class Tournament {
     private java.util.Map<String, Entrant> entrantIndex(PlayingClass c) {
         java.util.Map<String, Entrant> byId = new java.util.HashMap<>();
         for (Player p : players) byId.put(p.getId(), Entrant.of(p));
-        for (DoublesPair pair : pairsIn(c)) byId.put("pair:" + pair.getId(), Entrant.of(pair));
+        for (DoublesPair pair : pairsIn(c)) byId.put("pair:" + pair.getId(), c.isTeam() ? Entrant.ofTeam(pair) : Entrant.of(pair));
         return byId;
     }
 
@@ -1263,8 +1318,7 @@ public final class Tournament {
             if (e.startsWith("pair:")) {
                 String pid = e.substring(5);
                 pairs.stream().filter(p -> p.getId().equals(pid)).findFirst().ifPresent(p -> {
-                    if (p.getFirst() != null) ids.add(p.getFirst().getId());
-                    if (p.getSecond() != null) ids.add(p.getSecond().getId());
+                    for (Player x : p.members()) ids.add(x.getId());
                 });
             } else {
                 ids.add(e);
@@ -1460,6 +1514,7 @@ public final class Tournament {
         String name = base;
         for (int k = 2; findClass(name).isPresent(); k++) name = base + " (" + k + ")";
         PlayingClass next = new PlayingClass(name, c.getDiscipline(), c.getType(), null, null);
+        next.setWomanRequired(c.isWomanRequired());
         next.setSourceClass(c.getName());      // vor addClass: erscheint so nicht in der Klassenliste
         addClass(next);
         next.setLotSeed(random.nextLong() | 1L);
@@ -2100,8 +2155,10 @@ public final class Tournament {
         DoublesPair old = pairs.stream().filter(x -> x.getId().equals(pid)).findFirst().orElse(null);
         if (old == null || !old.isComplete()) return null;
         DoublesPair copy = new DoublesPair(to.getName(), old.getFirst(), old.getSecond());
+        copy.setCapacity(old.getCapacity());
+        copy.setThird(old.getThird());
         pairs.add(copy);
-        Entrant now = Entrant.of(copy);
+        Entrant now = to.isTeam() ? Entrant.ofTeam(copy) : Entrant.of(copy);
         idMap.put(e.id(), now.id());
         return now;
     }
@@ -2320,6 +2377,169 @@ public final class Tournament {
         markModified();
     }
 
+    // --- 2er/3er Turnier: Begegnung Team gegen Team = ein Spiel ------------------------------------
+
+    /** Eine Partie einer Begegnung: Bezeichnung und Positionen (0-basiert) beider Teams. */
+    public record Rubber(String label, int[] posA, int[] posB) {
+    }
+
+    /** Ist das Spiel eine Team-Begegnung (2er/3er Turnier)? */
+    public boolean isTeamMatch(Match m) {
+        PlayingClass c = m == null ? null : findClass(m.getClassName()).orElse(null);
+        return c != null && rootOf(c).isTeam();
+    }
+
+    /** Bezeichnungen der Positionen eines Teams, z. B. „H1“, „H2“, „D“ bzw. „1“, „2“, „3“. */
+    public List<String> teamPositions(PlayingClass c) {
+        PlayingClass root = rootOf(c);
+        if (root.getDiscipline() == Discipline.TEAM3) return root.isWomanRequired() ? List.of("H1", "H2", "D") : List.of("1", "2", "3");
+        return List.of("1", "2");
+    }
+
+    /**
+     * Partien einer Begegnung (immer alle werden gespielt): 3er Turnier 5 Partien; 2er Turnier in der Gruppenphase 3,
+     * im KO-System 5.
+     */
+    public List<Rubber> rubbersOf(Match m) {
+        PlayingClass c = findClass(m.getClassName()).orElse(null);
+        if (c == null) return List.of();
+        PlayingClass root = rootOf(c);
+        if (root.getDiscipline() == Discipline.TEAM3) {
+            if (root.isWomanRequired()) {
+                return List.of(new Rubber("Mixed", new int[]{1, 2}, new int[]{1, 2}),
+                        new Rubber("Herren-Einzel", new int[]{0}, new int[]{0}),
+                        new Rubber("Damen-Einzel", new int[]{2}, new int[]{2}),
+                        new Rubber("Herren-Doppel", new int[]{0, 1}, new int[]{0, 1}),
+                        new Rubber("Mixed", new int[]{0, 2}, new int[]{0, 2}));
+            }
+            return List.of(new Rubber("Doppel 1", new int[]{1, 2}, new int[]{1, 2}),
+                    new Rubber("Einzel 1", new int[]{0}, new int[]{0}),
+                    new Rubber("Einzel 2", new int[]{2}, new int[]{2}),
+                    new Rubber("Doppel 2", new int[]{0, 1}, new int[]{0, 1}),
+                    new Rubber("Doppel 3", new int[]{0, 2}, new int[]{0, 2}));
+        }
+        if (root.getDiscipline() == Discipline.TEAM2) {
+            List<Rubber> list = new java.util.ArrayList<>(List.of(
+                    new Rubber("Einzel", new int[]{0}, new int[]{0}),
+                    new Rubber("Einzel", new int[]{1}, new int[]{1}),
+                    new Rubber("Doppel", new int[]{0, 1}, new int[]{0, 1})));
+            if (c.getMode() == TournamentMode.KNOCKOUT || m.isKnockout()) {
+                list.add(new Rubber("Einzel", new int[]{0}, new int[]{1}));
+                list.add(new Rubber("Einzel", new int[]{1}, new int[]{0}));
+            }
+            return list;
+        }
+        return List.of();
+    }
+
+    /** Mitglieder eines Teams (Partei) in Team-Reihenfolge. */
+    public List<Player> teamMembers(String entrantId) {
+        return personsOf(entrantId);
+    }
+
+    /** Standard-Aufstellung eines Teams: Reihenfolge im Team (2er/3er mit Dame: Dame hinten). */
+    public List<String> defaultLineup(Match m, String entrantId) {
+        List<Player> ms = new java.util.ArrayList<>(personsOf(entrantId));
+        PlayingClass c = findClass(m.getClassName()).orElse(null);
+        if (c != null && rootOf(c).isWomanRequired()) {
+            ms.sort(java.util.Comparator.comparingInt(p -> p.getSex() == de.hts.player.Sex.FEMALE ? 1 : 0));
+        }
+        return ms.stream().map(Player::getId).toList();
+    }
+
+    private Player playerById(String id) {
+        for (Player p : players) if (p.getId().equals(id)) return p;
+        return null;
+    }
+
+    /** Vorgabe einer Partie (positiv = Team A) nach den Vorgaberegeln, 0 ohne Vorgabeturnier/Aufstellung. */
+    public int rubberHandicap(Match m, Rubber r, List<String> lineupA, List<String> lineupB) {
+        if (!isHandicapReady() || lineupA == null || lineupB == null) return 0;
+        List<Player> a = new java.util.ArrayList<>(), b = new java.util.ArrayList<>();
+        for (int i : r.posA()) if (i < lineupA.size() && playerById(lineupA.get(i)) != null) a.add(playerById(lineupA.get(i)));
+        for (int i : r.posB()) if (i < lineupB.size() && playerById(lineupB.get(i)) != null) b.add(playerById(lineupB.get(i)));
+        if (a.size() != r.posA().length || b.size() != r.posB().length) return 0;
+        PlayingClass c = findClass(m.getClassName()).orElse(null);
+        return handicapBetween(a, b, womenTable(c == null ? null : rootOf(c)));
+    }
+
+    private void checkLineup(Match m, String entrantId, List<String> lineup, String side) {
+        PlayingClass c = rootOf(findClass(m.getClassName()).orElseThrow());
+        List<Player> members = personsOf(entrantId);
+        int size = c.teamSize();
+        if (lineup == null || lineup.size() != size || new java.util.HashSet<>(lineup).size() != size) {
+            throw new IllegalArgumentException("Bitte die Aufstellung von Team " + side + " vollständig wählen (jede Person einmal).");
+        }
+        java.util.Set<String> ids = new java.util.HashSet<>();
+        members.forEach(p -> ids.add(p.getId()));
+        if (!ids.containsAll(lineup)) throw new IllegalArgumentException("Die Aufstellung von Team " + side + " enthält Fremde.");
+        if (c.isWomanRequired()) {
+            int pos = c.getDiscipline() == Discipline.TEAM3 ? 2 : 1;
+            boolean hasWoman = members.stream().anyMatch(p -> p.getSex() == de.hts.player.Sex.FEMALE);
+            Player atPos = playerById(lineup.get(pos));
+            if (hasWoman && (atPos == null || atPos.getSex() != de.hts.player.Sex.FEMALE)) {
+                throw new IllegalArgumentException("Team " + side + ": Auf Position " + teamPositions(c).get(pos) + " muss eine Dame spielen.");
+            }
+        }
+    }
+
+    /**
+     * Ergebnis einer Team-Begegnung: Aufstellung beider Teams und je Partie der Sieger (1 = Team A, 2 = Team B).
+     * Es werden immer alle Partien gespielt; das Spiel zählt die gewonnenen Partien (z. B. 3:2). Funktioniert auch
+     * als Korrektur (bei Siegerwechsel im KO-System wie {@link #correctResult(Match, List, int, boolean)}).
+     */
+    public void recordTeamResult(Match m, List<String> lineupA, List<String> lineupB, List<Integer> winners, boolean resetFollowing) {
+        if (!isTeamMatch(m)) throw new IllegalArgumentException("Kein Spiel eines 2er/3er Turniers.");
+        if (!m.isReady()) throw new IllegalStateException("Die Gegner dieses Spiels stehen noch nicht fest.");
+        boolean correction = m.getStatus() == MatchStatus.DONE;
+        if (!correction && m.getStatus() != MatchStatus.ACTIVE && m.getStatus() != MatchStatus.QUEUED) {
+            throw new IllegalStateException("Ein Ergebnis kann nur für ein aktives oder eingereihtes Spiel erfasst werden.");
+        }
+        List<Rubber> rubbers = rubbersOf(m);
+        if (winners == null || winners.size() != rubbers.size() || winners.stream().anyMatch(w -> w == null || (w != 1 && w != 2))) {
+            throw new IllegalArgumentException("Bitte für jede Partie den Sieger angeben (es werden immer alle Partien gespielt).");
+        }
+        checkLineup(m, m.getA(), lineupA, "A");
+        checkLineup(m, m.getB(), lineupB, "B");
+        List<int[]> sets = new java.util.ArrayList<>();
+        int wa = 0, wb = 0;
+        for (int w : winners) {
+            sets.add(w == 1 ? new int[]{1, 0} : new int[]{0, 1});
+            if (w == 1) wa++;
+            else wb++;
+        }
+        PlayingClass c = findClass(m.getClassName()).orElse(null);
+        if (correction) {
+            String newWinner = wa > wb ? m.getA() : m.getB();
+            if (m.isKnockout() && !newWinner.equals(m.winner()) && c != null) {
+                List<Match> affected = new java.util.ArrayList<>();
+                for (int r = m.getKoRound() + 1, idx = m.getKoIndex() / 2; ; r++, idx /= 2) {
+                    Match next = koMatch(c, r, idx);
+                    if (next == null) break;
+                    if (next.getStatus() == MatchStatus.DONE || next.getStatus().atTable()) affected.add(next);
+                }
+                if (!affected.isEmpty()) {
+                    if (!resetFollowing) throw new FollowUpConflict(affected);
+                    for (Match x : affected) x.clearScore();
+                    PlayingClass root = rootOf(c);
+                    if (root.isFinished()) root.setFinishedAt(null);
+                }
+            }
+        }
+        m.setScore(sets, 0, wa, wb);
+        m.setLineups(lineupA, lineupB);
+        if (correction) {
+            syncCarriedCopies(m);
+        } else {
+            m.setStatus(MatchStatus.DONE);
+            m.setTable(null);
+            m.setFinishedAt(LocalDateTime.now().withNano(0));
+        }
+        if (m.isKnockout() && c != null) resolveKnockout(c);
+        dispatch();
+        markModified();
+    }
+
     /** Kurzform für Tests/Importe: nur Satzverhältnis (z. B. 3:1); die Sätze werden als 11:0 bzw. 0:11 erzeugt. */
     public void recordResult(Match m, int setsA, int setsB) {
         if (setsA < 0 || setsB < 0 || setsA == setsB) {
@@ -2496,7 +2716,7 @@ public final class Tournament {
             String pid = entrantId.substring(5);
             for (DoublesPair pair : pairs) {
                 if (!pair.getId().equals(pid)) continue;
-                for (Player p : new Player[]{pair.getFirst(), pair.getSecond()}) {
+                for (Player p : pair.members()) {
                     if (p != null) out.add(new String[]{p.getDisplayName(), p.getClubName()});
                 }
             }
@@ -2519,7 +2739,8 @@ public final class Tournament {
             for (DoublesPair pair : pairs) {
                 if (!pair.getId().equals(pid)) continue;
                 return de.hts.player.PlayerFilter.matchesPerson(pair.getFirst(), query)
-                        || de.hts.player.PlayerFilter.matchesPerson(pair.getSecond(), query);
+                        || de.hts.player.PlayerFilter.matchesPerson(pair.getSecond(), query)
+                        || de.hts.player.PlayerFilter.matchesPerson(pair.getThird(), query);
             }
             return false;
         }
@@ -2556,7 +2777,7 @@ public final class Tournament {
         for (DoublesPair pair : pairs) {
             if (!pair.getId().equals(pid)) continue;
             List<String[]> out = new java.util.ArrayList<>();
-            for (Player p : new Player[]{pair.getFirst(), pair.getSecond()}) {
+            for (Player p : pair.members()) {
                 if (p != null) out.add(new String[]{p.getDisplayName(), p.getClubName()});
             }
             return out.isEmpty() ? null : out;
@@ -2809,6 +3030,12 @@ public final class Tournament {
     public boolean isTest() { return test; }
     public void setTest(boolean b) { if (test != b) { test = b; markModified(); } }
 
+    /** Über „Fertiges Turnier importieren (click-TT)“ angelegt (Chip in der Turnierübersicht). */
+    private boolean importedFinished;
+
+    public boolean isImportedFinished() { return importedFinished; }
+    public void setImportedFinished(boolean b) { if (importedFinished != b) { importedFinished = b; markModified(); } }
+
     // --- Vorgabeturnier ---------------------------------------------------------------------------
     /**
      * Vorgabeturnier, CSV-Import: ersetzt ALLE bisherigen Teilnehmenden (samt Klassenzuordnungen und Doppelpaarungen)
@@ -2870,8 +3097,7 @@ public final class Tournament {
             String pid = entrantId.substring(5);
             for (DoublesPair pair : pairs) {
                 if (!pair.getId().equals(pid)) continue;
-                if (pair.getFirst() != null) out.add(pair.getFirst());
-                if (pair.getSecond() != null) out.add(pair.getSecond());
+                out.addAll(pair.members());
             }
             return out;
         }
@@ -2892,6 +3118,7 @@ public final class Tournament {
      */
     public int handicapOf(Match m) {
         if (!isHandicapReady() || m == null || m.getA() == null || m.getB() == null) return 0;
+        if (isTeamMatch(m)) return 0;              // Team-Begegnung: Vorgabe je Partie (siehe rubberHandicap)
         PlayingClass c = findClass(m.getClassName()).orElse(null);
         return handicapBetween(personsOf(m.getA()), personsOf(m.getB()), womenTable(c == null ? null : rootOf(c)));
     }
@@ -2946,24 +3173,36 @@ public final class Tournament {
         PlayingClass root = rootOf(c);
         boolean women = womenTable(root);
         // Personen der Klasse samt der Tabelle, nach der sie eingestuft werden
-        java.util.Map<Player, Boolean> persons = new java.util.LinkedHashMap<>();
+        // Personen der Klasse samt der Tabellen, nach denen sie eingestuft werden
+        java.util.Map<Player, java.util.Set<Boolean>> persons = new java.util.LinkedHashMap<>();
         if (root.isDoubles()) {
             for (DoublesPair pair : pairsIn(root)) {
-                List<Player> ps = new java.util.ArrayList<>();
-                if (pair.getFirst() != null) ps.add(pair.getFirst());
-                if (pair.getSecond() != null) ps.add(pair.getSecond());
+                List<Player> ps = pair.members();
                 boolean mixed = isMixedPair(ps);
-                for (Player p : ps) persons.put(p, mixed ? p.getSex() == de.hts.player.Sex.FEMALE : women);
+                for (Player p : ps) {
+                    java.util.Set<Boolean> tables = persons.computeIfAbsent(p, k -> new java.util.HashSet<>());
+                    boolean female = p.getSex() == de.hts.player.Sex.FEMALE;
+                    if (root.isTeam()) {
+                        tables.add(women);                 // Einzel/Doppel der Begegnung nach dem Klassentyp
+                        if (female) tables.add(true);      // Mixed-Partien: Dame–Dame nach den Damen-Grenzen
+                    } else {
+                        tables.add(mixed ? female : women);
+                    }
+                }
+                if (root.isTeam() && pair.isComplete() && root.isWomanRequired()
+                        && ps.stream().noneMatch(p -> p.getSex() == de.hts.player.Sex.FEMALE)) {
+                    out.add("Team " + Entrant.ofTeam(pair).name() + " hat keine Dame (mindestens 1 weiblich verlangt).");
+                }
             }
         } else {
-            for (Player p : players) if (p.isInClass(root.getName())) persons.put(p, women);
+            for (Player p : players) if (p.isInClass(root.getName())) persons.put(p, new java.util.HashSet<>(java.util.Set.of(women)));
         }
         List<String> noTtr = new java.util.ArrayList<>();
         persons.keySet().forEach(p -> { if (p.getTtr() == null) noTtr.add(p.getDisplayName()); });
         if (!noTtr.isEmpty()) out.add("Ohne TTR-Wert: " + String.join(", ", noTtr) + " – bitte unter „Teilnehmende“ einen Wert eintragen.");
         HandicapRules r = handicapRules;
         for (boolean w : new boolean[]{false, true}) {
-            List<Player> group = persons.entrySet().stream().filter(e -> e.getValue() == w && e.getKey().getTtr() != null)
+            List<Player> group = persons.entrySet().stream().filter(e -> e.getValue().contains(w) && e.getKey().getTtr() != null)
                     .map(java.util.Map.Entry::getKey).toList();
             if (group.isEmpty()) continue;
             String table = w ? "Damen" : "Erwachsene";
@@ -3021,7 +3260,14 @@ public final class Tournament {
                 break;
             }
             if (next == null) break;
-            recordResult(next, randomSets(winningSets(next), random), 0);
+            if (isTeamMatch(next)) {
+                // Team-Begegnung: Standard-Aufstellung, Sieger jeder Partie zufällig
+                List<Integer> winners = new java.util.ArrayList<>();
+                for (int i = 0; i < rubbersOf(next).size(); i++) winners.add(random.nextBoolean() ? 1 : 2);
+                recordTeamResult(next, defaultLineup(next, next.getA()), defaultLineup(next, next.getB()), winners, false);
+            } else {
+                recordResult(next, randomSets(winningSets(next), random), 0);
+            }
             count++;
         }
         return count;

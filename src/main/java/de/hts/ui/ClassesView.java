@@ -543,7 +543,7 @@ public final class ClassesView {
         if (has) {
             classTitle.setText(c.getName());
             long n = c.isDoubles() ? tournament.pairsIn(c).stream().filter(DoublesPair::isComplete).count() : tournament.countIn(c);
-            classCriteria.setText(c.getDiscipline().getLabel() + " · " + n + (c.isDoubles() ? " Doppel" : " Teilnehmende")
+            classCriteria.setText(c.getDiscipline().getLabel() + " · " + n + (c.isTeam() ? " Teams" : c.isDoubles() ? " Doppel" : " Teilnehmende")
                     + " in der Klasse · " + c.getType().getLabel()
                     + (c.getMode() != de.hts.tournament.TournamentMode.NONE ? " · " + c.getMode().getLabel() : ""));
             classCriteria.setTooltip(new Tooltip(tournament.criteriaText(c)));
@@ -558,7 +558,9 @@ public final class ClassesView {
                 }
             }
             dndHint.setText(dbl
-                    ? "Teilnehmende aus der linken Liste auf einen freien Platz ziehen oder auf „Neues Doppel“. "
+                    ? c.isTeam() ? "Teilnehmende aus der linken Liste auf einen freien Platz eines Teams ziehen oder auf „Neues Team“. "
+                    + "Teamname aus den Nachnamen. In der Klasse = angemeldet."
+                    : "Teilnehmende aus der linken Liste auf einen freien Platz ziehen oder auf „Neues Doppel“. "
                     + "Aus einer Paarung zurück in die Liste ziehen entfernt sie. In der Klasse = angemeldet."
                     : "Teilnehmende per Drag & Drop, Doppelklick oder mit den Pfeil-Knöpfen zuordnen. "
                     + "In der Klasse = angemeldet, Verfügbar = nicht angemeldet.");
@@ -605,8 +607,9 @@ public final class ClassesView {
         middle.getChildren().clear();
         if (c == null) return;
         if (c.isDoubles()) {
-            Button pair = new Button("Als Doppel →");
-            pair.setTooltip(new Tooltip("Ein oder zwei markierte Teilnehmende als neue Paarung anlegen"));
+            Button pair = new Button(c.isTeam() ? "Als Team →" : "Als Doppel →");
+            pair.setTooltip(new Tooltip(c.isTeam() ? "Bis zu " + c.teamSize() + " markierte Teilnehmende als neues Team anlegen"
+                    : "Ein oder zwei markierte Teilnehmende als neue Paarung anlegen"));
             pair.setOnAction(e -> pairSelected());
             pair.disableProperty().bind(availableTable.getSelectionModel().selectedItemProperty().isNull());
             pair.setMaxWidth(Double.MAX_VALUE);
@@ -664,8 +667,8 @@ public final class ClassesView {
             long incomplete = pairs.size() - complete;
             int shown = rebuildPairs(c);
             String pq = pairSearch.getText() == null ? "" : pairSearch.getText().trim();
-            assignedTitle.setText("Doppelpaarungen (" + (pq.isEmpty() ? "" : shown + " von ") + complete + maxSuffix(c)
-                    + (incomplete > 0 ? ", " + incomplete + " ohne Partner/in" : "") + ")");
+            assignedTitle.setText((c.isTeam() ? "Teams (" : "Doppelpaarungen (") + (pq.isEmpty() ? "" : shown + " von ") + complete + maxSuffix(c)
+                    + (incomplete > 0 ? ", " + incomplete + (c.isTeam() ? " unvollständig" : " ohne Partner/in") : "") + ")");
         } else {
             assignedTitle.setText("In der Klasse (" + (assigned.size() == inTotal ? String.valueOf(inTotal)
                     : assigned.size() + " von " + inTotal) + maxSuffix(c) + ")");
@@ -705,16 +708,17 @@ public final class ClassesView {
         if (c == null || !c.isDoubles()) return;
         try {
             Tournament.PartnerDraw r = tournament.drawPartners(c, new java.util.Random());
-            String msg = r.pairs().size() + " Doppel zugelost"
-                    + (r.leftOver() != null ? " – übrig (ohne Partner/in, spielt so nicht mit): " + r.leftOver().getDisplayName() : "") + ".";
+            String what = c.isTeam() ? " Teams" : " Doppel";
+            String left = String.join(", ", r.leftOvers().stream().map(Player::getDisplayName).toList());
+            String msg = r.pairs().size() + what + " zugelost" + (left.isEmpty() ? "" : " – übrig (spielt so nicht mit): " + left) + ".";
             status.accept(msg);
-            if (r.leftOver() != null) {
-                Alert a = new Alert(Alert.AlertType.INFORMATION, r.pairs().size() + " Doppel wurden zugelost.\n\n"
-                        + r.leftOver().getDisplayName() + " bleibt übrig (ungerade Zahl) und spielt ohne Partner/in nicht mit.",
+            if (!left.isEmpty()) {
+                Alert a = new Alert(Alert.AlertType.INFORMATION, r.pairs().size() + what + " wurden zugelost.\n\n"
+                        + left + (r.leftOvers().size() == 1 ? " bleibt" : " bleiben") + " übrig und spielt so nicht mit.",
                         ButtonType.OK);
                 a.initOwner(window());
                 a.setHeaderText(null);
-                a.setTitle("Partner zulosen");
+                a.setTitle(c.isTeam() ? "Teams zulosen" : "Partner zulosen");
                 a.showAndWait();
             }
             changed();
@@ -728,20 +732,21 @@ public final class ClassesView {
         long open = tournament.pairsIn(c).stream().filter(p -> !p.isComplete()).count()
                 + tournament.getPlayers().stream().filter(p -> p.getRegistrations().contains(c.getName())
                 && tournament.pairOf(p, c).isEmpty()).count();
-        partnerBtn.setDisable(open < 2 || c.isDrawn() || c.isStarted());
-        partnerBtn.setText(open >= 2 ? "Partner zulosen (" + open + ")" : "Partner zulosen");
+        String drawText = c.isTeam() ? "Teams zulosen" : "Partner zulosen";
+        partnerBtn.setDisable(open < c.teamSize() || c.isDrawn() || c.isStarted());
+        partnerBtn.setText(open >= 2 ? drawText + " (" + open + ")" : drawText);
         pairsList.getChildren().clear();
         int i = 1, shown = 0;
         String q = pairSearch.getText() == null ? "" : pairSearch.getText().trim();
         java.util.Set<String> over = tournament.overLimit(c);
         for (DoublesPair pair : tournament.pairsIn(c)) {
             int number = i++;              // Nummer bleibt auch bei aktiver Suche die ursprüngliche
-            if (!q.isEmpty() && !PlayerFilter.matchesPerson(pair.getFirst(), q) && !PlayerFilter.matchesPerson(pair.getSecond(), q)) continue;
+            if (!q.isEmpty() && pair.members().stream().noneMatch(pm -> PlayerFilter.matchesPerson(pm, q))) continue;
             shown++;
             Node card = pairCard(c, pair, number);
             if (over.contains(pair.getId())) {
                 card.getStyleClass().add("over-limit");
-                Tooltip.install(card, new Tooltip("Über der Höchstzahl von " + c.getMaxParticipants() + " Doppeln"));
+                Tooltip.install(card, new Tooltip("Über der Höchstzahl von " + c.getMaxParticipants() + (c.isTeam() ? " Teams" : " Doppeln")));
             }
             pairsList.getChildren().add(card);
         }
@@ -761,10 +766,18 @@ public final class ClassesView {
         amp.getStyleClass().add("hint");
         HBox.setHgrow(slot1, Priority.ALWAYS);
         HBox.setHgrow(slot2, Priority.ALWAYS);
+        Node slot3 = null;
+        Label amp2 = null;
+        if (pair.getCapacity() >= 3) {
+            slot3 = slot(c, pair, pair.getThird());
+            HBox.setHgrow(slot3, Priority.ALWAYS);
+            amp2 = new Label("&");
+            amp2.getStyleClass().add("hint");
+        }
 
         Button remove = new Button("", Icons.of(Icons.TRASH, 14));
         remove.getStyleClass().add("icon-button");
-        remove.setTooltip(new Tooltip("Paarung auflösen"));
+        remove.setTooltip(new Tooltip(c.isTeam() ? "Team auflösen" : "Paarung auflösen"));
         remove.setDisable(c.isDrawn());
         remove.setOnAction(e -> {
             if (isLocked(c)) return;
@@ -777,9 +790,29 @@ public final class ClassesView {
         Label avgLabel = new Label(avg == null ? "Ø TTR –" : "Ø TTR " + avg);
         avgLabel.getStyleClass().add("avg-ttr");
         avgLabel.setMinWidth(78);
-        avgLabel.setTooltip(new Tooltip("TTR des Doppels für die Setzung: (TTR 1 + TTR 2) / 2; fehlt einer, zählt der Partnerwert; fehlen beide, 0"));
-        HBox card = new HBox(10, nr, slot1, amp, slot2, avgLabel, remove);
-        card.setAlignment(Pos.CENTER_LEFT);
+        avgLabel.setTooltip(new Tooltip(c.isTeam() ? "Durchschnitts-TTR des Teams (für die Setzung)"
+                : "TTR des Doppels für die Setzung: (TTR 1 + TTR 2) / 2; fehlt einer, zählt der Partnerwert; fehlen beide, 0"));
+        javafx.scene.layout.Pane card;
+        if (c.isTeam()) {
+            // Team: oben Nummer, Teamname, Ø TTR und Auflösen; darunter die Mitglieder nebeneinander
+            Label tn = new Label(de.hts.tournament.Entrant.ofTeam(pair).name());
+            tn.getStyleClass().add("class-name");
+            tn.setTooltip(new Tooltip("Teamname (aus den Nachnamen)"));
+            Region sp = new Region();
+            HBox.setHgrow(sp, Priority.ALWAYS);
+            HBox top = new HBox(10, nr, tn, sp, avgLabel, remove);
+            top.setAlignment(Pos.CENTER_LEFT);
+            HBox members = new HBox(8, slot1, amp, slot2);
+            if (slot3 != null) members.getChildren().addAll(amp2, slot3);
+            members.setAlignment(Pos.CENTER_LEFT);
+            members.setPadding(new Insets(0, 0, 0, 34));
+            VBox v = new VBox(6, top, members);
+            card = v;
+        } else {
+            HBox h = new HBox(10, nr, slot1, amp, slot2, avgLabel, remove);
+            h.setAlignment(Pos.CENTER_LEFT);
+            card = h;
+        }
         card.getStyleClass().add("pair-card");
         if (!pair.isComplete()) card.getStyleClass().add("incomplete");
 
@@ -790,12 +823,13 @@ public final class ClassesView {
 
     private Node slot(PlayingClass c, DoublesPair pair, Player p) {
         if (p == null) {
-            Label empty = new Label("Partner/in hierher ziehen");
+            Label empty = new Label(c.isTeam() ? "Mitglied hierher ziehen" : "Partner/in hierher ziehen");
             empty.getStyleClass().add("slot-empty");
             empty.setMaxWidth(Double.MAX_VALUE);
             return empty;
         }
-        Label l = new Label(p.getDisplayName() + (p.getTtr() != null ? "  (" + p.getTtr() + ")" : ""));
+        String shown = c.isTeam() && p.getLastname() != null ? p.getLastname() : p.getDisplayName();   // Team: kurz (Nachname)
+        Label l = new Label(shown + (p.getTtr() != null ? "  (" + p.getTtr() + ")" : ""));
         l.getStyleClass().add("slot");
         l.setMaxWidth(Double.MAX_VALUE);
         PlayingClass.Fit fit = tournament.fit(c, p);
@@ -814,7 +848,8 @@ public final class ClassesView {
     }
 
     private Node newPairDropZone(PlayingClass c) {
-        Label zone = new Label("＋  Neues Doppel – eine oder zwei Personen hierher ziehen", null);
+        Label zone = new Label(c.isTeam() ? "＋  Neues Team – bis zu " + c.teamSize() + " Personen hierher ziehen"
+                : "＋  Neues Doppel – eine oder zwei Personen hierher ziehen", null);
         zone.getStyleClass().add("drop-zone");
         zone.setMaxWidth(Double.MAX_VALUE);
         installDropTarget(zone, players -> dropOnNewPair(c, players));
@@ -927,12 +962,12 @@ public final class ClassesView {
     private boolean dropOnPair(DoublesPair pair, List<Player> players) {
         if (isLocked(selectedClass())) return false;
         List<Player> incoming = players.stream().filter(p -> !pair.contains(p)).toList();
-        int free = (pair.getFirst() == null ? 1 : 0) + (pair.getSecond() == null ? 1 : 0);
+        int free = pair.getCapacity() - pair.members().size();
         if (incoming.isEmpty()) return false;
         if (incoming.size() > free) {
             status.accept(free == 0
                     ? "Die Paarung " + pair.getDisplayName() + " ist schon vollständig – zuerst jemanden herausziehen."
-                    : "Auf diese Paarung passt nur noch eine Person.");
+                    : "Auf diese Paarung passt nur noch " + (free == 1 ? "eine Person." : free + " Personen."));
             return false;
         }
         incoming.forEach(p -> tournament.addToPair(pair, p));
@@ -942,11 +977,13 @@ public final class ClassesView {
 
     private boolean dropOnNewPair(PlayingClass c, List<Player> players) {
         if (isLocked(c)) return false;
-        if (players.size() > 2) {
-            status.accept("Ein Doppel besteht aus genau zwei Personen – bitte höchstens zwei ziehen.");
+        if (players.size() > c.teamSize()) {
+            status.accept(c.isTeam() ? "Ein Team besteht aus " + c.teamSize() + " Personen – bitte höchstens " + c.teamSize() + " ziehen."
+                    : "Ein Doppel besteht aus genau zwei Personen – bitte höchstens zwei ziehen.");
             return false;
         }
-        DoublesPair pair = tournament.createPair(c, players.get(0), players.size() > 1 ? players.get(1) : null);
+        DoublesPair pair = c.isTeam() ? tournament.createTeam(c, players)
+                : tournament.createPair(c, players.get(0), players.size() > 1 ? players.get(1) : null);
         status.accept("Neue Paarung: " + pair.getDisplayName()
                 + (pair.isComplete() ? "" : " – Partner/in noch auf die Karte ziehen."));
         return true;
@@ -1249,7 +1286,7 @@ public final class ClassesView {
             Label badge = new Label(c.getDiscipline().getLabel());
             badge.getStyleClass().addAll("badge", c.isDoubles() ? "badge-doubles" : "badge-singles");
             String countText = c.isDoubles()
-                    ? tournament.pairsIn(c).stream().filter(DoublesPair::isComplete).count() + " Doppel"
+                    ? tournament.pairsIn(c).stream().filter(DoublesPair::isComplete).count() + (c.isTeam() ? " Teams" : " Doppel")
                     : tournament.countIn(c) + " Teilnehmende";
             Label count = new Label(countText);
             count.getStyleClass().add("hint");

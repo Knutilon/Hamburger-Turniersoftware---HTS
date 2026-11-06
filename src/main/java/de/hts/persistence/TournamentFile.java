@@ -74,14 +74,17 @@ public final class TournamentFile {
     private static final String ROOT = "hts-tournament";
 
     /** Eine gespeicherte Doppelpaarung (über die IDs der Teilnehmenden). */
-    public record PairData(String id, String className, String firstId, String secondId) {
+    public record PairData(String id, String className, String firstId, String secondId, String thirdId) {
+        public PairData(String id, String className, String firstId, String secondId) {
+            this(id, className, firstId, secondId, null);
+        }
     }
 
     static final String TABLE_NAME_KEY = "tname.";
 
     private static Map<String, String> readFolders(Element root) {
         Map<String, String> m = new java.util.LinkedHashMap<>();
-        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on", "handicap", "hc")) {
+        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on", "handicap", "hc", "imported")) {
             String v = root.getAttribute(k);
             if (v != null && !v.isBlank()) m.put(k, v);
         }
@@ -131,7 +134,8 @@ public final class TournamentFile {
             List<PairData> pairs = t.getPairs().stream()
                     .map(p -> new PairData(p.getId(), p.getClassName(),
                             p.getFirst() == null ? null : p.getFirst().getId(),
-                            p.getSecond() == null ? null : p.getSecond().getId()))
+                            p.getSecond() == null ? null : p.getSecond().getId(),
+                            p.getThird() == null ? null : p.getThird().getId()))
                     .toList();
             return new Content(t.getId(), t.getName(), t.getDate(), t.getLocation(), t.getStartedAt(),
                     new ArrayList<>(t.getClasses()), new ArrayList<>(t.getPlayers()), pairs,
@@ -146,6 +150,7 @@ public final class TournamentFile {
             if (t.getPdfDir() != null) m.put("dir-pdf", t.getPdfDir());
             if (t.getXmlDir() != null) m.put("dir-xml", t.getXmlDir());
             if (t.isTest()) m.put("test", "true");
+            if (t.isImportedFinished()) m.put("imported", "true");
             if (t.isHandicap()) {
                 m.put("handicap", "true");
                 m.put("hc", t.getHandicapRules().encode());
@@ -171,7 +176,8 @@ public final class TournamentFile {
                 Player b = pd.secondId() == null ? null : byId.get(pd.secondId());
                 if (a == null && b == null) continue;
                 if (a == null) { a = b; b = null; }
-                t.restorePair(pd.id(), pd.className(), a, b);
+                Player c3 = pd.thirdId() == null ? null : byId.get(pd.thirdId());
+                t.restorePair(pd.id(), pd.className(), a, b, c3);
             }
             t.ensurePairsForEntries();
             t.setTableCount(tables);
@@ -183,6 +189,7 @@ public final class TournamentFile {
                 t.setXmlDir(folders.get("dir-xml"));
                 t.setTest("true".equals(folders.get("test")));
                 t.setHandicap("true".equals(folders.get("handicap")));
+                t.setImportedFinished("true".equals(folders.get("imported")));
                 if (folders.get("hc") != null) t.restoreHandicapRules(de.hts.tournament.HandicapRules.decode(folders.get("hc")));
                 folders.forEach((k, v) -> {
                     if (!k.startsWith(TABLE_NAME_KEY)) return;
@@ -290,7 +297,13 @@ public final class TournamentFile {
                 Element el = doc.createElement("class");
                 el.setAttribute("name", c.getName());
                 el.setAttribute("type", typeCode(c.getType()));
-                el.setAttribute("discipline", c.isDoubles() ? "doubles" : "singles");
+                el.setAttribute("discipline", switch (c.getDiscipline()) {
+                    case SINGLES -> "singles";
+                    case DOUBLES -> "doubles";
+                    case TEAM2 -> "team2";
+                    case TEAM3 -> "team3";
+                });
+                if (c.isWomanRequired()) el.setAttribute("woman-required", "true");
                 set(el, "birthyear-from", c.getBirthyearFrom());
                 set(el, "birthyear-to", c.getBirthyearTo());
                 set(el, "max", c.getMaxParticipants());
@@ -396,6 +409,8 @@ public final class TournamentFile {
                 set(el, "sets-b", m.getSetsB());
                 if (!m.getPoints().isEmpty()) el.setAttribute("points", de.hts.tournament.Scoring.encode(m.getPoints()));
                 if (m.getRetired() != 0) el.setAttribute("retired", String.valueOf(m.getRetired()));
+                if (!m.getLineupA().isEmpty()) el.setAttribute("lineup-a", String.join(",", m.getLineupA()));
+                if (!m.getLineupB().isEmpty()) el.setAttribute("lineup-b", String.join(",", m.getLineupB()));
                 set(el, "started-at", m.getStartedAt());
                 set(el, "finished-at", m.getFinishedAt());
                 if (m.getPlacement() > 0) el.setAttribute("placement", String.valueOf(m.getPlacement()));
@@ -413,6 +428,7 @@ public final class TournamentFile {
                 el.setAttribute("class", pd.className());
                 set(el, "first", pd.firstId());
                 set(el, "second", pd.secondId());
+                set(el, "third", pd.thirdId());
                 pairsEl.appendChild(el);
             }
 
@@ -500,8 +516,11 @@ public final class TournamentFile {
                 // Dateien aus HTS 0.3.0 hatten statt "type" ein "sex": weiblich -> Damen, sonst Erwachsene
                 type = "w".equals(attr(el, "sex")) ? ClassType.WOMEN : ClassType.ADULTS;
             }
-            Discipline discipline = "doubles".equals(attr(el, "discipline")) ? Discipline.DOUBLES : Discipline.SINGLES;
+            String dv = attr(el, "discipline");
+            Discipline discipline = "doubles".equals(dv) ? Discipline.DOUBLES : "team2".equals(dv) ? Discipline.TEAM2
+                    : "team3".equals(dv) ? Discipline.TEAM3 : Discipline.SINGLES;
             PlayingClass pc = new PlayingClass(name, discipline, type, intAttr(el, "birthyear-from"), intAttr(el, "birthyear-to"));
+            pc.setWomanRequired("true".equals(attr(el, "woman-required")));
             pc.setMaxParticipants(intAttr(el, "max"));
             pc.setReady("true".equals(attr(el, "ready")));
             try {
@@ -635,7 +654,7 @@ public final class TournamentFile {
         for (int i = 0; i < pairList.getLength(); i++) {
             Element el = (Element) pairList.item(i);
             if (attr(el, "class") != null) {
-                pairs.add(new PairData(attr(el, "id"), attr(el, "class"), attr(el, "first"), attr(el, "second")));
+                pairs.add(new PairData(attr(el, "id"), attr(el, "class"), attr(el, "first"), attr(el, "second"), attr(el, "third")));
             }
         }
         List<Match> matches = new ArrayList<>();
@@ -657,6 +676,9 @@ public final class TournamentFile {
                     de.hts.tournament.Scoring.decode(attr(el, "points")), intOr(el, "retired", 0));
             m.restorePhaseInfo(intOr(el, "placement", 0), "true".equals(attr(el, "carried")));
             m.restoreExport("false".equals(attr(el, "export")), attr(el, "retirement-of"));
+            String la = attr(el, "lineup-a"), lb = attr(el, "lineup-b");
+            m.setLineups(la == null || la.isEmpty() ? List.of() : List.of(la.split(",")),
+                    lb == null || lb.isEmpty() ? List.of() : List.of(lb.split(",")));
             matches.add(m);
         }
         Integer tables = intAttr(root, "tables");

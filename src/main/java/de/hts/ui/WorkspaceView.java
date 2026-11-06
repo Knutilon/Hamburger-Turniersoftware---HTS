@@ -244,7 +244,20 @@ public final class WorkspaceView {
             Button start = new Button("Turnier starten", Icons.of(Icons.START, 16));
             start.getStyleClass().add("navy-pill");
             start.setOnAction(e -> startTournament());
-            startBox.getChildren().add(start);
+            // Start erst mit mindestens 2 Teilnehmenden, 1 Klasse und 1 Tisch – sonst sichtbar, aber deaktiviert
+            List<String> missing = new ArrayList<>();
+            if (tournament.getPlayers().size() < 2) missing.add("mindestens 2 Teilnehmende");
+            if (tournament.getClasses().stream().noneMatch(c -> !c.isPhase())) missing.add("mindestens 1 Klasse");
+            if (tournament.getTableCount() < 1) missing.add("mindestens 1 Tisch");
+            start.setDisable(!missing.isEmpty());
+            if (!missing.isEmpty()) {
+                // Tooltip auch am deaktivierten Knopf: über einen Rahmen um den Knopf
+                javafx.scene.layout.StackPane wrap = new javafx.scene.layout.StackPane(start);
+                javafx.scene.control.Tooltip.install(wrap, new javafx.scene.control.Tooltip("Es fehlen: " + String.join(", ", missing)));
+                startBox.getChildren().add(wrap);
+            } else {
+                startBox.getChildren().add(start);
+            }
         }
     }
 
@@ -271,6 +284,9 @@ public final class WorkspaceView {
 
         startBox.setAlignment(Pos.CENTER_RIGHT);
         tournament.startedAtProperty().addListener((o, a, b) -> updateStartBox());
+        tournament.getPlayers().addListener((javafx.collections.ListChangeListener<Player>) ch -> updateStartBox());
+        tournament.getClasses().addListener((javafx.collections.ListChangeListener<PlayingClass>) ch -> updateStartBox());
+        tournament.tableCountProperty().addListener((o, a, b) -> updateStartBox());
         updateStartBox();
 
         // rechts oben: Knöpfe der Seite, dahinter die Startknöpfe – bei wenig Platz rechtsbündig umbrechen

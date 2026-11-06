@@ -33,9 +33,27 @@ public record Entrant(String id, String name, Integer ttr, String detail) {
     }
 
     public static Entrant of(DoublesPair pair) {
+        if (pair.getCapacity() >= 3 || pair.getThird() != null) {
+            // 3er Team: Teamname aus den Nachnamen
+            java.util.List<String> names = new java.util.ArrayList<>(), clubs = new java.util.ArrayList<>();
+            for (Player p : new Player[]{pair.getFirst(), pair.getSecond(), pair.getThird()}) {
+                names.add(p == null || p.getLastname() == null ? "–" : p.getLastname());
+                if (p != null && p.getClubName() != null && !clubs.contains(p.getClubName())) clubs.add(p.getClubName());
+            }
+            return new Entrant("pair:" + pair.getId(), String.join("/", names), pair.getAverageTtr(),
+                    clubs.isEmpty() ? null : String.join(" / ", clubs));
+        }
         String detail = clubs(pair.getFirst(), pair.getSecond());
         return new Entrant("pair:" + pair.getId(), shortName(pair.getFirst()) + " / " + shortName(pair.getSecond()),
                 pair.getAverageTtr(), detail);
+    }
+
+    /** 2er Team: Teamname aus den Nachnamen, z. B. „Michaelis/Wichary“. */
+    public static Entrant ofTeam(DoublesPair pair) {
+        if (pair.getCapacity() >= 3) return of(pair);
+        String a = pair.getFirst() == null || pair.getFirst().getLastname() == null ? "–" : pair.getFirst().getLastname();
+        String b = pair.getSecond() == null || pair.getSecond().getLastname() == null ? "–" : pair.getSecond().getLastname();
+        return new Entrant("pair:" + pair.getId(), a + "/" + b, pair.getAverageTtr(), clubs(pair.getFirst(), pair.getSecond()));
     }
 
     private static String shortName(Player p) {

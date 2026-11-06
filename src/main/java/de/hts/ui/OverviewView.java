@@ -275,6 +275,11 @@ public final class OverviewView {
                 test.getStyleClass().addAll("chip", "chip-test");
                 meta.getChildren().add(test);
             }
+            if (s.imported()) {
+                Label imp = new Label("Fertiges Turnier per XML importiert");
+                imp.getStyleClass().addAll("chip", "chip-planned");
+                meta.getChildren().add(imp);
+            }
             if (s.handicap()) {
                 Label hc = new Label("Vorgabeturnier");
                 hc.getStyleClass().addAll("chip", "chip-ready");

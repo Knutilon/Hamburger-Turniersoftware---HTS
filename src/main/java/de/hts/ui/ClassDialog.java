@@ -11,10 +11,8 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
-import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
-import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -27,15 +25,13 @@ import javafx.stage.Window;
 public final class ClassDialog extends Dialog<Boolean> {
 
     private final TextField name = new TextField();
-    private final ToggleGroup disciplineGroup = new ToggleGroup();
-    private final RadioButton singles = new RadioButton("Einzel");
-    private final RadioButton doubles = new RadioButton("Doppel (Paarungen aus je 2 Teilnehmenden)");
-    private final ToggleGroup ageGroup = new ToggleGroup();
-    private final RadioButton adults = new RadioButton("Erwachsene (jedes Alter – auch unter 21)");
-    private final RadioButton youth = new RadioButton("Jugend (unter 21)");
-    private final ToggleGroup sexGroup = new ToggleGroup();
-    private final RadioButton everyone = new RadioButton("weiblich und männlich");
-    private final RadioButton femaleOnly = new RadioButton("nur weiblich");
+    /** Auswahllisten statt Radio-Buttons, so breit wie das Feld „Name“ */
+    private final javafx.scene.control.ComboBox<Discipline> discipline = new javafx.scene.control.ComboBox<>();
+    private final javafx.scene.control.ComboBox<String> age = new javafx.scene.control.ComboBox<>();
+    private final javafx.scene.control.ComboBox<String> sex = new javafx.scene.control.ComboBox<>();
+    private static final String AGE_ADULTS = "Erwachsene (jedes Alter – auch unter 21)", AGE_YOUTH = "Jugend (unter 21)";
+    private static final String SEX_ALL = "weiblich und männlich", SEX_FEMALE = "nur weiblich";
+    private final javafx.scene.control.CheckBox womanRequired = new javafx.scene.control.CheckBox("mindestens 1 Dame je Team (optional)");
     private final Label typeLabel = new Label();
     private final TextField yearFrom = yearField();
     private final TextField yearTo = yearField();
@@ -56,26 +52,43 @@ public final class ClassDialog extends Dialog<Boolean> {
 
         name.setPromptText("z. B. Herren A, Damen, Jugend, Mädchen U15");
         name.setPrefColumnCount(24);
-        singles.setToggleGroup(disciplineGroup);
-        doubles.setToggleGroup(disciplineGroup);
-        (existing != null && existing.isDoubles() ? doubles : singles).setSelected(true);
-        adults.setToggleGroup(ageGroup);
-        youth.setToggleGroup(ageGroup);
-        everyone.setToggleGroup(sexGroup);
-        femaleOnly.setToggleGroup(sexGroup);
+        // 2er/3er Turnier gibt es nur im Vorgabeturnier
+        discipline.getItems().setAll(tournament.isHandicap()
+                ? java.util.List.of(Discipline.SINGLES, Discipline.DOUBLES, Discipline.TEAM2, Discipline.TEAM3)
+                : java.util.List.of(Discipline.SINGLES, Discipline.DOUBLES));
+        discipline.setConverter(new javafx.util.StringConverter<>() {
+            @Override
+            public String toString(Discipline d) {
+                if (d == null) return "";
+                return switch (d) {
+                    case SINGLES -> "Einzel";
+                    case DOUBLES -> "Doppel (Paarungen aus je 2 Teilnehmenden)";
+                    case TEAM2 -> "2er Turnier (Teams aus 2 – Mannschaftskampf)";
+                    case TEAM3 -> "3er Turnier (Teams aus 3 – Mannschaftskampf)";
+                };
+            }
+
+            @Override
+            public Discipline fromString(String v) {
+                return null;
+            }
+        });
+        discipline.setValue(existing != null && discipline.getItems().contains(existing.getDiscipline()) ? existing.getDiscipline() : Discipline.SINGLES);
+        age.getItems().setAll(AGE_ADULTS, AGE_YOUTH);
+        sex.getItems().setAll(SEX_ALL, SEX_FEMALE);
+        for (javafx.scene.control.ComboBox<?> cb : java.util.List.of(discipline, age, sex)) {
+            cb.prefWidthProperty().bind(name.widthProperty());
+            cb.setMaxWidth(Double.MAX_VALUE);
+        }
+        womanRequired.setSelected(existing != null && existing.isWomanRequired());
+        womanRequired.setTooltip(new javafx.scene.control.Tooltip("2er Turnier: die Dame ist automatisch Teilnehmende/r 2; "
+                + "3er Turnier: Aufstellung H1, H2, D mit festen Partien (Mixed, Herren-/Damen-Einzel, Herren-Doppel)"));
         yearFrom.setPromptText("z. B. 2012");
         yearTo.setPromptText("leer = keine Grenze");
 
         ClassType type = existing != null ? existing.getType() : ClassType.ADULTS;
-        (type.isYouthOnly() ? youth : adults).setSelected(true);
-        (type.isFemaleOnly() ? femaleOnly : everyone).setSelected(true);
-        if (tournament.isHandicap()) {
-            // Vorgabeturnier: nur die Klassentypen „Erwachsene“ und „Damen“ (keine Jugend-/Mädchen-Konkurrenzen)
-            adults.setSelected(true);
-            youth.setVisible(false);
-            youth.setManaged(false);
-            adults.setText("Erwachsene (Vorgabeturnier: nur Erwachsene und Damen)");
-        }
+        age.setValue(type.isYouthOnly() && !tournament.isHandicap() ? AGE_YOUTH : AGE_ADULTS);
+        sex.setValue(type.isFemaleOnly() ? SEX_FEMALE : SEX_ALL);
         if (existing != null) {
             name.setText(existing.getName());
             yearFrom.setText(existing.getBirthyearFrom() == null ? "" : existing.getBirthyearFrom().toString());
@@ -90,9 +103,17 @@ public final class ClassDialog extends Dialog<Boolean> {
         grid.setPadding(new Insets(10));
         int r = 0;
         grid.addRow(r++, new Label("Name:"), name);
-        grid.addRow(r++, new Label("Spielart:"), new HBox(16, singles, doubles));
-        grid.addRow(r++, new Label("Alter:"), new VBox(4, adults, youth));
-        grid.addRow(r++, new Label("Wer darf mitspielen:"), new VBox(4, everyone, femaleOnly));
+        VBox disciplineBox = new VBox(6, discipline, womanRequired);
+        grid.addRow(r++, new Label("Spielart:"), disciplineBox);
+        if (!tournament.isHandicap()) grid.addRow(r++, new Label("Alter:"), age);   // Vorgabeturnier: immer Erwachsene, Zeile entfällt
+        grid.addRow(r++, new Label("Wer darf mitspielen:"), sex);
+        Runnable teamRow = () -> {
+            boolean team = discipline.getValue() != null && discipline.getValue().isTeam();
+            womanRequired.setVisible(team);
+            womanRequired.setManaged(team);
+        };
+        discipline.valueProperty().addListener((o, a, b) -> teamRow.run());
+        teamRow.run();
         grid.addRow(r++, new Label("Klassentyp:"), typeLabel);
         grid.addRow(r++, new Label("Jahrgang von:"), hint(yearFrom, "optional, ältester zulässiger Jahrgang"));
         grid.addRow(r++, new Label("Jahrgang bis:"), hint(yearTo, "optional, jüngster zulässiger Jahrgang"));
@@ -114,18 +135,24 @@ public final class ClassDialog extends Dialog<Boolean> {
             preview.setText("Kriterien (Hinweis beim Zuordnen): " + buildPreview().getCriteriaText(tournament.referenceDate()));
         };
         name.textProperty().addListener((o, a, b) -> update.run());
-        ageGroup.selectedToggleProperty().addListener((o, a, b) -> update.run());
-        disciplineGroup.selectedToggleProperty().addListener((o, a, b) -> update.run());
-        sexGroup.selectedToggleProperty().addListener((o, a, b) -> update.run());
+        age.valueProperty().addListener((o, a, b) -> update.run());
+        discipline.valueProperty().addListener((o, a, b) -> update.run());
+        sex.valueProperty().addListener((o, a, b) -> update.run());
         yearFrom.textProperty().addListener((o, a, b) -> update.run());
         yearTo.textProperty().addListener((o, a, b) -> update.run());
-        disciplineGroup.selectedToggleProperty().addListener((o, a, b) ->
-                maxLabel.setText(doubles.isSelected() ? "Max. Doppel:" : "Max. Teilnehmende:"));
-        maxLabel.setText(doubles.isSelected() ? "Max. Doppel:" : "Max. Teilnehmende:");
+        Runnable maxText = () -> maxLabel.setText(selectedDiscipline().isTeam() ? "Max. Teams:"
+                : selectedDiscipline() == Discipline.DOUBLES ? "Max. Doppel:" : "Max. Teilnehmende:");
+        discipline.valueProperty().addListener((o, a, b) -> maxText.run());
+        maxText.run();
         update.run();
 
         getDialogPane().setContent(grid);
-        getDialogPane().setPrefWidth(620);
+        getDialogPane().setPrefWidth(700);
+        for (javafx.scene.Node n : grid.getChildren()) {
+            if (n instanceof Label l && javafx.scene.layout.GridPane.getColumnIndex(n) != null && javafx.scene.layout.GridPane.getColumnIndex(n) == 0) {
+                l.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+            }
+        }
         boolean locked = existing != null && tournament.hasResults(existing);
         if (locked) {
             // Nach dem ersten Ergebnis in Phase 1: Einstellungen nur noch lesbar
@@ -165,11 +192,11 @@ public final class ClassDialog extends Dialog<Boolean> {
     }
 
     private Discipline selectedDiscipline() {
-        return doubles.isSelected() ? Discipline.DOUBLES : Discipline.SINGLES;
+        return discipline.getValue() == null ? Discipline.SINGLES : discipline.getValue();
     }
 
     private ClassType selectedType() {
-        return ClassType.of(youth.isSelected(), femaleOnly.isSelected());
+        return ClassType.of(AGE_YOUTH.equals(age.getValue()), SEX_FEMALE.equals(sex.getValue()));
     }
 
     private PlayingClass buildPreview() {
@@ -194,9 +221,11 @@ public final class ClassDialog extends Dialog<Boolean> {
         if (existing == null) {
             created = t.addClass(new PlayingClass(n, selectedDiscipline(), selectedType(), from, to));
             created.setMaxParticipants(parseMax());
+            created.setWomanRequired(selectedDiscipline().isTeam() && womanRequired.isSelected());
             return null;
         }
-        boolean dropsPairs = existing.isDoubles() && selectedDiscipline() == Discipline.SINGLES
+        boolean dropsPairs = existing.isDoubles() && selectedDiscipline() != existing.getDiscipline()
+                && (selectedDiscipline() == Discipline.SINGLES || existing.teamSize() != Math.max(2, selectedDiscipline().size()))
                 && !t.pairsIn(existing).isEmpty();
         if (dropsPairs && !confirmDropPairs(t, existing)) {
             return "Spielart nicht geändert.";
@@ -204,6 +233,7 @@ public final class ClassDialog extends Dialog<Boolean> {
         t.renameClass(existing, n);
         t.changeDiscipline(existing, selectedDiscipline());
         existing.setType(selectedType());
+        existing.setWomanRequired(selectedDiscipline().isTeam() && womanRequired.isSelected());
         existing.setBirthyearFrom(from);
         existing.setBirthyearTo(to);
         existing.setMaxParticipants(parseMax());
@@ -215,8 +245,8 @@ public final class ClassDialog extends Dialog<Boolean> {
     /** Fragt nach, ob beim Wechsel Doppel → Einzel die Paarungen aufgelöst werden dürfen. */
     private boolean confirmDropPairs(Tournament t, PlayingClass c) {
         javafx.scene.control.Alert a = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION,
-                "„" + c.getName() + "“ hat " + t.pairsIn(c).size() + " Doppelpaarungen. Beim Wechsel auf Einzel werden die "
-                        + "Paarungen aufgelöst (die Teilnehmenden bleiben der Klasse zugeordnet). Fortfahren?",
+                "„" + c.getName() + "“ hat " + t.pairsIn(c).size() + (c.isTeam() ? " Teams" : " Doppelpaarungen")
+                        + ". Beim Wechsel der Spielart werden sie aufgelöst (die Teilnehmenden bleiben der Klasse zugeordnet). Fortfahren?",
                 ButtonType.YES, ButtonType.NO);
         a.initOwner(getOwner());
         a.setHeaderText(null);

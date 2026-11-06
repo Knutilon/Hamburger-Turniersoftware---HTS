@@ -24,7 +24,13 @@ public final class TournamentStore {
 
     /** Kurzinfo eines Turniers für die Übersicht (ohne alle Teilnehmenden laden zu müssen). */
     public record Summary(String id, String name, LocalDate date, LocalDateTime startedAt,
-                          int participants, int classes, Path file, int tables, boolean test, boolean handicap) {
+                          int participants, int classes, Path file, int tables, boolean test, boolean handicap,
+                          boolean imported) {
+
+        public Summary(String id, String name, LocalDate date, LocalDateTime startedAt,
+                       int participants, int classes, Path file, int tables, boolean test, boolean handicap) {
+            this(id, name, date, startedAt, participants, classes, file, tables, test, handicap, false);
+        }
 
         public Summary(String id, String name, LocalDate date, LocalDateTime startedAt,
                        int participants, int classes, Path file, int tables, boolean test) {
@@ -118,7 +124,8 @@ public final class TournamentStore {
                 result.add(new Summary(id, c.tournamentName(), c.date(), c.startedAt(),
                         c.players().size(), (int) c.classes().stream().filter(x -> !x.isPhase()).count(), f, c.tables(),
                         c.folders() != null && "true".equals(c.folders().get("test")),
-                        c.folders() != null && "true".equals(c.folders().get("handicap"))));
+                        c.folders() != null && "true".equals(c.folders().get("handicap")),
+                        c.folders() != null && "true".equals(c.folders().get("imported"))));
             } catch (IOException e) {
                 problems.add(new Problem(f, e.getMessage()));
             }
@@ -282,6 +289,7 @@ public final class TournamentStore {
 
     /** Fertiges (importiertes) Turnier in die Ablage übernehmen: neue ID, eigener Turnierordner. */
     public Tournament importFinished(Tournament t) throws IOException {
+        t.setImportedFinished(true);
         t.setId(newId(t.getDate()));
         t.setFolder(uniqueFolder(t.getName()).toString());
         save(t);
@@ -315,6 +323,7 @@ public final class TournamentStore {
         t.setDate(date);
         t.setTableCount(tables);
         t.setTest(test);
+        t.setImportedFinished(false);          // eine Kopie stammt nicht mehr direkt aus der XML-Datei
         t.setPdfDir(null);
         t.setXmlDir(null);
         t.setFolder(uniqueFolder(name).toString());

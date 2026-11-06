@@ -91,6 +91,7 @@ public final class Match {
     public String getSetsText() {
         if (retirementOf != null) return "kampflos (Aufgabe " + (retired == 1 ? "A" : "B") + " in anderem Spiel)";
         if (retired != 0) return "Aufgabe " + (retired == 1 ? "A" : "B");
+        if (!lineupA.isEmpty()) return "";        // Team-Begegnung: nur Partien (z. B. 3:2), keine Sätze
         StringBuilder sb = new StringBuilder();
         for (int[] p : points) {
             if (!sb.isEmpty()) sb.append(", ");
@@ -139,6 +140,18 @@ public final class Match {
     void setSets(Integer a, Integer b) { setsA = a; setsB = b; }
     public LocalDateTime getStartedAt() { return startedAt; }
     void setStartedAt(LocalDateTime t) { startedAt = t; }
+    /** 2er/3er Turnier: Aufstellung beider Teams (Personen-IDs nach Position), leer = noch nicht festgelegt. */
+    private java.util.List<String> lineupA = java.util.List.of(), lineupB = java.util.List.of();
+
+    public java.util.List<String> getLineupA() { return lineupA; }
+    public java.util.List<String> getLineupB() { return lineupB; }
+
+    /** Aufstellung setzen (beim Ergebnis und beim Laden). */
+    public void setLineups(java.util.List<String> a, java.util.List<String> b) {
+        lineupA = a == null ? java.util.List.of() : java.util.List.copyOf(a);
+        lineupB = b == null ? java.util.List.of() : java.util.List.copyOf(b);
+    }
+
     public LocalDateTime getFinishedAt() { return finishedAt; }
     void setFinishedAt(LocalDateTime t) { finishedAt = t; }
 
@@ -147,6 +160,8 @@ public final class Match {
     void setNumber(int n) { number = n; }
 
     void clearScore() {
+        lineupA = java.util.List.of();
+        lineupB = java.util.List.of();
         retirementOf = null;
         exportExcluded = false;
         points = java.util.List.of();

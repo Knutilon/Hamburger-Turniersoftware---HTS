@@ -179,25 +179,23 @@ public final class HandicapView {
         String row = classes ? "Klasse" : "Abstand";
         int n = working.rowCount(mode);
         GridPane g = new GridPane();
-        g.setHgap(8);
-        g.setVgap(8);
-        String[] heads = classes ? new String[]{"", "Erwachsene", "", "", "", "Damen", "", "", "", ""}
-                : new String[]{"", "Erwachsene", "", "", "", "Damen", "", "", "", "", "Bälle Vorgabe"};
-        for (int k = 0; k < heads.length; k++) {
-            Label h = new Label(heads[k]);
-            h.getStyleClass().add("table-head");
-            g.add(h, k, 0);
-        }
+        g.setHgap(0);
+        g.setVgap(0);
+        // Kopfzeile: so groß und deutlich wie „Abstand 1“, Einheit einmal klein dahinter, ohne Trennlinien
+        String unitText = classes ? "(TTR-Punkte)" : "(TTR-Punkte Abstand)";
+        g.add(headCell("Erwachsene", unitText), 1, 0);
+        g.add(headCell("Damen", unitText), 2, 0);
+        if (!classes) g.add(headCell("Bälle Vorgabe", null), 3, 0);
         HandicapRules.Bounds[] bounds = {working.bounds(mode, false), working.bounds(mode, true)};
-        TextField[][] uppers = new TextField[2][n];
         Label[][] lowers = new Label[2][n];
         for (int i = 0; i < n; i++) {
             int ri = i;
             Label name = new Label(row + " " + (i + 1));
             name.getStyleClass().add("class-name");
+            name.setPadding(new Insets(4, 14, 4, 0));
             g.add(name, 0, i + 1);
             for (int w = 0; w < 2; w++) {
-                int col = 1 + w * 4, wi = w;
+                int wi = w;
                 Label gt = new Label(">");
                 Node lowerNode;
                 if (i == 0) {
@@ -207,7 +205,7 @@ public final class HandicapView {
                 } else {
                     Label ll = new Label(text(bounds[w].lower(i)));
                     ll.getStyleClass().add("pos");
-                    ll.setMinWidth(50);
+                    ll.setMinWidth(62);
                     lowers[w][i] = ll;
                     lowerNode = ll;
                 }
@@ -216,32 +214,25 @@ public final class HandicapView {
                     bounds[wi].getUppers().set(ri, v);
                     if (ri + 1 < n && lowers[wi][ri + 1] != null) lowers[wi][ri + 1].setText(text(v));   // Obergrenze = Untergrenze der nächsten Zeile
                 });
-                uppers[w][i] = uf;
-                HBox lowBox = new HBox(6, gt, lowerNode), upBox = new HBox(6, le, uf);
-                lowBox.setAlignment(Pos.CENTER_LEFT);
-                upBox.setAlignment(Pos.CENTER_LEFT);
-                g.add(lowBox, col, i + 1);
-                g.add(upBox, col + 1, i + 1);
-                Label unit = new Label(classes ? "TTR-Punkte" : "TTR-Punkte Abstand");
-                unit.getStyleClass().add("hint");
-                g.add(unit, col + 2, i + 1);
+                HBox cell = new HBox(8, gt, lowerNode, le, uf);
+                cell.setAlignment(Pos.CENTER_LEFT);
+                g.add(dataCell(cell), 1 + w, i + 1);
             }
             if (!classes) {
                 List<Integer> balls = working.balls(mode);
                 TextField bf = numberField(balls.get(i), locked, v -> balls.set(ri, v));
                 HBox ballBox = new HBox(6, bf, new Label("Bälle"));
                 ballBox.setAlignment(Pos.CENTER_LEFT);
-                g.add(ballBox, 10, i + 1);
+                g.add(dataCell(ballBox), 3, i + 1);
             }
         }
-        VBox box = new VBox(10, heading(classes ? "TTR-Klassen (Untergrenze „>“, Obergrenze „<=“)"
-                : "Kategorien des TTR-Abstands (Untergrenze „>“, Obergrenze „<=“)"), g);
-        Label rule = new Label("Die Obergrenze einer Zeile ist automatisch die Untergrenze der nächsten – es gibt keine Lücken. "
-                + (classes ? "Auch die höchste Klasse braucht eine Obergrenze (z. B. 3000)."
+        // Hinweis direkt unter der (kurzen) Überschrift
+        Label rule = new Label("Untergrenze „>“, Obergrenze „<=“. Die Obergrenze einer Zeile ist automatisch die Untergrenze der "
+                + "nächsten – es gibt keine Lücken. " + (classes ? "Auch die höchste Klasse braucht eine Obergrenze (z. B. 3000)."
                 : "Abstand 0 bedeutet keine Vorgabe. Auch die höchste Kategorie braucht eine Obergrenze."));
         rule.getStyleClass().add("hint");
         rule.setWrapText(true);
-        box.getChildren().add(rule);
+        VBox box = new VBox(10, heading(classes ? "TTR-Klassen" : "Kategorien des TTR-Abstands"), rule, g);
 
         int min = classes ? HandicapRules.MIN_CLASSES : HandicapRules.MIN_CATEGORIES;
         int max = classes ? HandicapRules.MAX_CLASSES : HandicapRules.MAX_CATEGORIES;
@@ -280,6 +271,29 @@ public final class HandicapView {
             box.getChildren().addAll(heading("Bälle Vorgabe je Klassenunterschied (Pflicht für jeden Unterschied)"), bg);
         }
         return box;
+    }
+
+    /** Spaltenkopf: fett wie „Abstand 1“, Einheit klein dahinter. */
+    private static Node headCell(String title, String unit) {
+        Label t = new Label(title);
+        t.getStyleClass().add("class-name");
+        HBox h = new HBox(6, t);
+        if (unit != null) {
+            Label u = new Label(unit);
+            u.getStyleClass().add("hint");
+            h.getChildren().add(u);
+        }
+        h.setAlignment(Pos.BASELINE_LEFT);
+        h.setPadding(new Insets(0, 14, 6, 14));
+        return h;
+    }
+
+    /** Datenzelle mit leicht gestrichelter senkrechter Linie links (nur in den Zeilen „Abstand n“/„Klasse n“). */
+    private static Node dataCell(Node content) {
+        HBox c = new HBox(content);
+        c.setAlignment(Pos.CENTER_LEFT);
+        c.getStyleClass().add("hc-sep");
+        return c;
     }
 
     private static String text(Integer v) {

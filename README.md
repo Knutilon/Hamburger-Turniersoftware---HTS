@@ -6,6 +6,27 @@ Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Pub
 Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
 (Label „Feature“ bzw. „bug“).
 
+## Neu in 0.32.0
+
+- **2er und 3er Turnier (nur Vorgabeturnier):** neue Spielarten für Mannschaftskämpfe. Teams wie Doppelpaarungen
+  bilden (Drag & Drop, „Teams zulosen“), Teamname aus den Nachnamen; Option „mindestens 1 Dame je Team“.
+  - Eine Begegnung Team gegen Team ist ein Spiel an einem Tisch; es werden immer alle Partien gespielt.
+  - 3er Turnier: 5 Partien – mit Dame Mixed (H2/D), Herren-Einzel (H1), Damen-Einzel (D), Herren-Doppel (H1/H2),
+    Mixed (H1/D); sonst Doppel 1 (T2/T3), Einzel 1 (T1), Einzel 2 (T3), Doppel 2 (T1/T2), Doppel 3 (T1/T3).
+  - 2er Turnier: Gruppenphase 3 Partien (A1–B1, A2–B2, Doppel), KO-System 5 (zusätzlich A1–B2, A2–B1); mit Dame ist
+    sie automatisch Teilnehmende/r 2.
+  - Ergebnis: Aufstellung beider Teams wählen und je Partie den Sieger eintragen (mit Vorgabe je Partie);
+    Gruppenwertung nach Begegnungen, Partien, festem Los.
+  - Spielzettel DIN A4 je Begegnung: Schema der Partien, freie Felder für die Aufstellung, Teams mit TTR und die
+    Vorgabe-Tabelle aus den Vorgaberegeln.
+- **„Turnier starten“** erst mit mindestens 2 Teilnehmenden, 1 Klasse und 1 Tisch – sonst deaktiviert mit Hinweis.
+- **Turnierübersicht:** Chip „Fertiges Turnier per XML importiert“; der Chip „gestartet …“ bleibt auch auf der
+  markierten Karte weiß.
+- **Klasse anlegen:** Auswahllisten statt Radio-Buttons (so breit wie „Name“); im Vorgabeturnier ohne „Alter“.
+- **Vorgaberegeln:** übersichtlichere Tabellen – Hinweis unter der Überschrift, deutliche Spaltenköpfe, gestrichelte
+  Trennlinien zwischen den Spaltengruppen.
+- **Bibliotheken:** JavaFX 21.0.8 und Apache PDFBox 3.0.8 (Java-Laufzeit bereits 21.0.13).
+
 ## Neu in 0.31.0
 
 - **Vorgabeturnier:** neue Option beim Anlegen eines Turniers (später nicht umschaltbar). TTR-Unterschiede werden

@@ -820,3 +820,19 @@
     -fx-padding: 0 4 0 4;
 }
 .label.handicap-problem { -fx-text-fill: #c62828; }
+
+/* Chips mit dunklem Hintergrund behalten weiße Schrift – auch in markierten Listeneinträgen */
+.tournament-list .list-cell:selected .label.chip-started,
+.list-cell:filled:selected .label.chip-started,
+.tournament-list .list-cell:selected .label.chip-finished,
+.list-cell:filled:selected .label.chip-finished {
+    -fx-text-fill: white;
+}
+
+/* Vorgaberegeln: gestrichelte Trennlinien zwischen den Spaltengruppen (nur in den Datenzeilen) */
+.hc-sep {
+    -fx-border-color: transparent transparent transparent #b9c1ca;
+    -fx-border-style: segments(4, 4);
+    -fx-border-width: 0 0 0 1;
+    -fx-padding: 4 14 4 14;
+}

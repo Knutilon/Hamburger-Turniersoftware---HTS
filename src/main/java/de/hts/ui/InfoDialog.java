@@ -61,9 +61,9 @@ public final class InfoDialog extends Dialog<ButtonType> {
 
         Label libsHead = new Label("Mitgelieferte Bibliotheken");
         libsHead.getStyleClass().add("class-name");
-        Label libs = new Label("• Apache PDFBox 3.0.5 – Apache License 2.0\n"
-                + "• JavaFX 21 (OpenJFX) – GNU GPL v2 mit Classpath Exception\n"
-                + "• Java-Laufzeit Eclipse Temurin 21 – GNU GPL v2 mit Classpath Exception\n"
+        Label libs = new Label("• Apache PDFBox 3.0.8 – Apache License 2.0\n"
+                + "• JavaFX 21.0.8 (OpenJFX) – GNU GPL v2 mit Classpath Exception\n"
+                + "• Java-Laufzeit Eclipse Temurin 21.0.13 – GNU GPL v2 mit Classpath Exception\n"
                 + "Die Lizenztexte liegen im Programmordner unter „Lizenzen“ (Java-Laufzeit zusätzlich unter „jre\\legal“).");
         libs.getStyleClass().add("hint");
         libs.setWrapText(true);

@@ -25,6 +25,7 @@ final class ResultEntry {
     static boolean open(Window owner, Tournament t, Match m, Consumer<String> status) {
         if (!isEditable(m)) return false;
         boolean correction = m.getStatus() == MatchStatus.DONE;
+        if (t.isTeamMatch(m)) return openTeam(owner, t, m, status, correction);
         var result = new ResultDialog(owner, t, m).showAndWait();
         if (result.isEmpty()) return false;
         Integer table = m.getTable();
@@ -55,6 +56,38 @@ final class ResultEntry {
             return false;
         }
         status.accept("Spiel " + m.getNumber() + " (" + m.getClassName() + "): " + m.getResultText() + " – " + m.getSetsText()
+                + (correction ? " (korrigiert)" : table != null ? " · " + t.tableName(table) + " ist frei" : ""));
+        return true;
+    }
+
+    /** 2er/3er Turnier: Aufstellung und Sieger je Partie. */
+    private static boolean openTeam(Window owner, Tournament t, Match m, Consumer<String> status, boolean correction) {
+        var result = new TeamResultDialog(owner, t, m).showAndWait();
+        if (result.isEmpty()) return false;
+        Integer table = m.getTable();
+        TeamResultDialog.Result r = result.get();
+        try {
+            try {
+                t.recordTeamResult(m, r.lineupA(), r.lineupB(), r.winners(), false);
+            } catch (Tournament.FollowUpConflict conflict) {
+                Alert ask = new Alert(Alert.AlertType.CONFIRMATION, conflict.getMessage()
+                        + "\n\nDiese Folgespiele werden zurückgesetzt und mit dem neuen Sieger neu eingereiht.\n\nKorrektur trotzdem speichern?",
+                        ButtonType.YES, ButtonType.NO);
+                ask.initOwner(owner);
+                ask.setHeaderText(null);
+                ask.setTitle("Sieger ändert sich");
+                if (ask.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) return false;
+                t.recordTeamResult(m, r.lineupA(), r.lineupB(), r.winners(), true);
+            }
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            Alert a = new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK);
+            a.initOwner(owner);
+            a.setHeaderText(null);
+            a.setTitle(correction ? "Korrektur nicht möglich" : "Ergebnis nicht gespeichert");
+            a.showAndWait();
+            return false;
+        }
+        status.accept("Spiel " + m.getNumber() + " (" + m.getClassName() + "): " + m.getResultText()
                 + (correction ? " (korrigiert)" : table != null ? " · " + t.tableName(table) + " ist frei" : ""));
         return true;
     }

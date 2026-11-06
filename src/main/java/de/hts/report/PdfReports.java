@@ -62,6 +62,7 @@ public final class PdfReports {
     }
 
     public static PDDocument slip(Tournament t, Match m) {
+        if (t.isTeamMatch(m)) return teamSlip(t, m);
         PDDocument doc = newDoc("Spielzettel Spiel " + m.getNumber());
         PdfCanvas c = new PdfCanvas(doc, A6, 16);
         c.newPage();
@@ -125,6 +126,167 @@ public final class PdfReports {
         signature(c, "Unterschrift Schiedsrichter/in:");
         c.finish();
         return doc;
+    }
+
+    /**
+     * Spielzettel (DIN A4) einer Begegnung im 2er/3er Turnier: Schema aller Partien mit freien Namensfeldern für die
+     * Aufstellung, je Partie Sätze und Sieger zum Eintragen; dazu die Teams mit TTR und die Vorgabe-Tabelle aus den
+     * Vorgaberegeln.
+     */
+    public static PDDocument teamSlip(Tournament t, Match m) {
+        PDDocument doc = newDoc("Spielzettel Spiel " + m.getNumber());
+        PdfCanvas c = new PdfCanvas(doc, PDRectangle.A4, 36);
+        c.newPage();
+        float x = c.left(), w = c.width();
+        PlayingClass cls = t.findClass(m.getClassName()).orElse(null);
+        PlayingClass root = cls == null ? null : t.rootOf(cls);
+        c.y += c.text(x, c.y, "TISCHTENNIS – SPIELZETTEL " + (root == null ? "" : root.getDiscipline().getLabel().toUpperCase(java.util.Locale.GERMAN)),
+                BOLD, 13, w, PdfCanvas.Align.CENTER, 0) + 6;
+        float top = c.y;
+        String tn = m.getTable() == null ? "Tisch ____" : t.tableName(m.getTable());
+        c.text(x, top, tn, BOLD, 18, w * 0.6f);
+        c.text(x, top, "Spiel-Nr. " + m.getNumber(), BOLD, 10, w, PdfCanvas.Align.RIGHT, 0);
+        String time = m.getStartedAt() != null ? m.getStartedAt().format(HM) : LocalDateTime.now().format(HM);
+        c.text(x, top + 13, "Zeit: " + time, REGULAR, 9, w, PdfCanvas.Align.RIGHT, 0);
+        c.y = top + 28;
+        c.paragraph("Konkurrenz: " + competition(t, m), REGULAR, 9, w);
+        c.y += 4;
+        c.line(x, c.y, x + w, c.y, 0.8f);
+        c.y += 8;
+
+        // Teams mit Mitgliedern, TTR (und Klasse) und freien Feldern für die Aufstellung
+        List<String> positions = cls == null ? List.of("1", "2") : t.teamPositions(cls);
+        float half = (w - 16) / 2;
+        float yTeams = c.y, yEnd = c.y;
+        for (int side = 0; side < 2; side++) {
+            String id = side == 0 ? m.getA() : m.getB();
+            String letter = side == 0 ? "A" : "B";
+            float bx = x + side * (half + 16), yy = yTeams;
+            String team = id == null ? "______________________" : t.entrantName(m, id);
+            yy += c.text(bx, yy, "Team " + letter + ": " + team, BOLD, 11, half);
+            for (de.hts.player.Player p : t.teamMembers(id)) {
+                String info = p.getDisplayName() + (p.getTtr() != null ? " · TTR " + p.getTtr() : "") + handicapClass(t, root, p);
+                yy += c.text(bx + 6, yy, info, REGULAR, 8.5f, half - 6);
+            }
+            yy += 6;
+            yy += c.text(bx, yy, "Aufstellung (Namen eintragen):", REGULAR, 7.5f, half, PdfCanvas.Align.LEFT, 0.35f);
+            for (String pos : positions) {
+                String lbl = letter + pos;
+                c.text(bx, yy + 4, lbl, BOLD, 9, 30);
+                c.line(bx + 32, yy + 14, bx + half, yy + 14, 0.6f);
+                yy += 20;
+            }
+            yEnd = Math.max(yEnd, yy);
+        }
+        c.y = yEnd + 6;
+
+        // Schema der Begegnung
+        List<Tournament.Rubber> rubbers = t.rubbersOf(m);
+        float[] col = {54, 96, (w - 54 - 96 - 70 - 70) / 2, (w - 54 - 96 - 70 - 70) / 2, 70, 70};
+        float hh = 16, rh = 22;
+        String[] heads = {"Spiel", "Partie", "Team A", "Team B", "Sätze", "Sieger"};
+        float cx = x;
+        c.fill(x, c.y, w, hh, 0.9f);
+        for (int k = 0; k < heads.length; k++) {
+            c.rect(cx, c.y, col[k], hh, 0.6f);
+            c.text(cx + 3, c.y + 4, heads[k], BOLD, 8, col[k] - 6);
+            cx += col[k];
+        }
+        c.y += hh;
+        for (int r = 0; r < rubbers.size(); r++) {
+            Tournament.Rubber rb = rubbers.get(r);
+            String[] v = {String.valueOf(r + 1), rb.label(), posText("A", positions, rb.posA()), posText("B", positions, rb.posB()), "   :", "A   /   B"};
+            cx = x;
+            for (int k = 0; k < v.length; k++) {
+                c.rect(cx, c.y, col[k], rh, 0.6f);
+                c.text(cx + 3, c.y + 7, v[k], k < 2 ? BOLD : REGULAR, 9, col[k] - 6);
+                cx += col[k];
+            }
+            c.y += rh;
+        }
+        cx = x;
+        for (int k = 0; k < 4; k++) cx += col[k];
+        c.rect(x, c.y, cx - x, rh, 0.6f);
+        c.text(x + 3, c.y + 7, "Ergebnis der Begegnung (gewonnene Partien A : B)", BOLD, 9, cx - x - 6);
+        c.rect(cx, c.y, col[4] + col[5], rh, 0.6f);
+        c.text(cx + 3, c.y + 7, "       :", BOLD, 10, col[4] + col[5] - 6);
+        c.y += rh + 6;
+        c.paragraph("Es werden immer alle Partien gespielt. Die Partei mit Vorsprung beginnt jeden Satz mit der Vorgabe (X:0).",
+                REGULAR, 8, w);
+        int hcServe = 0;
+        if (t.isHandicapReady() && t.getHandicapRules().getServe() == de.hts.tournament.HandicapRules.Serve.NO_ADVANTAGE) hcServe = 1;
+        if (hcServe == 1) c.paragraph("Aufschlag: jeweils die Partei ohne Punktevorsprung.", REGULAR, 8, w);
+        c.y += 6;
+
+        // Vorgabe-Tabelle aus den Vorgaberegeln
+        if (t.isHandicapReady()) vorgabeTable(c, t.getHandicapRules());
+        c.y += 10;
+        signature(c, "Unterschrift Team A:");
+        signature(c, "Unterschrift Team B:");
+        signature(c, "Unterschrift Schiedsrichter/in:");
+        c.finish();
+        return doc;
+    }
+
+    private static String posText(String letter, List<String> positions, int[] pos) {
+        List<String> out = new java.util.ArrayList<>();
+        for (int i : pos) out.add(letter + (i < positions.size() ? positions.get(i) : String.valueOf(i + 1)));
+        return String.join(" / ", out);
+    }
+
+    /** Im Klassen-Modus: „ · Klasse n“ (nach den Grenzen des Klassentyps), sonst leer. */
+    private static String handicapClass(Tournament t, PlayingClass root, de.hts.player.Player p) {
+        if (!t.isHandicapReady() || p.getTtr() == null || root == null) return "";
+        de.hts.tournament.HandicapRules r = t.getHandicapRules();
+        if (r.getMode() != de.hts.tournament.HandicapRules.Mode.CLASSES) return "";
+        boolean women = root.getType() == de.hts.tournament.ClassType.WOMEN || root.getType() == de.hts.tournament.ClassType.GIRLS;
+        int k = r.bounds(r.getMode(), women).indexOf(p.getTtr());
+        String s = k >= 0 ? " · Klasse " + (k + 1) : "";
+        if (!women && p.getSex() == de.hts.player.Sex.FEMALE) {
+            int kw = r.bounds(r.getMode(), true).indexOf(p.getTtr());
+            if (kw >= 0) s += " (Damen: Klasse " + (kw + 1) + ")";
+        }
+        return s;
+    }
+
+    /** Die Vorgaberegeln als Tabelle: Grenzen Erwachsene/Damen und Bälle. */
+    private static void vorgabeTable(PdfCanvas c, de.hts.tournament.HandicapRules r) {
+        float x = c.left(), w = c.width();
+        boolean classes = r.getMode() == de.hts.tournament.HandicapRules.Mode.CLASSES;
+        c.y += c.text(x, c.y, "Vorgabe-Tabelle (" + r.getMode().getLabel() + ")", BOLD, 10, w) + 2;
+        float[] col = {70, (w - 70 - 70) / 2, (w - 70 - 70) / 2, 70};
+        String[] heads = {classes ? "Klasse" : "Abstand", "Erwachsene (> … <=)", "Damen (> … <=)", classes ? "" : "Bälle"};
+        float hh = 14, rh = 14, cx = x;
+        c.fill(x, c.y, w, hh, 0.9f);
+        for (int k = 0; k < 4; k++) {
+            c.rect(cx, c.y, col[k], hh, 0.6f);
+            c.text(cx + 3, c.y + 3, heads[k], BOLD, 7.5f, col[k] - 6);
+            cx += col[k];
+        }
+        c.y += hh;
+        int n = r.rowCount(r.getMode());
+        for (int i = 0; i < n; i++) {
+            de.hts.tournament.HandicapRules.Bounds a = r.bounds(r.getMode(), false), d = r.bounds(r.getMode(), true);
+            String balls = classes ? "" : String.valueOf(r.balls(r.getMode()).get(i));
+            String[] v = {(classes ? "Klasse " : "Abstand ") + (i + 1), "> " + a.lower(i) + "  <= " + a.getUppers().get(i),
+                    "> " + d.lower(i) + "  <= " + d.getUppers().get(i), balls};
+            cx = x;
+            for (int k = 0; k < 4; k++) {
+                c.rect(cx, c.y, col[k], rh, 0.6f);
+                c.text(cx + 3, c.y + 3, v[k], REGULAR, 7.5f, col[k] - 6);
+                cx += col[k];
+            }
+            c.y += rh;
+        }
+        if (classes) {
+            c.y += 4;
+            StringBuilder sb = new StringBuilder("Bälle je Klassenunterschied: ");
+            List<Integer> b = r.balls(r.getMode());
+            for (int i = 0; i < b.size(); i++) sb.append(i == 0 ? "" : " · ").append(i + 1).append(i == 0 ? " Klasse: " : " Klassen: ").append(b.get(i)).append(" Bälle");
+            c.paragraph(sb.toString(), REGULAR, 8, w);
+        }
+        c.paragraph("Doppel: die TTR-Höheren und die TTR-Tieferen werden verglichen (Mixed: Herr–Herr, Dame–Dame), beide Vorgaben "
+                + "verrechnet" + (r.isHalve() ? ", dann halbiert und abgerundet." : "."), REGULAR, 7.5f, w);
     }
 
     private static void side(PdfCanvas c, Tournament t, Match m, String id, String caption) {

@@ -1017,6 +1017,8 @@ public final class DrawView {
         boolean swissCard = current.getMode() == TournamentMode.SWISS;
         String[] heads = swissCard ? new String[]{"Pl.", "Name", "Verein", "TTR", "Sp", "Pkt", "S:N", "Sätze", "Bälle", "BHZ", "FBHZ"}
                 : new String[]{"Pl.", "Name", "Verein", "TTR", "Sp", "S:N", "Sätze", "Bälle"};
+        boolean teamCard = tournament.rootOf(current).isTeam();
+        if (teamCard) heads = new String[]{"Pl.", "Team", "Verein", "Ø TTR", "Sp", "S:N", "Partien", ""};   // ohne Sätze/Bälle
         for (int k = 0; k < heads.length; k++) {
             Label h = new Label(heads[k]);
             h.getStyleClass().add("table-head");
@@ -1057,7 +1059,7 @@ public final class DrawView {
             Label played = new Label(String.valueOf(row.played()));
             Label wl = new Label(row.won() + ":" + row.lost());
             Label sets = new Label(row.setsWon() + ":" + row.setsLost());
-            Label pts = new Label(row.pointsWon() + ":" + row.pointsLost());
+            Label pts = new Label(teamCard ? "" : row.pointsWon() + ":" + row.pointsLost());
             for (Label l : new Label[]{played, wl, sets, pts}) l.getStyleClass().add("table-num");
             wl.getStyleClass().add("match-name");
             Node[] cells;
