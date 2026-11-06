@@ -66,9 +66,11 @@ public final class ImportPreviewDialog extends Dialog<ButtonType> {
         TableColumn<ClickTtXmlImporter.CompetitionInfo, Integer> entries = new TableColumn<>("Meldungen");
         entries.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().entries()));
         entries.setStyle("-fx-alignment: CENTER-RIGHT;");
+        entries.getStyleClass().add("col-right");
         TableColumn<ClickTtXmlImporter.CompetitionInfo, Integer> waiting = new TableColumn<>("davon Warteliste");
         waiting.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().waitingList()));
         waiting.setStyle("-fx-alignment: CENTER-RIGHT;");
+        waiting.getStyleClass().add("col-right");
         comps.getColumns().add(name);
         comps.getColumns().add(entries);
         comps.getColumns().add(waiting);

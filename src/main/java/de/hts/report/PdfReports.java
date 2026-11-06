@@ -382,17 +382,14 @@ public final class PdfReports {
             case QUALIFICATION -> {
                 List<String> notes = new ArrayList<>();
                 List<String> d = new ArrayList<>();
-                java.util.Map<String, de.hts.tournament.Entrant> idx = new java.util.HashMap<>();
-                for (var e : t.entrantsOf(phase)) idx.put(e.id(), e);
-                for (String id : phase.getQualifiedDirect()) if (idx.containsKey(id)) d.add(clubbed(idx.get(id)));
-                notes.add("Direkt qualifiziert (" + d.size() + "): " + (d.isEmpty() ? "–" : String.join(", ", d)));
+                for (var e : t.qualifiedDirect(phase)) d.add(clubbed(e));
+                notes.add("Qualifiziert durch Gruppenplatzierung (" + d.size() + "): " + (d.isEmpty() ? "–" : String.join(", ", d)));
                 if (t.qualificationRound(phase) > 0) {
-                    notes.add("KO-Qualifikation: " + phase.getQualField().size() + " Spieler – qualifiziert nach "
+                    notes.add("KO-Qualifikation: " + phase.getQualField().size() + " Teilnehmende – qualifiziert nach "
                             + phase.getQualRounds() + (phase.getQualRounds() == 1 ? " Sieg" : " Siegen")
-                            + (phase.isQualExtra() ? ", mit Zusatzrunde für die Verlierer der letzten Runde" : "") + ".");
-                    List<String> viaKo = t.qualified(phase).stream().filter(e -> !phase.getQualifiedDirect().contains(e.id()))
-                            .map(PdfReports::clubbed).toList();
-                    if (!viaKo.isEmpty()) notes.add("Über die KO qualifiziert (" + viaKo.size() + "): " + String.join(", ", viaKo));
+                            + (phase.isQualExtra() ? ", mit Zusatzrunde für die Verlierer der Runde " + phase.getQualRounds() : "") + ".");
+                    List<String> viaKo = t.qualifiedViaKo(phase).stream().map(PdfReports::clubbed).toList();
+                    if (!viaKo.isEmpty()) notes.add("Qualifiziert durch KO-Runde (" + viaKo.size() + "): " + String.join(", ", viaKo));
                 }
                 List<List<de.hts.tournament.Entrant>> tiers = t.qualificationTiers(phase);
                 for (int i = 0; i < tiers.size(); i++) {

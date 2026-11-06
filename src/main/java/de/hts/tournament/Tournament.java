@@ -792,7 +792,8 @@ public final class Tournament {
         return result;
     }
 
-    private java.util.Map<String, Entrant> entrantIndex(PlayingClass c) {
+    /** Alle Parteien, die in Spielen dieser Klasse/Phase vorkommen können (Personen und Doppel/Teams der Klasse). */
+    public java.util.Map<String, Entrant> entrantIndex(PlayingClass c) {
         java.util.Map<String, Entrant> byId = new java.util.HashMap<>();
         for (Player p : players) byId.put(p.getId(), Entrant.of(p));
         for (DoublesPair pair : pairsIn(c)) byId.put("pair:" + pair.getId(), c.isTeam() ? Entrant.ofTeam(pair) : Entrant.of(pair));
@@ -1531,13 +1532,20 @@ public final class Tournament {
             int q = c.getQualDirect(), k = c.getQualKo();
             List<Entrant> direct = new java.util.ArrayList<>();
             java.util.Map<String, Integer> groupOf = new java.util.HashMap<>();
-            for (int place = 0; place < q; place++) direct.addAll(tier(tables, place, next, idMap, groupOf, random));
+            java.util.Map<String, String> labels = new java.util.LinkedHashMap<>();
+            for (int place = 0; place < q; place++) {
+                for (Entrant e : tier(tables, place, next, idMap, groupOf, random)) {
+                    direct.add(e);
+                    labels.put(e.id(), GroupDraw.groupName(groupOf.get(e.id())) + (place + 1));
+                }
+            }
             List<Entrant> ko = new java.util.ArrayList<>();
             java.util.Map<String, Integer> placeOf = new java.util.LinkedHashMap<>();
             for (int place = q; place < q + k; place++) {
                 for (Entrant e : tier(tables, place, next, idMap, groupOf, random)) {
                     ko.add(e);
                     placeOf.put(e.id(), place + 1);
+                    labels.put(e.id(), GroupDraw.groupName(groupOf.get(e.id())) + (place + 1));
                 }
             }
             next.setMode(TournamentMode.QUALIFICATION);
@@ -1549,6 +1557,7 @@ public final class Tournament {
             next.setQualField(field);
             next.setQualPlace(placeOf);
             next.setQualExtra(false);
+            next.setSeedLabels(labels);
             if (ko.size() >= 2 && c.getQualRounds() > 0) addQualificationRound(next, 1, new java.util.ArrayList<>(field.keySet()));
         } else if (kind == TournamentMode.PLACEMENT) {
             createPlacementPhase(c, next, tables, idMap);
@@ -1625,7 +1634,7 @@ public final class Tournament {
         return won + lost == 0 ? 0 : (double) won / (won + lost);
     }
 
-    /** Alle Gruppen-x-ten (place, 0-basiert), die besten zuerst (Spiel-, Satz-, Punktverhältnis; Gleichstand: Los). */
+    /** Alle Gruppen-x-ten (place, 0-basiert), die besten zuerst (Spiel-, Satz-, Punktverhältnis, dann TTR; Gleichstand: Los). */
     private List<Entrant> tier(List<List<GroupStanding.Row>> tables, int place, PlayingClass next, java.util.Map<String, String> idMap,
                                java.util.Map<String, Integer> groupOf, java.util.Random random) {
         List<int[]> t = new java.util.ArrayList<>();
@@ -1633,7 +1642,11 @@ public final class Tournament {
         java.util.Collections.shuffle(t, random);
         t.sort(java.util.Comparator.comparingDouble((int[] x) -> -gameRatio(tables.get(x[0]).get(place)))
                 .thenComparingDouble(x -> -ratio(tables.get(x[0]).get(place).setsWon(), tables.get(x[0]).get(place).setsLost()))
-                .thenComparingDouble(x -> -ratio(tables.get(x[0]).get(place).pointsWon(), tables.get(x[0]).get(place).pointsLost())));
+                .thenComparingDouble(x -> -ratio(tables.get(x[0]).get(place).pointsWon(), tables.get(x[0]).get(place).pointsLost()))
+                .thenComparingInt(x -> {
+                    Integer ttr = tables.get(x[0]).get(place).entrant().ttr();
+                    return ttr == null ? Integer.MAX_VALUE : -ttr;
+                }));
         List<Entrant> out = new java.util.ArrayList<>();
         for (int[] x : t) {
             Entrant now = carryOver(next, tables.get(x[0]).get(place).entrant(), idMap);
@@ -1645,15 +1658,47 @@ public final class Tournament {
         return out;
     }
 
+    /** Qualifiziert ist in der KO-Qualifikation, wer 2 Spiele gewinnt (ein Freilos in Runde 1 zählt als Sieg). */
+    public static final int QUAL_WINS = 2;
+
     /**
      * Qualifikationsmodus (nur Phase 2 nach Gruppen in Phase 1, z. B. HEM-Hauptqualifikation): die besten {@code direct}
-     * jeder Gruppe sind direkt qualifiziert; die nächsten {@code ko} jeder Gruppe spielen ein KO-System (Gewinner spielen
-     * weiter; Runde 1: Höchstplatzierter gegen Niedrigstplatzierten einer anderen Gruppe). Wer {@code rounds} Spiele
-     * gewinnt, ist qualifiziert; die Verlierer werden Nachrücker (später ausgeschieden = besser, je Stufe Gruppenplatz
-     * vor TTR). Bei Bedarf spielen die Verlierer der letzten Runde eine Zusatzrunde ({@link #setQualExtra}).
+     * jeder Gruppe sind direkt qualifiziert; die nächsten {@code ko} jeder Gruppe spielen eine KO-Qualifikation. Wer
+     * 2 Spiele gewinnt, ist qualifiziert (Runde 1: höher gegen niedriger Platzierte, Freilos für den Stärksten; Runde 2
+     * frei gelost, ohne Freilos). Optional spielen die Verlierer der Runde 2 eine Zusatzrunde – deren Gewinner sind
+     * ebenfalls qualifiziert ({@link #setQualExtra}). Nachrücker: Verlierer der Runde 2 bzw. der Zusatzrunde, dann
+     * Verlierer der Runde 1, dann (optional) Nachrücker aus der Gruppenphase.
+     *
+     * @param rounds ohne Bedeutung (immer {@link #QUAL_WINS}); nur noch aus Kompatibilität vorhanden
      */
     public PlayingClass createQualificationPhase(PlayingClass c, int direct, int ko, int rounds, java.util.Random random) {
         return createQualificationPhase(c, direct, ko, rounds, 0, random);
+    }
+
+    /** Anzahl der Teilnehmenden der KO-Qualifikation bei {@code direct} direkt Qualifizierten und {@code ko} je Gruppe. */
+    public static int qualificationKoCount(PlayingClass c, int direct, int ko) {
+        int koCount = 0;
+        for (List<String> g : c.getGroups()) koCount += Math.max(0, Math.min(g.size(), direct + ko) - Math.min(g.size(), direct));
+        return koCount;
+    }
+
+    /**
+     * Geht die KO-Qualifikation mit {@code n} Teilnehmenden auf? Runde 2 hat kein Freilos: die Gewinner der Runde 1
+     * (inkl. Freilos, also n/2 aufgerundet) müssen eine gerade Zahl sein – n = 0 (keine KO-Runde), 3, 4, 7, 8, 11, 12 …
+     */
+    public static boolean qualificationFieldFits(int n) {
+        return n == 0 || (n >= 3 && (n % 4 == 0 || n % 4 == 3));
+    }
+
+    /** Hinweis für eine KO-Qualifikation, die nicht aufgeht (sonst {@code null}). */
+    public static String qualificationFieldProblem(int n) {
+        if (qualificationFieldFits(n)) return null;
+        int lower = n, upper = n;
+        while (lower > 0 && !qualificationFieldFits(lower)) lower--;
+        while (!qualificationFieldFits(upper)) upper++;
+        return "Mit " + n + " Teilnehmenden geht die KO-Qualifikation nicht auf: In Runde 2 gibt es kein Freilos, die Gewinner "
+                + "der Runde 1 müssen also eine gerade Zahl sein. Möglich sind z. B. " + (lower > 0 ? lower + " oder " : "") + upper
+                + " Teilnehmende (3, 4, 7, 8, 11, 12 …) – bitte die Plätze für die KO-Qualifikation anpassen.";
     }
 
     /** @param reserve Nachrücker je Gruppe direkt aus der Gruppenphase (ohne Spiel), nach Gruppenplatz, dann TTR */
@@ -1661,15 +1706,11 @@ public final class Tournament {
         if (c.getMode() != TournamentMode.GROUPS || phaseNumber(c) != 1) {
             throw new IllegalStateException("Der Qualifikationsmodus folgt nur auf eine Gruppenphase in Phase 1.");
         }
-        int koCount = 0;
-        for (List<String> g : c.getGroups()) koCount += Math.max(0, Math.min(g.size(), direct + ko) - Math.min(g.size(), direct));
-        if (direct < 1 && koCount < 2) throw new IllegalArgumentException("Ohne direkt Qualifizierte braucht die KO-Qualifikation mindestens 2 Teilnehmende.");
-        int maxRounds = maxQualificationRounds(koCount);
-        if (koCount >= 2 && (rounds < 1 || rounds > maxRounds)) {
-            throw new IllegalArgumentException("Bei " + koCount + " Teilnehmenden in der KO-Qualifikation ist „qualifiziert nach "
-                    + "n Siegen“ mit n = 1 bis " + maxRounds + " möglich.");
-        }
-        c.setQualification(direct, ko, rounds);
+        int koCount = qualificationKoCount(c, direct, ko);
+        if (direct < 1 && koCount < 3) throw new IllegalArgumentException("Ohne direkt Qualifizierte braucht die KO-Qualifikation mindestens 3 Teilnehmende.");
+        String problem = qualificationFieldProblem(koCount);
+        if (problem != null) throw new IllegalArgumentException(problem);
+        c.setQualification(direct, ko, koCount > 0 ? QUAL_WINS : 0);
         c.setQualReserve(reserve);
         c.setQualifiers(direct + ko);
         c.setNextPhase(TournamentMode.QUALIFICATION);
@@ -1742,8 +1783,10 @@ public final class Tournament {
     }
 
     /**
-     * Runde 1: per Los – einzige Bedingung: ein besser Platzierter (z. B. Gruppenzweiter) spielt gegen einen schlechter
-     * Platzierten (Gruppendritten) einer ANDEREN Gruppe; nach Möglichkeit auch nicht aus demselben Verein.
+     * Runde 1: per Los. Es spielt jeweils ein besser Platzierter (obere Hälfte des Feldes, z. B. Gruppenzweiter) gegen
+     * einen schlechter Platzierten (untere Hälfte, z. B. Gruppenvierter). Bleiben nur noch gleiche Gruppenplätze übrig
+     * (z. B. nur Gruppendritte), spielen diese gegeneinander. Möglichst nicht aus derselben Gruppe und – falls
+     * eingestellt – nicht aus demselben Verein.
      */
     private List<String[]> drawFirstQualRound(PlayingClass c, List<String> players) {
         java.util.Map<String, Integer> groupOf = c.getQualField();
@@ -1754,14 +1797,34 @@ public final class Tournament {
         int half = sorted.size() / 2;
         List<String> upper = new java.util.ArrayList<>(sorted.subList(0, half));
         List<String> lower = new java.util.ArrayList<>(sorted.subList(half, sorted.size()));
+        java.util.function.BiPredicate<String, String> higher = (a, b) -> place.getOrDefault(a, 0) < place.getOrDefault(b, 0);
+        // so viele Paarungen „höher gegen niedriger“ wie überhaupt möglich
+        int maxStrict = countMatched(maxMatching(upper, lower, higher));
         boolean clubs = rootOf(c).isAvoidSameClub();
         for (int level = clubs ? 2 : 1; level >= 0; level--) {
-            for (int attempt = 0; attempt < 300; attempt++) {
+            final int lv = level;
+            java.util.function.BiPredicate<String, String> ok = (a, b) -> {
+                if (lv >= 1 && java.util.Objects.equals(groupOf.get(a), groupOf.get(b))) return false;
+                return lv < 2 || idx.get(a) == null || idx.get(b) == null || !idx.get(a).sameClub(idx.get(b));
+            };
+            for (int attempt = 0; attempt < (level == 0 ? 1 : 80); attempt++) {
                 List<String> u = new java.util.ArrayList<>(upper), lo = new java.util.ArrayList<>(lower);
                 java.util.Collections.shuffle(u, qualRandom);
                 java.util.Collections.shuffle(lo, qualRandom);
-                List<String[]> out = matchUp(u, lo, groupOf, idx, level);
-                if (out != null) return out;
+                int[] strict = maxMatching(u, lo, (a, b) -> higher.test(a, b) && ok.test(a, b));
+                if (countMatched(strict) < maxStrict) continue;
+                // Rest (gleiche Gruppenplätze) untereinander
+                List<String> restU = new java.util.ArrayList<>(), restL = new java.util.ArrayList<>();
+                boolean[] usedU = new boolean[u.size()];
+                for (int j = 0; j < lo.size(); j++) if (strict[j] >= 0) usedU[strict[j]] = true; else restL.add(lo.get(j));
+                for (int i = 0; i < u.size(); i++) if (!usedU[i]) restU.add(u.get(i));
+                int[] rest = maxMatching(restU, restL, ok);
+                if (countMatched(rest) < restU.size()) continue;
+                List<String[]> out = new java.util.ArrayList<>();
+                for (int j = 0; j < lo.size(); j++) if (strict[j] >= 0) out.add(new String[]{u.get(strict[j]), lo.get(j)});
+                for (int j = 0; j < restL.size(); j++) if (rest[j] >= 0) out.add(new String[]{restU.get(rest[j]), restL.get(j)});
+                java.util.Collections.shuffle(out, qualRandom);
+                return out;
             }
         }
         List<String[]> out = new java.util.ArrayList<>();
@@ -1769,36 +1832,31 @@ public final class Tournament {
         return out;
     }
 
-    /** Zuordnung (Matching) oben–unten; level 2: andere Gruppe + anderer Verein, 1: andere Gruppe, 0: beliebig. */
-    private static List<String[]> matchUp(List<String> upper, List<String> lower, java.util.Map<String, Integer> groupOf,
-                                          java.util.Map<String, Entrant> idx, int level) {
-        int n = upper.size();
+    /** Größtmögliche Zuordnung oben–unten (Kuhn); Ergebnis: je Index unten der Index oben bzw. -1. */
+    private static int[] maxMatching(List<String> upper, List<String> lower, java.util.function.BiPredicate<String, String> ok) {
         int[] partner = new int[lower.size()];
         java.util.Arrays.fill(partner, -1);
-        for (int i = 0; i < n; i++) {
-            if (!augmentPair(i, new boolean[lower.size()], upper, lower, groupOf, idx, level, partner)) return null;
-        }
-        List<String[]> out = new java.util.ArrayList<>();
-        String[] of = new String[n];
-        for (int j = 0; j < lower.size(); j++) if (partner[j] >= 0) of[partner[j]] = lower.get(j);
-        for (int i = 0; i < n; i++) out.add(new String[]{upper.get(i), of[i]});
-        return out;
+        for (int i = 0; i < upper.size(); i++) augment(i, new boolean[lower.size()], upper, lower, ok, partner);
+        return partner;
     }
 
-    private static boolean augmentPair(int i, boolean[] seen, List<String> upper, List<String> lower,
-                                       java.util.Map<String, Integer> groupOf, java.util.Map<String, Entrant> idx, int level, int[] partner) {
+    private static boolean augment(int i, boolean[] seen, List<String> upper, List<String> lower,
+                                   java.util.function.BiPredicate<String, String> ok, int[] partner) {
         for (int j = 0; j < lower.size(); j++) {
-            if (seen[j]) continue;
-            String a = upper.get(i), b = lower.get(j);
-            if (level >= 1 && java.util.Objects.equals(groupOf.get(a), groupOf.get(b))) continue;
-            if (level >= 2 && idx.get(a) != null && idx.get(b) != null && idx.get(a).sameClub(idx.get(b))) continue;
+            if (seen[j] || !ok.test(upper.get(i), lower.get(j))) continue;
             seen[j] = true;
-            if (partner[j] < 0 || augmentPair(partner[j], seen, upper, lower, groupOf, idx, level, partner)) {
+            if (partner[j] < 0 || augment(partner[j], seen, upper, lower, ok, partner)) {
                 partner[j] = i;
                 return true;
             }
         }
         return false;
+    }
+
+    private static int countMatched(int[] partner) {
+        int n = 0;
+        for (int p : partner) if (p >= 0) n++;
+        return n;
     }
 
     /**
@@ -1948,66 +2006,76 @@ public final class Tournament {
                 .thenComparing(java.util.Comparator.comparing((Entrant e) -> e.ttr() == null ? Integer.MIN_VALUE : e.ttr()).reversed());
     }
 
-    /** Qualifizierte: direkt Qualifizierte (nach TTR) und die Sieger der Runde n (Gruppenplatz, dann TTR). */
-    public List<Entrant> qualified(PlayingClass c) {
+    /** Direkt (über die Gruppenplatzierung) Qualifizierte, nach TTR. */
+    public List<Entrant> qualifiedDirect(PlayingClass c) {
         java.util.Map<String, Entrant> idx = entrantIndex(c);
         List<Entrant> direct = new java.util.ArrayList<>();
         for (String id : c.getQualifiedDirect()) if (idx.containsKey(id)) direct.add(idx.get(id));
         direct.sort(java.util.Comparator.comparing((Entrant e) -> e.ttr() == null ? Integer.MIN_VALUE : e.ttr()).reversed());
-        List<Entrant> out = new java.util.ArrayList<>(direct);
+        return direct;
+    }
+
+    /**
+     * Über die KO-Qualifikation Qualifizierte: Sieger der Runde 2 und – falls gespielt – Sieger der Zusatzrunde (inkl.
+     * Freilos); Reihenfolge wie im Feld (Gruppenplatz, Spiel-, Satz-, Ballverhältnis, TTR).
+     */
+    public List<Entrant> qualifiedViaKo(PlayingClass c) {
+        java.util.Map<String, Entrant> idx = entrantIndex(c);
         int n = c.getQualRounds();
-        List<Entrant> viaKo = new java.util.ArrayList<>();
-        if (c.getQualField().size() == 1) {
-            Entrant only = idx.get(c.getQualField().keySet().iterator().next());
-            if (only != null) viaKo.add(only);
-        } else if (n > 0 && qualificationRound(c) >= n && qualificationRoundDone(c, n)) {
-            for (Match m : roundMatches(c, n)) if (m.winner() != null && idx.containsKey(m.winner())) viaKo.add(idx.get(m.winner()));
+        java.util.Set<String> ids = new java.util.LinkedHashSet<>();
+        if (n > 0 && qualificationRound(c) >= n && qualificationRoundDone(c, n)) {
+            for (Match m : roundMatches(c, n)) if (m.winner() != null) ids.add(m.winner());
+            String bye = qualBye(c, n);
+            if (bye != null) ids.add(bye);
+            if (qualificationRound(c) > n && qualificationRoundDone(c, n + 1)) ids.addAll(roundWinners(c, n + 1));
         }
-        viaKo.sort(placeThenTtr(c));
-        out.addAll(viaKo);
+        List<Entrant> out = new java.util.ArrayList<>();
+        for (String id : fieldOrder(c, ids)) if (idx.containsKey(id)) out.add(idx.get(id));
+        return out;
+    }
+
+    /** Qualifizierte: direkt Qualifizierte (nach TTR), dann die über die KO-Qualifikation. */
+    public List<Entrant> qualified(PlayingClass c) {
+        List<Entrant> out = new java.util.ArrayList<>(qualifiedDirect(c));
+        out.addAll(qualifiedViaKo(c));
         return out;
     }
 
     /**
-     * Nachrücker-Stufen (bereits feststehend), von oben nach unten: Freilos der Runde n; Sieger der Zusatzrunde
-     * (inkl. Freilos) bzw. – ohne Zusatzrunde – Verlierer der Runde n; Verlierer der Zusatzrunde; Verlierer der Runden
-     * n-1, …, 1. Innerhalb einer Stufe: Gruppenplatz, dann TTR.
+     * Nachrücker-Stufen (bereits feststehend), von oben nach unten; die Rangnummern werden fortlaufend vergeben, leere
+     * Stufen zählen nicht:
+     * <ol>
+     *   <li>Verlierer der Runde 2 – bzw., wenn die Zusatzrunde gespielt wurde, deren Verlierer (Gruppenplatz, Spiel-,
+     *       Satz-, Ballverhältnis, zuletzt TTR)</li>
+     *   <li>Verlierer der Runde 1 (nur nach TTR)</li>
+     *   <li>Nachrücker aus der Gruppenphase (Gruppenplatz, dann TTR)</li>
+     * </ol>
      */
     public List<List<Entrant>> qualificationTiers(PlayingClass c) {
-        return tiersWithLevel(c).stream().map(Tier::entrants).toList();
-    }
-
-    private record Tier(int level, List<Entrant> entrants) {
-    }
-
-    private List<Tier> tiersWithLevel(PlayingClass c) {
         java.util.Map<String, Entrant> idx = entrantIndex(c);
         int n = c.getQualRounds();
-        List<Tier> tiers = new java.util.ArrayList<>();
-        java.util.function.Function<java.util.Collection<String>, List<Entrant>> ents = ids -> {
+        int round = qualificationRound(c);
+        List<List<Entrant>> tiers = new java.util.ArrayList<>();
+        java.util.function.Function<java.util.Collection<String>, List<Entrant>> byField = ids -> {
             List<Entrant> l = new java.util.ArrayList<>();
-            for (String id : ids) if (idx.containsKey(id)) l.add(idx.get(id));
-            l.sort(placeThenTtr(c));
+            for (String id : fieldOrder(c, ids)) if (idx.containsKey(id)) l.add(idx.get(id));
             return l;
         };
-        int round = qualificationRound(c);
         if (n > 0 && round >= n && qualificationRoundDone(c, n)) {
-            String byeN = qualBye(c, n);
-            if (byeN != null) tiers.add(new Tier(2, ents.apply(List.of(byeN))));
-            boolean extraDone = round > n && qualificationRoundDone(c, n + 1);
-            if (extraDone) {
-                tiers.add(new Tier(4, ents.apply(roundWinners(c, n + 1))));
-                tiers.add(new Tier(6, ents.apply(roundLosers(c, n + 1))));
-            } else if (round == n) {
-                tiers.add(new Tier(4, ents.apply(roundLosers(c, n))));
+            if (round > n) {
+                if (qualificationRoundDone(c, n + 1)) tiers.add(byField.apply(roundLosers(c, n + 1)));
+            } else if (!c.isQualExtra() || roundLosers(c, n).size() < 2) {
+                tiers.add(byField.apply(roundLosers(c, n)));
             }
         }
-        for (int r = Math.min(n - 1, round); r >= 1; r--) {
-            if (qualificationRoundDone(c, r)) tiers.add(new Tier(10 + (n - r), ents.apply(roundLosers(c, r))));
+        if (n > 1 && round >= 1 && qualificationRoundDone(c, 1)) {
+            List<Entrant> l = new java.util.ArrayList<>();
+            for (String id : roundLosers(c, 1)) if (idx.containsKey(id)) l.add(idx.get(id));
+            l.sort(java.util.Comparator.comparing((Entrant e) -> e.ttr() == null ? Integer.MIN_VALUE : e.ttr()).reversed());
+            tiers.add(l);
         }
-        List<Entrant> reserve = reserveFromGroups(c);
-        if (!reserve.isEmpty()) tiers.add(new Tier(100, reserve));
-        tiers.removeIf(t -> t.entrants().isEmpty());
+        tiers.add(reserveFromGroups(c));
+        tiers.removeIf(List::isEmpty);
         return tiers;
     }
 
@@ -2034,51 +2102,67 @@ public final class Tournament {
         return out;
     }
 
-    /** Bezeichnung einer Nachrücker-Stufe: „Nachrücker Rang 1, 2, …“. */
-    public String qualificationTierLabel(PlayingClass c, int tierIndex) {
-        return "Nachrücker Rang " + (tierIndex + 1);
+    /**
+     * Gruppe und Gruppenplatz aus der Vorphase je Partei der Qualifikationsphase, z. B. „D3“ (direkt Qualifizierte,
+     * KO-Feld und Nachrücker aus der Gruppenphase).
+     */
+    public java.util.Map<String, String> qualificationPlaceLabels(PlayingClass c) {
+        java.util.Map<String, String> out = new java.util.HashMap<>(c.getSeedLabels());
+        PlayingClass src = c.getSourceClass() == null ? null : findClass(c.getSourceClass()).orElse(null);
+        if (src != null) {
+            for (int g = 0; g < src.getGroups().size(); g++) {
+                List<GroupStanding.Row> rows = standings(src, g);
+                for (int p = 0; p < rows.size(); p++) out.putIfAbsent(rows.get(p).entrant().id(), GroupDraw.groupName(g) + (p + 1));
+            }
+        }
+        return out;
     }
 
+    /** Bezeichnung einer Nachrücker-Stufe: „Nachrücker 1. Ranges“, „Nachrücker 2. Ranges“ … */
+    public String qualificationTierLabel(PlayingClass c, int tierIndex) {
+        return "Nachrücker " + (tierIndex + 1) + ". Ranges";
+    }
+
+    public static final String QUALIFIED_BY_GROUP = "Qualifiziert durch Gruppenplatzierung";
+    public static final String QUALIFIED_BY_KO = "Qualifiziert durch KO-Runde";
+    public static final String STILL_IN_QUALIFICATION = "noch in der Qualifikation";
+
     /**
-     * Endplatzierung im Qualifikationsmodus: „qualifiziert“ (direkt nach TTR, dann über die KO), „Nachrücker Rang 1, 2,
-     * …“ (je Stufe Gruppenplatz, dann TTR). Wer noch spielt, steht als „noch in der Qualifikation“ dort, wo er
-     * höchstens landen kann.
+     * Endplatzierung im Qualifikationsmodus: „Qualifiziert durch Gruppenplatzierung“ (nach TTR), „Qualifiziert durch
+     * KO-Runde“, „Nachrücker 1., 2., … Ranges“. Wer noch spielt, steht als „noch in der Qualifikation“ vor den
+     * Nachrückern (dort, wo er höchstens landen kann).
      */
     private List<Placing> rankQualification(PlayingClass c) {
         java.util.Map<String, Entrant> idx = entrantIndex(c);
         List<Placing> list = new java.util.ArrayList<>();
         java.util.Set<String> placed = new java.util.HashSet<>();
         int next = 1;
-        for (Entrant e : qualified(c)) {
+        for (Entrant e : qualifiedDirect(c)) {
             if (!placed.add(e.id())) continue;
-            list.add(new Placing(next, next, e, "qualifiziert"));
+            list.add(new Placing(next, next, e, QUALIFIED_BY_GROUP));
             next++;
         }
-        List<Tier> tiers = tiersWithLevel(c);
-        for (Tier t : tiers) for (Entrant e : t.entrants()) placed.add(e.id());
-        // noch im Rennen: in Runde ≤ n vor allen Nachrückern, in der Zusatzrunde nach dem Freilos der Runde n
+        for (Entrant e : qualifiedViaKo(c)) {
+            if (!placed.add(e.id())) continue;
+            list.add(new Placing(next, next, e, QUALIFIED_BY_KO));
+            next++;
+        }
+        List<List<Entrant>> tiers = qualificationTiers(c);
+        for (List<Entrant> t : tiers) for (Entrant e : t) placed.add(e.id());
         List<Entrant> open = new java.util.ArrayList<>();
         for (String id : c.getQualField().keySet()) if (!placed.contains(id) && idx.containsKey(id)) open.add(idx.get(id));
-        open.sort(placeThenTtr(c));
-        int openLevel = qualificationRound(c) > c.getQualRounds() ? 3 : 1;
-        boolean openDone = open.isEmpty();
-        int rank = 0;
-        for (Tier t : tiers) {
-            if (!openDone && t.level() > openLevel) {
-                int from = next;
-                for (Entrant e : open) list.add(new Placing(from, from + open.size() - 1, e, "noch in der Qualifikation"));
-                next += open.size();
-                openDone = true;
-            }
-            String label = qualificationTierLabel(c, rank++);
-            for (Entrant e : t.entrants()) {
+        if (!open.isEmpty()) {
+            int from = next;
+            for (Entrant e : open) list.add(new Placing(from, from + open.size() - 1, e, STILL_IN_QUALIFICATION));
+            next += open.size();
+        }
+        for (int k = 0; k < tiers.size(); k++) {
+            String label = qualificationTierLabel(c, k);
+            for (Entrant e : tiers.get(k)) {
+                if (placed.contains(e.id()) && list.stream().anyMatch(p -> p.entrant().id().equals(e.id()))) continue;
                 list.add(new Placing(next, next, e, label));
                 next++;
             }
-        }
-        if (!openDone) {
-            int from = next;
-            for (Entrant e : open) list.add(new Placing(from, from + open.size() - 1, e, "noch in der Qualifikation"));
         }
         return list;
     }
@@ -2819,6 +2903,58 @@ public final class Tournament {
         java.util.Set<String> now = new java.util.HashSet<>();
         for (Entrant e : entrantsOf(c)) now.add(e.id());
         return !drawn.equals(now);
+    }
+
+    // --- 0.33: Zurück zur vorherigen Phase, solange kein Ergebnis vorliegt -------------------------
+
+    /** Liegt in der Phase schon ein eingetragenes Ergebnis vor? Freilose zählen nicht. */
+    public boolean hasPhaseResult(PlayingClass phase) {
+        return matchesOf(phase).stream().anyMatch(m -> m.getStatus() == MatchStatus.DONE && m.getA() != null && m.getB() != null);
+    }
+
+    /**
+     * Grund, warum „Auslosung verwerfen“ (Phase 1) bzw. „Zurück zu Phase 1“ (Phase 2) nicht geht – sonst {@code null}.
+     * Möglich nur in der letzten Phase der Klasse und nur, solange darin noch kein Ergebnis eingetragen ist.
+     */
+    public String stepBackProblem(PlayingClass phase) {
+        if (phase == null) return "Keine Phase gewählt.";
+        if (phase.getFollowUpClass() != null) return "Es gibt schon eine weitere Phase.";
+        if (!phase.isPhase() && !phase.isDrawn()) return "Die Klasse ist noch nicht ausgelost.";
+        if (hasPhaseResult(phase)) return "Es liegt bereits ein Ergebnis vor.";
+        return null;
+    }
+
+    /** Spiele der Phase, die gerade an einem Tisch laufen bzw. aufgerufen sind. */
+    public long matchesAtTables(PlayingClass phase) {
+        return matchesOf(phase).stream().filter(m -> m.getStatus().atTable()).count();
+    }
+
+    /**
+     * Phase 1: Auslosung verwerfen – zurück zu „Teilnehmende der Klasse“ (auch nach dem Start); Phase 2: löschen und
+     * zurück zu Phase 1 (wieder offen). Spiele an Tischen werden zurückgezogen, die Tische sind sofort frei.
+     */
+    public void stepBack(PlayingClass phase) {
+        String problem = stepBackProblem(phase);
+        if (problem != null) throw new IllegalStateException(problem);
+        PlayingClass root = rootOf(phase);
+        if (phase.isPhase()) {
+            PlayingClass source = findClass(phase.getSourceClass()).orElseThrow();
+            removeClass(phase);
+            source.setFollowUpClass(null);
+            source.setNextPhase(TournamentMode.NONE);
+        } else {
+            matches.removeIf(m -> m.getClassName().equals(phase.getName()));
+            phase.setDraw(List.of(), false);
+            phase.setSwissByes(List.of());
+            phase.setSeedLabels(java.util.Map.of());
+            phase.setNextPhase(TournamentMode.NONE);
+            phase.setStartedAt(null);
+            phase.setReady(false);
+            phase.setPaused(false);
+        }
+        root.setFinishedAt(null);
+        dispatch();
+        markModified();
     }
 
     /** Setzt Modus und Auslosung der Klasse zurück. */

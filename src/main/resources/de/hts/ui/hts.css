@@ -292,6 +292,8 @@
 .table-view .column-header .label {
     -fx-font-weight: bold;
     -fx-text-fill: -hts-navy;
+    -fx-alignment: CENTER_LEFT;   /* 0.33: Spaltentitel wie die (meist linksbündigen) Werte */
+    -fx-padding: 0 0 0 4;
 }
 .table-row-cell {
     -fx-background-color: white;
@@ -767,7 +769,8 @@
 .list-cell:filled:selected .badge-singles { -fx-text-fill: -hts-navy; }
 /* 0.25.0: Spaltentitel wie die Werte ausrichten */
 .table-view .column-header.col-left .label { -fx-alignment: CENTER_LEFT; -fx-padding: 0 0 0 4; }
-.table-view .column-header.col-center .label { -fx-alignment: CENTER; }
+.table-view .column-header.col-center .label { -fx-alignment: CENTER; -fx-padding: 0; }
+.table-view .column-header.col-right .label { -fx-alignment: CENTER_RIGHT; -fx-padding: 0 4 0 0; }
 
 /* --- 0.27: Kartenrand nach Status (kommend grau, läuft türkis, pausiert gelb, beendet schwarz) --- */
 .match-card.card-upcoming { -fx-border-color: transparent transparent transparent #b0b6bd; }
@@ -836,3 +839,16 @@
     -fx-border-width: 0 0 0 1;
     -fx-padding: 4 14 4 14;
 }
+
+/* --- 0.33: Qualifikationsansicht – nummerierte Listen statt Chips --- */
+.qual-block { -fx-padding: 4 0 6 0; }
+.qual-count { -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 1 8 1 8; -fx-background-radius: 10; }
+.qual-count-ok { -fx-background-color: #e1f5ee; -fx-text-fill: #085041; }
+.qual-count-reserve { -fx-background-color: #faeeda; -fx-text-fill: #633806; }
+.qual-list { -fx-border-color: -hts-line transparent transparent transparent; -fx-border-width: 1 0 0 0; }
+.qual-row { -fx-padding: 4 2 4 2; -fx-border-color: transparent transparent #d9dce1 transparent; -fx-border-style: segments(3, 3); -fx-border-width: 0 0 1 0; }
+.qual-nr { -fx-text-fill: -hts-muted; -fx-font-size: 12px; }
+.qual-name { -fx-fill: -hts-text; -fx-font-size: 12px; }
+.qual-club { -fx-fill: #7a8594; -fx-font-size: 12px; }
+.qual-place { -fx-background-color: #eef0f3; -fx-background-radius: 4; -fx-text-fill: #4a5a6a; -fx-font-size: 11px; -fx-padding: 1 4 1 4; }
+.qual-ttr { -fx-text-fill: #4a5a6a; -fx-font-size: 12px; }

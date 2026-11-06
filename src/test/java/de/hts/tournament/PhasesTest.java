@@ -367,7 +367,7 @@ class PhasesTest {
         assertTrue(t.activeMatchAt(2).isPresent());
     }
 
-    /** HEM-Hauptqualifikation: 12 Gruppen, Gruppenerste direkt, Zweite + Dritte im KO, qualifiziert nach 2 Siegen. */
+    /** HEM-Hauptqualifikation: 12 Gruppen, Gruppenerste direkt, Zweite + Dritte im KO, qualifiziert nach 2 Siegen (0.33). */
     @Test
     void qualifikationsmodusHem() throws Exception {
         Tournament t = new Tournament();
@@ -389,28 +389,31 @@ class PhasesTest {
         assertEquals(12 + 6, t.matchesOf(q).size(), "Runde 2: die 12 Sieger");
         assertTrue(t.isPhaseComplete(q), "ohne Zusatzrunde fertig");
         var rows = t.finalResult(c).rows();
-        assertEquals(18, rows.stream().filter(r -> r.info().equals("qualifiziert")).count(), "12 direkt + 6 Sieger Runde 2");
-        assertEquals(6, rows.stream().filter(r -> r.info().equals("Nachrücker Rang 1")).count(), "Verlierer Runde 2");
-        assertEquals(12, rows.stream().filter(r -> r.info().equals("Nachrücker Rang 2")).count(), "Verlierer Runde 1");
+        assertEquals(12, rows.stream().filter(r -> r.info().equals(Tournament.QUALIFIED_BY_GROUP)).count(), "12 direkt");
+        assertEquals(6, rows.stream().filter(r -> r.info().equals(Tournament.QUALIFIED_BY_KO)).count(), "6 Sieger Runde 2");
+        assertEquals(6, rows.stream().filter(r -> r.info().equals("Nachrücker 1. Ranges")).count(), "Verlierer Runde 2");
+        assertEquals(12, rows.stream().filter(r -> r.info().equals("Nachrücker 2. Ranges")).count(), "Verlierer Runde 1"); 
         // Gruppenerste nach TTR
         List<Integer> directTtr = rows.subList(0, 12).stream().map(r -> r.entrant().ttr()).toList();
         assertEquals(directTtr.stream().sorted(java.util.Comparator.reverseOrder()).toList(), directTtr);
-        // innerhalb einer Stufe: Zweite vor Dritten
-        List<Integer> places = rows.stream().filter(r -> r.info().equals("Nachrücker Rang 2"))
+        // Rang 1: Gruppenplatz zuerst (Zweite vor Dritten); Rang 2: nur nach TTR
+        List<Integer> places = rows.stream().filter(r -> r.info().equals("Nachrücker 1. Ranges"))
                 .map(r -> q.getQualPlace().get(r.entrant().id())).toList();
         assertEquals(places.stream().sorted().toList(), places);
+        List<Integer> ttr2 = rows.stream().filter(r -> r.info().equals("Nachrücker 2. Ranges")).map(r -> r.entrant().ttr()).toList();
+        assertEquals(ttr2.stream().sorted(java.util.Comparator.reverseOrder()).toList(), ttr2);
 
-        // Zusatzrunde bei Bedarf: die 6 Verlierer der Runde 2 spielen noch einmal
+        // Zusatzrunde bei Bedarf: die 6 Verlierer der Runde 2 spielen noch einmal – die Gewinner sind qualifiziert
         t.setQualExtra(q, true);
         assertEquals(18 + 3, t.matchesOf(q).size());
         assertFalse(t.isPhaseComplete(q));
         assertTrue(t.matchesOf(q).stream().anyMatch(m -> m.getStage().equals(Tournament.QUAL_EXTRA_STAGE)));
         playAll(t, q);
         rows = t.finalResult(c).rows();
-        assertEquals(18, rows.stream().filter(r -> r.info().equals("qualifiziert")).count());
-        assertEquals(3, rows.stream().filter(r -> r.info().equals("Nachrücker Rang 1")).count(), "Sieger der Zusatzrunde");
-        assertEquals(3, rows.stream().filter(r -> r.info().equals("Nachrücker Rang 2")).count(), "Verlierer der Zusatzrunde");
-        assertEquals(12, rows.stream().filter(r -> r.info().equals("Nachrücker Rang 3")).count(), "Verlierer Runde 1");
+        assertEquals(9, rows.stream().filter(r -> r.info().equals(Tournament.QUALIFIED_BY_KO)).count(), "6 + 3 Sieger der Zusatzrunde");
+        assertEquals(3, rows.stream().filter(r -> r.info().equals("Nachrücker 1. Ranges")).count(), "Verlierer der Zusatzrunde");
+        assertEquals(12, rows.stream().filter(r -> r.info().equals("Nachrücker 2. Ranges")).count(), "Verlierer Runde 1");
+        assertEquals(0, rows.stream().filter(r -> r.info().equals("Nachrücker 3. Ranges")).count());
         assertThrows(IllegalStateException.class, () -> t.setQualExtra(q, false), "gespielt – nicht mehr abschaltbar");
         t.finishClass(q);
         // die übrigen nach Gruppenplatz: gleicher Gruppenplatz = gleicher Platz
@@ -438,8 +441,8 @@ class PhasesTest {
         t.finishClass(q);
         var rows = t.finalResult(c).rows();
         assertEquals(28, rows.size());
-        assertEquals(8, rows.stream().filter(r -> r.info().equals("qualifiziert")).count());
-        var reserve = rows.stream().filter(r -> r.info().equals("Nachrücker Rang 1")).toList();
+        assertEquals(8, rows.stream().filter(r -> r.info().equals(Tournament.QUALIFIED_BY_GROUP)).count());
+        var reserve = rows.stream().filter(r -> r.info().equals("Nachrücker 1. Ranges")).toList();   // ohne KO: Rang 1
         assertEquals(8, reserve.size(), "Gruppendritte und -vierte");
         assertEquals(List.of(9, 10, 11, 12, 13, 14, 15, 16), reserve.stream().map(Tournament.Placing::from).toList());
         // erst alle Dritten, dann alle Vierten; innerhalb nach TTR
@@ -485,21 +488,17 @@ class PhasesTest {
     }
 
     @Test
-    void qualifikationsmodusFreilosInDerLetztenRunde() {
+    void qualifikationsmodusNurAufgehendeFelder() {
         Tournament t = new Tournament();
         t.setTableCount(10);
         PlayingClass c = groupsClass(t, "Damen", players(t, "D", 14, 1800), 2);
         t.startClass(c);
         playAll(t, c);
-        PlayingClass q = t.createQualificationPhase(c, 1, 3, 2, new Random(1));   // 6 in der KO
-        playAll(t, q);
-        // Runde 1: 3 Spiele -> 3 Sieger; Runde 2: Freilos für den Bestplatzierten + 1 Spiel
-        assertEquals(4, t.matchesOf(q).size());
-        var rows = t.finalResult(c).rows();
-        assertEquals(3, rows.stream().filter(r -> r.info().equals("qualifiziert")).count(), "2 direkt + Sieger Runde 2");
-        assertEquals(1, rows.stream().filter(r -> r.info().equals("Nachrücker Rang 1")).count(), "Freilos in Runde 2");
-        assertEquals(1, rows.stream().filter(r -> r.info().equals("Nachrücker Rang 2")).count(), "Verlierer Runde 2");
-        assertEquals(3, rows.stream().filter(r -> r.info().equals("Nachrücker Rang 3")).count(), "Verlierer Runde 1");
+        // 6 in der KO: 3 Gewinner der Runde 1 – Runde 2 ginge nur mit Freilos -> nicht erlaubt
+        assertThrows(IllegalArgumentException.class, () -> t.createQualificationPhase(c, 1, 3, 2, new Random(1)));
+        assertEquals(List.of(3, 4, 7, 8, 11, 12), java.util.stream.IntStream.rangeClosed(1, 12)
+                .filter(Tournament::qualificationFieldFits).boxed().toList());
+        assertTrue(Tournament.qualificationFieldFits(0), "ohne KO-Runde");
     }
 
     @Test
@@ -509,7 +508,7 @@ class PhasesTest {
         PlayingClass c = groupsClass(t, "Senioren", players(t, "S", 10, 1700), 2);
         t.startClass(c);
         playAll(t, c);
-        PlayingClass q = t.createQualificationPhase(c, 1, 3, 2, new Random(1));   // 6 Spieler
+        PlayingClass q = t.createQualificationPhase(c, 1, 2, 2, new Random(1));   // 4 Spieler
         Match m1 = t.matchesOf(q).get(0), m2 = t.matchesOf(q).get(1);
         String a1 = m1.getA(), b2 = m2.getB();
         if (m1.getStatus().atTable()) {

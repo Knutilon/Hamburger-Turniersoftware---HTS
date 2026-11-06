@@ -1114,6 +1114,7 @@ public final class ClassesView {
         }, 44);
         nr.setComparator(Comparator.nullsLast(Comparator.naturalOrder()));
         nr.setStyle("-fx-alignment: CENTER-RIGHT;");
+        nr.getStyleClass().add("col-right");
         setupTable(assignedTable, assigned, List.of(nr, last, first, birthCol(), sexCol(), ttrCol(), fitColumn(), clubCol()),
                 last, first, true);
         assignedTable.setPlaceholder(new Label("Noch niemand zugeordnet.\nTeilnehmende von links hierher ziehen."));
@@ -1191,6 +1192,7 @@ public final class ClassesView {
         }, 28);
         fit.setSortable(false);
         fit.setStyle("-fx-alignment: CENTER;");
+        fit.getStyleClass().add("col-center");
         return fit;
     }
 
@@ -1210,6 +1212,7 @@ public final class ClassesView {
         TableColumn<Player, String> c = col("G", p -> p.getSex().getShortLabel(), 30);
         c.setSortable(false);
         c.setStyle("-fx-alignment: CENTER;");
+        c.getStyleClass().add("col-center");
         return c;
     }
 
@@ -1217,6 +1220,7 @@ public final class ClassesView {
         TableColumn<Player, Integer> c = col("TTR", Player::getTtr, 50);
         c.setComparator(Comparator.nullsLast(Comparator.naturalOrder()));
         c.setStyle("-fx-alignment: CENTER-RIGHT;");
+        c.getStyleClass().add("col-right");
         return c;
     }
 

@@ -11,6 +11,7 @@ import de.hts.tournament.Tournament;
 import de.hts.tournament.TournamentMode;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.layout.GridPane;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -65,6 +66,11 @@ public final class DrawView {
     private final CheckBox seeded = new CheckBox("nach Setzung (TTR)");
     private final Button drawBtn = new Button("Neu auslosen");
     private final Button discardBtn = new Button("Auslosung verwerfen", Icons.of(Icons.BACK, 14));
+    /** 0.33: Hülle, damit der Hinweis auch am gesperrten Knopf erscheint. */
+    private final javafx.scene.layout.StackPane discardWrap = new javafx.scene.layout.StackPane(discardBtn);
+    private final Button backBtn = new Button("Zurück zu Phase 1", Icons.of(Icons.BACK, 14));
+    private final javafx.scene.layout.StackPane backWrap = new javafx.scene.layout.StackPane(backBtn);
+    private final Tooltip discardTip = new Tooltip(), backTip = new Tooltip();
     private final Button readyBtn = new Button("bereit");
     private final Button startBtn = new Button("starten");
     private final Label startedLabel = new Label();
@@ -109,6 +115,45 @@ public final class DrawView {
     private final Label allGroupsLabel = new Label("alle Gruppen");
     /** Treffer der Suche in der gerade gebauten Gruppe (Namen hervorheben) */
     private java.util.Set<String> searchHits = java.util.Set.of();
+    /** 0.33: Suche ohne Neuaufbau – beim Aufbau gemerkte Knoten, deren Hervorhebung nur umgeschaltet wird. */
+    private KoSearch koSearch;
+    private GroupSearch groupSearchIndex;
+    /** Sammelt beim Aufbau einer Gruppenkarte die Namens-Labels (für die Suche). */
+    private List<Map.Entry<String, Label>> nameSink;
+    /** Sammelt beim Aufbau einer Spielliste die Zeilen (für die Suche). */
+    private List<MatchEntry> matchSink;
+    /** Suche erst 0,25 s nach dem letzten Tastendruck auswerten. */
+    private final javafx.animation.PauseTransition searchDelay = new javafx.animation.PauseTransition(javafx.util.Duration.millis(250));
+
+    private record KoCard(Node card, int r, int i) {
+    }
+
+    private record KoConn(int r, int i, List<javafx.scene.shape.Line> lines) {
+    }
+
+    private static final class KoSearch {
+        String[][][] ids;                      // je Runde/Spiel die möglichen Parteien
+        final List<KoCard> cards = new java.util.ArrayList<>();
+        final List<KoConn> conns = new java.util.ArrayList<>();
+        Node third;
+        String[] thirdIds;
+    }
+
+    private record MatchEntry(Node node, String a, String b, Label la, Label lb, int index) {
+    }
+
+    private static final class GroupEntry {
+        Node row;
+        List<Map.Entry<String, Label>> names;
+        List<MatchEntry> matches;
+        Node toggle;
+        boolean collapsible, expanded;
+    }
+
+    private static final class GroupSearch {
+        final List<GroupEntry> groups = new java.util.ArrayList<>();
+        Label noHits;
+    }
 
     private PlayingClass current;
     private boolean updating;
@@ -154,7 +199,12 @@ public final class DrawView {
         drawBtn.setOnAction(e -> draw());
         discardBtn.getStyleClass().add("pill");
         discardBtn.setOnAction(e -> discard());
-        discardBtn.setTooltip(new Tooltip("Auslosung löschen und zurück zu „Teilnehmende der Klasse“"));
+        Tooltip.install(discardWrap, discardTip);
+        backBtn.getStyleClass().add("pill");
+        backBtn.setOnAction(e -> stepBackPhase());
+        Tooltip.install(backWrap, backTip);
+        backWrap.managedProperty().bind(backWrap.visibleProperty());
+        backWrap.setVisible(false);
         readyBtn.getStyleClass().add("pill");
         readyBtn.setOnAction(e -> toggleReady());
         readyBtn.setTooltip(new Tooltip("Bereite Klassen werden mit „Turnier starten“ gestartet"));
@@ -231,7 +281,7 @@ public final class DrawView {
         modeLabel.getStyleClass().add("class-name");
         modeRow = new HBox(12, modeLabel, mode);
         modeRow.managedProperty().bind(modeRow.visibleProperty());
-        for (Node n : new Node[]{seeded, drawBtn, discardBtn}) n.managedProperty().bind(n.visibleProperty());
+        for (Node n : new Node[]{seeded, drawBtn, discardWrap}) n.managedProperty().bind(n.visibleProperty());
         modeRow.setAlignment(Pos.CENTER_LEFT);
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
@@ -243,7 +293,7 @@ public final class DrawView {
         settingsSummary.setWrapText(true);
         // Knöpfe immer ausgeschrieben: links Auslosung, rechts Ablauf – bei wenig Platz bricht die Zeile um
         settingsBtn.setVisible(false);
-        HBox leftActions = new HBox(10, drawBtn, discardBtn);
+        HBox leftActions = new HBox(10, drawBtn, discardWrap);
         leftActions.setAlignment(Pos.CENTER_LEFT);
         allGroupsLabel.getStyleClass().add("hint");
         allGroupsLabel.managedProperty().bind(allGroupsLabel.visibleProperty());
@@ -256,7 +306,7 @@ public final class DrawView {
         nextPhaseBtn.setOnAction(e -> {
             if (current != null && current.getFollowUpClass() != null) onOpenClass.accept(current.getFollowUpClass());
         });
-        HBox rightActions = new HBox(10, startedLabel, allGroupsLabel, thirdBtn, printBtn, pauseBtn, followBtn, finishBtn,
+        HBox rightActions = new HBox(10, startedLabel, allGroupsLabel, thirdBtn, backWrap, printBtn, pauseBtn, followBtn, finishBtn,
                 nextPhaseBtn, readyBtn, startBtn);
         rightActions.setAlignment(Pos.CENTER_LEFT);
         rightActions.setAlignment(Pos.CENTER_LEFT);
@@ -270,8 +320,9 @@ public final class DrawView {
         // Suche in der Gruppenphase
         groupSearch.setPromptText("Suchen: Vorname, Nachname, Verein");
         groupSearch.setPrefColumnCount(24);
+        searchDelay.setOnFinished(e -> applySearch());
         groupSearch.textProperty().addListener((o, a, b) -> {
-            if (!updating && current != null) show(current);
+            if (!updating && current != null) searchDelay.playFromStart();
         });
         Button clearSearch = new Button("✕");
         clearSearch.getStyleClass().add("pill");
@@ -280,6 +331,10 @@ public final class DrawView {
         clearSearch.visibleProperty().bind(groupSearch.textProperty().isNotEmpty());
         groupSearch.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ENTER) {
+                if (searchDelay.getStatus() == javafx.animation.Animation.Status.RUNNING) {   // Eingabe noch nicht ausgewertet
+                    searchDelay.stop();
+                    applySearch();
+                }
                 stepHit(e.isShiftDown() ? -1 : 1);       // Enter = nächster, Umschalt+Enter = vorheriger Treffer
                 e.consume();
             }
@@ -409,6 +464,9 @@ public final class DrawView {
         updating = true;
         sticky = null;
         hitNodes.clear();
+        koSearch = null;
+        groupSearchIndex = null;
+        searchDelay.stop();
         try {
             overviewBox.getChildren().clear();
             warning.setVisible(false);
@@ -434,7 +492,16 @@ public final class DrawView {
                     && tournament.findClass(c.getSourceClass()).map(tournament::isPhaseComplete).orElse(false);
             drawBtn.setVisible(editable || redrawPhase);
 
-            discardBtn.setVisible(editable);
+            // 0.33: verwerfen bzw. zurück zu Phase 1, solange in der (letzten) Phase kein Ergebnis vorliegt – auch nach dem Start
+            String backProblem = tournament.stepBackProblem(c);
+            discardWrap.setVisible(!phase && c.isDrawn() && c.getFollowUpClass() == null);
+            discardBtn.setDisable(backProblem != null);
+            discardTip.setText(backProblem != null ? backProblem : "Auslosung löschen und zurück zu „Teilnehmende der Klasse“");
+            backWrap.setVisible(phase && c.getFollowUpClass() == null);
+            backBtn.setDisable(backProblem != null);
+            backTip.setText(backProblem != null ? backProblem : "Phase " + tournament.phaseNumber(c) + " löschen und zurück zu Phase "
+                    + (tournament.phaseNumber(c) - 1) + " (wieder offen)");
+            backBtn.setText("Zurück zu Phase " + Math.max(1, tournament.phaseNumber(c) - 1));
             String open = openText(c);
             settingsSummary.setText(c.getMode() == TournamentMode.GROUPS && c.isDrawn()
                     ? c.getGroups().size() + " Gruppen" + open
@@ -482,7 +549,6 @@ public final class DrawView {
                         ? " Erstrundenpaarung(en)" : " Paar(e) in derselben Gruppe") + " – rot markiert. "
                         + (started ? "" : "Per Drag & Drop lässt sich das vor dem Start ändern."));
             }
-            discardBtn.setDisable(!c.isDrawn() || started);
             updateGroupPreview(c);
 
             readyBtn.setVisible(c.isDrawn() && !started);
@@ -864,52 +930,99 @@ public final class DrawView {
         groupPreview.setText("→ " + sizes + " · " + games + " Gruppenspiele");
     }
 
-    /** Je Gruppe: links die Gruppe (Kopf zuerst), rechts daneben ihre Spiele mit Status. */
+    /**
+     * Je Gruppe: links die Gruppe (Kopf zuerst), rechts daneben ihre Spiele mit Status. Es werden immer alle Gruppen
+     * und Spiele aufgebaut; die Suche blendet danach nur ein/aus und hebt hervor ({@link #applyGroupSearch}).
+     */
     private Node buildGroups(PlayingClass c) {
         List<List<Entrant>> groups = tournament.groupsOf(c);
         List<Match> all = tournament.matchesOf(c);
         VBox list = new VBox(14);
-        String q = searchQuery();
-        int hits = 0;
+        GroupSearch index = new GroupSearch();
+        index.noHits = new Label();
+        index.noHits.getStyleClass().add("warning");
+        index.noHits.managedProperty().bind(index.noHits.visibleProperty());
+        index.noHits.setVisible(false);
+        list.getChildren().add(index.noHits);
         for (int g = 0; g < groups.size(); g++) {
             List<Entrant> members = groups.get(g);
             int gi = g;
-            List<Match> groupMatches = all.stream().filter(m -> m.getGroupIndex() == gi).toList();
-            List<Match> allOfGroup = groupMatches;
-            java.util.Set<String> found = new java.util.HashSet<>();
-            if (!q.isEmpty()) {
-                for (Entrant e : members) if (nameMatches(e, q)) found.add(e.id());
-                if (found.isEmpty()) continue;            // Suche: nur Gruppen mit Treffern
-                hits += found.size();
-                groupMatches = groupMatches.stream().filter(m -> found.contains(m.getA()) || found.contains(m.getB())).toList();
-            }
+            List<Match> allOfGroup = all.stream().filter(m -> m.getGroupIndex() == gi).toList();
             // aktiv/pausiert → eingereiht → geplant → abgeschlossen, je nach Spielnummer
-            groupMatches = groupMatches.stream().sorted(java.util.Comparator.comparingInt((Match m) -> statusRank(m.getStatus()))
+            List<Match> groupMatches = allOfGroup.stream().sorted(java.util.Comparator.comparingInt((Match m) -> statusRank(m.getStatus()))
                     .thenComparingInt(Match::getNumber)).toList();
             String key = c.getName() + "#" + g;
-            boolean collapsible = q.isEmpty() && groupMatches.size() > COLLAPSE_LIMIT;
-            boolean expanded = !collapsible || expandedGroups.contains(key);
-            Node matchesNode;
-            if (!collapsible) {
-                matchesNode = groupMatchList(groupMatches, found);
-            } else {
-                List<Match> shown = expanded ? groupMatches : groupMatches.subList(0, COLLAPSE_LIMIT);
-                VBox list0 = (VBox) groupMatchList(shown, found);
-                list0.getChildren().add(collapseToggle(key, groupMatches, expanded));
-                matchesNode = list0;
+            GroupEntry entry = new GroupEntry();
+            entry.collapsible = groupMatches.size() > COLLAPSE_LIMIT;
+            entry.expanded = expandedGroups.contains(key);
+            entry.matches = new java.util.ArrayList<>();
+            matchSink = entry.matches;
+            VBox matchesNode = (VBox) groupMatchList(groupMatches, java.util.Set.of());
+            matchSink = null;
+            if (entry.collapsible) {
+                entry.toggle = collapseToggle(key, groupMatches, entry.expanded);
+                matchesNode.getChildren().add(entry.toggle);
             }
-            searchHits = found;
+            entry.names = new java.util.ArrayList<>();
+            nameSink = entry.names;
             HBox row = new HBox(14, groupCard("Gruppe " + GroupDraw.groupName(g), g, members, allOfGroup), matchesNode);
-            searchHits = java.util.Set.of();
+            nameSink = null;
             row.setAlignment(Pos.TOP_LEFT);
+            entry.row = row;
+            index.groups.add(entry);
             list.getChildren().add(row);
         }
-        if (!q.isEmpty() && hits == 0) {
-            Label res = new Label("Keine Teilnehmenden gefunden für „" + q + "“.");
-            res.getStyleClass().add("warning");
-            return new VBox(12, res, list);
-        }
+        groupSearchIndex = index;
+        applyGroupSearch(searchQuery());
         return list;
+    }
+
+    private static void shown(Node n, boolean b) {
+        if (n.isVisible() != b) n.setVisible(b);
+        if (!n.managedProperty().isBound() && n.isManaged() != b) n.setManaged(b);
+    }
+
+    private static void styled(Node n, String style, boolean on) {
+        if (on) {
+            if (!n.getStyleClass().contains(style)) n.getStyleClass().add(style);
+        } else {
+            n.getStyleClass().remove(style);
+        }
+    }
+
+    /** Gruppensuche: nur Gruppen mit Treffern zeigen, darin nur deren Spiele; Namen hervorheben (ohne Neuaufbau). */
+    private void applyGroupSearch(String q) {
+        GroupSearch index = groupSearchIndex;
+        if (index == null) return;
+        hitNodes.clear();
+        boolean searching = !q.isEmpty();
+        java.util.Map<String, Boolean> cache = new HashMap<>();
+        java.util.function.Predicate<String> hit = id -> id != null && searching
+                && cache.computeIfAbsent(id, x -> tournament.entrantMatches(x, q));
+        int hits = 0;
+        for (GroupEntry e : index.groups) {
+            java.util.Set<String> found = new java.util.HashSet<>();
+            for (Map.Entry<String, Label> n : e.names) {
+                boolean h = hit.test(n.getKey());
+                styled(n.getValue(), "search-hit", h);
+                styled(n.getValue(), "search-current", false);
+                if (h) {
+                    found.add(n.getKey());
+                    hitNodes.add(n.getValue());
+                }
+            }
+            hits += found.size();
+            shown(e.row, !searching || !found.isEmpty());
+            for (MatchEntry m : e.matches) {
+                boolean ha = found.contains(m.a()), hb = found.contains(m.b());
+                styled(m.la(), "search-hit", ha);
+                styled(m.lb(), "search-hit", hb);
+                shown(m.node(), searching ? ha || hb : !e.collapsible || e.expanded || m.index() < COLLAPSE_LIMIT);
+            }
+            if (e.toggle != null) shown(e.toggle, !searching);
+        }
+        index.noHits.setText("Keine Teilnehmenden gefunden für „" + q + "“.");
+        index.noHits.setVisible(searching && hits == 0);
     }
 
     private void updateSwissPreview(PlayingClass c) {
@@ -1042,6 +1155,7 @@ public final class DrawView {
                 name.getStyleClass().add("search-hit");
                 hitNodes.add(name);
             }
+            if (nameSink != null) nameSink.add(Map.entry(row.entrant().id(), name));
             boolean clash = clashIds.contains(row.entrant().id()) && current.getMode() != TournamentMode.SWISS;
             if (clash) name.getStyleClass().add("club-clash");
             name.setTooltip(new Tooltip(row.entrant().name() + (row.entrant().detail() != null ? "\n" + row.entrant().detail() : "")
@@ -1145,6 +1259,7 @@ public final class DrawView {
         box.getStyleClass().add("group-matches");
         box.setMinWidth(680);
         box.setPrefWidth(720);
+        int pos = 0;
         for (Match m : groupMatches) {
             Label nr = new Label(String.valueOf(m.getNumber()));
             nr.getStyleClass().add("pos");
@@ -1202,10 +1317,13 @@ public final class DrawView {
                 });
                 row.getStyleClass().add("toggle-row");
                 box.getChildren().add(entry);
+                if (matchSink != null) matchSink.add(new MatchEntry(entry, m.getA(), m.getB(), a, b, pos));
             } else {
                 if (!m.getSetsText().isEmpty()) Tooltip.install(row, new Tooltip(m.getSetsText()));
                 box.getChildren().add(row);
+                if (matchSink != null) matchSink.add(new MatchEntry(row, m.getA(), m.getB(), a, b, pos));
             }
+            pos++;
         }
         return box;
     }
@@ -1238,6 +1356,59 @@ public final class DrawView {
     }
 
     /** KO-Baum: eine Spalte je Runde; Spiele mit Status, Tisch und Ergebnis; Sieger rücken weiter. */
+    /** KO-Suche: Treffer-Karten hervorheben (samt Pfad), alle anderen abblenden – ohne den Baum neu aufzubauen. */
+    private void applyKoSearch(String q) {
+        KoSearch index = koSearch;
+        if (index == null) return;
+        hitNodes.clear();
+        boolean searching = !q.isEmpty();
+        java.util.Map<String, Boolean> cache = new HashMap<>();
+        java.util.function.Predicate<String> hit = id -> id != null && searching
+                && cache.computeIfAbsent(id, x -> tournament.entrantMatches(x, q));
+        boolean[][] hitAt = new boolean[index.ids.length][];
+        for (int r = 0; r < index.ids.length; r++) {
+            hitAt[r] = new boolean[index.ids[r].length];
+            for (int i = 0; i < index.ids[r].length; i++) {
+                for (String id : index.ids[r][i]) if (hit.test(id)) { hitAt[r][i] = true; break; }
+            }
+        }
+        for (KoCard k : index.cards) {
+            boolean h = hitAt[k.r()][k.i()];
+            styled(k.card(), "search-current", false);
+            styled(k.card(), "search-hit-card", searching && h);
+            styled(k.card(), "search-dim", searching && !h);
+            if (searching && h) hitNodes.add(k.card());
+        }
+        for (KoConn k : index.conns) {
+            boolean path = searching && hitAt[k.r()][k.i()] && k.r() + 1 < hitAt.length && hitAt[k.r() + 1][k.i() / 2];
+            for (javafx.scene.shape.Line l : k.lines()) {
+                styled(l, "bracket-path-hit", path);
+                styled(l, "bracket-connector", !path);
+                if (path) l.toFront();
+            }
+        }
+        if (index.third != null) {
+            boolean h = searching && (hit.test(index.thirdIds[0]) || hit.test(index.thirdIds[1]));
+            styled(index.third, "search-current", false);
+            styled(index.third, "search-hit-card", h);
+            styled(index.third, "search-dim", searching && !h);
+            if (h) hitNodes.add(index.third);
+        }
+    }
+
+    /** Suchbegriff geändert (nach der Verzögerung): nur Hervorhebung umschalten – ohne gemerkte Knoten neu anzeigen. */
+    private void applySearch() {
+        if (current == null) return;
+        String q = searchQuery();
+        if (groupSearchIndex != null) applyGroupSearch(q);
+        else if (koSearch != null) applyKoSearch(q);
+        else {
+            show(current);
+            return;
+        }
+        afterShow();
+    }
+
     private Node buildBracket(PlayingClass c) {
         List<Entrant> slots = tournament.drawSlots(c);
         KnockoutBracket bracket = new KnockoutBracket(slots);
@@ -1255,11 +1426,9 @@ public final class DrawView {
         Map<String, Match> byPos = new HashMap<>();
         for (Match m : tournament.matchesOf(c)) byPos.put(m.getKoRound() + ":" + m.getKoIndex(), m);
 
-        // Suche: Partien der Treffer hervorheben (samt Pfad), alle anderen abblenden
-        String q = searchQuery();
-        boolean searching = !q.isEmpty();
-        java.util.function.Predicate<String> hit = id -> id != null && tournament.entrantMatches(id, q);
-        boolean[][] hitAt = new boolean[bracket.getRounds().size()][];
+        // Suche: Partien der Treffer hervorheben (samt Pfad), alle anderen abblenden – nur Stile umschalten (applyKoSearch)
+        KoSearch index = new KoSearch();
+        index.ids = new String[bracket.getRounds().size()][][];
 
         // feste Positionen: Spalte r bei x = r·(Breite+Abstand), Karte k mittig in ihrem Block der Höhe unit_r
         final double gap = COLUMN_GAP, top = 34;
@@ -1269,20 +1438,20 @@ public final class DrawView {
         double height = 0;
         double finalTop = 0;
         List<Node> lines = new java.util.ArrayList<>();
-        List<Node> hitLines = new java.util.ArrayList<>();
+        javafx.scene.Group connectors = new javafx.scene.Group();   // Verbindungslinien (Trefferpfad nach vorn holbar)
+        connectors.setAutoSizeChildren(false);
         List<Node> cards = new java.util.ArrayList<>();
         // Rundentitel in eigener Leiste (weißer Hintergrund) – bleibt beim senkrechten Scrollen oben stehen
         javafx.scene.layout.Pane titleBar = new javafx.scene.layout.Pane();
         titleBar.getStyleClass().add("bracket-titlebar");
         for (int r = 0; r < rounds.size(); r++) {
             KnockoutBracket.Round round = rounds.get(r);
-            hitAt[r] = new boolean[round.matches().size()];
+            index.ids[r] = new String[round.matches().size()][];
             for (int i = 0; i < round.matches().size(); i++) {
                 KnockoutBracket.Match bm = round.matches().get(i);
                 Match m = byPos.get(r + ":" + i);
-                hitAt[r][i] = searching && (hit.test(bm.a().entrant() == null ? null : bm.a().entrant().id())
-                        || hit.test(bm.b().entrant() == null ? null : bm.b().entrant().id())
-                        || (m != null && (hit.test(m.getA()) || hit.test(m.getB()))));
+                index.ids[r][i] = new String[]{bm.a().entrant() == null ? null : bm.a().entrant().id(),
+                        bm.b().entrant() == null ? null : bm.b().entrant().id(), m == null ? null : m.getA(), m == null ? null : m.getB()};
             }
         }
         final int f0 = Math.max(0, Math.min(fromRound, rounds.size() - 1));
@@ -1305,22 +1474,17 @@ public final class DrawView {
                 double cy = top + unit * (i - lo0) + unit / 2;
                 Node card = matchCard(round.matches().get(i), byPos.get(r + ":" + i), seedOf, r, i);
                 card.relocate(x, cy - cardH / 2);
-                if (searching) {
-                    card.getStyleClass().add(hitAt[r][i] ? "search-hit-card" : "search-dim");
-                    if (hitAt[r][i]) hitNodes.add(card);
-                }
+                index.cards.add(new KoCard(card, r, i));
                 cards.add(card);
                 if (r + 1 < rEnd) {
                     // Verbindung zum Folgespiel: waagerecht, senkrecht, waagerecht (Pfad eines Treffers kräftig)
                     double nUnit = unit * 2;
                     double ny = top + nUnit * (i / 2 - lo0 / 2) + nUnit / 2;
                     double x1 = x + MATCH_WIDTH, xm = x1 + gap * 0.3, x2 = x + MATCH_WIDTH + gap;
-                    boolean path = searching && hitAt[r][i] && hitAt[r + 1][i / 2];
-                    String style = path ? "bracket-path-hit" : "bracket-connector";
-                    List<Node> target = path ? hitLines : lines;
-                    target.add(bracketLine(x1, cy, xm, cy, style));
-                    target.add(bracketLine(xm, cy, xm, ny, style));
-                    target.add(bracketLine(xm, ny, x2, ny, style));
+                    List<javafx.scene.shape.Line> conn = List.of(bracketLine(x1, cy, xm, cy, "bracket-connector"),
+                            bracketLine(xm, cy, xm, ny, "bracket-connector"), bracketLine(xm, ny, x2, ny, "bracket-connector"));
+                    connectors.getChildren().addAll(conn);
+                    index.conns.add(new KoConn(r, i, conn));
                 }
                 height = Math.max(height, cy + cardH / 2);
                 if (r == rounds.size() - 1) finalTop = cy - cardH / 2;
@@ -1336,11 +1500,8 @@ public final class DrawView {
             t3.relocate(x, ty);
             Node card = thirdPlaceCard(thirdMatch, seedOf, c);
             card.relocate(x, ty + 26);
-            if (searching) {
-                boolean h = hit.test(thirdMatch.getA()) || hit.test(thirdMatch.getB());
-                card.getStyleClass().add(h ? "search-hit-card" : "search-dim");
-                if (h) hitNodes.add(card);
-            }
+            index.third = card;
+            index.thirdIds = new String[]{thirdMatch.getA(), thirdMatch.getB()};
             cards.add(t3);
             cards.add(card);
             height = Math.max(height, ty + 26 + cardH + (thirdMatch.getStatus() == MatchStatus.DONE ? 22 : 0));
@@ -1356,8 +1517,10 @@ public final class DrawView {
         titleBar.setMaxSize(width + gap, top - 4);
         titleBar.relocate(0, 0);
         tree.getChildren().addAll(lines);
-        tree.getChildren().addAll(hitLines);
+        tree.getChildren().add(connectors);
         tree.getChildren().addAll(cards);
+        koSearch = index;
+        applyKoSearch(searchQuery());
         tree.getChildren().add(titleBar);
         tree.setPrefSize(width, height + 8);
         tree.setMinSize(width, height + 8);
@@ -1418,36 +1581,30 @@ public final class DrawView {
      */
     private Node buildQualification(PlayingClass c) {
         VBox box = new VBox(12);
-        Map<String, Entrant> idx = new HashMap<>();
-        for (Entrant e : tournament.entrantsOf(c)) idx.put(e.id(), e);
+        // alle Personen bzw. Doppel/Teams – die Qualifikation übernimmt sie aus Phase 1 (nicht der Phase zugeordnet)
+        Map<String, Entrant> idx = tournament.entrantIndex(c);
+        Map<String, String> places = tournament.qualificationPlaceLabels(c);
         if (!c.getQualifiedDirect().isEmpty()) {
-            Label head = new Label("Direkt qualifiziert (" + c.getQualifiedDirect().size() + ")");
-            head.getStyleClass().add("round-title");
-            javafx.scene.layout.FlowPane direct = new javafx.scene.layout.FlowPane(8, 6);
-            for (String id : c.getQualifiedDirect()) {
-                Entrant e = idx.get(id);
-                if (e == null) continue;
-                Label l = new Label(withClub(e));
-                l.getStyleClass().addAll("chip", "qualified");
-                direct.getChildren().add(l);
-            }
-            box.getChildren().addAll(head, direct);
+            box.getChildren().add(qualList("Qualifiziert durch Gruppenplatzierung", tournament.qualifiedDirect(c), places, true,
+                    "Gruppenplatz 1" + (c.getQualDirect() > 1 ? "–" + c.getQualDirect() : "") + " · Reihenfolge nach TTR"));
         }
         int rounds = tournament.qualificationRound(c);
         if (rounds > 0) {
             int n = c.getQualRounds();
-            Label info = new Label("KO-Qualifikation: " + c.getQualField().size() + " Spieler, die Gewinner spielen weiter – wer "
-                    + n + (n == 1 ? " Spiel" : " Spiele") + " gewinnt, ist qualifiziert; die Verlierer werden Nachrücker "
-                    + "(später ausgeschieden = weiter oben, je Stufe Gruppenplatz vor TTR)"
+            Label info = new Label("KO-Qualifikation: " + c.getQualField().size() + " Teilnehmende – wer " + n
+                    + (n == 1 ? " Spiel" : " Spiele") + " gewinnt (Freilos zählt als Sieg), ist qualifiziert; Runde 1 besser gegen "
+                    + "schlechter Platzierte, Runde 2 frei gelost"
                     + (qualEditable() ? " · Spieler der aktuellen Runde per Drag & Drop tauschen" : ""));
             info.getStyleClass().add("hint");
             info.setWrapText(true);
             box.getChildren().add(info);
-            CheckBox extra = new CheckBox("Zusatzrunde für die Verlierer der Runde " + n + " (bei Bedarf)");
+            int losersN = (c.getQualField().size() + 1) / 2 / 2;      // Spiele in Runde 2 = Verlierer der Runde 2
+            CheckBox extra = new CheckBox("Zusatzrunde für die Verlierer der Runde " + n + " – deren Gewinner sind ebenfalls qualifiziert");
             extra.setSelected(c.isQualExtra());
-            extra.setDisable(tournament.rootOf(c).isFinished());
-            extra.setTooltip(new Tooltip("Die Verlierer der letzten Runde spielen noch ein Spiel – die Sieger stehen dann als Nachrücker "
-                    + "vor den Verlierern (z. B. für frei werdende Startplätze)."));
+            extra.setDisable(tournament.rootOf(c).isFinished() || (losersN < 2 && !c.isQualExtra()));
+            extra.setTooltip(new Tooltip(losersN < 2 ? "Mit nur einem Verlierer in Runde " + n + " gibt es keine Zusatzrunde."
+                    : "Die Verlierer der Runde " + n + " spielen noch ein Spiel; die Gewinner sind qualifiziert, die Verlierer "
+                    + "Nachrücker 1. Ranges. Bei ungerader Zahl hat der Bestplatzierte ein Freilos (zählt als Sieg)."));
             extra.setOnAction(e -> {
                 try {
                     tournament.setQualExtra(c, extra.isSelected());
@@ -1484,26 +1641,92 @@ public final class DrawView {
             }
             box.getChildren().addAll(title, cards);
         }
-        List<Entrant> viaKo = tournament.qualified(c).stream().filter(e -> !c.getQualifiedDirect().contains(e.id())).toList();
-        if (!viaKo.isEmpty()) box.getChildren().addAll(tierBlock("Über die KO qualifiziert", viaKo, true));
+        List<Entrant> viaKo = tournament.qualifiedViaKo(c);
+        if (!viaKo.isEmpty()) {
+            box.getChildren().add(qualList("Qualifiziert durch KO-Runde", viaKo, places, true,
+                    "Gruppenplatz, dann Spiel-, Satz-, Ballverhältnis, zuletzt TTR"));
+        }
         List<List<Entrant>> tiers = tournament.qualificationTiers(c);
         for (int t = 0; t < tiers.size(); t++) {
-            box.getChildren().addAll(tierBlock(tournament.qualificationTierLabel(c, t), tiers.get(t), false));
+            box.getChildren().add(qualList(tournament.qualificationTierLabel(c, t), tiers.get(t), places, false,
+                    tierRule(c, tiers.get(t))));
         }
         return box;
     }
 
-    private List<Node> tierBlock(String label, List<Entrant> list, boolean qualified) {
-        Label head = new Label(label + " (" + list.size() + ")");
+    /** Sortierregel einer Nachrücker-Stufe als Hinweis neben der Überschrift. */
+    private String tierRule(PlayingClass c, List<Entrant> tier) {
+        if (tier.isEmpty()) return "";
+        String id = tier.get(0).id();
+        int n = c.getQualRounds();
+        boolean ko = c.getQualField().containsKey(id);
+        if (!ko) return "aus der Gruppenphase · Gruppenplatz, dann TTR";
+        boolean lostRound1 = tournament.matchesOf(c).stream().anyMatch(m -> m.getRound() == 1 && id.equals(m.loser()));
+        if (lostRound1) return "Verlierer der Runde 1 · nach TTR";
+        boolean extra = tournament.qualificationRound(c) > n;
+        return (extra ? "Verlierer der Zusatzrunde" : "Verlierer der Runde " + n) + " · Gruppenplatz, dann Spiel-, Satz-, Ballverhältnis, zuletzt TTR";
+    }
+
+    /**
+     * Nummerierte Liste (2 Spalten, erst links von oben nach unten, dann rechts): Position · Name · Verein ·
+     * Gruppenplatz · TTR. Alle Einträge, Namen vollständig (Zeilen brechen bei Bedarf um).
+     */
+    private Node qualList(String title, List<Entrant> list, Map<String, String> places, boolean qualified, String rule) {
+        Label head = new Label(title);
         head.getStyleClass().add("round-title");
-        javafx.scene.layout.FlowPane f = new javafx.scene.layout.FlowPane(8, 6);
-        list.forEach(e -> {        // Reihenfolge wie in der Wertung (Gruppenplatz, dann TTR)
-                    Label l = new Label(withClub(e));
-                    l.getStyleClass().add("chip");
-                    if (qualified) l.getStyleClass().add("qualified");
-                    f.getChildren().add(l);
-                });
-        return List.of(head, f);
+        Label count = new Label(String.valueOf(list.size()));
+        count.getStyleClass().addAll("qual-count", qualified ? "qual-count-ok" : "qual-count-reserve");
+        Label hint = new Label(rule);
+        hint.getStyleClass().add("hint");
+        HBox top = new HBox(10, head, count, hint);
+        top.setAlignment(Pos.BASELINE_LEFT);
+        GridPane grid = new GridPane();
+        grid.getStyleClass().add("qual-list");
+        grid.setHgap(22);
+        javafx.scene.layout.ColumnConstraints half = new javafx.scene.layout.ColumnConstraints();
+        half.setPercentWidth(50);
+        half.setHgrow(Priority.ALWAYS);
+        javafx.scene.layout.ColumnConstraints half2 = new javafx.scene.layout.ColumnConstraints();
+        half2.setPercentWidth(50);
+        half2.setHgrow(Priority.ALWAYS);
+        grid.getColumnConstraints().addAll(half, half2);
+        grid.setMinWidth(980);              // auch bei wenigen Einträgen zwei gleich breite, lesbare Spalten
+        int perCol = (list.size() + 1) / 2;
+        for (int i = 0; i < list.size(); i++) {
+            Entrant e = list.get(i);
+            Label nr = new Label((i + 1) + ".");
+            nr.getStyleClass().add("qual-nr");
+            nr.setMinWidth(30);
+            nr.setAlignment(Pos.CENTER_RIGHT);
+            javafx.scene.text.Text name = new javafx.scene.text.Text(e.name());
+            name.getStyleClass().add("qual-name");
+            javafx.scene.text.TextFlow flow = new javafx.scene.text.TextFlow(name);
+            if (e.detail() != null && !e.detail().isBlank()) {
+                javafx.scene.text.Text club = new javafx.scene.text.Text("  " + e.detail());
+                club.getStyleClass().add("qual-club");
+                flow.getChildren().add(club);
+            }
+            flow.setMinWidth(0);
+            flow.setPrefWidth(10);
+            HBox.setHgrow(flow, Priority.ALWAYS);
+            String pl = places.get(e.id());
+            Label place = new Label(pl == null ? "" : pl);
+            place.getStyleClass().add("qual-place");
+            place.setVisible(pl != null);
+            place.setMinWidth(34);
+            place.setAlignment(Pos.CENTER);
+            Label ttr = new Label(e.ttr() == null ? "" : String.valueOf(e.ttr()));
+            ttr.getStyleClass().add("qual-ttr");
+            ttr.setMinWidth(40);
+            ttr.setAlignment(Pos.CENTER_RIGHT);
+            HBox row = new HBox(8, nr, flow, place, ttr);
+            row.setAlignment(Pos.BASELINE_LEFT);
+            row.getStyleClass().add("qual-row");
+            grid.add(row, i < perCol ? 0 : 1, i < perCol ? i : i - perCol);
+        }
+        VBox block = new VBox(6, top, grid);
+        block.getStyleClass().add("qual-block");
+        return block;
     }
 
     private Node qualCard(PlayingClass c, Match m, Map<String, Entrant> idx, boolean editable) {
@@ -1900,9 +2123,11 @@ public final class DrawView {
             case KNOCKOUT -> "KO-System · " + c.getDraw().size() + "er-Feld" + koCounts(c);
             case SWISS -> "Schweizer System · " + tournament.swissRounds(c) + " Runden";
             case PLACEMENT -> "Platzierungsspiele";
-            case QUALIFICATION -> "Qualifikationsmodus · " + c.getQualDirect() + " direkt je Gruppe, " + c.getQualKo()
-                    + " je Gruppe in der KO-Qualifikation, qualifiziert nach " + c.getQualRounds() + (c.getQualRounds() == 1 ? " Sieg" : " Siegen")
-                    + (c.isQualExtra() ? " · mit Zusatzrunde" : "");
+            case QUALIFICATION -> "Qualifikationsmodus · " + c.getQualDirect() + " direkt je Gruppe, "
+                    + (c.getQualKo() > 0 && !c.getQualField().isEmpty()
+                    ? c.getQualKo() + " je Gruppe in der KO-Qualifikation, qualifiziert nach " + c.getQualRounds()
+                    + (c.getQualRounds() == 1 ? " Sieg" : " Siegen") + (c.isQualExtra() ? " · mit Zusatzrunde" : "")
+                    : "keine KO-Qualifikation");
             case NONE -> "";
         });
         if (c.isPhase()) return sb.append(" · nach Platzierung der Vorphase").toString();
@@ -1929,13 +2154,62 @@ public final class DrawView {
     private void discard() {
         PlayingClass c = current;
         if (c == null || !c.isDrawn()) return;
-        if (!confirm("Auslosung verwerfen", "Auslosung von „" + c.getName() + "“ verwerfen und zurück zu den Teilnehmenden der Klasse?")) {
+        long atTables = tournament.matchesAtTables(c);
+        if (!confirmStepBack("Auslosung verwerfen", "Auslosung von „" + c.getName() + "“ verwerfen?",
+                "Alle Spiele dieser Phase werden gelöscht – zurück zu „Teilnehmende der Klasse“."
+                        + (atTables > 0 ? "\n" + atTables + (atTables == 1 ? " Spiel läuft" : " Spiele laufen")
+                        + " gerade an Tischen – sie werden zurückgezogen, die Tische sind sofort frei." : ""))) {
             return;
         }
-        tournament.clearDraw(c);
+        try {
+            if (c.isStarted()) tournament.stepBack(c);
+            else tournament.clearDraw(c);
+        } catch (IllegalStateException ex) {
+            showWarning(ex.getMessage());
+            return;
+        }
         status.accept("Auslosung von „" + c.getName() + "“ verworfen.");
         onChanged.run();
         onDiscard.accept(c);
+    }
+
+    /** 0.33: Phase 2 löschen und zurück zu Phase 1 (solange in Phase 2 kein Ergebnis vorliegt). */
+    private void stepBackPhase() {
+        PlayingClass c = current;
+        if (c == null || !c.isPhase()) return;
+        int n = tournament.phaseNumber(c);
+        long atTables = tournament.matchesAtTables(c);
+        String root = tournament.rootOf(c).getName();
+        if (!confirmStepBack("Zurück zu Phase " + (n - 1), "Phase " + n + " von „" + root + "“ löschen?",
+                "Alle Spiele dieser Phase werden gelöscht. Phase " + (n - 1) + " ist danach wieder offen und kann neu "
+                        + "abgeschlossen werden." + (atTables > 0 ? "\n" + atTables + (atTables == 1 ? " Spiel läuft" : " Spiele laufen")
+                        + " gerade an Tischen – sie werden zurückgezogen, die Tische sind sofort frei." : ""))) {
+            return;
+        }
+        String source = c.getSourceClass();
+        try {
+            tournament.stepBack(c);
+        } catch (IllegalStateException ex) {
+            showWarning(ex.getMessage());
+            return;
+        }
+        status.accept("Phase " + n + " von „" + root + "“ gelöscht – zurück zu Phase " + (n - 1) + ".");
+        onChanged.run();
+        onOpenClass.accept(source);
+    }
+
+    /** Sicherheitsabfrage mit den Knöpfen „Verwerfen“ und „Zurück“. */
+    private boolean confirmStepBack(String title, String header, String text) {
+        ButtonType yes = new ButtonType("Verwerfen", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        ButtonType no = new ButtonType("Zurück", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+        Alert a = new Alert(Alert.AlertType.CONFIRMATION, text, yes, no);
+        Window w = root.getScene() == null ? null : root.getScene().getWindow();
+        a.initOwner(w);
+        a.setTitle(title);
+        a.setHeaderText(header);
+        ((Button) a.getDialogPane().lookupButton(no)).setDefaultButton(true);
+        ((Button) a.getDialogPane().lookupButton(yes)).setDefaultButton(false);
+        return a.showAndWait().orElse(no) == yes;
     }
 
     private void toggleReady() {

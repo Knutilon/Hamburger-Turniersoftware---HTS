@@ -238,15 +238,15 @@ class Version020Test {
             Tournament t = new Tournament();
             t.setTableCount(20);
             t.setQualificationRandom(new Random(seed));
-            PlayingClass g = groupsClass(t, "Herren", 12, 3);
+            PlayingClass g = groupsClass(t, "Herren", 16, 4);       // 8 in der KO-Qualifikation
             t.startClass(g);
             play(t, g, m -> true);
-            for (int gi = 0; gi < 3; gi++) {
+            for (int gi = 0; gi < 4; gi++) {
                 var rows = t.standings(g, gi);
                 String second = rows.get(1).entrant().id(), third = rows.get(2).entrant().id();
                 for (Player p : t.getPlayers()) {
                     if (p.getId().equals(second)) p.setClubName("Verein " + gi);
-                    if (p.getId().equals(third)) p.setClubName("Verein " + ((gi + 1) % 3));
+                    if (p.getId().equals(third)) p.setClubName("Verein " + ((gi + 1) % 4));
                 }
             }
             PlayingClass q = t.createQualificationPhase(g, 1, 2, 1, new Random(seed));

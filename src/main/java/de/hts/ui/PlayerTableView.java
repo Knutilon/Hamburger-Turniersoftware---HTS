@@ -95,6 +95,7 @@ public final class PlayerTableView {
         TableColumn<Player, String> registered = new TableColumn<>("Angemeldet");
         registered.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().isRegistered() ? "✓" : ""));
         registered.setStyle("-fx-alignment: CENTER;");
+        registered.getStyleClass().add("col-center");
         registered.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String v, boolean empty) {
@@ -115,6 +116,7 @@ public final class PlayerTableView {
         TableColumn<Player, String> sex = textColumn("G", p -> p.getSex().getShortLabel(), 40, textCmp);
         sex.setSortable(false);
         sex.setStyle("-fx-alignment: CENTER;");
+        sex.getStyleClass().add("col-center");
         TableColumn<Player, String> club = textColumn("Verein", Player::getClubName, 190, textCmp);
         club.setSortable(false);
         TableColumn<Player, Integer> ttr = new TableColumn<>("TTR");
@@ -122,6 +124,7 @@ public final class PlayerTableView {
         ttr.setComparator(Comparator.nullsLast(Comparator.naturalOrder()));
         ttr.setPrefWidth(60);
         ttr.setStyle("-fx-alignment: CENTER-RIGHT;");
+        ttr.getStyleClass().add("col-right");
         TableColumn<Player, String> entries = textColumn("Klassen", Player::getClassesText, 260, textCmp);
         entries.setSortable(false);
         TableColumn<Player, String> licence = textColumn("Lizenz-Nr.", Player::getLicenceNr, 90, textCmp);

@@ -6,6 +6,32 @@ Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Pub
 Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
 (Label „Feature“ bzw. „bug“).
 
+## Neu in 0.33.0
+
+- **Qualifikationsmodus überarbeitet:** Wer in der KO-Qualifikation 2 Spiele gewinnt, ist qualifiziert (die
+  Einstellung „qualifiziert nach n Siegen“ entfällt).
+  - Runde 1: besser gegen schlechter Platzierte (möglichst andere Gruppe/anderer Verein); bleiben nur gleiche
+    Gruppenplätze übrig, spielen diese gegeneinander. Bei ungerader Zahl Freilos für den Stärksten nach der
+    Gruppenphase (Gruppenplatz, Spiel-, Satz-, Ballverhältnis, TTR) – das Freilos zählt als Sieg.
+  - Runde 2 frei gelost, ohne Freilos: die KO-Qualifikation muss dafür aufgehen (3, 4, 7, 8, 11, 12 … Teilnehmende),
+    sonst lässt sich die Phase nicht anlegen und HTS nennt passende Möglichkeiten.
+  - Zusatzrunde (wählbar im Phasen-Reiter) für die Verlierer der Runde 2: deren Gewinner sind ebenfalls qualifiziert
+    (bei ungerader Zahl Freilos für den Bestplatzierten).
+  - Nachrücker, fortlaufend nummeriert: Verlierer der Runde 2 bzw. der Zusatzrunde (Gruppenplatz, Verhältnisse,
+    TTR), dann Verlierer der Runde 1 (nur nach TTR), dann die Nachrücker aus der Gruppenphase. Ohne KO-Runde sind
+    die Nachrücker aus der Gruppenphase „Nachrücker 1. Ranges“.
+- **Qualifikationsansicht:** Namen in den Spielkarten (fehlten bisher); Qualifizierte und Nachrücker als nummerierte
+  Liste in zwei Spalten mit Verein, Gruppenplatz (z. B. „D3“) und TTR – alle Einträge, Namen vollständig.
+- **Endergebnis:** „Qualifiziert durch Gruppenplatzierung“, „Qualifiziert durch KO-Runde“, „Nachrücker 1./2./…
+  Ranges“ statt nur „qualifiziert“ (auch im PDF); Spaltentitel linksbündig wie die Werte (auch in den anderen
+  Tabellen).
+- **Zurück zur vorherigen Phase:** Solange in der letzten Phase noch kein Ergebnis eingetragen ist, gibt es
+  „Auslosung verwerfen“ (Phase 1 → „Teilnehmende der Klasse“, auch nach dem Start) bzw. „Zurück zu Phase 1“
+  (Phase 2 wird gelöscht, Phase 1 ist wieder offen) – mit Sicherheitsabfrage; Spiele an Tischen werden
+  zurückgezogen, die Tische sind sofort frei.
+- **Suche im KO-Baum und in den Gruppen deutlich schneller:** Ausgewertet wird 0,25 s nach dem letzten Tastendruck,
+  und es werden nur noch Hervorhebungen umgeschaltet statt die Ansicht neu aufzubauen.
+
 ## Neu in 0.32.0
 
 - **2er und 3er Turnier (nur Vorgabeturnier):** neue Spielarten für Mannschaftskämpfe. Teams wie Doppelpaarungen

@@ -1,4 +1,4 @@
-# Zwischenstand HTS 0.32.0 (06.11.2026)
+# Zwischenstand HTS 0.33.0 (06.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -14,11 +14,128 @@ https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.
 (+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
-## Feature-Sammlung für 0.33.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 0.34.0 (NICHT kompilieren – bis „… kompilieren“)
 
-(noch leer – neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
+(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
+
+(noch leer)
 
 ## Umgesetzt
+
+0.33.0 (Issues #21–#26, #28 umgesetzt; #27 war ein Duplikat). README „Neu in 0.33.0“ ergänzt, sonst Doku NICHT
+aktualisiert (nur auf Zuruf). Offene Frage B (ungerade Zahl in der Zusatzrunde) ohne Antwort → wie angekündigt
+umgesetzt: Freilos für den Bestplatzierten nach der Gruppenphase, zählt als Sieg (qualifiziert).
+Qualifikation (Tournament): QUAL_WINS = 2 fest (Spinner im PhaseCloseDialog entfernt), qualificationKoCount,
+qualificationFieldFits (n = 0 oder n ≥ 3 mit n mod 4 ∈ {0, 3}), qualificationFieldProblem (Dialog sperrt „Phase
+abschließen“ mit Hinweis); tier() mit TTR als letztem Kriterium vor dem Los (= Feldreihenfolge); Runde 1
+drawFirstQualRound: größtmögliche Zahl „höher gegen niedriger“ (Kuhn-Matching), Rest gleicher Ränge untereinander,
+Gruppe/Verein als nachrangige Bedingungen; qualifiedDirect / qualifiedViaKo (Sieger Runde 2 + Zusatzrunde inkl.
+Freilos) / qualified; qualificationTiers dynamisch: Verlierer Runde 2 bzw. Zusatzrunde (Feldreihenfolge), Verlierer
+Runde 1 (TTR), Nachrücker aus der Gruppenphase; Labels „Nachrücker n. Ranges“, QUALIFIED_BY_GROUP/QUALIFIED_BY_KO;
+Seed-Labels „A1“ für die Qualifikationsphase + qualificationPlaceLabels; entrantIndex öffentlich.
+UI: DrawView.buildQualification nutzt entrantIndex (Namen in Spielkarten, #23), qualList (2 Spalten, TextFlow,
+CSS .qual-*), Zusatzrunde-Checkbox gesperrt bei nur 1 Verlierer; Zusammenfassung „keine KO-Qualifikation“;
+PdfReports Qualifikation mit qualifiedDirect/qualifiedViaKo. Spaltentitel: CSS Kopfzeilen CENTER_LEFT, col-center/
+col-right für zentrierte/rechtsbündige Spalten (ClassesView, ImportPreviewDialog, PlayerTableView).
+Zurück (#22): Tournament.hasPhaseResult/stepBackProblem/matchesAtTables/stepBack; DrawView „Auslosung verwerfen“
+(Phase 1, auch nach Start) und „Zurück zu Phase 1“ (Phase 2) mit Tooltip-Hülle, Abfrage [Verwerfen]/[Zurück].
+Suche (#21): PauseTransition 250 ms; KoSearch/GroupSearch merken Knoten beim Aufbau, applyKoSearch/applyGroupSearch
+schalten nur Stile/Sichtbarkeit (Gruppen werden immer vollständig aufgebaut, eingeklappte Spiele nur ausgeblendet).
+Messung (Software-Rendering, 2 Kerne): KO 256 Doppel – Tastendruck Ø 20 ms, Auswertung Ø 60 ms (max 136; vorher
+Ø 520, max 880 ms je Tastendruck); Gruppen 512 Einzel/128 Gruppen – Tastendruck Ø 53 ms (davon fast alles der
+erzwungene Layout-Durchlauf der Messung), Auswertung Ø 87 ms (max 143).
+Tests: Version033Test (6), PhasesTest/Version020/021 an die neuen Regeln angepasst – 180 bestanden.
+Feature-Sammlung 0.33.0 (zur Nachverfolgung):
+
+   1. SUCHE IM KO-BAUM/GRUPPEN SCHNELLER (06.11.2026, Issue #21). Messung (256 Doppel/512 Spieler, 255 Spiele, Messumgebung
+      2 Kerne 2,1 GHz, Software-Rendering): KO-Baum erstmals 1,4 s; je Tastendruck 345–880 ms (Ø 520 ms), davon reine
+      Treffersuche nur ca. 3 ms – Ursache: DrawView.show() baut bei jedem Tastendruck alles neu auf.
+      a) Verzögert suchen: erst ca. 0,25 s nach dem letzten Tastendruck auswerten (Debounce).
+      b) Nur hervorheben statt neu aufbauen: Baum/Gruppen bleiben stehen, nur Treffer-/Abblend-Stile (und Pfade) werden
+         umgeschaltet; Ziel deutlich unter 50 ms je Tastendruck. Gilt für KO-Baum und Gruppenansicht. Nach der Umsetzung
+         erneut messen.
+
+   2. ZURÜCKSPRINGEN, SOLANGE KEIN SPIEL DER PHASE ABGESCHLOSSEN IST (06.11.2026, Issue #22): „Wenn noch kein Spiel einer
+      Phase abgeschlossen ist, kann auf ‚Teilnehmende der Klasse‘ oder Phase 1 zurückgesprungen werden.“
+      GEKLÄRT (Vorschläge angenommen):
+      - Phase 1 (auch schon gestartet) ohne eingetragenes Ergebnis → Knopf „Auslosung verwerfen“ im Reiter der Phase:
+        zurück zu „Teilnehmende der Klasse“, Spiele/Tische/Warteschlange der Klasse entfernen. Freilose zählen nicht.
+      - Phase 2 ohne eingetragenes Ergebnis → Knopf „Zurück zu Phase 1“ im Reiter der Phase 2: Phase 2 löschen,
+        Phase 1 wieder offen (nicht abgeschlossen, Ergebnisse korrigierbar).
+      - Liegt ein Ergebnis vor: Knopf sichtbar, aber ausgegraut, Tooltip „Es liegt bereits ein Ergebnis vor.“
+      - Sicherheitsabfrage, z. B. „Auslosung von ‚Herren A‘ verwerfen? Alle Spiele dieser Phase werden gelöscht.“
+        [Verwerfen] [Zurück]; laufen Spiele an Tischen, steht zusätzlich „n Spiele laufen gerade an Tischen.“
+      - Spiele an Tischen/aufgerufen werden ohne weitere Nachfrage zurückgezogen, Tische sofort frei.
+      - Es gibt höchstens 2 Phasen. Ergebnisse der Zusatzrunde (Qualifikation) zählen als Ergebnis.
+      - Ausdrücklich auch für Phasen OHNE Spiele (z. B. Qualifikation mit 0 je Gruppe in der KO, Screenshot 06.11.2026):
+        „Zurück zu Phase 1“ steht dort im Reiter Phase 2 neben „PDF / Drucken“ / „Phase abschließen“.
+
+   3. QUALIFIKATIONSANSICHT ZEIGT KEINE NAMEN (06.11.2026, Issue #23, Fehler): In Phase 2 – Qualifikation stehen in den
+      Spielkarten nur „–“ statt der Teilnehmenden; erst der Doppelklick (Ergebnisdialog) zeigt sie. Gewünscht: Namen
+      auch in der Phasenansicht. Ursache: `DrawView.buildQualification` sucht die Teilnehmenden nur unter den der
+      Phasenklasse zugeordneten Personen (`entrantsOf`), der Ergebnisdialog dagegen über alle Personen/Doppel
+      (`entrantIndex`). Behebung: dieselbe Suche wie der Dialog verwenden; betrifft auch die Chips „Direkt
+      qualifiziert“, „Über die KO qualifiziert“, Nachrücker und das Freilos. Test ergänzen.
+
+   4. ENDERGEBNIS: SPALTENTITEL WIE DIE WERTE AUSRICHTEN (06.11.2026, Issue #24): Im Reiter „Endergebnis“ (z. B. nach
+      der Qualifikationsphase) sind die Werte linksbündig, die Spaltentitel aber zentriert. Titel linksbündig wie die
+      Werte (Platz, Name, Verein, TTR, Ermittelt durch). Umsetzung: Tabelle in `FinalResultView` bekommt eine
+      Stilklasse, Kopfzeilen-Label per CSS `CENTER_LEFT` mit gleichem Innenabstand wie die Zellen. Gleich mit prüfen:
+      andere Tabellen mit linksbündigen Werten (Teilnehmende, Spiele, Import-Vorschau) einheitlich ausrichten.
+
+   5. QUALIFIKATIONSRUNDEN ÜBERARBEITEN (06.11.2026, Issue #25) – IN KLÄRUNG. Wunsch des Nutzers:
+      - Nach der Gruppenphase eine KO-Qualifikation; einstellbar wie bisher, welche Gruppenplätze direkt qualifiziert
+        sind und welche in die KO-Runde einziehen.
+      - Wer 2 KO-Spiele gewinnt, ist für das Folgeturnier qualifiziert.
+      - Runde 1: Gruppen-Höherplatzierte gegen Niedrigerplatzierte (wie bisher). Bleiben nur noch gleiche Ränge übrig
+        (z. B. nur Gruppendritte, weil alle Zweiten gegen Vierte gelost wurden), spielen diese gegeneinander. Bei
+        ungerader Zahl Freilos für den stärksten Qualifikanten der Gruppenphase. Rangfolge nach der Gruppenphase:
+        Gruppenplatz, dann Spiel-, Satz-, Ballverhältnis.
+      - Runde 2: Gewinner der Runde 1 zufällig gegeneinander gelost; Gewinner der Runde 2 sind qualifiziert.
+      - Optional (auf der Phasenübersicht auswählbar): Die Verlierer der Runde 2 spielen eine weitere Runde; deren
+        Gewinner sind AUCH qualifiziert (bisher: Nachrücker).
+      - Nachrücker Rang 1: Verlierer der Runde 2 bzw. 3; Verlierer der Runde 3 vor Verlierern der Runde 2; innerhalb
+        entscheidet die Gruppenplatzierung.
+      - Nachrücker Rang 2: „Verlierer der ersten Gruppenphase“ (vermutlich: der KO-Runde 1), Reihenfolge nur nach TTR.
+      Antworten (06.11.2026): (1) Einstellung „n Siege“ entfällt, immer 2 Siege. (2) Freilos zählt als Sieg; in Runde 2
+      gibt es KEIN Freilos. (3) Gleiche Ränge per Los, möglichst andere Gruppe/anderer Verein. (4) Mit Zusatzrunde
+      spielen alle Verlierer der Runde 2 mit → Nachrücker Rang 1 = Verlierer der Runde 2 (ohne Zusatzrunde) bzw. der
+      Zusatzrunde (mit Zusatzrunde).
+      (5) Rang 1 innerhalb: Gruppenplatz, dann Spiel-, Satz-, Ballverhältnis aus der Gruppenphase, bei völligem
+      Gleichstand TTR.
+      (6) Nachrücker Rang 2 = Verlierer der KO-Runde 1, nur nach TTR.
+      (A) Ungerade Zahl in Runde 2: nicht zulassen – nur Einstellungen erlauben, bei denen Runde 2 gerade aufgeht
+      (Gewinner der Runde 1 inkl. Freilos = aufgerundet N/2 muss gerade sein, d. h. N ≡ 0 oder 3 mod 4; N = Anzahl
+      Teilnehmende der KO-Runde). Beim Anlegen der Phase prüfen, sonst Hinweis mit passenden Möglichkeiten.
+      (7) Nachrücker aus der Gruppenphase (Einstellung bleibt) bilden eine eigene, letzte Stufe. Die Rangnummern werden
+      DYNAMISCH fortlaufend vergeben, je nachdem welche Stufen es gibt: mit KO-Runde Rang 1 = Verlierer Runde 2 bzw.
+      Zusatzrunde, Rang 2 = Verlierer Runde 1, Rang 3 = Gruppenphase; ohne KO-Runde (0 je Gruppe in der KO) ist die
+      Gruppenphasen-Stufe Rang 1. Leere Stufen zählen nicht mit. Gilt gleich für Endergebnis-Spalte (Punkt 6) und Liste
+      (Punkt 7). Sortierung der Gruppenphasen-Stufe wie bisher: Gruppenplatz, dann TTR. Kopfzeile der Phase passt sich an
+      (ohne KO kein „qualifiziert nach … Sieg“; mit KO „qualifiziert nach 2 Siegen“).
+      Noch offen: (B) ungerade Zahl in der Zusatzrunde.
+
+   6. ENDERGEBNIS: GRUND DER QUALIFIKATION ANZEIGEN (06.11.2026, Issue #26): Spalte „Ermittelt durch“ im Endergebnis
+      der Qualifikationsphase zeigt statt nur „qualifiziert“: „Qualifiziert durch Gruppenplatzierung“, „Qualifiziert
+      durch KO-Runde“, „Nachrücker 1. Ranges“, „Nachrücker 2. Ranges“ (ggf. „Nachrücker 3. Ranges“, siehe Punkt 5).
+      Auch im PDF des Endergebnisses.
+
+   7. QUALIFIKATIONSANSICHT: LISTEN STATT CHIPS (06.11.2026, Issue #28, Designvorschlag angenommen): Blöcke „Direkt
+      qualifiziert“, „Über die KO qualifiziert“ und alle Nachrücker-Ränge als nummerierte Liste in zwei gleich breiten
+      Spalten (Leserichtung erst links von oben nach unten, dann rechts). Zeile: Position · Name + Verein (Verein
+      heller) · Gruppenplatz-Kästchen (z. B. „D3“) · TTR rechtsbündig; gestrichelte Trennlinien zwischen den Zeilen.
+      Kopfzeile je Block: Überschrift, Anzahl als Marke (grün = qualifiziert, gelb = Nachrücker) und kurze Angabe der
+      Sortierung. Anpassung des Nutzers: ALLE Namen anzeigen (keine Kürzung „… weitere“), Namen und Vereine vollständig
+      (Zeilenumbruch statt Abschneiden).
+
+   7. QUALIFIKATIONSANSICHT: LISTEN STATT CHIPS (06.11.2026, Issue #28, Designvorschlag angenommen): Blöcke „Direkt
+      qualifiziert“, „Über die KO qualifiziert“ und alle Nachrücker-Ränge als nummerierte Liste in 2 gleich breiten
+      Spalten (Leserichtung erst links von oben nach unten, dann rechts). Zeile: Position · Name · Verein (heller) ·
+      Gruppenplatz-Kästchen (z. B. „D3“) · TTR rechtsbündig; gestrichelte Trennlinien. Kopf je Block: Überschrift,
+      Anzahl als Marke (grün = qualifiziert, gelb = Nachrücker), Sortierregel als Hinweis. Anpassung des Nutzers:
+      ALLE Einträge zeigen (kein „… weitere“) und Namen/Vereine VOLLSTÄNDIG, nicht abgeschnitten (Zeile darf umbrechen).
+      Also: jeder Block zeigt ALLE Qualifizierten bzw. ALLE Nachrücker des jeweiligen Ranges – nichts wird gekürzt.
+
 
 0.32.0 (Issues #12, #15–#20 umgesetzt). Doku NICHT aktualisiert (nur auf Zuruf). GRUNDSATZ: Abwärtskompatibilität von
 Turnierdateien muss nicht garantiert werden.

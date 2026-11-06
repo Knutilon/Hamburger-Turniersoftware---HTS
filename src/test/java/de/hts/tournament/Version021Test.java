@@ -127,7 +127,7 @@ class Version021Test {
         assertTrue(t.matchesOf(gr).stream().allMatch(m -> Math.max(m.getSetsA(), m.getSetsB()) == 4), "4 Gewinnsätze");
 
         // Phase 2 Qualifikation angehalten: wird nicht simuliert, fortgesetzt dann schon
-        PlayingClass q = t.createQualificationPhase(gr, 1, 3, 2, new Random(1));
+        PlayingClass q = t.createQualificationPhase(gr, 1, 2, 2, new Random(1));   // 4 in der KO
         t.pauseClass(q);
         assertEquals(0, t.simulateAll(new Random(8)));
         t.resumeClass(q);
