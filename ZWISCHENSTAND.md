@@ -1,8 +1,8 @@
-# Zwischenstand HTS 0.30.0 (04.11.2026)
+# Zwischenstand HTS 0.31.0 (06.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
-Bei jedem „kompilieren“: Quellcode (src, pom.xml, README.md, ZWISCHENSTAND.md, docs, samples, .gitignore,
+Bei jedem „kompilieren“: Quellcode (src, pom.xml, README.md, ZWISCHENSTAND.md, CLAUDE.md, docs, samples, .gitignore,
 „HTS starten.bat“) als EIN Commit „HTS x.y.z“ auf main in https://github.com/Knutilon/Hamburger-Turniersoftware---HTS
 (Klon /home/claude/hamburger-turniersoftware---hts, push mit -c push.negotiate=false). Keine Releases/Tags, keine
 alte Versionshistorie. Windows-ZIP weiter per Datei. Repo ist öffentlich. 0.28.0 hochgeladen (Commit b4cb270).
@@ -14,11 +14,30 @@ https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.
 (+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
-## Feature-Sammlung für 0.31.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 0.32.0 (NICHT kompilieren – bis „… kompilieren“)
 
-(noch leer – neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
+(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
+
+1. OFFEN aus 0.31.0 (Issue #12): JavaFX 21 GA → 21.0.8 (neueste sicher frei verfügbare 21.0.x; Windows-Jars
+   javafx-base/-controls/-graphics-21.0.8-win.jar) und PDFBox/pdfbox-io/fontbox 3.0.5 → 3.0.8. Maven Central und
+   Gluon-/Apache-Downloads sind aus der Sitzung gesperrt → Nutzer um die 6 Jar-Dateien gebeten (06.11.2026). Danach
+   pom.xml angleichen (javafx.version 21.0.8, pdfbox 3.0.8), Fat-Jar neu bauen, Lizenzhinweise, ABHAENGIGKEITEN.md.
 
 ## Umgesetzt
+
+0.31.0 (Issues #13, #14 umgesetzt; #12 teilweise – Temurin 21.0.13 eingebaut). Doku NICHT aktualisiert (nur auf Zuruf).
+Vorgabeturnier: tournament/HandicapRules (Mode CLASSES/DISTANCE, Serve, halve, Bounds je Erwachsene/Damen mit
+firstLower + Obergrenzen, Bälle; validate, between, combine, encode/decode), Tournament.handicap/handicapRules
+(isHandicapReady, isHandicapLocked, setHandicapRules, handicapOf/handicapLabel/handicapSuffix, handicapProblems,
+Startsperre in startClass/startTournament, replaceParticipants); persistiert als Attribute „handicap“ und „hc“.
+TournamentDialog Checkbox (nur beim Anlegen, Kopie übernimmt vom Original), Summary.handicap + Chip in der Übersicht.
+ui/HandicapView (Reiter „Vorgaberegeln“, Speichern mit Rückfrage, confirmLeave Speichern/Verwerfen/Zurück, gesperrt
+nach Start), WorkspaceView (Menü nur Teilnehmende + Vorgaberegeln bis gespeichert, CSV-Import/Vorlage statt XML,
+kein click-TT-Export), ClassDialog nur Erwachsene/Damen, ParticipantDialog ohne Pflicht Verein/Jahrgang,
+ClassesView-Hinweis „Start gesperrt“, DrawView.handicapBadge („+X“) in Gruppen/KO/Qualifikation, Tische,
+Präsentation, Ergebnisdialog; Texte „ (+X)“ in Warteschlange/Spiele; PDFs (Spielplan, KO-Baum) und Spielzettel
+(„+ X Punkte“, Aufschlag-Zeile bei „Partei ohne Vorsprung“). importer/csv/HandicapCsvImporter (Komma, UTF-8 strikt,
+ab Zeile 2, A–D, ignorierte Zeilen). Tests: Version031Test. UI unter Xvfb geprüft.
 
 0.30.0 (Issues #1–#11 umgesetzt, Commit „HTS 0.30.0“ mit Closes #1 … #11). DOKU AKTUALISIERT auf 0.30.0
 (04.11.2026, auf Zuruf): docs/HTS-Dokumentation.md und Claude-Docs-Dokument inkl. der 0.29.0-Änderungen.

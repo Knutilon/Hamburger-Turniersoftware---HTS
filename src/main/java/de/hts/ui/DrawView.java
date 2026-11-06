@@ -1157,6 +1157,8 @@ public final class DrawView {
             Label b = new Label(tournament.entrantName(m, m.getB()));
             a.getStyleClass().add("match-name");
             b.getStyleClass().add("match-name");
+            handicapBadge(a, tournament, m, m.getA());
+            handicapBadge(b, tournament, m, m.getB());
             markWinner(m, a, b);
             if (highlight.contains(m.getA())) a.getStyleClass().add("search-hit");
             if (highlight.contains(m.getB())) b.getStyleClass().add("search-hit");
@@ -1529,6 +1531,7 @@ public final class DrawView {
         Label name = new Label(withClub(e));
         name.getStyleClass().add("match-name");
         name.setMaxWidth(MATCH_WIDTH - 80);
+        handicapBadge(name, tournament, m, e.id());
         name.setTooltip(new Tooltip(e.name() + (e.detail() != null ? "\n" + e.detail() : "")
                 + (e.ttr() != null ? "\nTTR " + e.ttr() : "") + (g != null ? "\nGruppe " + GroupDraw.groupName(g) : "")));
         Label right = new Label();
@@ -1582,6 +1585,20 @@ public final class DrawView {
         card.setMaxWidth(MATCH_WIDTH);
         installResultEntry(card, m);
         return card;
+    }
+
+    /** Vorgabeturnier: kleines „+X“ rechts neben dem Namen der Partei mit Punktevorsprung. */
+    static void handicapBadge(Label l, Tournament t, Match m, String entrantId) {
+        if (l == null || m == null || entrantId == null) return;
+        String h = t.handicapLabel(m, entrantId);
+        if (h.isEmpty()) return;
+        Label b = new Label(h);
+        b.getStyleClass().add("handicap-badge");
+        b.setMinWidth(Region.USE_PREF_SIZE);
+        Tooltip.install(b, new Tooltip("Vorgabe: beginnt jeden Satz mit " + h.substring(1) + ":0"));
+        l.setGraphic(b);
+        l.setContentDisplay(javafx.scene.control.ContentDisplay.RIGHT);
+        l.setGraphicTextGap(5);
     }
 
     /** „Name (Verein)“ – in allen KO-Darstellungen. */
@@ -1664,6 +1681,7 @@ public final class DrawView {
                 names.getChildren().add(line);
                 nameLabels.add(n);
             }
+            if (!nameLabels.isEmpty()) handicapBadge(nameLabels.get(0), tournament, m, e.id());
             Tooltip.install(names, new Tooltip(String.join("\n", persons.stream().map(pl -> pl[0] + (pl[1] != null ? " (" + pl[1] + ")" : "")).toList())
                     + (e.ttr() != null && !e.id().startsWith("pair:") ? "\nTTR " + e.ttr() : "")));
             boolean dbl = e.id().startsWith("pair:");
@@ -1931,6 +1949,11 @@ public final class DrawView {
         if (c == null) return;
         if (tournament.isDrawOutdated(c)
                 && !confirm("Klasse starten", "Die Teilnehmenden haben sich seit der Auslosung geändert. Trotzdem mit dieser Auslosung starten?")) {
+            return;
+        }
+        List<String> hc = tournament.handicapProblems(c);
+        if (!hc.isEmpty()) {
+            showWarning("„" + c.getName() + "“ kann nicht gestartet werden (Vorgabeturnier):\n– " + String.join("\n– ", hc));
             return;
         }
         if (!confirm("Klasse starten", "„" + c.getName() + "“ jetzt starten? Die Spiele werden eingereiht und freie Tische belegt.\n"

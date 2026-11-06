@@ -809,3 +809,14 @@
 .pres-progress .bar { -fx-background-radius: 0; -fx-background-insets: 0; -fx-padding: 3; }
 .pres-body { -fx-background-color: white; }
 .pres-empty { -fx-font-size: 24px; -fx-text-fill: -hts-muted; }
+
+/* Vorgabeturnier: Punktevorsprung „+X“ klein neben dem Namen */
+.handicap-badge {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0b6e70;
+    -fx-background-color: #e3f6f6;
+    -fx-background-radius: 6;
+    -fx-padding: 0 4 0 4;
+}
+.label.handicap-problem { -fx-text-fill: #c62828; }

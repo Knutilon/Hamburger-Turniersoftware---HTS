@@ -290,6 +290,7 @@ public final class ClassesView {
         VBox.setVgrow(rightContent, Priority.ALWAYS);
         classTitle.getStyleClass().add("class-title");
         classCriteria.getStyleClass().add("criteria");
+        classCriteria.setWrapText(true);
         classState.getStyleClass().add("chip");
         dndHint.getStyleClass().add("hint");
         dndHint.setWrapText(true);
@@ -341,9 +342,12 @@ public final class ClassesView {
         VBox.setVgrow(classTabs, Priority.ALWAYS);
 
         // fester Klassenkopf: Titel + Infos + Status
-        Region headSpacer = new Region();
-        HBox.setHgrow(headSpacer, Priority.ALWAYS);
-        HBox classHead = new HBox(10, new VBox(2, classTitle, classCriteria), headSpacer, classState);
+        VBox headText = new VBox(2, classTitle, classCriteria);
+        headText.setMinWidth(0);
+        HBox.setHgrow(headText, Priority.ALWAYS);
+        classCriteria.setMinHeight(Region.USE_PREF_SIZE);
+        classState.setMinWidth(Region.USE_PREF_SIZE);
+        HBox classHead = new HBox(10, headText, classState);
         classHead.setAlignment(Pos.TOP_LEFT);
         VBox classCard = new VBox(6, classHead, classTabs);
         classCard.getStyleClass().add("card");
@@ -543,6 +547,16 @@ public final class ClassesView {
                     + " in der Klasse · " + c.getType().getLabel()
                     + (c.getMode() != de.hts.tournament.TournamentMode.NONE ? " · " + c.getMode().getLabel() : ""));
             classCriteria.setTooltip(new Tooltip(tournament.criteriaText(c)));
+            // Vorgabeturnier: vor dem Start markieren, was den Start sperrt (z. B. Teilnehmende ohne TTR)
+            classCriteria.getStyleClass().remove("handicap-problem");
+            if (tournament.isHandicap() && !c.isStarted() && n > 0) {
+                java.util.List<String> hc = tournament.handicapProblems(c);
+                if (!hc.isEmpty()) {
+                    classCriteria.setText(classCriteria.getText() + "\n⚠ Start gesperrt: " + String.join(" · ", hc));
+                    classCriteria.setTooltip(new Tooltip(String.join("\n", hc)));
+                    classCriteria.getStyleClass().add("handicap-problem");
+                }
+            }
             dndHint.setText(dbl
                     ? "Teilnehmende aus der linken Liste auf einen freien Platz ziehen oder auf „Neues Doppel“. "
                     + "Aus einer Paarung zurück in die Liste ziehen entfernt sie. In der Klasse = angemeldet."
@@ -953,7 +967,7 @@ public final class ClassesView {
         PlayingClass c = selectedClass();
         if (c == null) return;
         Player p = new Player();
-        if (!Boolean.TRUE.equals(new ParticipantDialog(window(), p, true, null, true).showAndWait().orElse(false))) return;
+        if (!Boolean.TRUE.equals(new ParticipantDialog(window(), p, true, null, true, tournament.isHandicap()).showAndWait().orElse(false))) return;
         p.addWaitingList(c.getName());
         tournament.getPlayers().add(p);
         status.accept(p.getDisplayName() + " erfasst – steht unter „Verfügbar“ (Warteliste „" + c.getName() + "“).");

@@ -51,7 +51,7 @@ public final class WorkspaceView {
     private static final String PREF_LAST_IMPORT_DIR = "lastImportDir";
     private static final DateTimeFormatter START_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm 'Uhr'");
 
-    private enum Page { PARTICIPANTS, CLASSES, TABLES, MATCHES, PRESENTATION }
+    private enum Page { PARTICIPANTS, HANDICAP, CLASSES, TABLES, MATCHES, PRESENTATION }
 
     private final Stage stage;
     private final TournamentStore store;
@@ -65,7 +65,10 @@ public final class WorkspaceView {
     private final TablesView tablesView;
     private final MatchesView matchesView;
     private final PresentationView presentationView;
+    private final HandicapView handicapView;
     private Button matchesMenu;
+    /** Menüpunkte, die ein Vorgabeturnier erst nach dem Speichern der Vorgaberegeln zeigt */
+    private final List<Button> afterHandicapMenus = new ArrayList<>();
     private Page currentPage = Page.PARTICIPANTS;
 
     private final Label pageTitle = new Label();
@@ -92,6 +95,7 @@ public final class WorkspaceView {
         this.tablesView = new TablesView(tournament, this::setStatus, this::onRunningChanged);
         this.matchesView = new MatchesView(tournament, this::setStatus, this::onRunningChanged);
         this.presentationView = new PresentationView(tournament, this::setStatus);
+        this.handicapView = new HandicapView(tournament, this::setStatus, this::onHandicapSaved, () -> stage);
         // Spielzettel drucken, sobald ein Spiel an einen Tisch geht
         tournament.addActivationListener(m -> {
             if (Reports.isAutoPrintSlips()) {
@@ -140,6 +144,7 @@ public final class WorkspaceView {
 
     /** Vor dem Verlassen bzw. Schließen: offene Änderungen speichern. @return {@code true}, wenn verlassen werden darf */
     public boolean prepareLeave() {
+        if (currentPage == Page.HANDICAP && !handicapView.confirmLeave()) return false;
         presentationView.stop();
         if (!tournament.isModified()) return true;
         if (save()) return true;
@@ -156,10 +161,13 @@ public final class WorkspaceView {
     private Node createHeader() {
         header.addMenuItem("back", "Turniere", Icons.of(Icons.BACK, 16), this::goBack);
         header.addMenuItem("participants", "Teilnehmende", null, () -> showPage(Page.PARTICIPANTS));
-        header.addMenuItem("classes", "Klassen", null, () -> showPage(Page.CLASSES));
-        header.addMenuItem("tables", "Tische", null, () -> showPage(Page.TABLES));
+        if (tournament.isHandicap()) header.addMenuItem("handicap", "Vorgaberegeln", null, () -> showPage(Page.HANDICAP));
+        afterHandicapMenus.add(header.addMenuItem("classes", "Klassen", null, () -> showPage(Page.CLASSES)));
+        afterHandicapMenus.add(header.addMenuItem("tables", "Tische", null, () -> showPage(Page.TABLES)));
         matchesMenu = header.addMenuItem("matches", "Spiele", null, () -> showPage(Page.MATCHES));
-        header.addMenuItem("presentation", "Präsentationsansicht", null, () -> showPage(Page.PRESENTATION));
+        afterHandicapMenus.add(matchesMenu);
+        afterHandicapMenus.add(header.addMenuItem("presentation", "Präsentationsansicht", null, () -> showPage(Page.PRESENTATION)));
+        updateHandicapMenus();
         matchesMenu.setDisable(!tournament.isRunning());
         matchesMenu.setTooltip(new javafx.scene.control.Tooltip("Verfügbar, sobald das Turnier oder eine Klasse gestartet ist"));
         // Speichern geschieht automatisch – kein eigener Knopf; oben links steht das geöffnete Turnier
@@ -179,6 +187,22 @@ public final class WorkspaceView {
         }
         InfoDialog.install(header, () -> stage);
         return header.getRoot();
+    }
+
+    /** Vorgabeturnier: Klassen, Tische, Spiele und Präsentation erst, wenn die Art der Vorgabe gespeichert ist. */
+    private void updateHandicapMenus() {
+        boolean show = !tournament.isHandicap() || tournament.isHandicapReady();
+        for (Button b : afterHandicapMenus) {
+            b.setVisible(show);
+            b.setManaged(show);
+        }
+        startBox.setVisible(show);
+        startBox.setManaged(show);
+    }
+
+    private void onHandicapSaved() {
+        updateHandicapMenus();
+        save();
     }
 
     private void goBack() {
@@ -205,7 +229,8 @@ public final class WorkspaceView {
                 pdf.setOnAction(e -> Reports.showTournamentResults(stage, tournament, this::setStatus));
                 javafx.scene.control.MenuItem ctt = new javafx.scene.control.MenuItem("click-TT-Ergebnisdatei (XML)");
                 ctt.setOnAction(e -> exportClickTt());
-                export.getItems().addAll(pdf, ctt);
+                export.getItems().add(pdf);
+                if (!tournament.isHandicap()) export.getItems().add(ctt);      // Vorgabeturnier: kein click-TT-Export
                 startBox.getChildren().add(export);
             }
             if (!tournament.previewStart().started().isEmpty()) {
@@ -279,6 +304,13 @@ public final class WorkspaceView {
     }
 
     private void showPage(Page page) {
+        if (currentPage == Page.HANDICAP && page != Page.HANDICAP && !handicapView.confirmLeave()) {
+            header.select("handicap");
+            return;
+        }
+        if (tournament.isHandicap() && !tournament.isHandicapReady() && page != Page.PARTICIPANTS && page != Page.HANDICAP) {
+            page = Page.HANDICAP;
+        }
         currentPage = page;
         pageActions.getChildren().clear();
         topActions.getChildren().clear();
@@ -286,9 +318,23 @@ public final class WorkspaceView {
         if (page == Page.PARTICIPANTS) {
             header.select("participants");
             pageTitle.setText("Teilnehmende");
-            Button importBtn = new Button("XML der Teilnehmenden importieren", Icons.of(Icons.UPLOAD, 16));
+            Button importBtn;
+            if (tournament.isHandicap()) {
+                // Vorgabeturnier: Teilnehmende nur per CSV (Vorname, Nachname, TTR, Klasse)
+                importBtn = new Button("CSV der Teilnehmenden importieren", Icons.of(Icons.UPLOAD, 16));
+                importBtn.setOnAction(e -> importCsv());
+                boolean drawn = tournament.getClasses().stream().anyMatch(PlayingClass::isDrawn);
+                importBtn.setDisable(drawn);
+                if (drawn) {
+                    Label why = new Label("CSV-Import nicht mehr möglich: Es ist bereits eine Klasse ausgelost.");
+                    why.getStyleClass().add("hint");
+                    pageActions.getChildren().add(why);
+                }
+            } else {
+                importBtn = new Button("XML der Teilnehmenden importieren", Icons.of(Icons.UPLOAD, 16));
+                importBtn.setOnAction(e -> importClickTt());
+            }
             importBtn.getStyleClass().add("navy-pill");
-            importBtn.setOnAction(e -> importClickTt());
             Button add = new Button("Hinzufügen", Icons.of(Icons.PLUS, 16));
             add.setOnAction(e -> addParticipant());
             Button edit = new Button("Bearbeiten", Icons.of(Icons.EDIT, 16));
@@ -298,9 +344,20 @@ public final class WorkspaceView {
             delete.setOnAction(e -> deleteParticipants());
             delete.disableProperty().bind(participants.getTable().getSelectionModel().selectedItemProperty().isNull());
             for (Button b : List.of(add, edit, delete)) b.getStyleClass().add("pill");
-            pageActions.getChildren().addAll(importBtn, add, edit, delete);
+            pageActions.getChildren().addAll(0, List.of(importBtn, add, edit, delete));
+            if (tournament.isHandicap()) {
+                Button template = new Button("CSV-Vorlage speichern", Icons.of(Icons.SAVE, 16));
+                template.getStyleClass().add("pill");
+                template.setOnAction(e -> saveCsvTemplate());
+                pageActions.getChildren().add(4, template);
+            }
             pageContent.getChildren().setAll(participantsCard);
             participants.refresh();
+        } else if (page == Page.HANDICAP) {
+            header.select("handicap");
+            pageTitle.setText("Vorgaberegeln");
+            pageContent.getChildren().setAll(handicapView.getRoot());
+            handicapView.refresh();
         } else if (page == Page.TABLES) {
             header.select("tables");
             pageTitle.setText("Tische");
@@ -398,7 +455,13 @@ public final class WorkspaceView {
         a.setHeaderText(allReady ? "Alle Klassen sind bereit – Turnier jetzt starten?"
                 : "Nicht alle Klassen sind bereit. Trotzdem starten?");
         if (a.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) return;
-        tournament.startTournament();
+        try {
+            tournament.startTournament();
+        } catch (IllegalStateException ex) {
+            setStatus("Start nicht möglich.");
+            error("Start nicht möglich", ex.getMessage());
+            return;
+        }
         save();
         setStatus("Turnier gestartet: " + r.started().size() + " Klassen, " + Ui.spiele(tournament.queue().size())
                 + " eingereiht, " + tournament.getMatches().stream().filter(m -> m.getStatus() == de.hts.tournament.MatchStatus.ACTIVE).count()
@@ -542,6 +605,88 @@ public final class WorkspaceView {
     }
 
     // --- Import ------------------------------------------------------------
+
+    /** Vorgabeturnier: Teilnehmende aus CSV (Vorname, Nachname, TTR-Wert, Klasse) – ersetzt alle bisherigen. */
+    private void importCsv() {
+        if (tournament.getClasses().stream().anyMatch(PlayingClass::isDrawn)) {
+            error("CSV-Import nicht möglich", "Es ist bereits eine Klasse ausgelost – die Teilnehmenden können nicht mehr ersetzt werden.");
+            return;
+        }
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("CSV der Teilnehmenden auswählen (Vorname, Nachname, TTR-Wert, Klasse)");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV-Dateien", "*.csv", "*.CSV"));
+        File lastDir = new File(prefs.get(PREF_LAST_IMPORT_DIR, System.getProperty("user.home")));
+        if (lastDir.isDirectory()) chooser.setInitialDirectory(lastDir);
+        File file = chooser.showOpenDialog(stage);
+        if (file == null) return;
+        if (file.getParentFile() != null) prefs.put(PREF_LAST_IMPORT_DIR, file.getParentFile().getAbsolutePath());
+        de.hts.importer.csv.HandicapCsvImporter.Result result;
+        try {
+            result = new de.hts.importer.csv.HandicapCsvImporter().importFile(file.toPath());
+        } catch (de.hts.importer.csv.HandicapCsvImporter.CsvException ex) {
+            error("CSV-Import nicht möglich", ex.getMessage());
+            return;
+        } catch (IOException ex) {
+            error("CSV-Import fehlgeschlagen", ex.getMessage());
+            return;
+        }
+        if (result.players().isEmpty()) {
+            error("CSV-Import", "Die Datei enthält keine gültigen Teilnehmenden."
+                    + (result.ignored().isEmpty() ? "" : "\n\nIgnorierte Zeilen:\n" + String.join("\n", result.ignored())));
+            return;
+        }
+        if (!tournament.getPlayers().isEmpty()) {
+            ButtonType go = new ButtonType("Fortfahren", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+            ButtonType back = new ButtonType("Zurück", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+            Alert a = new Alert(Alert.AlertType.WARNING, "Alle bisherigen Teilnehmenden (" + tournament.getPlayers().size()
+                    + ") und ihre Klassenzuordnungen werden entfernt. Fortfahren?", go, back);
+            a.initOwner(stage);
+            a.setTitle("CSV-Import");
+            a.setHeaderText(null);
+            if (a.showAndWait().orElse(back) != go) {
+                setStatus("CSV-Import abgebrochen.");
+                return;
+            }
+        }
+        try {
+            tournament.replaceParticipants(result.players());
+        } catch (IllegalStateException ex) {
+            error("CSV-Import nicht möglich", ex.getMessage());
+            return;
+        }
+        participants.refresh();
+        classes.refresh();
+        setStatus("CSV-Import aus " + file.getName() + ": " + result.players().size() + " Teilnehmende"
+                + (result.ignored().isEmpty() ? "." : ", " + result.ignored().size() + " Zeilen ignoriert."));
+        if (!result.ignored().isEmpty()) {
+            Alert info = new Alert(Alert.AlertType.INFORMATION, result.players().size() + " Teilnehmende importiert. "
+                    + result.ignored().size() + (result.ignored().size() == 1 ? " Zeile wurde" : " Zeilen wurden") + " ignoriert:\n\n"
+                    + String.join("\n", result.ignored()), ButtonType.OK);
+            info.initOwner(stage);
+            info.setTitle("CSV-Import");
+            info.setHeaderText(null);
+            DialogSizing.fit(info);
+            info.showAndWait();
+        }
+    }
+
+    /** Vorlage für den CSV-Import speichern. */
+    private void saveCsvTemplate() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("CSV-Vorlage speichern");
+        chooser.setInitialFileName("Vorlage-Teilnehmende-Vorgabeturnier.csv");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV-Dateien", "*.csv"));
+        File lastDir = new File(prefs.get(PREF_LAST_IMPORT_DIR, System.getProperty("user.home")));
+        if (lastDir.isDirectory()) chooser.setInitialDirectory(lastDir);
+        File file = chooser.showSaveDialog(stage);
+        if (file == null) return;
+        try {
+            java.nio.file.Files.writeString(file.toPath(), de.hts.importer.csv.HandicapCsvImporter.TEMPLATE, java.nio.charset.StandardCharsets.UTF_8);
+            setStatus("CSV-Vorlage gespeichert: " + file.getName());
+        } catch (IOException ex) {
+            error("Vorlage konnte nicht gespeichert werden", ex.getMessage());
+        }
+    }
 
     private void importClickTt() {
         FileChooser chooser = new FileChooser();

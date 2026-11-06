@@ -112,7 +112,15 @@ public final class PdfReports {
             c.text(bx + 10, c.y, opt, REGULAR, 8, 60);
             bx += 12 + PdfCanvas.textWidth(opt, REGULAR, 8) + 10;
         }
-        c.y += 22;
+        c.y += 12;
+        // Vorgabeturnier: Aufschlag automatisch für die Partei ohne Punktevorsprung
+        int hc = t.handicapOf(m);
+        if (hc != 0 && t.getHandicapRules().getServe() == de.hts.tournament.HandicapRules.Serve.NO_ADVANTAGE) {
+            String server = hc > 0 ? t.partyFullName(m, m.getB()) : t.partyFullName(m, m.getA());
+            c.text(x, c.y, "Aufschlag: " + server + " (ohne Vorsprung)", REGULAR, 7.5f, w);
+            c.y += 6;
+        }
+        c.y += 10;
         signature(c, "Gewinner/in:");
         signature(c, "Unterschrift Schiedsrichter/in:");
         c.finish();
@@ -128,13 +136,33 @@ public final class PdfReports {
                 nameWithClub(c, c.left(), c.y, pl[0], pl[1], true, 11, c.width(), 0f);
                 c.y += 14;
             }
+            handicapLine(c, t, m, id);
             c.y += 3;
             return;
         }
         c.y += c.text(c.left(), c.y, caption, REGULAR, 7, c.width(), PdfCanvas.Align.LEFT, 0.35f);
         c.y += c.text(c.left(), c.y, e == null ? "______________________" : e.name(), BOLD, 12, c.width()) - 1;
         if (e != null && e.detail() != null) c.y += c.text(c.left(), c.y, e.detail(), REGULAR, 8, c.width());
+        handicapLine(c, t, m, id);
         c.y += 5;
+    }
+
+    /** Vorgabeturnier: Personenzeilen einer Partei mit „ (+X)“ hinter dem ersten Namen (Kopie; {@code null} bleibt null). */
+    static List<String[]> withHandicap(Tournament t, Match m, String id, List<String[]> lines) {
+        if (lines == null || lines.isEmpty() || m == null) return lines;
+        String suffix = t.handicapSuffix(m, id);
+        if (suffix.isEmpty()) return lines;
+        List<String[]> out = new java.util.ArrayList<>();
+        for (String[] l : lines) out.add(l.clone());
+        out.get(0)[0] = out.get(0)[0] + suffix;
+        return out;
+    }
+
+    /** Vorgabeturnier: „+ X Punkte“ klein unter dem Namen der Partei mit Vorsprung (sonst nichts). */
+    private static void handicapLine(PdfCanvas c, Tournament t, Match m, String id) {
+        String h = t.handicapLabel(m, id);
+        if (h.isEmpty()) return;
+        c.y += c.text(c.left(), c.y, "+ " + h.substring(1) + " Punkte", BOLD, 8, c.width());
     }
 
     private static void signature(PdfCanvas c, String caption) {
@@ -336,9 +364,10 @@ public final class PdfReports {
         for (int side = 0; side < 2; side++) {
             String id = side == 0 ? m.getA() : m.getB();
             boolean bold = w != null && w.equals(id);
-            List<String[]> ps = t.personLines(id);
+            List<String[]> ps = withHandicap(t, m, id, t.personLines(id));
             if (ps == null) {
                 String n = t.entrantName(m, id);
+                if (n != null) n += t.handicapSuffix(m, id);
                 c.text(x, c.y, n == null ? "offen" : n, bold ? BOLD : REGULAR, 8f, cols[side == 0 ? 0 : 2] - 3, PdfCanvas.Align.LEFT, gray);
             } else {
                 float yy = c.y;
@@ -407,7 +436,7 @@ public final class PdfReports {
                 float yy = y0 + 13;
                 for (int side = 0; side < 2; side++) {
                     String id = side == 0 ? m.getA() : m.getB();
-                    List<String[]> ls = t.partyLines(m, id);
+                    List<String[]> ls = withHandicap(t, m, id, t.partyLines(m, id));
                     boolean win = id != null && id.equals(w);
                     if (ls.isEmpty()) {
                         c.text(x, yy, placeholder(t, phase, m, side), REGULAR, pt, cardW, PdfCanvas.Align.LEFT, 0.55f);
@@ -508,7 +537,7 @@ public final class PdfReports {
     }
 
     private static void matchRow(PdfCanvas c, Tournament t, Match m, float[] cols) {
-        List<String[]> pa = t.personLines(m.getA()), pb = t.personLines(m.getB());
+        List<String[]> pa = withHandicap(t, m, m.getA(), t.personLines(m.getA())), pb = withHandicap(t, m, m.getB(), t.personLines(m.getB()));
         if (pa != null || pb != null) {
             doublesMatchRow(c, t, m, cols, pa, pb);
             return;
@@ -519,6 +548,8 @@ public final class PdfReports {
             if (ea != null) a = clubbed(ea);
             if (eb != null) b = clubbed(eb);
         }
+        if (a != null) a += t.handicapSuffix(m, m.getA());
+        if (b != null) b += t.handicapSuffix(m, m.getB());
         String round = m.isCarried() ? "übern." : m.getPlacement() > 0 ? "Pl. " + m.getPlacement() + "/" + (m.getPlacement() + 1)
                 : m.isKnockout() ? "R" + m.getRound() : "R" + m.getRound();
         boolean done = m.getStatus() == MatchStatus.DONE;

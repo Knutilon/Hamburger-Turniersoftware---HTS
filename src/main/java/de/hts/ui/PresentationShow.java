@@ -445,6 +445,8 @@ public final class PresentationShow {
         Label bb = new Label(tournament.partyFullName(m, m.getB()));
         a.getStyleClass().add("table-player");
         bb.getStyleClass().add("table-player");
+        DrawView.handicapBadge(a, tournament, m, m.getA());
+        DrawView.handicapBadge(bb, tournament, m, m.getB());
         VBox card = new VBox(6, head, what, a, vs, bb);
         card.getStyleClass().add("table-card");
         if (m.getStatus() == MatchStatus.PAUSED) card.getStyleClass().add("table-paused");
@@ -477,7 +479,8 @@ public final class PresentationShow {
             Label cls = new Label(m.getClassName());
             Label st = new Label(m.getStage());
             Label no = new Label(String.valueOf(m.getNumber()));
-            Label who = new Label(tournament.partyFullName(m, m.getA()) + "  –  " + tournament.partyFullName(m, m.getB()));
+            Label who = new Label(tournament.partyFullName(m, m.getA()) + tournament.handicapSuffix(m, m.getA()) + "  –  "
+                    + tournament.partyFullName(m, m.getB()) + tournament.handicapSuffix(m, m.getB()));
             who.getStyleClass().add("match-name");
             for (Label l : new Label[]{cls, st, no}) l.getStyleClass().add("hint");
             g.addRow(i + 1, nr, cls, st, no, who);

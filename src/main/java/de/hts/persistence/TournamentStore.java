@@ -24,11 +24,16 @@ public final class TournamentStore {
 
     /** Kurzinfo eines Turniers für die Übersicht (ohne alle Teilnehmenden laden zu müssen). */
     public record Summary(String id, String name, LocalDate date, LocalDateTime startedAt,
-                          int participants, int classes, Path file, int tables, boolean test) {
+                          int participants, int classes, Path file, int tables, boolean test, boolean handicap) {
+
+        public Summary(String id, String name, LocalDate date, LocalDateTime startedAt,
+                       int participants, int classes, Path file, int tables, boolean test) {
+            this(id, name, date, startedAt, participants, classes, file, tables, test, false);
+        }
 
         public Summary(String id, String name, LocalDate date, LocalDateTime startedAt,
                        int participants, int classes, Path file, int tables) {
-            this(id, name, date, startedAt, participants, classes, file, tables, false);
+            this(id, name, date, startedAt, participants, classes, file, tables, false, false);
         }
 
         public boolean isStarted() {
@@ -112,7 +117,8 @@ public final class TournamentStore {
                 if (id != null) files.put(id, f);
                 result.add(new Summary(id, c.tournamentName(), c.date(), c.startedAt(),
                         c.players().size(), (int) c.classes().stream().filter(x -> !x.isPhase()).count(), f, c.tables(),
-                        c.folders() != null && "true".equals(c.folders().get("test"))));
+                        c.folders() != null && "true".equals(c.folders().get("test")),
+                        c.folders() != null && "true".equals(c.folders().get("handicap"))));
             } catch (IOException e) {
                 problems.add(new Problem(f, e.getMessage()));
             }
@@ -149,8 +155,14 @@ public final class TournamentStore {
     }
 
     public Tournament create(String name, LocalDate date, int tables, Path fileDir, boolean test) throws IOException {
+        return create(name, date, tables, fileDir, test, false);
+    }
+
+    /** @param handicap Vorgabeturnier (nur beim Anlegen festlegbar) */
+    public Tournament create(String name, LocalDate date, int tables, Path fileDir, boolean test, boolean handicap) throws IOException {
         Tournament t = new Tournament();
         t.setTest(test);
+        t.setHandicap(handicap);
         t.setTableCount(tables);
         t.setId(newId(date));
         t.setName(name);

@@ -81,7 +81,7 @@ public final class TournamentFile {
 
     private static Map<String, String> readFolders(Element root) {
         Map<String, String> m = new java.util.LinkedHashMap<>();
-        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on")) {
+        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on", "handicap", "hc")) {
             String v = root.getAttribute(k);
             if (v != null && !v.isBlank()) m.put(k, v);
         }
@@ -146,6 +146,10 @@ public final class TournamentFile {
             if (t.getPdfDir() != null) m.put("dir-pdf", t.getPdfDir());
             if (t.getXmlDir() != null) m.put("dir-xml", t.getXmlDir());
             if (t.isTest()) m.put("test", "true");
+            if (t.isHandicap()) {
+                m.put("handicap", "true");
+                m.put("hc", t.getHandicapRules().encode());
+            }
             if (!t.getDisabledTables().isEmpty()) {
                 m.put("tables-off", String.join(",", t.getDisabledTables().stream().map(String::valueOf).toList()));
             }
@@ -178,6 +182,8 @@ public final class TournamentFile {
                 t.setPdfDir(folders.get("dir-pdf"));
                 t.setXmlDir(folders.get("dir-xml"));
                 t.setTest("true".equals(folders.get("test")));
+                t.setHandicap("true".equals(folders.get("handicap")));
+                if (folders.get("hc") != null) t.restoreHandicapRules(de.hts.tournament.HandicapRules.decode(folders.get("hc")));
                 folders.forEach((k, v) -> {
                     if (!k.startsWith(TABLE_NAME_KEY)) return;
                     try {

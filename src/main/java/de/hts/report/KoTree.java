@@ -161,7 +161,7 @@ final class KoTree {
         for (int side = 0; side < 2; side++) {
             String id = m != null ? (side == 0 ? m.getA() : m.getB()) : null;
             List<String[]> ls = new ArrayList<>();
-            if (id != null) ls = t.partyLines(m, id);
+            if (id != null) ls = PdfReports.withHandicap(t, m, id, t.partyLines(m, id));
             else if (bm != null) {
                 Entrant e = side == 0 ? bm.a().entrant() : bm.b().entrant();
                 if (e != null) {

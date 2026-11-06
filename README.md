@@ -6,6 +6,26 @@ Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Pub
 Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
 (Label „Feature“ bzw. „bug“).
 
+## Neu in 0.31.0
+
+- **Vorgabeturnier:** neue Option beim Anlegen eines Turniers (später nicht umschaltbar). TTR-Unterschiede werden
+  durch einen Punktevorsprung ausgeglichen – die Partei mit Vorsprung beginnt jeden Satz mit X:0.
+  - Eigener Menüpunkt **„Vorgaberegeln“**; bis die Art der Vorgabe gespeichert ist, gibt es nur „Teilnehmende“ und
+    „Vorgaberegeln“. Speichern nur per Knopf mit Rückfrage, Warnung bei ungespeicherten Änderungen; nach dem Start
+    der ersten Klasse nur noch lesbar.
+  - Art der Vorgabe: **TTR-Klassen** (2–7 Klassen, Bälle je Klassenunterschied) oder **Fester TTR-Abstand**
+    (2–10 Kategorien, Bälle je Kategorie); Grenzen getrennt für Erwachsene und Damen, lückenlos („>“ / „<=“), alle
+    Werte frei pflegbar. Aufschlag gelost oder für die Partei ohne Vorsprung; Halbierung im Doppel einstellbar.
+  - Doppel: TTR-Höhere und TTR-Tiefere werden verglichen (Mixed: Herr–Herr, Dame–Dame), Vorgaben verrechnet.
+  - Anzeige „+X“ in Gruppen-, KO-, Tisch-, Spiele- und Präsentationsansicht, im Ergebnisdialog und in den PDFs;
+    Spielzettel mit „+ X Punkte“ unter dem Namen.
+  - Start einer Klasse gesperrt bei fehlendem TTR oder TTR/Abstand über der höchsten Grenze (mit Hinweis).
+  - Klassentypen nur „Erwachsene“ und „Damen“; Verein und Jahrgang keine Pflicht; kein click-TT-Export.
+- **CSV-Import für Vorgabeturniere:** Vorname, Nachname, TTR-Wert, Klasse (Erwachsene/Damen), Komma, UTF-8, ab
+  Zeile 2; ersetzt alle Teilnehmenden (nur vor der ersten Auslosung, mit Rückfrage); ignorierte Zeilen werden
+  gemeldet. Vorlage: „CSV-Vorlage speichern“ bzw. `Vorlage-Teilnehmende-Vorgabeturnier.csv`.
+- **Java-Laufzeit** auf Temurin 21.0.13 aktualisiert. (JavaFX und PDFBox folgen, sobald die Dateien vorliegen.)
+
 ## Neu in 0.30.0
 
 - **Präsentationsansicht – Auswahl je Klasse:** Unter „Ansichten in der Rotation“ stehen alle Phasen aller Klassen,

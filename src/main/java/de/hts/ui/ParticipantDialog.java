@@ -40,6 +40,11 @@ public final class ParticipantDialog extends Dialog<Boolean> {
      *               Jahrgang, Verein und TTR sind Pflicht
      */
     public ParticipantDialog(Window owner, Player p, boolean isNew, List<PlayingClass> singlesClasses, boolean strict) {
+        this(owner, p, isNew, singlesClasses, strict, false);
+    }
+
+    /** @param handicap Vorgabeturnier: Jahrgang und Verein sind keine Pflicht */
+    public ParticipantDialog(Window owner, Player p, boolean isNew, List<PlayingClass> singlesClasses, boolean strict, boolean handicap) {
         initOwner(owner);
         setTitle(isNew ? "Teilnehmende hinzufügen" : "Teilnehmende bearbeiten");
         setHeaderText(isNew ? "Neue Teilnehmerin / neuer Teilnehmer" : p.getDisplayName());
@@ -134,7 +139,7 @@ public final class ParticipantDialog extends Dialog<Boolean> {
             if (strict) {
                 String missing = missing(firstname, "Vorname") + missing(lastname, "Nachname")
                         + (sex.getValue() == null || sex.getValue() == Sex.UNKNOWN ? ", Geschlecht" : "")
-                        + missing(birthyear, "Jahrgang") + missing(club, "Verein") + missing(ttr, "TTR");
+                        + (handicap ? "" : missing(birthyear, "Jahrgang") + missing(club, "Verein")) + missing(ttr, "TTR");
                 if (!missing.isEmpty()) {
                     error.setText("Bitte ausfüllen: " + missing.substring(2) + ".");
                     e.consume();

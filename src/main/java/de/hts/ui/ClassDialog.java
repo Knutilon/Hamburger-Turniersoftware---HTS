@@ -69,6 +69,13 @@ public final class ClassDialog extends Dialog<Boolean> {
         ClassType type = existing != null ? existing.getType() : ClassType.ADULTS;
         (type.isYouthOnly() ? youth : adults).setSelected(true);
         (type.isFemaleOnly() ? femaleOnly : everyone).setSelected(true);
+        if (tournament.isHandicap()) {
+            // Vorgabeturnier: nur die Klassentypen „Erwachsene“ und „Damen“ (keine Jugend-/Mädchen-Konkurrenzen)
+            adults.setSelected(true);
+            youth.setVisible(false);
+            youth.setManaged(false);
+            adults.setText("Erwachsene (Vorgabeturnier: nur Erwachsene und Damen)");
+        }
         if (existing != null) {
             name.setText(existing.getName());
             yearFrom.setText(existing.getBirthyearFrom() == null ? "" : existing.getBirthyearFrom().toString());

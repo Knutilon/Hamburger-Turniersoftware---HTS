@@ -139,7 +139,7 @@ public final class OverviewView {
             try {
                 Tournament t = r.copyFrom() != null
                         ? store.copy(r.copyFrom(), r.copyMode(), r.name(), r.date(), r.tables(), r.test(), r.fileDir())
-                        : store.create(r.name(), r.date(), r.tables(), r.fileDir(), r.test());
+                        : store.create(r.name(), r.date(), r.tables(), r.fileDir(), r.test(), r.handicap());
                 refresh();
                 onOpen.accept(t);
             } catch (IOException e) {
@@ -170,7 +170,7 @@ public final class OverviewView {
     }
 
     private void edit(TournamentStore.Summary s) {
-        new TournamentDialog(stage, s.name(), s.date(), s.tables(), false, s.file(), s.test(), List.of()).showAndWait().ifPresent(r -> {
+        new TournamentDialog(stage, s.name(), s.date(), s.tables(), false, s.file(), s.test(), List.of(), s.handicap()).showAndWait().ifPresent(r -> {
             try {
                 Tournament t = store.load(s);
                 t.setTest(r.test());
@@ -274,6 +274,11 @@ public final class OverviewView {
                 Label test = new Label("Testturnier");
                 test.getStyleClass().addAll("chip", "chip-test");
                 meta.getChildren().add(test);
+            }
+            if (s.handicap()) {
+                Label hc = new Label("Vorgabeturnier");
+                hc.getStyleClass().addAll("chip", "chip-ready");
+                meta.getChildren().add(hc);
             }
             meta.setAlignment(Pos.CENTER_LEFT);
             VBox info = new VBox(4, name, meta);

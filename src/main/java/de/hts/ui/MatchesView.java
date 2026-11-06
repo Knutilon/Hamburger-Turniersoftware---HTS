@@ -231,7 +231,7 @@ public final class MatchesView {
 
     private String name(Match m, String id) {
         String n = tournament.entrantName(m, id);
-        return n == null ? "offen" : n;
+        return n == null ? "offen" : n + tournament.handicapSuffix(m, id);
     }
 
     private static <T> TableColumn<Match, T> left(TableColumn<Match, T> c) {

@@ -22,9 +22,15 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
 
     /** @param fileDir gewählter Ordner für die Turnierdatei ({@code null} = Standard bzw. unverändert) */
     public record Result(String name, LocalDate date, int tables, java.nio.file.Path fileDir, boolean test,
-                         de.hts.persistence.TournamentStore.Summary copyFrom, de.hts.persistence.TournamentStore.CopyMode copyMode) {
+                         de.hts.persistence.TournamentStore.Summary copyFrom, de.hts.persistence.TournamentStore.CopyMode copyMode,
+                         boolean handicap) {
         public Result(String name, LocalDate date, int tables) {
-            this(name, date, tables, null, false, null, null);
+            this(name, date, tables, null, false, null, null, false);
+        }
+
+        public Result(String name, LocalDate date, int tables, java.nio.file.Path fileDir, boolean test,
+                      de.hts.persistence.TournamentStore.Summary copyFrom, de.hts.persistence.TournamentStore.CopyMode copyMode) {
+            this(name, date, tables, fileDir, test, copyFrom, copyMode, false);
         }
     }
 
@@ -50,6 +56,12 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
      */
     public TournamentDialog(Window owner, String name, LocalDate date, Integer tables, boolean isNew, java.nio.file.Path currentFile,
                             boolean test, List<de.hts.persistence.TournamentStore.Summary> copySources) {
+        this(owner, name, date, tables, isNew, currentFile, test, copySources, false);
+    }
+
+    /** @param handicap bisher als Vorgabeturnier markiert (Bearbeiten: nur Anzeige, nicht änderbar) */
+    public TournamentDialog(Window owner, String name, LocalDate date, Integer tables, boolean isNew, java.nio.file.Path currentFile,
+                            boolean test, List<de.hts.persistence.TournamentStore.Summary> copySources, boolean handicap) {
         initOwner(owner);
         setTitle(isNew ? "Neues Turnier" : "Turnier bearbeiten");
         setHeaderText(isNew ? "Neues Turnier anlegen" : "Name und Datum des Turniers");
@@ -111,6 +123,13 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
         javafx.scene.control.CheckBox testBox = new javafx.scene.control.CheckBox("Testturnier (im Kopfbereich: „Alle Spiele simulieren“)");
         testBox.setSelected(test);
         grid.add(testBox, 1, 4);
+        // Vorgabeturnier: nur beim Anlegen wählbar, danach fest
+        javafx.scene.control.CheckBox handicapBox = new javafx.scene.control.CheckBox("Vorgabeturnier (Punktevorsprung nach TTR – nur beim Anlegen wählbar)");
+        handicapBox.setSelected(handicap);
+        handicapBox.setDisable(!isNew);
+        handicapBox.setTooltip(new javafx.scene.control.Tooltip("TTR-Unterschiede werden durch einen Punktevorsprung je Satz ausgeglichen. "
+                + "Die Regeln legt der Reiter „Vorgaberegeln“ fest. Später nicht mehr umschaltbar."));
+        grid.add(handicapBox, 1, 5);
 
         // Kopie eines bestehenden Turniers
         javafx.scene.control.ComboBox<de.hts.persistence.TournamentStore.Summary> source = new javafx.scene.control.ComboBox<>();
@@ -153,10 +172,15 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
                 if (tablesField.getText().isBlank()) tablesField.setText(String.valueOf(Math.max(1, b.tables())));
                 if (b.test()) testBox.setSelected(true);
             });
-            grid.addRow(5, new Label("Kopie von:"), source);
-            grid.addRow(6, new Label("Übernehmen:"), copyMode);
+            // eine Kopie übernimmt die Art des Turniers (Vorgabeturnier ja/nein) vom Original
+            source.valueProperty().addListener((o, a, b) -> {
+                handicapBox.setDisable(b != null);
+                if (b != null) handicapBox.setSelected(b.handicap());
+            });
+            grid.addRow(6, new Label("Kopie von:"), source);
+            grid.addRow(7, new Label("Übernehmen:"), copyMode);
         }
-        grid.add(error, 0, 7, 2, 1);
+        grid.add(error, 0, 8, 2, 1);
         getDialogPane().setContent(grid);
 
         ButtonType ok = new ButtonType(isNew ? "Anlegen" : "Übernehmen", ButtonBar.ButtonData.OK_DONE);
@@ -184,7 +208,8 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
         DialogSizing.fit(this);
         setResultConverter(bt -> bt == ok
                 ? new Result(nameField.getText().trim(), datePicker.getValue(), Integer.parseInt(tablesField.getText()), chosen[0],
-                        testBox.isSelected(), source.getValue(), source.getValue() == null ? null : copyMode.getValue())
+                        testBox.isSelected(), source.getValue(), source.getValue() == null ? null : copyMode.getValue(),
+                        handicapBox.isSelected())
                 : null);
         setOnShown(e -> nameField.requestFocus());
     }

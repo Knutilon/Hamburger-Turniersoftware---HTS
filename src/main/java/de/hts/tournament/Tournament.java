@@ -969,6 +969,7 @@ public final class Tournament {
     public void startClass(PlayingClass c) {
         if (!c.isDrawn()) throw new IllegalStateException("„" + c.getName() + "“ ist noch nicht ausgelost.");
         requireNotStarted(c);
+        requireHandicapStartable(c);
         LocalDateTime now = LocalDateTime.now().withNano(0);
         c.setStartedAt(now);
         c.setReady(true);
@@ -999,6 +1000,7 @@ public final class Tournament {
     /** Startet das Turnier: alle bereiten Klassen werden gestartet und ihre Spiele eingereiht. */
     public StartReport startTournament() {
         StartReport r = previewStart();
+        for (PlayingClass c : r.started()) requireHandicapStartable(c);      // erst alles prüfen, dann starten
         if (!isStarted()) startedAt.set(LocalDateTime.now().withNano(0));
         for (PlayingClass c : r.started()) startClass(c);
         markModified();
@@ -2806,6 +2808,190 @@ public final class Tournament {
     /** Testturnier: im Kopfbereich gibt es „Alle Spiele simulieren“. */
     public boolean isTest() { return test; }
     public void setTest(boolean b) { if (test != b) { test = b; markModified(); } }
+
+    // --- Vorgabeturnier ---------------------------------------------------------------------------
+    /**
+     * Vorgabeturnier, CSV-Import: ersetzt ALLE bisherigen Teilnehmenden (samt Klassenzuordnungen und Doppelpaarungen)
+     * durch die importierten – nur, solange keine Klasse ausgelost ist.
+     */
+    public void replaceParticipants(List<Player> incoming) {
+        if (classes.stream().anyMatch(PlayingClass::isDrawn)) {
+            throw new IllegalStateException("Es ist bereits eine Klasse ausgelost – die Teilnehmenden können nicht mehr ersetzt werden.");
+        }
+        pairs.clear();
+        players.clear();
+        merge(incoming);
+        markModified();
+    }
+
+    private boolean handicap;
+    private HandicapRules handicapRules = new HandicapRules();
+
+    /** Vorgabeturnier (nur beim Anlegen festgelegt). */
+    public boolean isHandicap() { return handicap; }
+    public void setHandicap(boolean b) { if (handicap != b) { handicap = b; markModified(); } }
+
+    /** Gespeicherte Vorgaberegeln (Kopie zum Bearbeiten über {@link HandicapRules#copy()}). */
+    public HandicapRules getHandicapRules() { return handicapRules; }
+
+    /** Vorgabeturnier mit festgelegter (gespeicherter) Art der Vorgabe – erst dann gibt es Klassen, Tische usw. */
+    public boolean isHandicapReady() {
+        return handicap && handicapRules.getMode() != null;
+    }
+
+    /** Vorgaberegeln gesperrt, sobald die erste Klasse gestartet ist. */
+    public boolean isHandicapLocked() {
+        return classes.stream().anyMatch(PlayingClass::isStarted);
+    }
+
+    /** Vorgaberegeln speichern (nur gültige, nur vor dem Start der ersten Klasse). */
+    public void setHandicapRules(HandicapRules r) {
+        if (isHandicapLocked()) throw new IllegalStateException("Die Vorgaberegeln sind gesperrt – die erste Klasse ist bereits gestartet.");
+        List<String> errors = r.validate();
+        if (!errors.isEmpty()) throw new IllegalArgumentException(String.join("\n", errors));
+        handicapRules = r.copy();
+        markModified();
+    }
+
+    /** Nur zum Laden. */
+    public void restoreHandicapRules(HandicapRules r) {
+        handicapRules = r == null ? new HandicapRules() : r;
+    }
+
+    private static boolean womenTable(PlayingClass c) {
+        return c != null && (c.getType() == ClassType.WOMEN || c.getType() == ClassType.GIRLS);
+    }
+
+    /** Personen einer Partei (Einzel: eine, Doppel: bis zu zwei). */
+    private List<Player> personsOf(String entrantId) {
+        List<Player> out = new java.util.ArrayList<>();
+        if (entrantId == null) return out;
+        if (entrantId.startsWith("pair:")) {
+            String pid = entrantId.substring(5);
+            for (DoublesPair pair : pairs) {
+                if (!pair.getId().equals(pid)) continue;
+                if (pair.getFirst() != null) out.add(pair.getFirst());
+                if (pair.getSecond() != null) out.add(pair.getSecond());
+            }
+            return out;
+        }
+        for (Player p : players) if (entrantId.equals(p.getId())) out.add(p);
+        return out;
+    }
+
+    private static boolean isMixedPair(List<Player> ps) {
+        return ps.size() == 2 && ps.stream().filter(p -> p.getSex() == de.hts.player.Sex.FEMALE).count() == 1
+                && ps.stream().filter(p -> p.getSex() == de.hts.player.Sex.MALE).count() == 1;
+    }
+
+    /**
+     * Vorgabe eines Spiels in Bällen je Satz: positiv = Partei A beginnt jeden Satz mit so vielen Punkten Vorsprung,
+     * negativ = Partei B, 0 = keine Vorgabe (oder kein Vorgabeturnier). Verglichen wird im Einzel Person gegen Person,
+     * im Doppel die jeweils TTR-höheren und die TTR-tieferen miteinander (Mixed: Herr–Herr nach den Erwachsenen-,
+     * Dame–Dame nach den Damen-Grenzen); beide Vorgaben werden verrechnet (ggf. halbiert, abgerundet).
+     */
+    public int handicapOf(Match m) {
+        if (!isHandicapReady() || m == null || m.getA() == null || m.getB() == null) return 0;
+        PlayingClass c = findClass(m.getClassName()).orElse(null);
+        return handicapBetween(personsOf(m.getA()), personsOf(m.getB()), womenTable(c == null ? null : rootOf(c)));
+    }
+
+    int handicapBetween(List<Player> a, List<Player> b, boolean women) {
+        HandicapRules r = handicapRules;
+        if (a.isEmpty() || b.isEmpty()) return 0;
+        if (a.stream().anyMatch(p -> p.getTtr() == null) || b.stream().anyMatch(p -> p.getTtr() == null)) return 0;
+        if (a.size() == 1 && b.size() == 1) return r.between(a.get(0).getTtr(), b.get(0).getTtr(), women).balls();
+        if (a.size() != 2 || b.size() != 2) return 0;
+        if (isMixedPair(a) && isMixedPair(b)) {
+            Player am = a.stream().filter(p -> p.getSex() == de.hts.player.Sex.MALE).findFirst().orElseThrow();
+            Player aw = a.stream().filter(p -> p.getSex() == de.hts.player.Sex.FEMALE).findFirst().orElseThrow();
+            Player bm = b.stream().filter(p -> p.getSex() == de.hts.player.Sex.MALE).findFirst().orElseThrow();
+            Player bw = b.stream().filter(p -> p.getSex() == de.hts.player.Sex.FEMALE).findFirst().orElseThrow();
+            return r.combine(r.between(am.getTtr(), bm.getTtr(), false).balls(), r.between(aw.getTtr(), bw.getTtr(), true).balls());
+        }
+        List<Player> as = new java.util.ArrayList<>(a), bs = new java.util.ArrayList<>(b);
+        java.util.Comparator<Player> byTtr = java.util.Comparator.comparingInt((Player p) -> p.getTtr()).reversed();
+        as.sort(byTtr);
+        bs.sort(byTtr);
+        return r.combine(r.between(as.get(0).getTtr(), bs.get(0).getTtr(), women).balls(),
+                r.between(as.get(1).getTtr(), bs.get(1).getTtr(), women).balls());
+    }
+
+    /** „ (+3)“ hinter einem Namen in reinen Textzeilen; leer ohne Vorsprung. */
+    public String handicapSuffix(Match m, String entrantId) {
+        String h = handicapLabel(m, entrantId);
+        return h.isEmpty() ? "" : " (" + h + ")";
+    }
+
+    /** Text der Vorgabe für eine Partei, z. B. „+3“; leer, wenn sie keinen Vorsprung hat. */
+    public String handicapLabel(Match m, String entrantId) {
+        int h = handicapOf(m);
+        if (h == 0 || entrantId == null) return "";
+        if (h > 0 && entrantId.equals(m.getA())) return "+" + h;
+        if (h < 0 && entrantId.equals(m.getB())) return "+" + (-h);
+        return "";
+    }
+
+    /**
+     * Gründe, aus denen eine Klasse im Vorgabeturnier nicht starten darf: Vorgaberegeln fehlen, Teilnehmende ohne
+     * TTR, TTR außerhalb der Klassengrenzen bzw. größtmöglicher TTR-Abstand über der höchsten Obergrenze.
+     */
+    public List<String> handicapProblems(PlayingClass c) {
+        List<String> out = new java.util.ArrayList<>();
+        if (!handicap) return out;
+        if (!isHandicapReady()) {
+            out.add("Die Vorgaberegeln sind noch nicht festgelegt und gespeichert.");
+            return out;
+        }
+        PlayingClass root = rootOf(c);
+        boolean women = womenTable(root);
+        // Personen der Klasse samt der Tabelle, nach der sie eingestuft werden
+        java.util.Map<Player, Boolean> persons = new java.util.LinkedHashMap<>();
+        if (root.isDoubles()) {
+            for (DoublesPair pair : pairsIn(root)) {
+                List<Player> ps = new java.util.ArrayList<>();
+                if (pair.getFirst() != null) ps.add(pair.getFirst());
+                if (pair.getSecond() != null) ps.add(pair.getSecond());
+                boolean mixed = isMixedPair(ps);
+                for (Player p : ps) persons.put(p, mixed ? p.getSex() == de.hts.player.Sex.FEMALE : women);
+            }
+        } else {
+            for (Player p : players) if (p.isInClass(root.getName())) persons.put(p, women);
+        }
+        List<String> noTtr = new java.util.ArrayList<>();
+        persons.keySet().forEach(p -> { if (p.getTtr() == null) noTtr.add(p.getDisplayName()); });
+        if (!noTtr.isEmpty()) out.add("Ohne TTR-Wert: " + String.join(", ", noTtr) + " – bitte unter „Teilnehmende“ einen Wert eintragen.");
+        HandicapRules r = handicapRules;
+        for (boolean w : new boolean[]{false, true}) {
+            List<Player> group = persons.entrySet().stream().filter(e -> e.getValue() == w && e.getKey().getTtr() != null)
+                    .map(java.util.Map.Entry::getKey).toList();
+            if (group.isEmpty()) continue;
+            String table = w ? "Damen" : "Erwachsene";
+            HandicapRules.Bounds b = r.bounds(r.getMode(), w);
+            if (r.getMode() == HandicapRules.Mode.CLASSES) {
+                for (Player p : group) {
+                    int k = b.indexOf(p.getTtr());
+                    if (k == -2) out.add(p.getDisplayName() + " (TTR " + p.getTtr() + ") liegt über der höchsten Klassengrenze (" + table + ").");
+                    else if (k == -1) out.add(p.getDisplayName() + " (TTR " + p.getTtr() + ") liegt unter der niedrigsten Klassengrenze (" + table + ").");
+                }
+            } else {
+                Player hi = group.stream().max(java.util.Comparator.comparingInt(Player::getTtr)).orElseThrow();
+                Player lo = group.stream().min(java.util.Comparator.comparingInt(Player::getTtr)).orElseThrow();
+                int d = hi.getTtr() - lo.getTtr();
+                if (b.indexOf(d) == -2) out.add("Größtmöglicher TTR-Abstand " + d + " (" + hi.getDisplayName() + " – " + lo.getDisplayName()
+                        + ") liegt über der höchsten Obergrenze (" + table + ").");
+            }
+        }
+        return out;
+    }
+
+    private void requireHandicapStartable(PlayingClass c) {
+        List<String> problems = handicapProblems(c);
+        if (!problems.isEmpty()) {
+            throw new IllegalStateException("„" + rootOf(c).getName() + "“ kann nicht gestartet werden (Vorgabeturnier):\n– "
+                    + String.join("\n– ", problems));
+        }
+    }
 
     /**
      * Testmodus: trägt alle offenen Spiele laufender (gestarteter, nicht angehaltener) Phasen nicht beendeter Klassen

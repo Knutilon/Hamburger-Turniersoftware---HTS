@@ -6,7 +6,7 @@
 
     <groupId>de.hts</groupId>
     <artifactId>hts</artifactId>
-    <version>0.30.0</version>
+    <version>0.31.0</version>
     <name>Hamburger Turniersoftware (HTS)</name>
 
     <properties>
@@ -17,6 +17,8 @@
         <main.class>de.hts.Launcher</main.class>
     </properties>
 
+    <!-- Abhängigkeits-/CVE-Prüfung: siehe docs/ABHAENGIGKEITEN.md (LETZTE_PRUEFUNG, Wiederholung alle 6 Monate,
+         Ablauf in CLAUDE.md). Achtung: ausgeliefert wird JavaFX aus den Windows-Jars der Build-Bibliotheken. -->
     <dependencies>
         <!-- PDF erzeugen, anzeigen und drucken (Apache License 2.0) -->
         <dependency>

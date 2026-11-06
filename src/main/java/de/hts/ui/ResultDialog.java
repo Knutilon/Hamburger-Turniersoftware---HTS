@@ -71,6 +71,8 @@ public final class ResultDialog extends Dialog<ResultDialog.Result> {
         Label lb = new Label(nameB);
         la.getStyleClass().add("match-name");
         lb.getStyleClass().add("match-name");
+        DrawView.handicapBadge(la, t, m, m.getA());
+        DrawView.handicapBadge(lb, t, m, m.getB());
         Label satzHead = new Label("Satz");
         satzHead.setMinWidth(Region.USE_PREF_SIZE);
         grid.add(satzHead, 0, 0);

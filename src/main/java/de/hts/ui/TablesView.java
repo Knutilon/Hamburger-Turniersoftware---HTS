@@ -133,7 +133,8 @@ public final class TablesView {
             nr.setMinWidth(24);
             Label what = new Label(m.getClassName() + " · " + m.getStage() + " · Spiel " + m.getNumber());
             what.getStyleClass().add("hint");
-            Label who = new Label(tournament.entrantName(m, m.getA()) + "  –  " + tournament.entrantName(m, m.getB()));
+            Label who = new Label(tournament.entrantName(m, m.getA()) + tournament.handicapSuffix(m, m.getA()) + "  –  "
+                    + tournament.entrantName(m, m.getB()) + tournament.handicapSuffix(m, m.getB()));
             who.getStyleClass().add("match-name");
             who.setWrapText(true);
             Region qsp = new Region();
@@ -238,6 +239,8 @@ public final class TablesView {
         Label b = new Label(tournament.entrantName(m, m.getB()));
         a.getStyleClass().add("table-player");
         b.getStyleClass().add("table-player");
+        DrawView.handicapBadge(a, tournament, m, m.getA());
+        DrawView.handicapBadge(b, tournament, m, m.getB());
         a.setWrapText(true);
         b.setWrapText(true);
         String since = "";
