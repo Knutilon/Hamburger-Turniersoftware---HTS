@@ -55,6 +55,8 @@ public final class PlayerTableView {
     private final ComboBox<RegistrationFilter> registrationFilter = new ComboBox<>();
     /** 0.36: Klassenfilter – gemeldet, in der Klasse oder Nachrücker. */
     private final ComboBox<String> classFilter = new ComboBox<>();
+    /** 0.37: Vereinsfilter (ersetzt den Statusfilter). */
+    private final ComboBox<String> clubFilter = new ComboBox<>();
     private static final String ALL_CLASSES = "Alle";
 
     private final BorderPane root = new BorderPane();
@@ -199,13 +201,15 @@ public final class PlayerTableView {
         birthSearch.textProperty().addListener((o, a, b) -> updateFilter());
         sexFilter.valueProperty().addListener((o, a, b) -> updateFilter());
         registrationFilter.valueProperty().addListener((o, a, b) -> updateFilter());
+        clubFilter.getItems().setAll(ALL_CLASSES);
+        clubFilter.setValue(ALL_CLASSES);
+        clubFilter.valueProperty().addListener((o, a, b) -> updateFilter());
+        clubFilter.setTooltip(new Tooltip("Nur Teilnehmende dieses Vereins"));
         classFilter.getItems().setAll(ALL_CLASSES);
         classFilter.setValue(ALL_CLASSES);
         classFilter.valueProperty().addListener((o, a, b) -> updateFilter());
         classFilter.setTooltip(new Tooltip("Nur Personen dieser Klasse: gemeldet, in der Klasse oder Nachrücker"));
 
-        Button reset = new Button("Zurücksetzen");
-        reset.setOnAction(e -> resetFilter());
 
         birthSearch.setTooltip(new Tooltip("Jahrgang (1994) oder Datum (14.03.1994)"));
 
@@ -214,9 +218,8 @@ public final class PlayerTableView {
                 labeled("Nachname:", lastnameSearch),
                 labeled("Geburtsdatum:", birthSearch),
                 labeled("Geschlecht:", sexFilter),
-                labeled("Status:", registrationFilter),
-                labeled("Klasse:", classFilter),
-                reset);
+                labeled("Verein:", clubFilter),
+                labeled("Klasse:", classFilter));
         searchBar.setPadding(new Insets(6, 10, 6, 10));
         searchBar.getStyleClass().add("search-bar");
 
@@ -241,7 +244,10 @@ public final class PlayerTableView {
         PlayerFilter f = currentFilter();
         String cls = classFilter.getValue();
         boolean all = cls == null || ALL_CLASSES.equals(cls);
-        filtered.setPredicate(p -> f.test(p) && (all || p.isEnteredFor(cls) || p.getWaitingLists().contains(cls)));
+        String club = clubFilter.getValue();
+        boolean allClubs = club == null || ALL_CLASSES.equals(club);
+        filtered.setPredicate(p -> f.test(p) && (all || p.isEnteredFor(cls) || p.getWaitingLists().contains(cls))
+                && (allClubs || club.equals(p.getClubName())));
     }
 
     /** Klassen für den Klassenfilter (Namen der Klassen ohne Folgephasen); eine gewählte Klasse bleibt erhalten. */
@@ -266,6 +272,7 @@ public final class PlayerTableView {
         sexFilter.setValue(Sex.UNKNOWN);
         registrationFilter.setValue(RegistrationFilter.ALL);
         classFilter.setValue(ALL_CLASSES);
+        clubFilter.setValue(ALL_CLASSES);
     }
 
     public void focusSearch() {
@@ -281,8 +288,27 @@ public final class PlayerTableView {
         setClassNames(classSource.get());
     }
 
+    /** 0.37: nur diese Klasse zeigen (z. B. „Offene Personen anzeigen“); übrige Filter zurück. */
+    public void showClass(String className) {
+        resetFilter();
+        setClassNames(classSource.get());
+        classFilter.setValue(className);
+    }
+
+    private void updateClubs() {
+        java.util.Set<String> clubs = new java.util.TreeSet<>(java.text.Collator.getInstance(Locale.GERMAN));
+        for (Player p : source) if (p.getClubName() != null && !p.getClubName().isBlank()) clubs.add(p.getClubName());
+        List<String> items = new java.util.ArrayList<>();
+        items.add(ALL_CLASSES);
+        items.addAll(clubs);
+        String cur = clubFilter.getValue();
+        if (!items.equals(clubFilter.getItems())) clubFilter.getItems().setAll(items);
+        clubFilter.setValue(cur != null && items.contains(cur) ? cur : ALL_CLASSES);
+    }
+
     public void refresh() {
         setClassNames(classSource.get());
+        updateClubs();
         table.refresh();
         updateFilter();
         Ui.fitColumns(table);                          // 0.36: Spalten so breit wie ihr Inhalt, notfalls Scrollleiste

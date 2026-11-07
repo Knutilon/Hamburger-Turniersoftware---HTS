@@ -6,6 +6,17 @@ Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Pub
 Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
 (Label „Feature“ bzw. „bug“).
 
+## Neu in 0.37.0
+
+- **Neuer Menüpunkt „Mobile Einstellungen“:** „Handy-Zugang starten“, „QR-Codes drucken“ und „Anmeldung per Adresse
+  sperren“ haben eine eigene Seite mit Zustand (läuft/aus, Anmeldung offen/gesperrt), den Adressen der Live-Anzeige und
+  der Anmeldung samt QR-Code-Vorschau und Hinweisen zu WLAN und Firewall.
+- **Teilnehmende:** Auswahl „Verein:“ statt „Status:“ (kombinierbar mit Suche und Klassenfilter); der Knopf
+  „Zurücksetzen“ entfällt. Auf der Seite bleiben „Aktion bezüglich Markierte“ und „Handyabmeldungen“.
+- **Klassen:** Statt des grauen Bedienhinweises steht links neben „Teilnehmende fertig – Modus festlegen“ der Hinweis
+  „XX Gemeldete noch nicht an- oder abgemeldet.“ mit dem Link „Offene Personen anzeigen“ (öffnet „Teilnehmende“ mit
+  dieser Klasse im Filter). Die Marke „Start gesperrt“ steht im Klassenkopf; die rote Zeile darunter entfällt.
+
 ## Neu in 0.36.0
 
 - **Texte nie abgekürzt, auch bei kleinen Auflösungen** (geprüft bei 1366 × 768 mit 125 % und 150 % Skalierung):

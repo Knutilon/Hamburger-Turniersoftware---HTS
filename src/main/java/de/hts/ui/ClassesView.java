@@ -108,7 +108,17 @@ public final class ClassesView {
     private final Label classCriteria = new Label();
     private final Label availableTitle = new Label();
     private final Label assignedTitle = new Label();
-    private final Label dndHint = new Label();
+    /** 0.37: Startsperre – Marke im Klassenkopf und Hinweis neben „Teilnehmende fertig – Modus festlegen“. */
+    private final Label lockChip = new Label("Start gesperrt");
+    private final Label lockHintText = new Label();
+    private final javafx.scene.control.Hyperlink showOpenLink = new javafx.scene.control.Hyperlink("Offene Personen anzeigen");
+    private final javafx.scene.layout.FlowPane lockHint = new javafx.scene.layout.FlowPane(4, 2);
+    private java.util.function.Consumer<PlayingClass> onShowOpen = c -> { };
+
+    /** „Offene Personen anzeigen“: zur Seite „Teilnehmende“ mit dieser Klasse im Klassenfilter. */
+    public void setOnShowOpen(java.util.function.Consumer<PlayingClass> action) {
+        onShowOpen = action == null ? c -> { } : action;
+    }
     /** Doppel: Einzelne ohne Partner/in einander zulosen */
     private final Button partnerBtn = new Button("Partner zulosen");
     private final Button newParticipantBtn = new Button("Teilnehmende neu erfassen", Icons.of(Icons.PLUS, 14));
@@ -307,8 +317,6 @@ public final class ClassesView {
         classCriteria.getStyleClass().add("criteria");
         classCriteria.setWrapText(true);
         classState.getStyleClass().add("chip");
-        dndHint.getStyleClass().add("hint");
-        dndHint.setWrapText(true);
         Button discard = new Button("Auslosung verwerfen", Icons.of(Icons.BACK, 14));
         discard.getStyleClass().add("pill");
         discard.setOnAction(e -> discardDraw());
@@ -340,9 +348,21 @@ public final class ClassesView {
         modeBtn.managedProperty().bind(modeBtn.visibleProperty());
         Region modeGap = new Region();
         HBox.setHgrow(modeGap, Priority.ALWAYS);
-        dndHint.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(dndHint, Priority.SOMETIMES);
-        HBox bottomBar = new HBox(10, dndHint, modeGap, modeBtn);
+        // 0.37: statt des grauen Bedienhinweises steht links neben dem Knopf der Hinweis zur Startsperre
+        lockHintText.getStyleClass().add("lock-hint");
+        lockHintText.setWrapText(true);
+        lockHintText.setMinHeight(Region.USE_PREF_SIZE);
+        showOpenLink.getStyleClass().add("lock-hint-link");
+        showOpenLink.setOnAction(e -> {
+            PlayingClass c = selectedClass();
+            if (c != null) onShowOpen.accept(c);
+        });
+        lockHint.getChildren().addAll(lockHintText, showOpenLink);
+        lockHint.setAlignment(Pos.CENTER_LEFT);
+        lockHint.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(lockHint, Priority.ALWAYS);
+        lockHint.prefWrapLengthProperty().bind(javafx.beans.binding.Bindings.max(200, lockHint.widthProperty()));
+        HBox bottomBar = new HBox(10, lockHint, modeBtn);
         bottomBar.setAlignment(Pos.CENTER_LEFT);
         VBox participantsPane = new VBox(8, lockBanner, lists, bottomBar);
         participantsPane.setPadding(new Insets(10, 0, 0, 0));
@@ -368,7 +388,11 @@ public final class ClassesView {
         HBox.setHgrow(headText, Priority.ALWAYS);
         classCriteria.setMinHeight(Region.USE_PREF_SIZE);
         classState.setMinWidth(Region.USE_PREF_SIZE);
-        HBox classHead = new HBox(10, headText, classState);
+        lockChip.getStyleClass().addAll("chip", "chip-locked");
+        lockChip.setMinWidth(Region.USE_PREF_SIZE);
+        lockChip.managedProperty().bind(lockChip.visibleProperty());
+        lockChip.setVisible(false);
+        HBox classHead = new HBox(10, headText, lockChip, classState);
         classHead.setAlignment(Pos.TOP_LEFT);
         VBox classCard = new VBox(6, classHead, classTabs);
         classCard.getStyleClass().add("card");
@@ -568,34 +592,26 @@ public final class ClassesView {
                     + " in der Klasse · " + c.getType().getLabel()
                     + (c.getMode() != de.hts.tournament.TournamentMode.NONE ? " · " + c.getMode().getLabel() : ""));
             classCriteria.setTooltip(new Tooltip(tournament.criteriaText(c)));
-            // Vorgabeturnier: vor dem Start markieren, was den Start sperrt (z. B. Teilnehmende ohne TTR)
+            // 0.37: Startsperre – Marke im Kopf, Hinweis neben „Teilnehmende fertig – Modus festlegen“
             classCriteria.getStyleClass().remove("handicap-problem");
-            String attendance = c.isStarted() ? null : tournament.attendanceProblem(c);
-            if (attendance != null) {
-                classCriteria.setText(classCriteria.getText() + "\n⚠ Start gesperrt: " + tournament.openAttendance(c).size()
-                        + " Gemeldete noch nicht an- oder abgemeldet");
-                classCriteria.setTooltip(new Tooltip(attendance));
-                classCriteria.getStyleClass().add("handicap-problem");
-            }
+            List<String> locks = new ArrayList<>();
+            int open = c.isStarted() ? 0 : tournament.openAttendance(c).size();
+            if (open > 0) locks.add(open + (open == 1 ? " Gemeldete/r" : " Gemeldete") + " noch nicht an- oder abgemeldet.");
             if (tournament.isHandicap() && !c.isStarted() && n > 0) {
-                java.util.List<String> hc = tournament.handicapProblems(c);
-                if (!hc.isEmpty()) {
-                    classCriteria.setText(classCriteria.getText() + "\n⚠ Start gesperrt: " + String.join(" · ", hc));
-                    classCriteria.setTooltip(new Tooltip(String.join("\n", hc)));
-                    classCriteria.getStyleClass().add("handicap-problem");
-                }
+                List<String> hc = tournament.handicapProblems(c);
+                if (!hc.isEmpty()) locks.add("Start gesperrt: " + String.join(" · ", hc));
             }
-            dndHint.setText(dbl
-                    ? c.isTeam() ? "Teilnehmende aus der linken Liste auf einen freien Platz eines Teams ziehen oder auf „Neues Team“. "
-                    + "Teamname aus den Nachnamen. In der Klasse = angemeldet."
-                    : "Teilnehmende aus der linken Liste auf einen freien Platz ziehen oder auf „Neues Doppel“. "
-                    + "Aus einer Paarung zurück in die Liste ziehen entfernt sie. In der Klasse = angemeldet."
-                    : "Teilnehmende per Drag & Drop, Doppelklick oder mit den Pfeil-Knöpfen zuordnen. "
-                    + "In der Klasse = angemeldet, Verfügbar = nicht angemeldet.");
+            lockChip.setVisible(!locks.isEmpty());
+            lockChip.setTooltip(locks.isEmpty() ? null : new Tooltip(String.join("\n", locks)));
+            lockHintText.setText(String.join(" ", locks));
+            lockHint.setVisible(!locks.isEmpty());
+            showOpenLink.setVisible(open > 0);
+            showOpenLink.setManaged(open > 0);
         } else {
             classTitle.setText(tournament.getClasses().isEmpty() ? "Noch keine Klassen" : "Keine Klasse ausgewählt");
             classCriteria.setText("Links eine Klasse auswählen oder mit „Klasse anlegen“ eine neue erfassen.");
-            dndHint.setText("");
+            lockChip.setVisible(false);
+            lockHint.setVisible(false);
         }
         buildMiddleButtons(c);
         updateFilters();

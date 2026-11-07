@@ -52,7 +52,7 @@ public final class WorkspaceView {
     private static final String PREF_LAST_IMPORT_DIR = "lastImportDir";
     private static final DateTimeFormatter START_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm 'Uhr'");
 
-    private enum Page { PARTICIPANTS, HANDICAP, CLASSES, TABLES, MATCHES, PRESENTATION }
+    private enum Page { PARTICIPANTS, HANDICAP, CLASSES, TABLES, MATCHES, PRESENTATION, MOBILE }
 
     private final Stage stage;
     private final TournamentStore store;
@@ -110,6 +110,10 @@ public final class WorkspaceView {
         participantsCard.setPadding(new Insets(0, 40, 16, 40));
         participants.setOnEdit(this::editParticipant);
         participants.setClassSource(() -> tournament.rootClasses().stream().map(PlayingClass::getName).toList());
+        classes.setOnShowOpen(c -> {               // 0.37: „Offene Personen anzeigen“
+            showPage(Page.PARTICIPANTS);
+            participants.showClass(c.getName());
+        });
         participants.getTable().setContextMenu(participantContextMenu());
         participants.getTable().setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.DELETE) deleteParticipants();
@@ -173,6 +177,7 @@ public final class WorkspaceView {
         matchesMenu = header.addMenuItem("matches", "Spiele", null, () -> showPage(Page.MATCHES));
         afterHandicapMenus.add(matchesMenu);
         afterHandicapMenus.add(header.addMenuItem("presentation", "Präsentationsansicht", null, () -> showPage(Page.PRESENTATION)));
+        afterHandicapMenus.add(header.addMenuItem("mobile", "Mobile Einstellungen", null, () -> showPage(Page.MOBILE)));
         updateHandicapMenus();
         matchesMenu.setDisable(!tournament.isRunning());
         matchesMenu.setTooltip(new javafx.scene.control.Tooltip("Verfügbar, sobald das Turnier oder eine Klasse gestartet ist"));
@@ -381,7 +386,7 @@ public final class WorkspaceView {
                 template.setOnAction(e -> saveCsvTemplate());
                 pageActions.getChildren().add(4, template);
             }
-            pageActions.getChildren().addAll(attendanceMenu(), handyButtons());
+            pageActions.getChildren().add(attendanceMenu());
             pageContent.getChildren().setAll(participantsCard);
             participants.refresh();
         } else if (page == Page.HANDICAP) {
@@ -399,6 +404,10 @@ public final class WorkspaceView {
             pageTitle.setText("Präsentationsansicht");
             pageContent.getChildren().setAll(presentationView.getRoot());
             presentationView.refresh();
+        } else if (page == Page.MOBILE) {
+            header.select("mobile");
+            pageTitle.setText("Mobile Einstellungen");
+            pageContent.getChildren().setAll(mobilePage());
         } else if (page == Page.MATCHES) {
             header.select("matches");
             pageTitle.setText("Spiele");
@@ -920,25 +929,47 @@ public final class WorkspaceView {
         updateStartBox();
     }
 
-    /** Handy-Zugang (Live-Anzeige + Anmeldung) starten/beenden, QR-Codes drucken, Anmeldung sperren/öffnen. */
-    private javafx.scene.Node handyButtons() {
+    /**
+     * 0.37: Seite „Mobile Einstellungen“ – Handy-Zugang starten/beenden, QR-Codes drucken, Anmeldung sperren/öffnen,
+     * Zustand, Adressen mit QR-Code-Vorschau und Hinweise.
+     */
+    private javafx.scene.Node mobilePage() {
+        VBox card = new VBox(14);
+        card.getStyleClass().add("card");
+        card.setPadding(new Insets(16, 20, 20, 20));
         Button live = new Button();
-        live.getStyleClass().add("pill");
+        live.getStyleClass().add("navy-pill");
         Button qr = new Button("QR-Codes drucken");
         qr.getStyleClass().add("pill");
         Button lock = new Button();
         lock.getStyleClass().add("pill");
-        Label info = new Label();
-        info.getStyleClass().add("live-info");
+        javafx.scene.layout.FlowPane buttons = new javafx.scene.layout.FlowPane(10, 8, live, qr, lock);
+        Label state = new Label();
+        state.getStyleClass().add("class-name");
+        state.setWrapText(true);
+        javafx.scene.layout.FlowPane codes = new javafx.scene.layout.FlowPane(30, 16);
+        Label hints = new Label("Hinweise: Laptop und Handys müssen im selben WLAN sein – das Haupt-WLAN des Routers nutzen, nicht das "
+                + "Gäste-WLAN (es trennt die Geräte voneinander). Ein Internetanschluss ist nicht nötig. Beim ersten Start fragt die "
+                + "Windows-Firewall nach – „Private Netzwerke“ erlauben. Die QR-Codes erst drucken, wenn der Laptop im Turnier-WLAN ist "
+                + "(die Adresse hängt vom Netz ab). Abmeldungen per Handy bestätigt die Turnierleitung unter „Teilnehmende“ → "
+                + "„Handyabmeldungen“.");
+        hints.getStyleClass().add("hint");
+        hints.setWrapText(true);
+        hints.setMinHeight(Region.USE_PREF_SIZE);
         Runnable update = () -> {
             boolean on = liveServer != null && liveServer.isRunning();
             live.setText(on ? "Handy-Zugang beenden" : "Handy-Zugang starten");
-            live.setTooltip(new Tooltip("Live-Anzeige und Anmeldung am Turniertag per Handy im lokalen WLAN (Port "
-                    + de.hts.web.LiveServer.PORT + ")"));
             lock.setText(tournament.isCheckinLocked() ? "Anmeldung per Adresse wieder öffnen" : "Anmeldung per Adresse sperren");
-            String host = de.hts.web.LiveServer.localAddresses().stream().findFirst().orElse("(keine Netzwerkverbindung)");
-            info.setText(on ? "Live: " + de.hts.web.LiveServer.liveUrl(host, liveServer.port())
-                    + (tournament.isCheckinOpen() ? " · Anmeldung offen" : " · Anmeldung geschlossen") : "");
+            String host = de.hts.web.LiveServer.localAddresses().stream().findFirst().orElse(null);
+            state.setText("Handy-Zugang: " + (on ? "läuft (Port " + liveServer.port() + ")" : "aus") + " · Anmeldung per Adresse: "
+                    + (tournament.isCheckinOpen() ? "offen" : tournament.isCheckinLocked() ? "gesperrt" : "geschlossen (alle Klassen beendet)")
+                    + (host == null ? " · ⚠ keine Netzwerkverbindung" : ""));
+            codes.getChildren().clear();
+            if (host != null) {
+                int port = on ? liveServer.port() : de.hts.web.LiveServer.PORT;
+                codes.getChildren().addAll(qrPreview("Live-Anzeige", de.hts.web.LiveServer.liveUrl(host, port)),
+                        qrPreview("Anmeldung am Turniertag", de.hts.web.LiveServer.checkinUrl(host, port, tournament.getCheckinToken())));
+            }
         };
         live.setOnAction(e -> {
             if (liveServer != null && liveServer.isRunning()) {
@@ -949,7 +980,7 @@ public final class WorkspaceView {
                 try {
                     liveServer = new de.hts.web.LiveServer(tournament, javafx.application.Platform::runLater, this::refreshAfterAttendance);
                     liveServer.start();
-                    setStatus("Handy-Zugang gestartet – Adresse und QR-Codes über „QR-Codes drucken“.");
+                    setStatus("Handy-Zugang gestartet.");
                 } catch (java.io.IOException ex) {
                     liveServer = null;
                     error("Handy-Zugang", "Der Handy-Zugang konnte nicht gestartet werden (Port " + de.hts.web.LiveServer.PORT
@@ -977,8 +1008,32 @@ public final class WorkspaceView {
             if (liveServer == null) setStatus("Hinweis: Der Handy-Zugang ist noch nicht gestartet.");
         });
         update.run();
-        HBox box = new HBox(8, live, qr, lock, info);
-        box.setAlignment(Pos.CENTER_LEFT);
+        card.getChildren().addAll(state, buttons, codes, hints);
+        javafx.scene.control.ScrollPane sp = new javafx.scene.control.ScrollPane(card);
+        sp.setFitToWidth(true);
+        sp.getStyleClass().add("page-scroll");
+        return sp;
+    }
+
+    /** QR-Code mit Titel und Adresse (Vorschau zum direkten Scannen vom Bildschirm). */
+    private static javafx.scene.Node qrPreview(String title, String url) {
+        de.hts.web.QrCode code = de.hts.web.QrCode.encode(url);
+        int n = code.size(), quiet = 4, scale = 5, size = (n + 2 * quiet) * scale;
+        javafx.scene.image.WritableImage img = new javafx.scene.image.WritableImage(size, size);
+        javafx.scene.image.PixelWriter pw = img.getPixelWriter();
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                boolean dark = code.get(x / scale - quiet, y / scale - quiet);
+                pw.setColor(x, y, dark ? javafx.scene.paint.Color.BLACK : javafx.scene.paint.Color.WHITE);
+            }
+        }
+        Label t = new Label(title);
+        t.getStyleClass().add("card-heading");
+        Label u = new Label(url);
+        u.getStyleClass().add("hint");
+        u.setWrapText(true);
+        u.setMaxWidth(size + 40);
+        VBox box = new VBox(6, t, new javafx.scene.image.ImageView(img), u);
         return box;
     }
 

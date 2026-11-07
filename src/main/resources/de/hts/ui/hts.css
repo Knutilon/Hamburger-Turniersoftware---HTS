@@ -871,3 +871,8 @@
 /* --- 0.36: Dialoginhalte scrollen bei kleinen Auflösungen statt abgeschnitten zu werden --- */
 .dialog-scroll, .dialog-scroll > .viewport { -fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; }
 .page-scroll, .page-scroll > .viewport { -fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; }
+
+/* --- 0.37: Startsperre neben „Teilnehmende fertig – Modus festlegen“ --- */
+.chip.chip-locked { -fx-background-color: #fcebeb; -fx-text-fill: #791f1f; }
+.lock-hint { -fx-text-fill: #b42318; -fx-font-size: 13px; }
+.hyperlink.lock-hint-link { -fx-text-fill: #a32d2d; -fx-underline: true; -fx-font-size: 13px; -fx-padding: 0; -fx-border-color: transparent; }

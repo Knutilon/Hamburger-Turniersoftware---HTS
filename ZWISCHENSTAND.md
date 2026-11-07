@@ -1,4 +1,4 @@
-# Zwischenstand HTS 0.36.0 (07.11.2026)
+# Zwischenstand HTS 0.37.0 (07.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -14,7 +14,7 @@ https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.
 (+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
-## Feature-Sammlung für 0.37.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 0.38.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
 
@@ -28,6 +28,42 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    (wie bisher Felder zum Ausfüllen).
 
 ## Umgesetzt
+
+0.37.0 (Issues #42–#45; #34 weiter zurückgestellt). README „Neu in 0.37.0“.
+#42: PlayerTableView ohne „Zurücksetzen“.
+#43: WorkspaceView Page.MOBILE „Mobile Einstellungen“ (mobilePage: Zustand, Knöpfe als FlowPane, qrPreview mit
+Adresse, Hinweise; in ScrollPane); Teilnehmenden-Seite nur noch attendanceMenu.
+#44: PlayerTableView clubFilter („Verein:“, updateClubs) statt Statusauswahl; showClass(name) setzt Filter zurück und
+wählt die Klasse.
+#45: ClassesView lockChip „Start gesperrt“ im Klassenkopf, bottomBar mit lockHint (Text + Hyperlink „Offene Personen
+anzeigen“ → setOnShowOpen → Teilnehmende mit Klassenfilter) links neben modeBtn; dndHint und rote Kopfzeile entfernt;
+CSS chip-locked, lock-hint, lock-hint-link. Geprüft bei 1093 × 614.
+Tests: 191 bestanden.
+Feature-Sammlung 0.37.0 (zur Nachverfolgung):
+
+2. TEILNEHMENDE: KNOPF „ZURÜCKSETZEN“ DER FILTER ENTFERNEN (07.11.2026, Issue #42): In der Suchleiste der
+   Teilnehmenden-Übersicht entfällt der Knopf „Zurücksetzen“; die Filter werden einzeln zurückgestellt.
+
+3. NEUER MENÜPUNKT „MOBILE EINSTELLUNGEN“ (07.11.2026, Issue #43) – GEKLÄRT (Vorschläge angenommen). „Handy-Zugang starten“, „QR-Codes
+   drucken“ und „Anmeldung per Adresse sperren“ wandern von der Seite „Teilnehmende“ auf einen eigenen Menüpunkt
+   „Mobile Einstellungen“. Bestätigt: Menüpunkt rechts neben „Präsentationsansicht“; Seite zeigt
+   die drei Knöpfe, den Zustand (läuft/aus, Anmeldung offen/gesperrt), die Adressen der Live-Anzeige und der
+   Anmeldung samt QR-Codes zur Vorschau und kurze Hinweise (WLAN, Firewall, Gäste-WLAN). Auf „Teilnehmende“ bleiben
+   „Aktion bezüglich Markierte“ und „Handyabmeldungen“.
+
+4. TEILNEHMENDE: STATUSFILTER DURCH VEREINSFILTER ERSETZEN (07.11.2026, Issue #44) – GEKLÄRT. In der Suchleiste der
+   Teilnehmenden-Übersicht entfällt die Auswahl „Status:“; an ihrer Stelle eine Auswahl „Verein:“ (Alle + alle Vereine
+   der Teilnehmenden, alphabetisch), kombinierbar mit den übrigen Filtern und dem Klassenfilter. Keine Sortier-Änderung.
+
+5. KLASSEN: STARTSPERRE-HINWEIS STATT GRAUEM BEDIENHINWEIS (07.11.2026, Issue #45) – GEKLÄRT.
+   - Knopf „Teilnehmende fertig – Modus festlegen“ bleibt, wo und wie er ist (rechts unten).
+   - Der graue Bedienhinweis („Teilnehmende per Drag & Drop … In der Klasse = angemeldet, Verfügbar = nicht
+     angemeldet.“) ENTFÄLLT ganz.
+   - An seiner Stelle links neben dem Knopf (volle verfügbare Breite, bricht notfalls um) der rote Hinweis
+     „XX Gemeldete noch nicht an- oder abgemeldet. Offene Personen anzeigen“ (Link → „Teilnehmende“ mit dieser Klasse
+     im Klassenfilter); verschwindet, wenn alle an- oder abgemeldet sind.
+   - Die rote Zeile unter dem Klassenkopf entfällt; keine Schrittleiste. Die Marke „Start gesperrt“ oben rechts im
+     Klassenkopf BLEIBT bzw. kommt dorthin (wie im Designvorschlag), solange der Start gesperrt ist.
 
 0.36.0 (Issues #35–#39, #41; #40 entfernt, #34 zurückgestellt). README „Neu in 0.36.0“, CLAUDE.md-Regel „Texte nie
 abkürzen“.
