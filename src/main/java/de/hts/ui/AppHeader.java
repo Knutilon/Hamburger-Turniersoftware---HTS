@@ -21,7 +21,7 @@ import java.util.Map;
 public final class AppHeader {
 
     private final VBox root = new VBox();
-    private final HBox menu = new HBox(6);
+    private final javafx.scene.layout.FlowPane menu = new javafx.scene.layout.FlowPane(6, 4);   // 0.36: bricht bei schmalen Fenstern um
     private final HBox tools = new HBox(10);
     private final Map<String, Button> items = new LinkedHashMap<>();
     private final Label context = new Label();
@@ -44,6 +44,14 @@ public final class AppHeader {
         context.visibleProperty().bind(context.textProperty().isNotEmpty());
         HBox logo = new HBox(14, img, sub, context);
         logo.setAlignment(Pos.CENTER_LEFT);
+        // 0.36: schmale Fenster – Schriftzug ausblenden, Turniername bricht um (statt „…“)
+        sub.managedProperty().bind(sub.visibleProperty());
+        sub.visibleProperty().bind(root.widthProperty().greaterThan(1200));
+        context.setWrapText(true);
+        context.setMinWidth(0);
+        logo.setMinWidth(0);
+        HBox.setHgrow(logo, Priority.ALWAYS);
+        HBox.setHgrow(context, Priority.SOMETIMES);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);

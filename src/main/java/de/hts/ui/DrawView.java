@@ -51,6 +51,8 @@ public final class DrawView {
     private double cardH = 96;
     private static final double MATCH_GAP = 14;
     private static final double MATCH_WIDTH = 330;
+    /** 0.36: Kartenbreite der aktuellen Ansicht – mindestens {@link #MATCH_WIDTH}, sonst so breit wie der längste Name. */
+    private double matchWidth = MATCH_WIDTH;
     private static final double COLUMN_GAP = 48;
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm 'Uhr'");
 
@@ -291,6 +293,7 @@ public final class DrawView {
         settingsBtn.managedProperty().bind(settingsBtn.visibleProperty());
         settingsSummary.getStyleClass().add("criteria");
         settingsSummary.setWrapText(true);
+        settingsSummary.setMinHeight(Region.USE_PREF_SIZE);     // 0.36: umbrechen statt „…“
         // Knöpfe immer ausgeschrieben: links Auslosung, rechts Ablauf – bei wenig Platz bricht die Zeile um
         settingsBtn.setVisible(false);
         HBox leftActions = new HBox(10, drawBtn, discardWrap);
@@ -320,6 +323,7 @@ public final class DrawView {
         // Suche in der Gruppenphase
         groupSearch.setPromptText("Suchen: Vorname, Nachname, Verein");
         groupSearch.setPrefColumnCount(24);
+        groupSearch.setMinWidth(Region.USE_PREF_SIZE);
         searchDelay.setOnFinished(e -> applySearch());
         groupSearch.textProperty().addListener((o, a, b) -> {
             if (!updating && current != null) searchDelay.playFromStart();
@@ -1152,7 +1156,7 @@ public final class DrawView {
             pl.setMinWidth(22);
             Label name = new Label(row.entrant().name());
             name.getStyleClass().add("match-name");
-            name.setMaxWidth(150);
+            name.setMinWidth(Region.USE_PREF_SIZE);        // 0.36: Namen vollständig
             boolean head1 = members.indexOf(row.entrant()) == 0 || (!members.isEmpty() && members.get(0).id().equals(row.entrant().id()));
             if (searchHits.contains(row.entrant().id())) {
                 name.getStyleClass().add("search-hit");
@@ -1263,6 +1267,13 @@ public final class DrawView {
         box.setMinWidth(680);
         box.setPrefWidth(720);
         int pos = 0;
+        double nameWidth = 170;
+        for (Match m : groupMatches) {
+            for (String id : new String[]{m.getA(), m.getB()}) {
+                String n = tournament.entrantName(m, id);
+                if (n != null) nameWidth = Math.max(nameWidth, Ui.textWidth(n + tournament.handicapSuffix(m, id), true, 13) + 16);
+            }
+        }
         for (Match m : groupMatches) {
             Label nr = new Label(String.valueOf(m.getNumber()));
             nr.getStyleClass().add("pos");
@@ -1282,10 +1293,10 @@ public final class DrawView {
             markWinner(m, a, b);
             if (highlight.contains(m.getA())) a.getStyleClass().add("search-hit");
             if (highlight.contains(m.getB())) b.getStyleClass().add("search-hit");
-            a.setPrefWidth(170);
-            b.setPrefWidth(170);
-            a.setMinWidth(140);
-            b.setMinWidth(140);
+            a.setPrefWidth(nameWidth);                      // 0.36: so breit wie der längste Name der Liste
+            b.setPrefWidth(nameWidth);
+            a.setMinWidth(nameWidth);
+            b.setMinWidth(nameWidth);
             Region s = new Region();
             HBox.setHgrow(s, Priority.ALWAYS);
             Label result = new Label(m.getResultText());
@@ -1359,6 +1370,29 @@ public final class DrawView {
     }
 
     /** KO-Baum: eine Spalte je Runde; Spiele mit Status, Tisch und Ergebnis; Sieger rücken weiter. */
+    /** 0.36: Kartenbreite im KO-Baum – so breit, dass der längste Name samt Verein ganz zu sehen ist. */
+    private double koCardWidth(PlayingClass c, List<Entrant> slots) {
+        java.util.Set<String> ids = new java.util.LinkedHashSet<>();
+        for (Entrant e : slots) if (e != null) ids.add(e.id());
+        for (Match m : tournament.matchesOf(c)) {
+            if (m.getA() != null) ids.add(m.getA());
+            if (m.getB() != null) ids.add(m.getB());
+        }
+        double w = 0;
+        for (String id : ids) {
+            List<String[]> persons = tournament.personLines(id);
+            if (persons == null) {
+                Entrant e = slots.stream().filter(x -> x != null && x.id().equals(id)).findFirst().orElse(null);
+                if (e == null) continue;
+                persons = List.<String[]>of(new String[]{e.name(), e.detail()});
+            }
+            for (String[] pl : persons) {
+                w = Math.max(w, Ui.textWidth(pl[0], true, 13) + 6 + Ui.textWidth(pl[1], false, 11));
+            }
+        }
+        return Math.max(MATCH_WIDTH, w + 125);           // Kennung, Ergebnis/TTR, Vorgabe, Ränder
+    }
+
     /** KO-Suche: Treffer-Karten hervorheben (samt Pfad), alle anderen abblenden – ohne den Baum neu aufzubauen. */
     private void applyKoSearch(String q) {
         KoSearch index = koSearch;
@@ -1414,6 +1448,7 @@ public final class DrawView {
 
     private Node buildBracket(PlayingClass c) {
         List<Entrant> slots = tournament.drawSlots(c);
+        matchWidth = koCardWidth(c, slots);
         KnockoutBracket bracket = new KnockoutBracket(slots);
         boolean dbl = slots.stream().anyMatch(x -> x != null && x.id().startsWith("pair:"));
         cardH = dbl ? 136 : 96;
@@ -1461,7 +1496,7 @@ public final class DrawView {
         final int rEnd = maxColumns > 0 ? Math.min(rounds.size(), f0 + maxColumns) : rounds.size();
         for (int r = f0; r < rEnd; r++) {
             KnockoutBracket.Round round = rounds.get(r);
-            double x = (r - f0) * (MATCH_WIDTH + gap);
+            double x = (r - f0) * (matchWidth + gap);
             double unit = (cardH + MATCH_GAP) * Math.pow(2, r - f0);
             Label roundTitle = new Label(round.name());
             roundTitle.getStyleClass().add("round-title");
@@ -1483,7 +1518,7 @@ public final class DrawView {
                     // Verbindung zum Folgespiel: waagerecht, senkrecht, waagerecht (Pfad eines Treffers kräftig)
                     double nUnit = unit * 2;
                     double ny = top + nUnit * (i / 2 - lo0 / 2) + nUnit / 2;
-                    double x1 = x + MATCH_WIDTH, xm = x1 + gap * 0.3, x2 = x + MATCH_WIDTH + gap;
+                    double x1 = x + matchWidth, xm = x1 + gap * 0.3, x2 = x + matchWidth + gap;
                     List<javafx.scene.shape.Line> conn = List.of(bracketLine(x1, cy, xm, cy, "bracket-connector"),
                             bracketLine(xm, cy, xm, ny, "bracket-connector"), bracketLine(xm, ny, x2, ny, "bracket-connector"));
                     connectors.getChildren().addAll(conn);
@@ -1496,7 +1531,7 @@ public final class DrawView {
         Match thirdMatch = tournament.thirdPlaceMatch(c);
         if (thirdMatch != null && !rounds.isEmpty() && rEnd == rounds.size()) {
             // unter der Spalte „Finale“: Titel „Spiel um Platz 3“, darunter die Karte (Kopf „Spiel n“) – ohne Verbindungslinie
-            double x = (rounds.size() - 1 - f0) * (MATCH_WIDTH + gap);
+            double x = (rounds.size() - 1 - f0) * (matchWidth + gap);
             double ty = finalTop + cardH + 28;
             Label t3 = new Label(Tournament.THIRD_PLACE_STAGE);
             t3.getStyleClass().add("round-title");
@@ -1511,10 +1546,10 @@ public final class DrawView {
         }
         // leichte, gestrichelte Trennlinien zwischen den Runden
         for (int r = f0; r + 1 < rEnd; r++) {
-            double sx = (r - f0) * (MATCH_WIDTH + gap) + MATCH_WIDTH + gap * 0.72;
+            double sx = (r - f0) * (matchWidth + gap) + matchWidth + gap * 0.72;
             lines.add(bracketLine(sx, 0, sx, height + 6, "bracket-separator"));
         }
-        double width = (rEnd - f0) * (MATCH_WIDTH + gap) - gap;
+        double width = (rEnd - f0) * (matchWidth + gap) - gap;
         titleBar.setPrefSize(width + gap, top - 4);
         titleBar.setMinSize(width + gap, top - 4);
         titleBar.setMaxSize(width + gap, top - 4);
@@ -1584,6 +1619,13 @@ public final class DrawView {
      */
     private Node buildQualification(PlayingClass c) {
         VBox box = new VBox(12);
+        matchWidth = MATCH_WIDTH;
+        for (Match m : tournament.matchesOf(c)) {
+            for (String id : new String[]{m.getA(), m.getB()}) {
+                Entrant e = id == null ? null : tournament.entrant(m, id);
+                if (e != null) matchWidth = Math.max(matchWidth, Ui.textWidth(withClub(e), true, 13) + 125);
+            }
+        }
         // alle Personen bzw. Doppel/Teams – die Qualifikation übernimmt sie aus Phase 1 (nicht der Phase zugeordnet)
         Map<String, Entrant> idx = tournament.entrantIndex(c);
         Map<String, String> places = tournament.qualificationPlaceLabels(c);
@@ -1640,7 +1682,7 @@ public final class DrawView {
                 Node row = qualRow(c, idx.get(bye), null, true, editable);
                 VBox card = new VBox(3, head, row);
                 card.getStyleClass().addAll("match-card", "match-bye");
-                card.setPrefWidth(MATCH_WIDTH);
+                card.setPrefWidth(matchWidth);
                 cards.getChildren().add(card);
             }
             box.getChildren().addAll(title, cards);
@@ -1662,13 +1704,14 @@ public final class DrawView {
      * 0.34: Karten einer Reihe wachsen gleichmäßig mit, sodass die ganze Breite genutzt wird – so viele Karten je
      * Reihe wie in Mindestbreite passen, dann auf die volle Breite verteilt.
      */
-    private static void fillRows(javafx.scene.layout.FlowPane fp) {
+    private void fillRows(javafx.scene.layout.FlowPane fp) {
+        final double minCard = matchWidth;
         Runnable layout = () -> {
             double w = fp.getWidth() - fp.getInsets().getLeft() - fp.getInsets().getRight();
             if (w <= 0) return;
             double gap = fp.getHgap();
-            int n = Math.max(1, (int) ((w + gap) / (MATCH_WIDTH + gap)));
-            double cw = Math.floor((w - gap * (n - 1)) / n) - 1;
+            int n = Math.max(1, (int) ((w + gap) / (minCard + gap)));
+            double cw = Math.max(minCard, Math.floor((w - gap * (n - 1)) / n) - 1);
             for (Node child : fp.getChildren()) {
                 if (child instanceof Region region && region.getPrefWidth() != cw) region.setPrefWidth(cw);
             }
@@ -1769,7 +1812,7 @@ public final class DrawView {
         VBox card = new VBox(3, headRow, qualRow(c, idx.get(m.getA()), m, true, rowEditable),
                 qualRow(c, idx.get(m.getB()), m, false, rowEditable));
         card.getStyleClass().addAll("match-card", statusStyle(m.getStatus()));
-        card.setPrefWidth(MATCH_WIDTH);
+        card.setPrefWidth(matchWidth);
         if (!m.getSetsText().isEmpty()) Tooltip.install(card, new Tooltip(m.getSetsText()));
         installResultEntry(card, m);
         return card;
@@ -1783,7 +1826,7 @@ public final class DrawView {
         grp.setMinWidth(22);
         Label name = new Label(withClub(e));
         name.getStyleClass().add("match-name");
-        name.setMinWidth(0);
+        name.setMinWidth(Region.USE_PREF_SIZE);           // 0.36: vollständig – die Karte ist so breit wie nötig
         name.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(name, Priority.SOMETIMES);
         handicapBadge(name, tournament, m, e.id());
@@ -1838,8 +1881,8 @@ public final class DrawView {
             card.getChildren().add(sets);
         }
         card.setMinHeight(cardH);
-        card.setPrefWidth(MATCH_WIDTH);
-        card.setMaxWidth(MATCH_WIDTH);
+        card.setPrefWidth(matchWidth);
+        card.setMaxWidth(matchWidth);
         installResultEntry(card, m);
         return card;
     }
@@ -1894,8 +1937,8 @@ public final class DrawView {
         card.setMinHeight(cardH);
         card.setPrefHeight(cardH);
         card.setMaxHeight(cardH);
-        card.setPrefWidth(MATCH_WIDTH);
-        card.setMinWidth(MATCH_WIDTH);
+        card.setPrefWidth(matchWidth);
+        card.setMinWidth(matchWidth);
         return card;
     }
 
@@ -1931,7 +1974,7 @@ public final class DrawView {
                 n.setMinWidth(Region.USE_PREF_SIZE);
                 Label club = new Label(pl[1] == null ? "" : pl[1]);
                 club.getStyleClass().add("card-club");
-                club.setMinWidth(0);
+                club.setMinWidth(Region.USE_PREF_SIZE);       // 0.36: Verein nicht abschneiden – die Karte ist breit genug
                 HBox line = new HBox(6, n, club);
                 line.setAlignment(Pos.BASELINE_LEFT);
                 line.setMinWidth(0);

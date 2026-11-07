@@ -1,4 +1,4 @@
-# Zwischenstand HTS 0.35.0 (07.11.2026)
+# Zwischenstand HTS 0.36.0 (07.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -14,13 +14,94 @@ https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.
 (+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
-## Feature-Sammlung für 0.36.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 0.37.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
 
-(noch leer)
+1. ZURÜCKGESTELLT (07.11.2026, auf Wunsch des Nutzers – beim Kompilieren NICHT umsetzen): WLAN-QR-CODE AUF DEM
+   AUSHANG (Issue #34): In HTS einmal WLAN-Name und Passwort eintragen; der Aushang
+   „QR-Codes drucken“ bekommt einen dritten QR-Code „1. WLAN verbinden“ (Format WIFI:T:WPA;S:…;P:…;;), darunter
+   „2. Live-Anzeige“ und „3. Anmeldung am Turniertag“. So bleibt das WLAN geschützt, die Teilnehmenden tippen nichts
+   ab. Vorschlag (Rückfrage gestellt): Eingabe in einem kleinen Dialog beim Klick auf „QR-Codes drucken“, gespeichert
+   als Programmeinstellung auf dem Laptop (gleicher Router für alle Turniere), nicht in der Turnierdatei; Name und
+   Passwort zusätzlich als Text unter dem QR-Code; Verschlüsselung WPA/WPA2 (Standard); Feld leer = kein WLAN-QR-Code
+   (wie bisher Felder zum Ausfüllen).
 
 ## Umgesetzt
+
+0.36.0 (Issues #35–#39, #41; #40 entfernt, #34 zurückgestellt). README „Neu in 0.36.0“, CLAUDE.md-Regel „Texte nie
+abkürzen“.
+#35: Ui.textWidth/fitColumns (Spalten nach Inhalt, UNCONSTRAINED + Restbreite letzte Spalte, „fit-min“/
+„fit-header-only“) in PlayerTableView, ClassesView (Verfügbar/In der Klasse), MatchesView, FinalResultView,
+ImportPreviewDialog; DrawView matchWidth dynamisch (koCardWidth, Qualifikation nach längstem Namen), Verein/Namen
+min = pref, Gruppenspiele Namensbreite nach längstem Namen, Gruppentabelle ohne maxWidth; DialogSizing: Inhalt in
+ScrollPane, einzeilige Labels min = pref, Fenster auf Bildschirm begrenzt, Mindestgröße 320×220; WorkspaceView Seite in
+ScrollPane (pageContent min 380 hoch), pageActions FlowPane; AppHeader Menü als FlowPane, Schriftzug unter 1200 px
+ausgeblendet, Turniername bricht um; ClassesView Klassenliste umbrechend (Zellbreite 0), Zeilen als FlowPane,
+Teilnehmende-Reiter waagerecht scrollbar (min 860); DrawView Zusammenfassung umbrechend. Geprüft mit Bildschirmfotos
+bei 911 × 512 und 1093 × 614.
+#36: WorkspaceView attendanceMenu (zwei MenuButtons), withdrawSelected, Kontextmenü dynamisch je Status.
+#37: Ui.nullsLastBothWays (TTR in Teilnehmenden- und Klassentabellen).
+#38: PlayerTableView Klassenfilter (setClassSource aus WorkspaceView; isEnteredFor oder Warteliste).
+#39: ImportPreviewDialog Spalte „Importieren“ (CheckBoxTableCell), getSelectedCompetitions, keeps(); WorkspaceView
+filtert Personen/Konkurrenzen/Paare vor dem Import.
+#41: rankQualification – Bereich für direkt bzw. über die KO Qualifizierte; FinalResultView grau nur für offene Bereiche.
+Tests: 191 bestanden (bestehende Tests decken die geteilten Plätze mit ab).
+Feature-Sammlung 0.36.0 (zur Nachverfolgung):
+
+   1. ZURÜCKGESTELLT (07.11.2026, auf Wunsch des Nutzers – beim Kompilieren NICHT umsetzen): WLAN-QR-CODE AUF DEM
+      AUSHANG (Issue #34): In HTS einmal WLAN-Name und Passwort eintragen; der Aushang
+      „QR-Codes drucken“ bekommt einen dritten QR-Code „1. WLAN verbinden“ (Format WIFI:T:WPA;S:…;P:…;;), darunter
+      „2. Live-Anzeige“ und „3. Anmeldung am Turniertag“. So bleibt das WLAN geschützt, die Teilnehmenden tippen nichts
+      ab. Vorschlag (Rückfrage gestellt): Eingabe in einem kleinen Dialog beim Klick auf „QR-Codes drucken“, gespeichert
+      als Programmeinstellung auf dem Laptop (gleicher Router für alle Turniere), nicht in der Turnierdatei; Name und
+      Passwort zusätzlich als Text unter dem QR-Code; Verschlüsselung WPA/WPA2 (Standard); Feld leer = kein WLAN-QR-Code
+      (wie bisher Felder zum Ausfüllen).
+
+   2. HTS AN BILDSCHIRMAUFLÖSUNGEN ANPASSEN – TEXTE NICHT ABKÜRZEN (07.11.2026, Issue #35) – GEKLÄRT. Grundprinzip des
+      Nutzers: Texte werden nicht mit „…“ abgekürzt; Knöpfe und Texte notfalls in eine zweite Zeile umbrechen oder in der
+      Größe skalieren. Anlass: click-TT-Import-Dialog („Teilnehmende in d…“, „Neue Einzelklassen: 4 (die Gemeldeten …ge…“).
+      Gilt generell für alle Dialoge und Ansichten, auch bei kleineren Auflösungen. Als DAUERHAFTE REGEL für künftige
+      Änderungen festhalten (CLAUDE.md). GEKLÄRT (07.11.2026):
+      - Prüfen bei 1366 × 768 mit Windows-Skalierung 125 % und 150 % (alle Dialoge und Seiten).
+      - Tabellenzellen VOLLSTÄNDIG anzeigen (kein „…“): Spalten so breit wie der Inhalt, notfalls waagerechte
+        Scrollleiste.
+      - KO-Karten (und Spielkarten der Qualifikation) VOLLSTÄNDIG: Namen nicht abschneiden – Karten so breit wie nötig,
+        notfalls scrollt der KO-Baum.
+
+   3. TEILNEHMENDE: ANWESENHEITS-MENÜS NEU AUFTEILEN (07.11.2026, Issue #36) – GEKLÄRT.
+      - Dropdown 1, Beschriftung „Aktion bezüglich Markierte“ (statt „Anwesenheit“): angemeldet (anwesend), endgültig
+        abmelden.
+      - Dropdown 2 „Handyabmeldungen“: „alle bestätigen“, „Markierte zurück auf offen“, „Alle zurück auf offen“.
+      - Rechtsklick auf eine Zeile: zusätzlich „endgültig abmelden“.
+      GEKLÄRT (07.11.2026): „zurück auf offen“ unter „Handyabmeldungen“ betrifft nur unbestätigte Handy-Abmeldungen
+      (orange); „Markierte: Abmeldung zurücknehmen“ (für endgültig Abgemeldete, gelb) im Dropdown 1; Rechtsklick
+      zusätzlich „angemeldet (anwesend)“, bei gelben Zeilen „Abmeldung zurücknehmen“, bei orangen „Abmeldung bestätigen“.
+
+   4. SORTIERUNG: OHNE TTR IMMER UNTEN (07.11.2026, Issue #37, Fehler): Beim absteigenden Sortieren nach TTR stehen
+      Personen ohne TTR oben (Comparator nullsLast wird beim Umkehren zu nullsFirst). Personen ohne TTR stehen künftig
+      in beiden Sortierrichtungen unten – in allen Tabellen mit TTR-Spalte (Teilnehmende, Klassen „Verfügbar“/„In der
+      Klasse“, ggf. Import-Vorschau).
+
+   5. TEILNEHMENDE: KLASSENFILTER (07.11.2026, Issue #38) – GEKLÄRT (Nachrücker werden mit angezeigt). In der Suchleiste der Teilnehmenden-Übersicht
+      eine Auswahl „Klasse:“ (Alle + jede Klasse). Bestätigt: zeigt alle Personen mit Bezug zur
+      Klasse – gemeldet, in der Klasse oder Nachrücker; kombinierbar mit Status (z. B. Klasse + „offen“ = wer fehlt
+      noch); „Zurücksetzen“ setzt auch die Klasse zurück.
+
+   6. CLICK-TT-IMPORT: KLASSEN ZUM IMPORT AUSWÄHLEN (07.11.2026, Issue #39) – GEKLÄRT (alle 5 Vorschläge bestätigt). Im Import-Dialog je Konkurrenz
+      ein Haken (Standard: alle an). Abgewählte Klassen werden nicht aus dem XML importiert. Bestätigt: Personen, die nur in abgewählten Klassen gemeldet sind, werden gar nicht übernommen; Personen mit
+      weiteren Meldungen kommen ohne die Meldung/Warteliste der abgewählten Klasse; die Zahlen oben (Teilnehmende, neu,
+      neue Klassen) aktualisieren sich beim An-/Abwählen; „Importieren“ gesperrt, wenn nichts ausgewählt ist; bereits
+      vorhandene Klassen bleiben unberührt (Abwählen löscht nichts).
+
+   7. ENTFERNT (07.11.2026, auf Wunsch des Nutzers): Nummerierung nach TTR je Klasse (Issue #40, geschlossen) – NICHT umsetzen.
+
+   8. ENDERGEBNIS QUALIFIKATION: GETEILTE PLÄTZE (07.11.2026, Issue #41) – GEKLÄRT. Die über die Gruppenplatzierung
+      Qualifizierten teilen sich die Plätze (z. B. 1.–16.), die Gewinner der KO-Runde teilen sich die Folgeplätze
+      (z. B. 17.–22.). Bestätigt: Anzeige als Bereich „1.–16.“ in jeder Zeile (wie bei KO
+      „5.–8.“), Reihenfolge innerhalb unverändert (Direkte nach TTR, KO nach Feldreihenfolge); Nachrücker behalten
+      Einzelplätze (Reihenfolge = Nachrücker-Rangfolge); übrige Gruppenplatzierte wie bisher; gilt auch im PDF und auf der Handy-Ergebnisseite.
+
 
 0.35.0 (Issues #31–#33). README „Neu in 0.35.0“, docs/ABHAENGIGKEITEN.md (Angriffsfläche Handy-Zugang) ergänzt.
 Modell: player/Attendance (UNKNOWN, PRESENT, WITHDRAW_REQUESTED, WITHDRAWN; persistiert „attendance“), Player.isReserve

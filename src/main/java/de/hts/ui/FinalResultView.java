@@ -70,7 +70,7 @@ final class FinalResultView {
             protected void updateItem(Tournament.Placing p, boolean empty) {
                 super.updateItem(p, empty);
                 getStyleClass().remove("row-open");
-                if (!empty && p != null && p.from() != p.to()) getStyleClass().add("row-open");
+                if (!empty && p != null && p.from() != p.to() && !p.info().startsWith("Qualifiziert")) getStyleClass().add("row-open");
             }
         });
         VBox.setVgrow(table, Priority.ALWAYS);
@@ -109,6 +109,7 @@ final class FinalResultView {
                     : "Die Klasse ist noch nicht gestartet – die Tabelle füllt sich mit den Ergebnissen.");
         }
         table.getItems().setAll(r.rows());
+        Ui.fitColumns(table);                      // 0.36: Spalten so breit wie ihr Inhalt
     }
 
     private static <T> TableColumn<Tournament.Placing, T> col(String title, Function<Tournament.Placing, T> getter, double width) {

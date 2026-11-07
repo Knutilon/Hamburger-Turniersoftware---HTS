@@ -141,6 +141,7 @@ public final class MatchesView {
                         .thenComparingInt(Match::getNumber))
                 .toList();
         table.getItems().setAll(list);
+        Ui.fitColumns(table);                      // 0.36: Spalten so breit wie ihr Inhalt, notfalls Scrollleiste
         long active = tournament.getMatches().stream().filter(m -> m.getStatus() == MatchStatus.ACTIVE).count();
         long queued = tournament.getMatches().stream().filter(m -> m.getStatus() == MatchStatus.QUEUED).count();
         long done = tournament.getMatches().stream().filter(m -> m.getStatus() == MatchStatus.DONE).count();
@@ -159,6 +160,7 @@ public final class MatchesView {
             }
         });
         st.setPrefWidth(120);
+        st.getProperties().put("fit-min", 120.0);
         table.getColumns().add(center(st));
         // Titel und Werte gleich ausgerichtet: Text links, kurze Werte zentriert
         table.getColumns().add(center(col("Tisch", m -> m.getTable() == null ? "" : tournament.getTableNames().containsKey(m.getTable())
@@ -226,6 +228,7 @@ public final class MatchesView {
             }
         });
         c.setPrefWidth(80);
+        c.getProperties().put("fit-min", 110.0);
         return c;
     }
 

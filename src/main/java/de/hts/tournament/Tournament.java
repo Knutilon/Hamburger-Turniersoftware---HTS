@@ -2214,16 +2214,13 @@ public final class Tournament {
         List<Placing> list = new java.util.ArrayList<>();
         java.util.Set<String> placed = new java.util.HashSet<>();
         int next = 1;
-        for (Entrant e : qualifiedDirect(c)) {
-            if (!placed.add(e.id())) continue;
-            list.add(new Placing(next, next, e, QUALIFIED_BY_GROUP));
-            next++;
-        }
-        for (Entrant e : qualifiedViaKo(c)) {
-            if (!placed.add(e.id())) continue;
-            list.add(new Placing(next, next, e, QUALIFIED_BY_KO));
-            next++;
-        }
+        // 0.36: die Qualifizierten teilen sich die Plätze (z. B. 1.–16. direkt, 17.–22. über die KO-Runde)
+        List<Entrant> direct = qualifiedDirect(c).stream().filter(e -> placed.add(e.id())).toList();
+        for (Entrant e : direct) list.add(new Placing(next, next + direct.size() - 1, e, QUALIFIED_BY_GROUP));
+        next += direct.size();
+        List<Entrant> viaKo = qualifiedViaKo(c).stream().filter(e -> placed.add(e.id())).toList();
+        for (Entrant e : viaKo) list.add(new Placing(next, next + viaKo.size() - 1, e, QUALIFIED_BY_KO));
+        next += viaKo.size();
         List<List<Entrant>> tiers = qualificationTiers(c);
         for (List<Entrant> t : tiers) for (Entrant e : t) placed.add(e.id());
         List<Entrant> open = new java.util.ArrayList<>();

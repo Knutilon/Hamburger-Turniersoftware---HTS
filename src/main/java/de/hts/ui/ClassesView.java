@@ -170,7 +170,7 @@ public final class ClassesView {
         delBtn.getStyleClass().add("pill");
         Label classesHeader = new Label("Klassen");
         classesHeader.getStyleClass().add("card-heading");
-        VBox left = new VBox(10, classesHeader, classList, new HBox(6, editBtn, delBtn));
+        VBox left = new VBox(10, classesHeader, classList, new javafx.scene.layout.FlowPane(6, 6, editBtn, delBtn));
         VBox.setVgrow(classList, Priority.ALWAYS);
         left.getStyleClass().add("card");
         left.setMinWidth(240);
@@ -237,9 +237,9 @@ public final class ClassesView {
         inSexFilter.setTooltip(new Tooltip("Nach Geschlecht filtern"));
         inSearch.setPrefColumnCount(10);
         search.setPrefColumnCount(10);
-        HBox searchRow = new HBox(8, search, clubFilter, sexFilter, onlyMatching);
+        // 0.36: Zeilen brechen bei wenig Platz um (statt Texte/Knöpfe abzuschneiden)
+        javafx.scene.layout.FlowPane searchRow = new javafx.scene.layout.FlowPane(8, 6, search, clubFilter, sexFilter, onlyMatching);
         searchRow.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(search, Priority.ALWAYS);
         newParticipantBtn.getStyleClass().add("pill");
         newParticipantBtn.setOnAction(e -> newParticipantInClass());
         newParticipantBtn.setTooltip(new Tooltip("Neue Person erfassen (gilt sofort als angemeldet) – sie steht danach hier unter „Verfügbar“"));
@@ -259,8 +259,9 @@ public final class ClassesView {
         });
         Region availSpacer = new Region();
         HBox.setHgrow(availSpacer, Priority.ALWAYS);
-        HBox availableHead = new HBox(10, availableTitle, availSpacer, takeOverBtn, newParticipantBtn);
+        javafx.scene.layout.FlowPane availableHead = new javafx.scene.layout.FlowPane(10, 6, availableTitle, takeOverBtn, newParticipantBtn);
         availableHead.setAlignment(Pos.CENTER_LEFT);
+        availableTitle.setMinWidth(Region.USE_PREF_SIZE);
         VBox availableBox = new VBox(8, availableHead, filterRow, searchRow, availableTable);
         VBox.setVgrow(availableTable, Priority.ALWAYS);
         availableBox.getStyleClass().add("card");
@@ -269,9 +270,8 @@ public final class ClassesView {
         // --- Einzel: zugeordnete Teilnehmende ---
         setupAssignedTable();
         assignedTitle.getStyleClass().add("card-heading");
-        HBox inSearchRow = new HBox(8, inSearch, inClubFilter, inSexFilter);
+        javafx.scene.layout.FlowPane inSearchRow = new javafx.scene.layout.FlowPane(8, 6, inSearch, inClubFilter, inSexFilter);
         inSearchRow.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(inSearch, Priority.ALWAYS);
         singlesBox = new VBox(8, assignedTitle, inSearchRow, assignedTable);
         VBox.setVgrow(assignedTable, Priority.ALWAYS);
         installDropTarget(assignedTable, this::dropOnAssigned);
@@ -346,7 +346,13 @@ public final class ClassesView {
         bottomBar.setAlignment(Pos.CENTER_LEFT);
         VBox participantsPane = new VBox(8, lockBanner, lists, bottomBar);
         participantsPane.setPadding(new Insets(10, 0, 0, 0));
-        participantsTab.setContent(participantsPane);
+        // 0.36: bei schmalen Fenstern waagerecht scrollen statt Spalten/Knöpfe abzuschneiden
+        participantsPane.setMinWidth(860);
+        javafx.scene.control.ScrollPane participantsScroll = new javafx.scene.control.ScrollPane(participantsPane);
+        participantsScroll.setFitToWidth(true);
+        participantsScroll.setFitToHeight(true);
+        participantsScroll.getStyleClass().add("page-scroll");
+        participantsTab.setContent(participantsScroll);
         resultTab.setContent(resultView.getRoot());
         classTabs.getTabs().addAll(participantsTab);
         classTabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
@@ -659,6 +665,8 @@ public final class ClassesView {
             availableTitle.setText("Teilnehmende");
             assignedTitle.setText("");
             pairsList.getChildren().clear();
+            Ui.fitColumns(availableTable);
+            Ui.fitColumns(assignedTable);
             return;
         }
         String q = search.getText();
@@ -684,6 +692,8 @@ public final class ClassesView {
         long inTotal = tournament.getPlayers().stream().filter(p -> p.isInClass(c.getName())).count();
 
         availableTitle.setText("Verfügbar (" + available.size() + ")");
+        Ui.fitColumns(availableTable);             // 0.36: Spalten so breit wie ihr Inhalt, notfalls Scrollleiste
+        Ui.fitColumns(assignedTable);
         if (c.isDoubles()) {
             List<DoublesPair> pairs = tournament.pairsIn(c);
             long complete = pairs.stream().filter(DoublesPair::isComplete).count();
@@ -1244,7 +1254,7 @@ public final class ClassesView {
 
     private static TableColumn<Player, Integer> ttrCol() {
         TableColumn<Player, Integer> c = col("TTR", Player::getTtr, 50);
-        c.setComparator(Comparator.nullsLast(Comparator.naturalOrder()));
+        c.setComparator(Ui.nullsLastBothWays(c));             // ohne TTR in beiden Sortierrichtungen unten
         c.setStyle("-fx-alignment: CENTER-RIGHT;");
         c.getStyleClass().add("col-right");
         return c;
@@ -1266,6 +1276,7 @@ public final class ClassesView {
     /** Listeneintrag einer Klasse: Name, Einzel/Doppel, Anzahl, Kriterien. Teilnehmende lassen sich auf eine Klasse ziehen. */
     private final class ClassCell extends ListCell<PlayingClass> {
         ClassCell() {
+            setPrefWidth(0);                  // 0.36: Zellen so breit wie die Liste – Texte brechen um statt „…“
             setOnDragOver(e -> {
                 PlayingClass c = getItem();
                 if (c != null && isOurDrag(e)) e.acceptTransferModes(TransferMode.MOVE);
@@ -1313,6 +1324,8 @@ public final class ClassesView {
             }
             Label name = new Label(c.getName());
             name.getStyleClass().add("class-name");
+            name.setWrapText(true);
+            name.setMinWidth(0);
             Label badge = new Label(c.getDiscipline().getLabel());
             badge.getStyleClass().addAll("badge", c.isDoubles() ? "badge-doubles" : "badge-singles");
             String countText = c.isDoubles()
@@ -1327,8 +1340,13 @@ public final class ClassesView {
             HBox.setHgrow(spacer, Priority.ALWAYS);
             HBox top = new HBox(8, name, spacer, badge);
             top.setAlignment(Pos.CENTER_LEFT);
+            badge.setMinWidth(Region.USE_PREF_SIZE);
+            HBox.setHgrow(name, Priority.SOMETIMES);
+            crit.setWrapText(true);
+            javafx.scene.layout.FlowPane info = new javafx.scene.layout.FlowPane(8, 2, count, crit);
+            info.prefWrapLengthProperty().bind(widthProperty().subtract(30));
             setText(null);
-            setGraphic(new VBox(2, top, new HBox(8, count, crit)));
+            setGraphic(new VBox(2, top, info));
         }
 
         private String criteriaSuffix(PlayingClass c) {

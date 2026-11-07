@@ -25,6 +25,16 @@ Commit „HTS x.y.z“ erstellt wird – **selbständig** Folgendes tun:
      Updates als Punkt in die Feature-Sammlung in `ZWISCHENSTAND.md` (und als GitHub-Issue „Feature“) eintragen; nur
      eine kritische, für HTS tatsächlich ausnutzbare Lücke sofort und deutlich melden.
 
+## Pflicht: Oberfläche – Texte nie abkürzen (seit 0.36.0, Wunsch des Nutzers)
+
+Bei jeder Änderung an der Oberfläche gilt ohne ausdrückliche Anweisung:
+- Texte (Beschriftungen, Knöpfe, Tabellenzellen, Namen auf Spielkarten) werden **nie mit „…“ abgekürzt**.
+- Wird es eng: Knöpfe und Texte in eine zweite Zeile umbrechen (FlowPane, `setWrapText(true)`) oder skalieren.
+- Tabellen: Spalten so breit wie ihr Inhalt (`Ui.fitColumns`), notfalls waagerechte Scrollleiste.
+- KO- und Qualifikationskarten so breit wie der längste Name (notfalls scrollt der Baum).
+- Dialoge über `DialogSizing.fit` (scrollen bei kleinem Bildschirm statt abzuschneiden).
+- Prüfen bei 1366 × 768 mit Windows-Skalierung 125 % und 150 % (entspricht ca. 1093 × 614 bzw. 911 × 512 Bildpunkten).
+
 ## Weitere Projektregeln
 
 Arbeitsablauf (Feature-Sammlung, „kompilieren“, GitHub-Commit, Release-Link, Dokumentation nur auf Zuruf) steht in

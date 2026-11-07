@@ -867,3 +867,7 @@
 .table-row-cell.attendance-requested:selected { -fx-background-color: #ffcf9e; }
 .live-info { -fx-text-fill: -hts-navy; -fx-font-size: 12px; }
 .table-row-cell.entered .table-cell { -fx-font-weight: bold; }
+
+/* --- 0.36: Dialoginhalte scrollen bei kleinen Auflösungen statt abgeschnitten zu werden --- */
+.dialog-scroll, .dialog-scroll > .viewport { -fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; }
+.page-scroll, .page-scroll > .viewport { -fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; }

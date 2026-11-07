@@ -53,6 +53,9 @@ public final class PlayerTableView {
     private final TextField birthSearch = searchField("z. B. 1994");
     private final ComboBox<Sex> sexFilter = new ComboBox<>();
     private final ComboBox<RegistrationFilter> registrationFilter = new ComboBox<>();
+    /** 0.36: Klassenfilter – gemeldet, in der Klasse oder Nachrücker. */
+    private final ComboBox<String> classFilter = new ComboBox<>();
+    private static final String ALL_CLASSES = "Alle";
 
     private final BorderPane root = new BorderPane();
     private final StringBinding countText;
@@ -134,6 +137,8 @@ public final class PlayerTableView {
             }
         });
         registered.setSortable(false);
+        registered.getProperties().put("fit-min", 118.0);
+        registered.getProperties().put("fit-header-only", true);
         registered.setStyle("-fx-alignment: CENTER;");
         registered.setPrefWidth(118);
         registered.setMinWidth(112);
@@ -159,7 +164,7 @@ public final class PlayerTableView {
         club.setSortable(false);
         TableColumn<Player, Integer> ttr = new TableColumn<>("TTR");
         ttr.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getTtr()));
-        ttr.setComparator(Comparator.nullsLast(Comparator.naturalOrder()));
+        ttr.setComparator(Ui.nullsLastBothWays(ttr));        // ohne TTR in beiden Sortierrichtungen unten
         ttr.setPrefWidth(60);
         ttr.setStyle("-fx-alignment: CENTER-RIGHT;");
         ttr.getStyleClass().add("col-right");
@@ -194,6 +199,10 @@ public final class PlayerTableView {
         birthSearch.textProperty().addListener((o, a, b) -> updateFilter());
         sexFilter.valueProperty().addListener((o, a, b) -> updateFilter());
         registrationFilter.valueProperty().addListener((o, a, b) -> updateFilter());
+        classFilter.getItems().setAll(ALL_CLASSES);
+        classFilter.setValue(ALL_CLASSES);
+        classFilter.valueProperty().addListener((o, a, b) -> updateFilter());
+        classFilter.setTooltip(new Tooltip("Nur Personen dieser Klasse: gemeldet, in der Klasse oder Nachrücker"));
 
         Button reset = new Button("Zurücksetzen");
         reset.setOnAction(e -> resetFilter());
@@ -206,6 +215,7 @@ public final class PlayerTableView {
                 labeled("Geburtsdatum:", birthSearch),
                 labeled("Geschlecht:", sexFilter),
                 labeled("Status:", registrationFilter),
+                labeled("Klasse:", classFilter),
                 reset);
         searchBar.setPadding(new Insets(6, 10, 6, 10));
         searchBar.getStyleClass().add("search-bar");
@@ -228,7 +238,20 @@ public final class PlayerTableView {
     // --- Filter ------------------------------------------------------------
 
     private void updateFilter() {
-        filtered.setPredicate(currentFilter());
+        PlayerFilter f = currentFilter();
+        String cls = classFilter.getValue();
+        boolean all = cls == null || ALL_CLASSES.equals(cls);
+        filtered.setPredicate(p -> f.test(p) && (all || p.isEnteredFor(cls) || p.getWaitingLists().contains(cls)));
+    }
+
+    /** Klassen für den Klassenfilter (Namen der Klassen ohne Folgephasen); eine gewählte Klasse bleibt erhalten. */
+    public void setClassNames(List<String> names) {
+        String cur = classFilter.getValue();
+        List<String> items = new java.util.ArrayList<>();
+        items.add(ALL_CLASSES);
+        items.addAll(names);
+        if (!items.equals(classFilter.getItems())) classFilter.getItems().setAll(items);
+        classFilter.setValue(cur != null && items.contains(cur) ? cur : ALL_CLASSES);
     }
 
     public PlayerFilter currentFilter() {
@@ -242,6 +265,7 @@ public final class PlayerTableView {
         birthSearch.clear();
         sexFilter.setValue(Sex.UNKNOWN);
         registrationFilter.setValue(RegistrationFilter.ALL);
+        classFilter.setValue(ALL_CLASSES);
     }
 
     public void focusSearch() {
@@ -249,9 +273,19 @@ public final class PlayerTableView {
     }
 
     /** Nach Änderungen an Spielern Anzeige und Filter neu auswerten. */
+    private java.util.function.Supplier<List<String>> classSource = List::of;
+
+    /** Liefert die Klassennamen für den Klassenfilter (bei jeder Aktualisierung neu gelesen). */
+    public void setClassSource(java.util.function.Supplier<List<String>> source) {
+        classSource = source == null ? List::of : source;
+        setClassNames(classSource.get());
+    }
+
     public void refresh() {
+        setClassNames(classSource.get());
         table.refresh();
         updateFilter();
+        Ui.fitColumns(table);                          // 0.36: Spalten so breit wie ihr Inhalt, notfalls Scrollleiste
         refreshTick.set(refreshTick.get() + 1);
     }
 

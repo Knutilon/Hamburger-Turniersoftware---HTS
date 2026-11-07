@@ -109,6 +109,7 @@ public final class WorkspaceView {
         participantsCard.getChildren().add(participants.getRoot());
         participantsCard.setPadding(new Insets(0, 40, 16, 40));
         participants.setOnEdit(this::editParticipant);
+        participants.setClassSource(() -> tournament.rootClasses().stream().map(PlayingClass::getName).toList());
         participants.getTable().setContextMenu(participantContextMenu());
         participants.getTable().setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.DELETE) deleteParticipants();
@@ -319,7 +320,15 @@ public final class WorkspaceView {
         statusBar.getStyleClass().add("status-bar");
 
         VBox.setVgrow(pageContent, Priority.ALWAYS);
-        VBox content = new VBox(titleRow, pageActions, pageContent, statusBar);
+        // 0.36: bei kleinen Auflösungen scrollt die Seite, statt Inhalte zu stauchen oder abzuschneiden
+        pageContent.setMinHeight(380);
+        VBox page = new VBox(titleRow, pageActions, pageContent);
+        javafx.scene.control.ScrollPane pageScroll = new javafx.scene.control.ScrollPane(page);
+        pageScroll.setFitToWidth(true);
+        pageScroll.setFitToHeight(true);
+        pageScroll.getStyleClass().add("page-scroll");
+        VBox.setVgrow(pageScroll, Priority.ALWAYS);
+        VBox content = new VBox(pageScroll, statusBar);
         content.getStyleClass().add("content");
         return content;
     }
@@ -510,7 +519,25 @@ public final class WorkspaceView {
         edit.setOnAction(e -> editParticipant(participants.getSelected()));
         MenuItem delete = new MenuItem("Löschen");
         delete.setOnAction(e -> deleteParticipants());
-        return new ContextMenu(edit, new SeparatorMenuItem(), delete);
+        // 0.36: Anwesenheit per Rechtsklick
+        MenuItem present = new MenuItem("angemeldet (anwesend)");
+        present.setOnAction(e -> setAttendance(de.hts.player.Attendance.PRESENT, "angemeldet"));
+        MenuItem withdraw = new MenuItem("endgültig abmelden");
+        withdraw.setOnAction(e -> withdrawSelected());
+        MenuItem undo = new MenuItem("Abmeldung zurücknehmen");
+        undo.setOnAction(e -> setAttendance(de.hts.player.Attendance.UNKNOWN, "wieder offen"));
+        MenuItem confirmReq = new MenuItem("Abmeldung bestätigen");
+        confirmReq.setOnAction(e -> setAttendance(de.hts.player.Attendance.WITHDRAWN, "endgültig abgemeldet"));
+        ContextMenu menu = new ContextMenu(present, withdraw, undo, confirmReq, new SeparatorMenuItem(), edit, new SeparatorMenuItem(), delete);
+        menu.setOnShowing(e -> {
+            Player p = participants.getSelected();
+            de.hts.player.Attendance a = p == null ? null : p.getAttendance();
+            undo.setVisible(a == de.hts.player.Attendance.WITHDRAWN);
+            confirmReq.setVisible(a == de.hts.player.Attendance.WITHDRAW_REQUESTED);
+            present.setVisible(a != de.hts.player.Attendance.PRESENT);
+            withdraw.setVisible(a != de.hts.player.Attendance.WITHDRAWN);
+        });
+        return menu;
     }
 
     private void addParticipant() {
@@ -756,6 +783,23 @@ public final class WorkspaceView {
             return;
         }
         rememberClickTtFile(file.toPath());
+        // 0.36: abgewählte Klassen nicht übernehmen
+        java.util.Set<String> selected = dialog.getSelectedCompetitions();
+        java.util.Set<String> dropped = new java.util.HashSet<>();
+        result.competitions().forEach(ci -> {
+            if (!selected.contains(ci.name())) dropped.add(ci.name());
+        });
+        if (!dropped.isEmpty()) {
+            List<Player> kept = new ArrayList<>();
+            for (Player p : result.players()) {
+                if (!ImportPreviewDialog.keeps(p, selected)) continue;
+                dropped.forEach(p::forgetClass);
+                kept.add(p);
+            }
+            result = new ClickTtXmlImporter.ImportResult(result.tournamentName(), kept,
+                    result.competitions().stream().filter(ci -> selected.contains(ci.name())).toList(),
+                    result.pairs().stream().filter(pr -> selected.contains(pr.competition())).toList(), result.warnings());
+        }
         int newClasses = 0;
         for (ClickTtXmlImporter.CompetitionInfo ci : result.competitions()) {
             Discipline d = ci.doubles() ? Discipline.DOUBLES : Discipline.SINGLES;
@@ -788,35 +832,75 @@ public final class WorkspaceView {
 
     private de.hts.web.LiveServer liveServer;
 
-    /** „Anwesenheit ▾“: markierte Teilnehmende anmelden, endgültig abmelden, Abmeldung bestätigen, zurücksetzen. */
+    /**
+     * 0.36: zwei Menüs – „Aktion bezüglich Markierte“ (angemeldet, endgültig abmelden, Abmeldung zurücknehmen) und
+     * „Handyabmeldungen“ (alle bestätigen, Markierte bzw. alle zurück auf offen).
+     */
     private javafx.scene.Node attendanceMenu() {
-        javafx.scene.control.MenuButton mb = new javafx.scene.control.MenuButton("Anwesenheit");
-        mb.getStyleClass().add("pill");
-        javafx.scene.control.MenuItem present = new javafx.scene.control.MenuItem("Markierte: angemeldet (anwesend)");
+        javafx.scene.control.MenuButton marked = new javafx.scene.control.MenuButton("Aktion bezüglich Markierte");
+        marked.getStyleClass().add("pill");
+        MenuItem present = new MenuItem("angemeldet (anwesend)");
         present.setOnAction(e -> setAttendance(de.hts.player.Attendance.PRESENT, "angemeldet"));
-        javafx.scene.control.MenuItem withdraw = new javafx.scene.control.MenuItem("Markierte: endgültig abmelden");
-        withdraw.setOnAction(e -> {
-            if (confirm("Endgültig abmelden", "Die markierten Teilnehmenden endgültig abmelden (nicht anwesend)?")) {
-                setAttendance(de.hts.player.Attendance.WITHDRAWN, "endgültig abgemeldet");
-            }
-        });
-        javafx.scene.control.MenuItem confirmReq = new javafx.scene.control.MenuItem("Abmeldungen per Handy bestätigen (alle)");
-        confirmReq.setOnAction(e -> {
-            int n = 0;
-            for (Player p : tournament.getPlayers()) {
-                if (p.getAttendance() == de.hts.player.Attendance.WITHDRAW_REQUESTED) {
-                    tournament.setAttendance(p, de.hts.player.Attendance.WITHDRAWN);
-                    n++;
-                }
-            }
-            setStatus(n == 0 ? "Keine offenen Abmeldungen." : n + (n == 1 ? " Abmeldung" : " Abmeldungen") + " bestätigt.");
+        MenuItem withdraw = new MenuItem("endgültig abmelden");
+        withdraw.setOnAction(e -> withdrawSelected());
+        MenuItem undo = new MenuItem("Abmeldung zurücknehmen");
+        undo.setOnAction(e -> {
+            List<Player> sel = selectedWith(de.hts.player.Attendance.WITHDRAWN);
+            sel.forEach(p -> tournament.setAttendance(p, de.hts.player.Attendance.UNKNOWN));
+            setStatus(sel.isEmpty() ? "Unter den Markierten ist niemand endgültig abgemeldet." : sel.size() + " Abmeldung(en) zurückgenommen.");
             refreshAfterAttendance();
         });
-        javafx.scene.control.MenuItem reset = new javafx.scene.control.MenuItem("Markierte: zurück auf „offen“ (Abmeldung zurücknehmen)");
-        reset.setOnAction(e -> setAttendance(de.hts.player.Attendance.UNKNOWN, "wieder offen"));
-        mb.getItems().addAll(present, withdraw, new javafx.scene.control.SeparatorMenuItem(), confirmReq, reset);
-        mb.setTooltip(new Tooltip("Anwesenheit am Turniertag: gelb = endgültig abgemeldet, orange = Abmeldung per Handy zu bestätigen"));
-        return mb;
+        marked.getItems().addAll(present, withdraw, new SeparatorMenuItem(), undo);
+        marked.setTooltip(new Tooltip("Für die markierten Teilnehmenden – gelb = endgültig abgemeldet"));
+
+        javafx.scene.control.MenuButton phone = new javafx.scene.control.MenuButton("Handyabmeldungen");
+        phone.getStyleClass().add("pill");
+        MenuItem confirmAll = new MenuItem("alle bestätigen");
+        confirmAll.setOnAction(e -> {
+            List<Player> req = withAttendance(tournament.getPlayers(), de.hts.player.Attendance.WITHDRAW_REQUESTED);
+            req.forEach(p -> tournament.setAttendance(p, de.hts.player.Attendance.WITHDRAWN));
+            setStatus(req.isEmpty() ? "Keine offenen Handyabmeldungen." : req.size() + (req.size() == 1 ? " Abmeldung" : " Abmeldungen") + " bestätigt.");
+            refreshAfterAttendance();
+        });
+        MenuItem markedOpen = new MenuItem("Markierte zurück auf offen");
+        markedOpen.setOnAction(e -> {
+            List<Player> req = selectedWith(de.hts.player.Attendance.WITHDRAW_REQUESTED);
+            req.forEach(p -> tournament.setAttendance(p, de.hts.player.Attendance.UNKNOWN));
+            setStatus(req.isEmpty() ? "Unter den Markierten ist keine Handyabmeldung." : req.size() + " Handyabmeldung(en) verworfen – wieder offen.");
+            refreshAfterAttendance();
+        });
+        MenuItem allOpen = new MenuItem("Alle zurück auf offen");
+        allOpen.setOnAction(e -> {
+            List<Player> req = withAttendance(tournament.getPlayers(), de.hts.player.Attendance.WITHDRAW_REQUESTED);
+            req.forEach(p -> tournament.setAttendance(p, de.hts.player.Attendance.UNKNOWN));
+            setStatus(req.isEmpty() ? "Keine offenen Handyabmeldungen." : req.size() + " Handyabmeldung(en) verworfen – wieder offen.");
+            refreshAfterAttendance();
+        });
+        phone.getItems().addAll(confirmAll, new SeparatorMenuItem(), markedOpen, allOpen);
+        phone.setTooltip(new Tooltip("Per Handy gemeldete Abmeldungen (orange) bestätigen oder verwerfen"));
+        HBox box = new HBox(8, marked, phone);
+        box.setAlignment(Pos.CENTER_LEFT);
+        return box;
+    }
+
+    private static List<Player> withAttendance(List<Player> list, de.hts.player.Attendance a) {
+        return list.stream().filter(p -> p.getAttendance() == a).toList();
+    }
+
+    private List<Player> selectedWith(de.hts.player.Attendance a) {
+        return withAttendance(new ArrayList<>(participants.getTable().getSelectionModel().getSelectedItems()), a);
+    }
+
+    private void withdrawSelected() {
+        List<Player> sel = new ArrayList<>(participants.getTable().getSelectionModel().getSelectedItems());
+        if (sel.isEmpty()) {
+            setStatus("Bitte zuerst Teilnehmende markieren.");
+            return;
+        }
+        if (confirm("Endgültig abmelden", (sel.size() == 1 ? sel.get(0).getDisplayName() : sel.size() + " Teilnehmende")
+                + " endgültig abmelden (nicht anwesend)?")) {
+            setAttendance(de.hts.player.Attendance.WITHDRAWN, "endgültig abgemeldet");
+        }
     }
 
     private void setAttendance(de.hts.player.Attendance a, String text) {

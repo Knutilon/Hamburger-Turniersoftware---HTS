@@ -6,6 +6,22 @@ Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Pub
 Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
 (Label „Feature“ bzw. „bug“).
 
+## Neu in 0.36.0
+
+- **Texte nie abgekürzt, auch bei kleinen Auflösungen** (geprüft bei 1366 × 768 mit 125 % und 150 % Skalierung):
+  Tabellenspalten so breit wie ihr Inhalt (notfalls waagerechte Scrollleiste), KO- und Qualifikationskarten so breit
+  wie der längste Name samt Verein, Dialoge scrollen statt abzuschneiden, Menü- und Knopfzeilen brechen um, die Seite
+  scrollt bei wenig Höhe, der Turniername im Kopf bricht um.
+- **Teilnehmende:** Menüs „Aktion bezüglich Markierte“ (angemeldet, endgültig abmelden, Abmeldung zurücknehmen) und
+  „Handyabmeldungen“ (alle bestätigen, Markierte bzw. alle zurück auf offen); Rechtsklick auf eine Zeile mit
+  angemeldet / endgültig abmelden / Abmeldung zurücknehmen bzw. bestätigen. Neuer **Klassenfilter** (gemeldet, in
+  der Klasse, Nachrücker) – kombinierbar mit dem Status.
+- **Sortierung nach TTR:** Personen ohne TTR stehen in beiden Richtungen unten.
+- **click-TT-Import:** Klassen lassen sich vor dem Import abwählen (Haken je Konkurrenz); wer nur in abgewählten
+  Klassen gemeldet ist, wird nicht übernommen; die Zahlen im Dialog passen sich an.
+- **Endergebnis Qualifikation:** Die über die Gruppenplatzierung Qualifizierten teilen sich die ersten Plätze
+  (z. B. 1.–16.), die Gewinner der KO-Runde die Folgeplätze (z. B. 17.–22.); Nachrücker behalten Einzelplätze.
+
 ## Neu in 0.35.0
 
 - **Anwesenheit am Turniertag:** Die Spalte „Angemeldet“ der Teilnehmenden heißt jetzt „am Turniertag anwesend“ und
