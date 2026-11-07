@@ -20,6 +20,7 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -72,7 +73,7 @@ public final class WorkspaceView {
     private Page currentPage = Page.PARTICIPANTS;
 
     private final Label pageTitle = new Label();
-    private final HBox pageActions = new HBox(8);
+    private final javafx.scene.layout.FlowPane pageActions = new javafx.scene.layout.FlowPane(8, 6);
     private final StackPane pageContent = new StackPane();
     private final StackPane participantsCard = new StackPane();
     private final Label statusLabel = new Label("Bereit.");
@@ -146,6 +147,10 @@ public final class WorkspaceView {
     public boolean prepareLeave() {
         if (currentPage == Page.HANDICAP && !handicapView.confirmLeave()) return false;
         presentationView.stop();
+        if (liveServer != null) {
+            liveServer.stop();
+            liveServer = null;
+        }
         if (!tournament.isModified()) return true;
         if (save()) return true;
         Alert a = new Alert(Alert.AlertType.WARNING,
@@ -367,6 +372,7 @@ public final class WorkspaceView {
                 template.setOnAction(e -> saveCsvTemplate());
                 pageActions.getChildren().add(4, template);
             }
+            pageActions.getChildren().addAll(attendanceMenu(), handyButtons());
             pageContent.getChildren().setAll(participantsCard);
             participants.refresh();
         } else if (page == Page.HANDICAP) {
@@ -459,12 +465,19 @@ public final class WorkspaceView {
         if (!r.alreadyRunning().isEmpty()) {
             sb.append("Laufen bereits:\n").append(names(r.alreadyRunning())).append("\n\n");
         }
+        if (!r.attendanceOpen().isEmpty()) {
+            sb.append("Noch gesperrt – Gemeldete noch nicht an- oder abgemeldet (werden nicht gestartet):\n");
+            for (PlayingClass c : r.attendanceOpen()) {
+                sb.append("  • ").append(c.getName()).append(": ").append(tournament.openAttendance(c).size()).append(" offen\n");
+            }
+            sb.append("\n");
+        }
         if (r.started().isEmpty()) {
             sb.append(tournament.isStarted() ? "Es ist keine weitere Klasse bereit." : "Es ist noch keine Klasse bereit – es wird nur die Startzeit festgehalten.");
         } else {
             sb.append("Freie Tische (").append(tournament.getTableCount()).append(") werden automatisch belegt.");
         }
-        boolean allReady = r.notReady().isEmpty() && r.alreadyRunning().isEmpty();
+        boolean allReady = r.notReady().isEmpty() && r.alreadyRunning().isEmpty() && r.attendanceOpen().isEmpty();
         Alert a = new Alert(allReady ? Alert.AlertType.CONFIRMATION : Alert.AlertType.WARNING, sb.toString(), ButtonType.YES, ButtonType.NO);
         a.initOwner(stage);
         a.setTitle("Turnier starten");
@@ -510,6 +523,7 @@ public final class WorkspaceView {
                     + "Trotzdem hinzufügen?")) {
                 return;
             }
+            p.setAttendance(de.hts.player.Attendance.PRESENT);     // von Hand erfasst: gilt sofort als angemeldet
             tournament.getPlayers().add(p);
             PlayingClass chosen = dialog.getSelectedClass();
             if (chosen != null) tournament.assign(p, chosen);
@@ -747,59 +761,141 @@ public final class WorkspaceView {
             Discipline d = ci.doubles() ? Discipline.DOUBLES : Discipline.SINGLES;
             var existing = tournament.findClass(ci.name());
             if (existing.isEmpty()) {
-                tournament.addClass(new PlayingClass(ci.name(), d, ClassType.guess(ci.name(), ci.sex()), null, null));
+                PlayingClass nc = tournament.addClass(new PlayingClass(ci.name(), d, ClassType.guess(ci.name(), ci.sex()), null, null));
+                nc.setImportedFromXml(true);
                 newClasses++;
             } else if (ci.doubles() && !existing.get().isDoubles()) {
                 tournament.changeDiscipline(existing.get(), Discipline.DOUBLES);
             }
         }
-        // Einzel: Gemeldete stehen direkt „In der Klasse“ (Nachrücker bleiben auf der Warteliste)
-        Tournament.MergeResult merge = tournament.merge(result.players());
-        int newPairs = importPairs(result.pairs());
-        // Doppel: wer keinen Partner aus der Datei hat, steht unter „Verfügbar“ statt als halbe Paarung
-        java.util.Map<String, Player> byKey = new java.util.HashMap<>();
-        tournament.getPlayers().forEach(p -> byKey.put(p.identityKey(), p));
-        for (ClickTtXmlImporter.CompetitionInfo ci : result.competitions()) {
-            if (!ci.doubles()) continue;
-            PlayingClass dc = tournament.findClass(ci.name()).orElse(null);
-            if (dc == null || !dc.isDoubles() || dc.isDrawn()) continue;
-            for (Player imported : result.players()) {
-                if (!imported.isInClass(ci.name()) && !imported.getRegistrations().contains(ci.name())) continue;
-                Player p = byKey.get(imported.identityKey());
-                if (p != null) tournament.registerWithoutPartner(p, dc);
-            }
+        // 0.35: Gemeldete stehen nicht mehr direkt „In der Klasse“, sondern als Meldung unter „Verfügbar“ – übernommen
+        // werden sie erst, wenn sie am Turniertag angemeldet (anwesend) sind; Doppelpartner werden gemerkt
+        List<String[]> partnerLinks = new ArrayList<>();
+        for (ClickTtXmlImporter.ImportedPair ip : result.pairs()) {
+            if (!ip.waitingList()) partnerLinks.add(new String[]{ip.competition(), ip.firstKey(), ip.secondKey()});
         }
-        tournament.ensurePairsForEntries();
+        Tournament.MergeResult merge = tournament.mergeImportedEntries(result.players(), partnerLinks);
+        int newPairs = partnerLinks.size();
         participants.refresh();
         classes.refresh();
         setStatus("Import aus " + file.getName() + ": " + merge.added() + " neu, " + merge.updated() + " aktualisiert"
                 + (newClasses > 0 ? ", " + newClasses + " Klassen angelegt" : "")
-                + (newPairs > 0 ? ", " + newPairs + " Doppelpaarungen gebildet." : "."));
+                + (newPairs > 0 ? ", " + newPairs + " Doppelpaarungen gemerkt" : "")
+                + ". Gemeldete kommen erst nach der Anmeldung am Turniertag in die Klasse.");
     }
 
-    /**
-     * Übernimmt die Doppelpaarungen aus der Datei. Wer in der Klasse schon fest gepaart ist
-     * (z. B. von Hand), wird nicht umgepaart.
-     */
-    private int importPairs(List<ClickTtXmlImporter.ImportedPair> imported) {
-        java.util.Map<String, Player> byKey = new java.util.HashMap<>();
-        tournament.getPlayers().forEach(p -> byKey.put(p.identityKey(), p));
-        int n = 0;
-        for (ClickTtXmlImporter.ImportedPair ip : imported) {
-            PlayingClass c = tournament.findClass(ip.competition()).orElse(null);
-            Player a = byKey.get(ip.firstKey());
-            Player b = byKey.get(ip.secondKey());
-            if (ip.waitingList() || c == null || !c.isDoubles() || a == null || b == null || a == b) continue;
-            var pa = tournament.pairOf(a, c);
-            var pb = tournament.pairOf(b, c);
-            if (pa.isPresent() && pa.equals(pb)) continue; // schon so gepaart
-            boolean aFixed = pa.isPresent() && pa.get().isComplete();
-            boolean bFixed = pb.isPresent() && pb.get().isComplete();
-            if (aFixed || bFixed) continue;
-            tournament.createPair(c, a, b);
-            n++;
+    // --- 0.35: Anwesenheit und Handy-Zugang ------------------------------------
+
+    private de.hts.web.LiveServer liveServer;
+
+    /** „Anwesenheit ▾“: markierte Teilnehmende anmelden, endgültig abmelden, Abmeldung bestätigen, zurücksetzen. */
+    private javafx.scene.Node attendanceMenu() {
+        javafx.scene.control.MenuButton mb = new javafx.scene.control.MenuButton("Anwesenheit");
+        mb.getStyleClass().add("pill");
+        javafx.scene.control.MenuItem present = new javafx.scene.control.MenuItem("Markierte: angemeldet (anwesend)");
+        present.setOnAction(e -> setAttendance(de.hts.player.Attendance.PRESENT, "angemeldet"));
+        javafx.scene.control.MenuItem withdraw = new javafx.scene.control.MenuItem("Markierte: endgültig abmelden");
+        withdraw.setOnAction(e -> {
+            if (confirm("Endgültig abmelden", "Die markierten Teilnehmenden endgültig abmelden (nicht anwesend)?")) {
+                setAttendance(de.hts.player.Attendance.WITHDRAWN, "endgültig abgemeldet");
+            }
+        });
+        javafx.scene.control.MenuItem confirmReq = new javafx.scene.control.MenuItem("Abmeldungen per Handy bestätigen (alle)");
+        confirmReq.setOnAction(e -> {
+            int n = 0;
+            for (Player p : tournament.getPlayers()) {
+                if (p.getAttendance() == de.hts.player.Attendance.WITHDRAW_REQUESTED) {
+                    tournament.setAttendance(p, de.hts.player.Attendance.WITHDRAWN);
+                    n++;
+                }
+            }
+            setStatus(n == 0 ? "Keine offenen Abmeldungen." : n + (n == 1 ? " Abmeldung" : " Abmeldungen") + " bestätigt.");
+            refreshAfterAttendance();
+        });
+        javafx.scene.control.MenuItem reset = new javafx.scene.control.MenuItem("Markierte: zurück auf „offen“ (Abmeldung zurücknehmen)");
+        reset.setOnAction(e -> setAttendance(de.hts.player.Attendance.UNKNOWN, "wieder offen"));
+        mb.getItems().addAll(present, withdraw, new javafx.scene.control.SeparatorMenuItem(), confirmReq, reset);
+        mb.setTooltip(new Tooltip("Anwesenheit am Turniertag: gelb = endgültig abgemeldet, orange = Abmeldung per Handy zu bestätigen"));
+        return mb;
+    }
+
+    private void setAttendance(de.hts.player.Attendance a, String text) {
+        List<Player> sel = new ArrayList<>(participants.getTable().getSelectionModel().getSelectedItems());
+        if (sel.isEmpty()) {
+            setStatus("Bitte zuerst Teilnehmende markieren.");
+            return;
         }
-        return n;
+        for (Player p : sel) tournament.setAttendance(p, a);
+        setStatus(sel.size() + (sel.size() == 1 ? " Person " : " Personen ") + text + ".");
+        refreshAfterAttendance();
+    }
+
+    private void refreshAfterAttendance() {
+        participants.refresh();
+        classes.refresh();
+        updateStartBox();
+    }
+
+    /** Handy-Zugang (Live-Anzeige + Anmeldung) starten/beenden, QR-Codes drucken, Anmeldung sperren/öffnen. */
+    private javafx.scene.Node handyButtons() {
+        Button live = new Button();
+        live.getStyleClass().add("pill");
+        Button qr = new Button("QR-Codes drucken");
+        qr.getStyleClass().add("pill");
+        Button lock = new Button();
+        lock.getStyleClass().add("pill");
+        Label info = new Label();
+        info.getStyleClass().add("live-info");
+        Runnable update = () -> {
+            boolean on = liveServer != null && liveServer.isRunning();
+            live.setText(on ? "Handy-Zugang beenden" : "Handy-Zugang starten");
+            live.setTooltip(new Tooltip("Live-Anzeige und Anmeldung am Turniertag per Handy im lokalen WLAN (Port "
+                    + de.hts.web.LiveServer.PORT + ")"));
+            lock.setText(tournament.isCheckinLocked() ? "Anmeldung per Adresse wieder öffnen" : "Anmeldung per Adresse sperren");
+            String host = de.hts.web.LiveServer.localAddresses().stream().findFirst().orElse("(keine Netzwerkverbindung)");
+            info.setText(on ? "Live: " + de.hts.web.LiveServer.liveUrl(host, liveServer.port())
+                    + (tournament.isCheckinOpen() ? " · Anmeldung offen" : " · Anmeldung geschlossen") : "");
+        };
+        live.setOnAction(e -> {
+            if (liveServer != null && liveServer.isRunning()) {
+                liveServer.stop();
+                liveServer = null;
+                setStatus("Handy-Zugang beendet.");
+            } else {
+                try {
+                    liveServer = new de.hts.web.LiveServer(tournament, javafx.application.Platform::runLater, this::refreshAfterAttendance);
+                    liveServer.start();
+                    setStatus("Handy-Zugang gestartet – Adresse und QR-Codes über „QR-Codes drucken“.");
+                } catch (java.io.IOException ex) {
+                    liveServer = null;
+                    error("Handy-Zugang", "Der Handy-Zugang konnte nicht gestartet werden (Port " + de.hts.web.LiveServer.PORT
+                            + " belegt?): " + ex.getMessage());
+                }
+            }
+            update.run();
+        });
+        lock.setOnAction(e -> {
+            tournament.setCheckinLocked(!tournament.isCheckinLocked());
+            setStatus(tournament.isCheckinLocked() ? "Anmeldung per Adresse gesperrt." : "Anmeldung per Adresse wieder geöffnet.");
+            update.run();
+        });
+        qr.setOnAction(e -> {
+            String host = de.hts.web.LiveServer.localAddresses().stream().findFirst().orElse(null);
+            if (host == null) {
+                error("QR-Codes", "Dieser Rechner hat keine Netzwerkverbindung – bitte mit dem WLAN-Router verbinden.");
+                return;
+            }
+            int port = liveServer != null ? liveServer.port() : de.hts.web.LiveServer.PORT;
+            String name = "QR-Codes " + (tournament.getName() == null ? "Turnier" : tournament.getName());
+            PdfViewer.show(stage, tournament, name, de.hts.report.PdfReports.qrSheet(tournament,
+                    de.hts.web.LiveServer.liveUrl(host, port), de.hts.web.LiveServer.checkinUrl(host, port, tournament.getCheckinToken())),
+                    name.replaceAll("[\\\\/:*?\"<>|]", "_") + ".pdf", this::setStatus);
+            if (liveServer == null) setStatus("Hinweis: Der Handy-Zugang ist noch nicht gestartet.");
+        });
+        update.run();
+        HBox box = new HBox(8, live, qr, lock, info);
+        box.setAlignment(Pos.CENTER_LEFT);
+        return box;
     }
 
     // --- Hilfsmethoden -----------------------------------------------------

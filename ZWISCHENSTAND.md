@@ -1,4 +1,4 @@
-# Zwischenstand HTS 0.34.0 (06.11.2026)
+# Zwischenstand HTS 0.35.0 (07.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -14,13 +14,82 @@ https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.
 (+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
-## Feature-Sammlung für 0.35.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 0.36.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
 
 (noch leer)
 
 ## Umgesetzt
+
+0.35.0 (Issues #31–#33). README „Neu in 0.35.0“, docs/ABHAENGIGKEITEN.md (Angriffsfläche Handy-Zugang) ergänzt.
+Modell: player/Attendance (UNKNOWN, PRESENT, WITHDRAW_REQUESTED, WITHDRAWN; persistiert „attendance“), Player.isReserve
+(= Warteliste), isEnteredFor, registeredPartners (Element „partner“), entriesToRegistrations; PlayingClass.importedFromXml
+(„xml-import“); Tournament: checkinLocked/-Token (Ordner-Attribute „checkin-locked“, „checkin-token“), isCheckinOpen
+(nicht gesperrt und nicht alle Klassen beendet), setAttendance, checkinFromPhone, enteredPlayers, openAttendance,
+attendanceProblem (startClass gesperrt; StartReport.attendanceOpen), takeOverPresentEntries, mergeImportedEntries
+(Import: Meldungen statt Klasse, Partnerverknüpfung), migrateToAttendanceModel (Dateien ohne model="35" → „legacy“),
+replaceParticipants (CSV) = angemeldet, Kopien setzen Anwesenheit zurück.
+UI: PlayerTableView (Spalte „Angemeldet“ als Checkbox bzw. „abgemeldet“/„Abmeldung ?“, Spalte „Nachrücker“, Zeilen gelb/
+orange, Zähler), PlayerFilter-Status neu (angemeldet/offen/Abmeldung bestätigen/abgemeldet/Nachrücker); WorkspaceView
+(Menü „Anwesenheit“, „Handy-Zugang starten/beenden“, „QR-Codes drucken“, „Anmeldung per Adresse sperren/öffnen“,
+pageActions als FlowPane, Server-Stopp in prepareLeave, Import über mergeImportedEntries, neue Klassen „aus XML
+importiert“, Startdialog nennt gesperrte Klassen); ClassesView („Verfügbar“ nur Anwesende, Knopf „Alle anwesenden
+Gemeldeten übernehmen“, Gemeldete fett, Nachrücker-Hinweis, „⚠ Start gesperrt“ im Klassenkopf, neue Person =
+angemeldet); DrawView (Startsperre mit Hinweis).
+Web: de.hts.web.LiveServer (com.sun.net.httpserver, Port 8080, Zugriffe über Platform::runLater; /live, /live/tische,
+/live/klasse, /live/ergebnis, /live/suche, /live/ich, /live/spieler.json; /anmeldung/<Schlüssel>, daten.json, melden),
+de.hts.web.QrCode (eigener QR-Erzeuger, Byte-Modus, Level M, Version 1–10; mit OpenCV gegengeprüft),
+PdfReports.qrSheet (A4-Aushang). Handy-Seiten mit Chromium (390 px) geprüft.
+Tests: Version035Test (8, u. a. HTTP-Test des Servers) – 191 bestanden.
+Feature-Sammlung 0.35.0 (zur Nachverfolgung):
+
+   1. LIVE-ANZEIGE FÜRS HANDY ÜBER LOKALES WLAN (07.11.2026, Issue #31) – IN KLÄRUNG. HTS startet auf Knopfdruck einen
+      kleinen Webserver (Java-eigener HttpServer, keine neue Bibliothek), fester Port (z. B. 8080), Adresse + QR-Code in
+      HTS. Handygerechte Seiten (kein Bild der Präsentation), Selbst-Aktualisierung ca. alle 10 s: Tische und laufende
+      Spiele, Gruppen, KO-Baum, Ergebnisse, „Meine Spiele“ bzw. „Meine Gruppe“ (Namenssuche). Hardware vor Ort: Vodafone
+      EasyBox 805 als WLAN ohne Internet (Haupt-WLAN, nicht Gäste-WLAN; Laptop per Kabel, feste Adresse per DHCP).
+      Sicherheitsbewertung in docs/ABHAENGIGKEITEN.md anpassen (erstmals offener Port, nur im lokalen Netz).
+   2. ANWESENHEIT AM TURNIERTAG („ANGEMELDET“) + SELBST-ANMELDUNG PER HANDY (07.11.2026, Issue #32) – GEKLÄRT.
+      - Teilnehmenden-Übersicht: Spalte „Angemeldet“ bedeutet künftig „am Turniertag anwesend“ (abhakbar); bisher hieß
+        sie „in mindestens einer Klasse“. Nachrücker (Warteliste) bekommen ein eigenes Merkmal „Nachrücker“.
+      - Anmeldung über eine feste lokale Adresse (gleich für alle, Server wie Punkt 1). Erste Auswahl: „Teilnehmende/r“
+        oder „Betreuende/r“. Teilnehmende: eine Person suchen (Vorname, Nachname, Verein – ein Suchfeld wie in HTS),
+        auswählen, Haken „angemeldet“, abschicken – nur sich selbst. Betreuende: Verein wählen → alle Spieler des Vereins
+        im Turnier, Haken für alle Anwesenden setzen. Alternativ mehrere auswählen und „abmelden“.
+      - Ergebnis sichtbar in der Teilnehmenden-Übersicht.
+      Antworten (07.11.2026):
+      (A) Keine PIN – der Zugang zur Anmeldeseite erfolgt über den ausgedruckten QR-Code.
+      (B) Abmelden = aus der Liste der Anwesenden „nicht anwesend“ markieren → endgültig abgemeldet. In HTS werden
+          endgültig abgemeldete Personen in der Teilnehmenden-Übersicht GELB hervorgehoben; die Turnierleitung kann
+          ebenfalls Teilnehmende markieren und endgültig abmelden. Beim Turnierstart (auch: Start der ersten Klasse) Hinweis,
+          wenn in Klassen mit Merkmal „aus XML importiert“ noch nicht alle Teilnehmenden an- oder abgemeldet sind. Klassen
+          bekommen das Merkmal „aus XML importiert“, wenn sie durch den Import angelegt wurden.
+      (C) Anmeldung per Adresse möglich, bis alle Klassen des Turniers beendet sind oder die Turnierleitung sie sperrt
+          (Knopf unter „Teilnehmende“ in HTS).
+      (D) Unter „Verfügbar“: alle Anwesenden, die die Klassenkriterien (Alter, Geschlecht) erfüllen – wie heute. Im
+          Fehlerfall kann die Turnierleitung Teilnehmende von Hand hinzufügen (nicht in der XML); diese gelten sofort als
+          „angemeldet“.
+      (F) Merkmal „Nachrücker“ = im XML auf der Warteliste einer Klasse; eigene Spalte/Kennzeichen in der
+          Teilnehmenden-Übersicht und unter „Verfügbar“; NICHT von Hand setzbar.
+      (G) Vorhandene Turnierdateien: nur Klassen, die noch nicht ausgelost sind, bekommen die neue Logik („In der Klasse“
+          = 0); ausgeloste/gestartete Klassen bleiben unverändert.
+      (H) „Meine Spiele“/„Meine Gruppe“: eigenen Namen suchen, das Handy merkt sich die Auswahl (beim nächsten Öffnen
+          direkt eigene Spiele, Tisch, Gruppe).
+      (1) Anmeldeseite über Adresse mit zufälligem Schlüssel im QR-Code; Lesesicht mit eigener freier Adresse; Druckblatt
+          in HTS mit beiden QR-Codes und WLAN-Zugang.
+      (2) Per Handy getätigte Abmeldungen muss die Turnierleitung in HTS BESTÄTIGEN (erst dann endgültig abgemeldet/gelb).
+      (3) Knopf unter „Teilnehmende“: „Anmeldung per Adresse sperren“ ↔ „wieder öffnen“.
+      (4) START GESPERRT, solange nicht alle laut XML für die Klasse gemeldeten Teilnehmenden (Klassen „aus XML
+          importiert“) angemeldet oder endgültig abgemeldet sind.
+      (E) Knopf „Alle anwesenden Gemeldeten übernehmen“ in der Klasse; alle anderen per Drag & Drop.
+      Annahmen: unbestätigte Handy-Abmeldungen zählen als offen (Kennzeichen „Abmeldung bestätigen“); Nachrücker laut
+      XML blockieren den Start nicht. BESTÄTIGT: Sperre je Klasse – NUR für Klassen „aus XML importiert“ (von Hand
+      angelegte Klassen nie gesperrt); „Turnier starten“ startet die übrigen Klassen und nennt die offenen Personen.
+   3. KLASSEN: „VERFÜGBAR“ NUR ANWESENDE, „IN DER KLASSE“ ANFANGS LEER (07.11.2026, Issue #33) – IN KLÄRUNG. Unter
+      „Teilnehmende der Klasse“ stehen unter „Verfügbar“ nur die am Turniertag angemeldeten (anwesenden) Personen;
+      „In der Klasse“ beginnt bei 0 – auch nach dem click-TT-XML-Import (Meldungen landen nicht mehr direkt in der Klasse).
+
 
 0.34.0 (Issues #29, #30). README „Neu in 0.34.0“ ergänzt, sonst Doku nicht aktualisiert.
 #30: PlayingClass.qualKoTotal (0 = je Gruppe) und qualKoCounts (KO-Teilnehmende je Gruppe, an der Phase; persistiert

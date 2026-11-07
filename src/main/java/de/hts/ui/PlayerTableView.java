@@ -1,5 +1,6 @@
 package de.hts.ui;
 
+import de.hts.player.Attendance;
 import de.hts.player.Player;
 import de.hts.player.PlayerFilter;
 import de.hts.player.PlayerFilter.RegistrationFilter;
@@ -43,6 +44,7 @@ import java.util.function.Function;
 public final class PlayerTableView {
 
     private final ObservableList<Player> source;
+    private final Consumer<Player> onPlayerChanged;
     private final TableView<Player> table = new TableView<>();
     private final FilteredList<Player> filtered;
 
@@ -61,6 +63,7 @@ public final class PlayerTableView {
      */
     public PlayerTableView(ObservableList<Player> players, Consumer<Player> onPlayerChanged) {
         this.source = players;
+        this.onPlayerChanged = onPlayerChanged;
         this.filtered = new FilteredList<>(players, p -> true);
         SortedList<Player> sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(table.comparatorProperty());
@@ -73,10 +76,9 @@ public final class PlayerTableView {
                 @Override
                 protected void updateItem(Player p, boolean empty) {
                     super.updateItem(p, empty);
-                    getStyleClass().remove("waiting-list");
-                    if (!empty && p != null && !p.isRegistered()) {
-                        getStyleClass().add("waiting-list");
-                    }
+                    getStyleClass().removeAll("attendance-withdrawn", "attendance-requested");
+                    if (!empty && p != null && p.getAttendance() == Attendance.WITHDRAWN) getStyleClass().add("attendance-withdrawn");
+                    if (!empty && p != null && p.getAttendance() == Attendance.WITHDRAW_REQUESTED) getStyleClass().add("attendance-requested");
                 }
             };
             row.setOnMouseClicked(e -> {
@@ -91,23 +93,59 @@ public final class PlayerTableView {
         Collator collator = Collator.getInstance(Locale.GERMAN);
         Comparator<String> textCmp = Comparator.nullsLast(collator::compare);
 
-        // Angemeldet = in mindestens einer Klasse (wird auf der Seite „Klassen“ per Drag & Drop festgelegt)
-        TableColumn<Player, String> registered = new TableColumn<>("Angemeldet");
-        registered.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().isRegistered() ? "✓" : ""));
-        registered.setStyle("-fx-alignment: CENTER;");
+        // 0.35: Angemeldet = am Turniertag anwesend (Haken per Klick; per Handy über die Anmeldeseite)
+        TableColumn<Player, Attendance> registered = new TableColumn<>("Angemeldet");
+        registered.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getAttendance()));
         registered.getStyleClass().add("col-center");
         registered.setCellFactory(col -> new TableCell<>() {
+            private final CheckBox box = new CheckBox();
+            {
+                box.setOnAction(e -> {
+                    Player p = getTableRow() == null ? null : getTableRow().getItem();
+                    if (p == null) return;
+                    p.setAttendance(box.isSelected() ? Attendance.PRESENT : Attendance.UNKNOWN);
+                    onPlayerChanged.accept(p);
+                    refresh();
+                });
+                box.setFocusTraversable(false);
+            }
+
             @Override
-            protected void updateItem(String v, boolean empty) {
-                super.updateItem(v, empty);
-                setText(empty ? null : v);
-                getStyleClass().remove("check-cell");
-                if (!empty && v != null && !v.isEmpty()) getStyleClass().add("check-cell");
+            protected void updateItem(Attendance a, boolean empty) {
+                super.updateItem(a, empty);
+                setAlignment(Pos.CENTER);
+                if (empty || a == null) {
+                    setGraphic(null);
+                    setText(null);
+                    setTooltip(null);
+                    return;
+                }
+                if (a == Attendance.WITHDRAWN || a == Attendance.WITHDRAW_REQUESTED) {
+                    setGraphic(null);
+                    setText(a == Attendance.WITHDRAWN ? "abgemeldet" : "Abmeldung ?");
+                    setTooltip(new Tooltip(a == Attendance.WITHDRAWN ? "Endgültig abgemeldet – über „Anwesenheit“ zurücknehmen"
+                            : "Per Handy als „nicht anwesend“ gemeldet – über „Anwesenheit → Abmeldung bestätigen“ bestätigen"));
+                } else {
+                    box.setSelected(a == Attendance.PRESENT);
+                    setGraphic(box);
+                    setText(null);
+                    setTooltip(new Tooltip("Haken = am Turniertag anwesend (angemeldet)"));
+                }
             }
         });
         registered.setSortable(false);
-        registered.setPrefWidth(90);
-        registered.setMaxWidth(110);
+        registered.setStyle("-fx-alignment: CENTER;");
+        registered.setPrefWidth(118);
+        registered.setMinWidth(112);
+        registered.setMaxWidth(140);
+        TableColumn<Player, String> reserve = new TableColumn<>("Nachrücker");
+        reserve.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().isReserve() ? "✓" : ""));
+        reserve.setStyle("-fx-alignment: CENTER;");
+        reserve.getStyleClass().add("col-center");
+        reserve.setSortable(false);
+        reserve.setPrefWidth(108);
+        reserve.setMinWidth(102);
+        reserve.setMaxWidth(130);
 
         TableColumn<Player, String> lastname = textColumn("Nachname", Player::getLastname, 140, textCmp);
         TableColumn<Player, String> firstname = textColumn("Vorname", Player::getFirstname, 120, textCmp);
@@ -130,7 +168,7 @@ public final class PlayerTableView {
         TableColumn<Player, String> licence = textColumn("Lizenz-Nr.", Player::getLicenceNr, 90, textCmp);
         licence.setSortable(false);
 
-        table.getColumns().addAll(List.of(registered, lastname, firstname, birth, sex, club, ttr, entries, licence));
+        table.getColumns().addAll(List.of(registered, reserve, lastname, firstname, birth, sex, club, ttr, entries, licence));
         table.getSortOrder().addAll(List.of(lastname, firstname));
 
         // --- Suchleiste ---
@@ -173,12 +211,15 @@ public final class PlayerTableView {
         searchBar.getStyleClass().add("search-bar");
 
         countText = Bindings.createStringBinding(() -> {
-            long waiting = source.stream().filter(p -> !p.isRegistered()).count();
+            long present = source.stream().filter(Player::isPresent).count();
+            long withdrawn = source.stream().filter(p -> p.getAttendance() == Attendance.WITHDRAWN).count();
+            long requested = source.stream().filter(p -> p.getAttendance() == Attendance.WITHDRAW_REQUESTED).count();
             String base = filtered.size() == source.size()
                     ? source.size() + " Teilnehmende"
                     : filtered.size() + " von " + source.size() + " Teilnehmenden";
-            return waiting > 0 ? base + " · " + waiting + " nicht angemeldet" : base;
-        }, filtered, source);
+            return base + " · " + present + " angemeldet" + (withdrawn > 0 ? " · " + withdrawn + " abgemeldet" : "")
+                    + (requested > 0 ? " · " + requested + " Abmeldung(en) zu bestätigen" : "");
+        }, filtered, source, refreshTick);
 
         root.setTop(searchBar);
         root.setCenter(table);
@@ -211,7 +252,11 @@ public final class PlayerTableView {
     public void refresh() {
         table.refresh();
         updateFilter();
+        refreshTick.set(refreshTick.get() + 1);
     }
+
+    /** Zählt bei jeder Aktualisierung hoch (für die Zähler in der Statuszeile). */
+    private final javafx.beans.property.IntegerProperty refreshTick = new javafx.beans.property.SimpleIntegerProperty();
 
     // --- Hilfsmethoden -----------------------------------------------------
 

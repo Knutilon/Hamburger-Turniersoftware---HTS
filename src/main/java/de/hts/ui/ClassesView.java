@@ -112,6 +112,7 @@ public final class ClassesView {
     /** Doppel: Einzelne ohne Partner/in einander zulosen */
     private final Button partnerBtn = new Button("Partner zulosen");
     private final Button newParticipantBtn = new Button("Teilnehmende neu erfassen", Icons.of(Icons.PLUS, 14));
+    private final Button takeOverBtn = new Button("Alle anwesenden Gemeldeten übernehmen");
     /** Filter nach Einzelklasse – nur bei Doppelklassen sichtbar. */
     private final HBox filterRow = new HBox(8);
 
@@ -241,10 +242,24 @@ public final class ClassesView {
         HBox.setHgrow(search, Priority.ALWAYS);
         newParticipantBtn.getStyleClass().add("pill");
         newParticipantBtn.setOnAction(e -> newParticipantInClass());
-        newParticipantBtn.setTooltip(new Tooltip("Neue Person erfassen – sie steht danach hier unter „Verfügbar“ (Warteliste)"));
+        newParticipantBtn.setTooltip(new Tooltip("Neue Person erfassen (gilt sofort als angemeldet) – sie steht danach hier unter „Verfügbar“"));
+        takeOverBtn.getStyleClass().add("pill");
+        takeOverBtn.setTooltip(new Tooltip("Alle am Turniertag angemeldeten Personen, die laut Meldeliste für diese Klasse gemeldet sind, "
+                + "in die Klasse übernehmen (im Doppel mit dem gemeldeten Partner, wenn auch er da ist)"));
+        takeOverBtn.setOnAction(e -> {
+            PlayingClass c = selectedClass();
+            if (c == null) return;
+            try {
+                int n = tournament.takeOverPresentEntries(c);
+                status.accept(n == 0 ? "Keine anwesenden Gemeldeten zu übernehmen." : n + (n == 1 ? " Person" : " Personen") + " in „" + c.getName() + "“ übernommen.");
+            } catch (IllegalStateException ex) {
+                status.accept(ex.getMessage());
+            }
+            changed();
+        });
         Region availSpacer = new Region();
         HBox.setHgrow(availSpacer, Priority.ALWAYS);
-        HBox availableHead = new HBox(10, availableTitle, availSpacer, newParticipantBtn);
+        HBox availableHead = new HBox(10, availableTitle, availSpacer, takeOverBtn, newParticipantBtn);
         availableHead.setAlignment(Pos.CENTER_LEFT);
         VBox availableBox = new VBox(8, availableHead, filterRow, searchRow, availableTable);
         VBox.setVgrow(availableTable, Priority.ALWAYS);
@@ -549,6 +564,13 @@ public final class ClassesView {
             classCriteria.setTooltip(new Tooltip(tournament.criteriaText(c)));
             // Vorgabeturnier: vor dem Start markieren, was den Start sperrt (z. B. Teilnehmende ohne TTR)
             classCriteria.getStyleClass().remove("handicap-problem");
+            String attendance = c.isStarted() ? null : tournament.attendanceProblem(c);
+            if (attendance != null) {
+                classCriteria.setText(classCriteria.getText() + "\n⚠ Start gesperrt: " + tournament.openAttendance(c).size()
+                        + " Gemeldete noch nicht an- oder abgemeldet");
+                classCriteria.setTooltip(new Tooltip(attendance));
+                classCriteria.getStyleClass().add("handicap-problem");
+            }
             if (tournament.isHandicap() && !c.isStarted() && n > 0) {
                 java.util.List<String> hc = tournament.handicapProblems(c);
                 if (!hc.isEmpty()) {
@@ -645,7 +667,8 @@ public final class ClassesView {
         PlayingClass f = c.isDoubles() ? filter : null;
         String club = clubFilter.getValue();
         de.hts.player.Sex sx = sexFilter.getValue();
-        available.setPredicate(p -> (c.isDoubles() || !p.isInClass(c.getName()))
+        // 0.35: unter „Verfügbar“ nur am Turniertag Angemeldete (anwesend)
+        available.setPredicate(p -> p.isPresent() && (c.isDoubles() || !p.isInClass(c.getName()))
                 && (club == null || club.equals(ALL_CLUBS) || club.equals(p.getClubName()))
                 && (sx == null || sx == de.hts.player.Sex.UNKNOWN || p.getSex() == sx)
                 && (f == null || p.isInClass(f.getName()))
@@ -1005,9 +1028,9 @@ public final class ClassesView {
         if (c == null) return;
         Player p = new Player();
         if (!Boolean.TRUE.equals(new ParticipantDialog(window(), p, true, null, true, tournament.isHandicap()).showAndWait().orElse(false))) return;
-        p.addWaitingList(c.getName());
+        p.setAttendance(de.hts.player.Attendance.PRESENT);      // von Hand erfasst: gilt sofort als angemeldet
         tournament.getPlayers().add(p);
-        status.accept(p.getDisplayName() + " erfasst – steht unter „Verfügbar“ (Warteliste „" + c.getName() + "“).");
+        status.accept(p.getDisplayName() + " erfasst und angemeldet – steht unter „Verfügbar“.");
         changed();
         availableTable.getSelectionModel().clearSelection();
         availableTable.getSelectionModel().select(p);
@@ -1155,7 +1178,10 @@ public final class ClassesView {
                     }
                     if (!assignedSide && p.getWaitingLists().contains(c.getName())) {
                         getStyleClass().add("waiting-list");
-                        setTooltip(new Tooltip("Laut Meldeliste auf der Warteliste für „" + c.getName() + "“"));
+                        setTooltip(new Tooltip("Nachrücker: laut Meldeliste auf der Warteliste für „" + c.getName() + "“"));
+                    } else if (!assignedSide && p.getRegistrations().contains(c.getName())) {
+                        getStyleClass().add("entered");
+                        setTooltip(new Tooltip("Laut Meldeliste für „" + c.getName() + "“ gemeldet"));
                     }
                 }
             };

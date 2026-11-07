@@ -2265,6 +2265,11 @@ public final class DrawView {
             showWarning("„" + c.getName() + "“ kann nicht gestartet werden (Vorgabeturnier):\n– " + String.join("\n– ", hc));
             return;
         }
+        String attendance = tournament.attendanceProblem(c);
+        if (attendance != null) {
+            showWarning(attendance + " Bitte unter „Teilnehmende“ an- bzw. endgültig abmelden.");
+            return;
+        }
         if (!confirm("Klasse starten", "„" + c.getName() + "“ jetzt starten? Die Spiele werden eingereiht und freie Tische belegt.\n"
                 + "Danach lässt sich die Auslosung nicht mehr ändern.")) return;
         tournament.startClass(c);

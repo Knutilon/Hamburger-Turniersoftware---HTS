@@ -17,12 +17,16 @@ public record PlayerFilter(String firstname, String lastname, String birth,
 
     public enum RegistrationFilter {
         ALL("Alle"),
-        /** in mindestens einer Klasse */
+        /** 0.35: am Turniertag anwesend („angemeldet“) */
         REGISTERED("angemeldet"),
-        /** in keiner Klasse */
-        NOT_REGISTERED("nicht angemeldet"),
-        /** mit Wartelisten-Hinweis aus click-TT */
-        WAITING_LIST("Warteliste");
+        /** 0.35: noch nicht an- oder abgemeldet */
+        NOT_REGISTERED("offen"),
+        /** 0.35: Abmeldung per Handy, noch nicht bestätigt */
+        REQUESTED("Abmeldung bestätigen"),
+        /** 0.35: endgültig abgemeldet */
+        WITHDRAWN("abgemeldet"),
+        /** Nachrücker (Warteliste aus click-TT) */
+        WAITING_LIST("Nachrücker");
 
         private final String label;
 
@@ -51,9 +55,11 @@ public record PlayerFilter(String firstname, String lastname, String birth,
         if (registration == null) return true;
         return switch (registration) {
             case ALL -> true;
-            case REGISTERED -> p.isRegistered();
-            case NOT_REGISTERED -> !p.isRegistered();
-            case WAITING_LIST -> !p.getWaitingLists().isEmpty();
+            case REGISTERED -> p.getAttendance() == Attendance.PRESENT;
+            case NOT_REGISTERED -> p.getAttendance() == Attendance.UNKNOWN;
+            case REQUESTED -> p.getAttendance() == Attendance.WITHDRAW_REQUESTED;
+            case WITHDRAWN -> p.getAttendance() == Attendance.WITHDRAWN;
+            case WAITING_LIST -> p.isReserve();
         };
     }
 

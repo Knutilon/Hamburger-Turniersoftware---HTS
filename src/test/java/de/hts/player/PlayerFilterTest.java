@@ -66,31 +66,31 @@ class PlayerFilterTest {
 
     @Test
     void filterNachStatus() {
+        // 0.35: Status = Anwesenheit am Turniertag; Nachrücker = Warteliste laut Meldeliste
         Player angemeldet = new Player("A", "A");
-        angemeldet.addToClass("Herren Einzel");
+        angemeldet.setAttendance(Attendance.PRESENT);
         Player warteliste = new Player("W", "W");
         warteliste.addWaitingList("Herren Einzel");
-        Player ohne = new Player("O", "O");
-        Player gemischt = new Player("G", "G");
-        gemischt.addWaitingList("Herren Einzel");
-        gemischt.addToClass("Herren Doppel");
+        Player abgemeldet = new Player("O", "O");
+        abgemeldet.setAttendance(Attendance.WITHDRAWN);
+        Player handy = new Player("H", "H");
+        handy.setAttendance(Attendance.WITHDRAW_REQUESTED);
 
         PlayerFilter reg = new PlayerFilter(null, null, null, null, RegistrationFilter.REGISTERED);
         PlayerFilter not = new PlayerFilter(null, null, null, null, RegistrationFilter.NOT_REGISTERED);
         PlayerFilter wait = new PlayerFilter(null, null, null, null, RegistrationFilter.WAITING_LIST);
+        PlayerFilter off = new PlayerFilter(null, null, null, null, RegistrationFilter.WITHDRAWN);
+        PlayerFilter req = new PlayerFilter(null, null, null, null, RegistrationFilter.REQUESTED);
 
         assertTrue(reg.test(angemeldet));
         assertFalse(reg.test(warteliste));
-        assertFalse(reg.test(ohne));
-        assertTrue(reg.test(gemischt));
-
-        assertFalse(not.test(angemeldet));
         assertTrue(not.test(warteliste));
-        assertTrue(not.test(ohne));
-
-        assertFalse(wait.test(angemeldet));
+        assertFalse(not.test(angemeldet));
         assertTrue(wait.test(warteliste));
-        assertTrue(wait.test(gemischt));
+        assertFalse(wait.test(angemeldet));
+        assertTrue(off.test(abgemeldet));
+        assertFalse(off.test(handy));
+        assertTrue(req.test(handy));
     }
 
     @Test

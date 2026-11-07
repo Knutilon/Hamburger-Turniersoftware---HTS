@@ -788,6 +788,64 @@ public final class PdfReports {
 
     // --- Endergebnis ----------------------------------------------------------------
 
+    /**
+     * 0.35: Aushang (A4) für den Handy-Zugang: QR-Code der Live-Anzeige, QR-Code der Anmeldung am Turniertag (mit
+     * Schlüssel), Felder für WLAN-Name und Passwort.
+     */
+    public static PDDocument qrSheet(Tournament t, String liveUrl, String checkinUrl) {
+        PDDocument doc = newDoc("QR-Codes " + (t.getName() == null ? "Turnier" : t.getName()));
+        org.apache.pdfbox.pdmodel.PDPage page = new org.apache.pdfbox.pdmodel.PDPage(PDRectangle.A4);
+        doc.addPage(page);
+        float w = PDRectangle.A4.getWidth(), h = PDRectangle.A4.getHeight();
+        try (org.apache.pdfbox.pdmodel.PDPageContentStream cs = new org.apache.pdfbox.pdmodel.PDPageContentStream(doc, page)) {
+            text(cs, BOLD, 20, 50, h - 60, t.getName() == null ? "Turnier" : t.getName());
+            text(cs, REGULAR, 11, 50, h - 80, "Mit dem Handy im Turnier-WLAN den QR-Code scannen (Kamera-App).");
+            text(cs, REGULAR, 11, 50, h - 100, "WLAN-Name: ______________________________   Passwort: ______________________");
+            float qrSize = 210;
+            float y = h - 140 - qrSize;
+            qrBlock(cs, liveUrl, 50, y, qrSize, "Live-Anzeige",
+                    List.of("Tische und laufende Spiele, Gruppen,", "KO-Runden, Ergebnisse und", "„Meine Spiele“ / „Meine Gruppe“."));
+            float y2 = y - 70 - qrSize;
+            qrBlock(cs, checkinUrl, 50, y2, qrSize, "Anmeldung am Turniertag",
+                    List.of("Teilnehmende melden sich selbst an,", "Betreuende für ihren Verein.", "Abmeldungen bestätigt die Turnierleitung."));
+            text(cs, REGULAR, 8, 50, 40, "Nur im Turnier-WLAN erreichbar – kein Internet nötig. Erstellt mit HTS – Hamburger Turniersoftware.");
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+        return doc;
+    }
+
+    private static void qrBlock(org.apache.pdfbox.pdmodel.PDPageContentStream cs, String url, float x, float y, float size,
+                                String title, List<String> lines) throws java.io.IOException {
+        de.hts.web.QrCode qr = de.hts.web.QrCode.encode(url);
+        int n = qr.size(), quiet = 4;
+        float m = size / (n + 2 * quiet);
+        cs.setNonStrokingColor(java.awt.Color.BLACK);
+        for (int yy = 0; yy < n; yy++) {
+            for (int xx = 0; xx < n; xx++) {
+                if (qr.get(xx, yy)) cs.addRect(x + (xx + quiet) * m, y + size - (yy + quiet + 1) * m, m, m);
+            }
+        }
+        cs.fill();
+        float tx = x + size + 24;
+        text(cs, BOLD, 16, tx, y + size - 40, title);
+        float ly = y + size - 64;
+        for (String l : lines) {
+            text(cs, REGULAR, 11, tx, ly, l);
+            ly -= 15;
+        }
+        text(cs, REGULAR, 10, tx, ly - 12, url);
+    }
+
+    private static void text(org.apache.pdfbox.pdmodel.PDPageContentStream cs, PDFont font, float size, float x, float y, String s)
+            throws java.io.IOException {
+        cs.beginText();
+        cs.setFont(font, size);
+        cs.newLineAtOffset(x, y);
+        cs.showText(s);
+        cs.endText();
+    }
+
     public static PDDocument finalResult(Tournament t, PlayingClass cls) {
         PlayingClass root = t.rootOf(cls);
         PDDocument doc = newDoc("Endergebnis " + root.getName());

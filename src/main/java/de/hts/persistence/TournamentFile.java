@@ -84,10 +84,11 @@ public final class TournamentFile {
 
     private static Map<String, String> readFolders(Element root) {
         Map<String, String> m = new java.util.LinkedHashMap<>();
-        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on", "handicap", "hc", "imported")) {
+        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on", "handicap", "hc", "imported", "model", "checkin-locked", "checkin-token")) {
             String v = root.getAttribute(k);
             if (v != null && !v.isBlank()) m.put(k, v);
         }
+        if (!m.containsKey("model")) m.put("legacy", "true");         // Datei vor 0.35 → beim Laden umstellen
         org.w3c.dom.NamedNodeMap attrs = root.getAttributes();       // Tischnamen „tname.N“
         for (int i = 0; i < attrs.getLength(); i++) {
             org.w3c.dom.Node a = attrs.item(i);
@@ -151,6 +152,9 @@ public final class TournamentFile {
             if (t.getXmlDir() != null) m.put("dir-xml", t.getXmlDir());
             if (t.isTest()) m.put("test", "true");
             if (t.isImportedFinished()) m.put("imported", "true");
+            m.put("model", "35");                       // 0.35: Anwesenheit / „In der Klasse“ erst nach Übernahme
+            if (t.isCheckinLocked()) m.put("checkin-locked", "true");
+            m.put("checkin-token", t.getCheckinToken());
             if (t.isHandicap()) {
                 m.put("handicap", "true");
                 m.put("hc", t.getHandicapRules().encode());
@@ -190,6 +194,7 @@ public final class TournamentFile {
                 t.setTest("true".equals(folders.get("test")));
                 t.setHandicap("true".equals(folders.get("handicap")));
                 t.setImportedFinished("true".equals(folders.get("imported")));
+                t.restoreCheckin("true".equals(folders.get("checkin-locked")), folders.get("checkin-token"));
                 if (folders.get("hc") != null) t.restoreHandicapRules(de.hts.tournament.HandicapRules.decode(folders.get("hc")));
                 folders.forEach((k, v) -> {
                     if (!k.startsWith(TABLE_NAME_KEY)) return;
@@ -222,6 +227,7 @@ public final class TournamentFile {
                 }
             }
             t.restoreMatches(matches);
+            if (folders != null && "true".equals(folders.get("legacy"))) t.migrateToAttendanceModel();    // Dateien vor 0.35
             t.setId(id);
             t.setStartedAt(startedAt);
             t.markSaved();
@@ -327,6 +333,7 @@ public final class TournamentFile {
                 }
                 if (!c.getQualifiedDirect().isEmpty()) el.setAttribute("qualified-direct", String.join(",", c.getQualifiedDirect()));
                 if (c.getQualKoTotal() > 0) el.setAttribute("qual-ko-total", String.valueOf(c.getQualKoTotal()));
+                if (c.isImportedFromXml()) el.setAttribute("xml-import", "true");
                 if (!c.getQualKoCounts().isEmpty()) {
                     el.setAttribute("qual-ko-counts", String.join(",", c.getQualKoCounts().stream().map(String::valueOf).toList()));
                 }
@@ -465,6 +472,7 @@ public final class TournamentFile {
         set(el, "ttr-match-count", p.getTtrMatchCount());
         set(el, "nationality", p.getNationality());
         set(el, "region", p.getRegion());
+        if (p.getAttendance() != de.hts.player.Attendance.UNKNOWN) el.setAttribute("attendance", p.getAttendance().code());
         for (String c : p.getClassNames()) {
             Element entry = doc.createElement("entry");
             entry.setAttribute("competition", c);
@@ -481,6 +489,12 @@ public final class TournamentFile {
             rg.setAttribute("competition", c);
             el.appendChild(rg);
         }
+        p.getRegisteredPartners().forEach((c, key) -> {
+            Element rp = doc.createElement("partner");
+            rp.setAttribute("competition", c);
+            rp.setAttribute("key", key);
+            el.appendChild(rp);
+        });
         return el;
     }
 
@@ -550,6 +564,7 @@ public final class TournamentFile {
                 if (q.length >= 3) pc.setQualification(Integer.parseInt(q[0].trim()), Integer.parseInt(q[1].trim()), Integer.parseInt(q[2].trim()));
                 if (q.length >= 4) pc.setQualReserve(Integer.parseInt(q[3].trim()));
             }
+            pc.setImportedFromXml("true".equals(attr(el, "xml-import")));
             if (attr(el, "qual-ko-total") != null) pc.setQualKoTotal(Integer.parseInt(attr(el, "qual-ko-total").trim()));
             if (attr(el, "qual-ko-counts") != null && !attr(el, "qual-ko-counts").isBlank()) {
                 List<Integer> kc = new java.util.ArrayList<>();
@@ -735,11 +750,14 @@ public final class TournamentFile {
         p.setTtrMatchCount(intAttr(el, "ttr-match-count"));
         p.setNationality(attr(el, "nationality"));
         p.setRegion(attr(el, "region"));
+        p.setAttendance(de.hts.player.Attendance.ofCode(attr(el, "attendance")));
 
         for (Node n = el.getFirstChild(); n != null; n = n.getNextSibling()) {
             if (n instanceof Element e && e.hasAttribute("competition")) {
                 String c = e.getAttribute("competition");
-                if ("registration".equals(e.getTagName())) {
+                if ("partner".equals(e.getTagName())) {
+                    p.setRegisteredPartner(c, e.getAttribute("key"));
+                } else if ("registration".equals(e.getTagName())) {
                     p.addRegistration(c);
                 } else if ("waiting-list".equals(e.getTagName())
                         || ("entry".equals(e.getTagName()) && "false".equalsIgnoreCase(e.getAttribute("registered")))) {

@@ -57,6 +57,10 @@ public class Player {
     private final Set<String> waitingLists = new TreeSet<>();
     /** Laut Meldeliste für diese Klassen gemeldet, aber (noch) nicht in der Klasse – steht unter „Verfügbar“. */
     private final Set<String> registrations = new TreeSet<>();
+    /** 0.35: Doppelpartner laut Meldeliste je Klasse (Klasse → identityKey des Partners). */
+    private final java.util.Map<String, String> registeredPartners = new java.util.TreeMap<>();
+    /** 0.35: Anwesenheit am Turniertag. */
+    private Attendance attendance = Attendance.UNKNOWN;
 
     public Player() {
     }
@@ -103,6 +107,57 @@ public class Player {
         other.classes.keySet().forEach(this::addToClass);
         other.waitingLists.forEach(this::addWaitingList);
         other.registrations.forEach(this::addRegistration);
+        registeredPartners.putAll(other.registeredPartners);
+    }
+
+    // --- Anwesenheit (0.35) --------------------------------------------------
+
+    public Attendance getAttendance() {
+        return attendance;
+    }
+
+    public void setAttendance(Attendance a) {
+        attendance = a == null ? Attendance.UNKNOWN : a;
+    }
+
+    /** Am Turniertag anwesend („angemeldet“). */
+    public boolean isPresent() {
+        return attendance == Attendance.PRESENT;
+    }
+
+    /** Nachrücker = laut Meldeliste (click-TT) auf der Warteliste mindestens einer Klasse. */
+    public boolean isReserve() {
+        return !waitingLists.isEmpty();
+    }
+
+    /** Laut Meldeliste für die Klasse gemeldet (noch nicht oder schon in der Klasse). */
+    public boolean isEnteredFor(String className) {
+        return registrations.contains(className) || classes.containsKey(className);
+    }
+
+    /** Doppelpartner laut Meldeliste ({@code identityKey}) oder {@code null}. */
+    public String getRegisteredPartner(String className) {
+        return registeredPartners.get(className);
+    }
+
+    public void setRegisteredPartner(String className, String partnerKey) {
+        if (partnerKey == null) registeredPartners.remove(className);
+        else registeredPartners.put(className, partnerKey);
+    }
+
+    public java.util.Map<String, String> getRegisteredPartners() {
+        return Collections.unmodifiableMap(registeredPartners);
+    }
+
+    /**
+     * 0.35: Meldungen aus der Meldeliste landen nicht mehr direkt „In der Klasse“, sondern als Meldung unter
+     * „Verfügbar“ (Übernahme erst für anwesende Personen).
+     */
+    public void entriesToRegistrations() {
+        for (String c : new java.util.ArrayList<>(classes.keySet())) {
+            classes.remove(c);
+            registrations.add(c);
+        }
     }
 
     // --- Klassen -----------------------------------------------------------
@@ -144,6 +199,8 @@ public class Player {
         if (order != null) classes.put(newName, order);
         if (waitingLists.remove(oldName)) waitingLists.add(newName);
         if (registrations.remove(oldName)) registrations.add(newName);
+        String partner = registeredPartners.remove(oldName);
+        if (partner != null) registeredPartners.put(newName, partner);
     }
 
     /** Entfernt alles zu einer gelöschten Klasse. */
@@ -151,6 +208,7 @@ public class Player {
         classes.remove(className);
         waitingLists.remove(className);
         registrations.remove(className);
+        registeredPartners.remove(className);
     }
 
     public Set<String> getClassNames() {

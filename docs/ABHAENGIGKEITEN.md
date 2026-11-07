@@ -31,8 +31,18 @@ als 6 Monate ist (Regel und Ablauf: `CLAUDE.md` im Projektwurzelverzeichnis).
 
 ## Eigener Code – geprüfte Angriffsflächen
 
-- HTS ist ein Desktop-Programm ohne Server, ohne offenen Port, ohne Netzwerkzugriff zur Laufzeit.
-- Eingaben von außen sind nur Dateien: click-TT-XML (Import), `.hts`-Turnierdateien, Ergebnis-XML.
+- HTS ist ein Desktop-Programm ohne Netzwerkzugriff ins Internet. Seit 0.35.0 gibt es einen **optionalen
+  Handy-Zugang**: Nur nach Klick auf „Handy-Zugang starten“ öffnet HTS einen Webserver (Java-eigener
+  `com.sun.net.httpserver`, keine zusätzliche Bibliothek) auf Port 8080 im lokalen Netz; beim Verlassen des Turniers
+  wird er beendet.
+  - `/live`: nur lesend (Tische, Klassen, Ergebnisse, „Meine Spiele“); andere Methoden als GET werden abgewiesen.
+  - `/anmeldung/<Schlüssel>`: setzt nur die Anwesenheit (anwesend bzw. „Abmeldung“, die die Turnierleitung bestätigen
+    muss); der zufällige 8-stellige Schlüssel steht nur im ausgedruckten QR-Code; die Turnierleitung kann die
+    Anmeldung sperren; endgültig Abgemeldete ändert nur die Turnierleitung.
+  - Alle Ausgaben werden HTML- bzw. JSON-maskiert; Anfragen werden auf dem Oberflächen-Thread ausgeführt; der
+    Anfragekörper ist auf 64 KB begrenzt. Keine Anmeldung/kein Passwort: Wer im WLAN ist und den QR-Code hat, kann
+    Anwesenheiten melden – deshalb ein eigenes Turnier-WLAN (z. B. Router ohne Internet) nutzen.
+- Eingaben von außen sind sonst nur Dateien: click-TT-XML (Import), `.hts`-Turnierdateien, Ergebnis-XML.
 - Alle XML-Parser sind gegen XXE gehärtet: `TournamentFile` (`FEATURE_SECURE_PROCESSING`, `disallow-doctype-decl`),
   `ClickTtXmlImporter` und `ClickTtResultExporter` (`ACCESS_EXTERNAL_DTD`/`ACCESS_EXTERNAL_SCHEMA` leer).
   Bei jeder Prüfung erneut kontrollieren, dass neue Parser ebenso abgesichert sind.
@@ -43,6 +53,7 @@ als 6 Monate ist (Regel und Ablauf: `CLAUDE.md` im Projektwurzelverzeichnis).
 | --- | --- | --- | --- |
 | 04.11.2026 | Claude (auf Wunsch des Nutzers) | keine kritische Lücke mit Bezug zu HTS; Updates verfügbar für Temurin (21.0.8 → 21.0.13), JavaFX (21 GA → 21.0.x) und PDFBox (3.0.5 → 3.0.8) | Empfehlung in ZWISCHENSTAND.md (Feature-Sammlung 0.31.0) notiert; Aktualisierung nur nach Entscheidung des Nutzers |
 | 06.11.2026 | Claude (Umsetzung Issue #12, keine neue Prüfung) | Temurin 21.0.13+9 eingebaut | JavaFX und PDFBox noch nicht aktualisiert: Maven Central und Gluon/Apache-Downloads sind aus der Arbeitsumgebung gesperrt – Jar-Dateien vom Nutzer nötig (Issue #12 bleibt offen) |
+| 07.11.2026 | Claude (HTS 0.35.0, keine neue Prüfung) | Neu: optionaler Handy-Zugang (lokaler Webserver, JDK-Modul `jdk.httpserver`, im ausgelieferten JRE enthalten) – keine neue Bibliothek | Angriffsflächen-Abschnitt ergänzt; bei der nächsten Prüfung CVEs zu `jdk.httpserver` (Teil der Java-Laufzeit) mit bewerten |
 | 06.11.2026 | Claude (HTS 0.32.0, keine neue Prüfung) | JavaFX 21.0.8 und PDFBox/pdfbox-io/fontbox 3.0.8 eingebaut (Jars vom Nutzer, Herkunft Maven Central; Archive und Manifest-Versionen geprüft) | Issue #12 erledigt |
 
 ## Quellen der Prüfung 04.11.2026

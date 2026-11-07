@@ -271,6 +271,11 @@ public final class PlayingClass {
     public void setQualification(int direct, int ko, int rounds) { qualDirect = Math.max(0, direct); qualKo = Math.max(0, ko); qualRounds = Math.max(0, rounds); }
     /** Qualifikation: Nachrücker je Gruppe direkt aus der Gruppenphase (ohne Spiel), z. B. Dritte + Vierte = 2. */
     private int qualReserve;
+    /** 0.35: Klasse wurde durch den click-TT-Import angelegt („aus XML importiert“) – Start erst, wenn alle Gemeldeten
+     *  an- oder abgemeldet sind. */
+    private boolean importedFromXml;
+    public boolean isImportedFromXml() { return importedFromXml; }
+    public void setImportedFromXml(boolean b) { importedFromXml = b; }
     /** 0.34: KO-Qualifikation „insgesamt“ – Anzahl der Topplatzierten über alle Gruppen (0 = Plätze je Gruppe). */
     private int qualKoTotal;
     public int getQualKoTotal() { return qualKoTotal; }

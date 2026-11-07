@@ -859,3 +859,11 @@
 }
 .spinner.field-error .text-field { -fx-border-width: 0; }
 .field-error-text { -fx-text-fill: #b42318; -fx-font-size: 12px; }
+
+/* --- 0.35: Anwesenheit am Turniertag --- */
+.table-row-cell.attendance-withdrawn { -fx-background-color: #fff3b0; }
+.table-row-cell.attendance-withdrawn:selected { -fx-background-color: #f5e27a; }
+.table-row-cell.attendance-requested { -fx-background-color: #ffe1c2; }
+.table-row-cell.attendance-requested:selected { -fx-background-color: #ffcf9e; }
+.live-info { -fx-text-fill: -hts-navy; -fx-font-size: 12px; }
+.table-row-cell.entered .table-cell { -fx-font-weight: bold; }

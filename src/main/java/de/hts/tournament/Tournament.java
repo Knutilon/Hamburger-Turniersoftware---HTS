@@ -1,5 +1,6 @@
 package de.hts.tournament;
 
+import de.hts.player.Attendance;
 import de.hts.player.Player;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -1026,6 +1027,8 @@ public final class Tournament {
         if (!c.isDrawn()) throw new IllegalStateException("„" + c.getName() + "“ ist noch nicht ausgelost.");
         requireNotStarted(c);
         requireHandicapStartable(c);
+        String attendance = attendanceProblem(c);
+        if (attendance != null) throw new IllegalStateException(attendance);
         LocalDateTime now = LocalDateTime.now().withNano(0);
         c.setStartedAt(now);
         c.setReady(true);
@@ -1036,21 +1039,30 @@ public final class Tournament {
         markModified();
     }
 
-    /** Ergebnis von {@link #startTournament()}. */
-    public record StartReport(List<PlayingClass> started, List<PlayingClass> notReady, List<PlayingClass> alreadyRunning) {
+    /**
+     * Ergebnis von {@link #startTournament()}; {@code attendanceOpen}: bereite Klassen „aus XML importiert“, die wegen
+     * noch nicht an- oder abgemeldeter Gemeldeter nicht starten (0.35).
+     */
+    public record StartReport(List<PlayingClass> started, List<PlayingClass> notReady, List<PlayingClass> alreadyRunning,
+                              List<PlayingClass> attendanceOpen) {
+        public StartReport(List<PlayingClass> started, List<PlayingClass> notReady, List<PlayingClass> alreadyRunning) {
+            this(started, notReady, alreadyRunning, List.of());
+        }
     }
 
     /** Was beim Turnierstart passieren würde (für den Hinweis vorab). */
     public StartReport previewStart() {
         List<PlayingClass> ready = new java.util.ArrayList<>(), notReady = new java.util.ArrayList<>(),
                 running = new java.util.ArrayList<>();
+        List<PlayingClass> open = new java.util.ArrayList<>();
         for (PlayingClass c : classes) {
             if (c.isPhase()) continue;
             if (c.isStarted()) running.add(c);
+            else if (c.isReady() && c.isDrawn() && !openAttendance(c).isEmpty()) open.add(c);
             else if (c.isReady() && c.isDrawn()) ready.add(c);
             else notReady.add(c);
         }
-        return new StartReport(ready, notReady, running);
+        return new StartReport(ready, notReady, running, open);
     }
 
     /** Startet das Turnier: alle bereiten Klassen werden gestartet und ihre Spiele eingereiht. */
@@ -3033,6 +3045,167 @@ public final class Tournament {
         markModified();
     }
 
+    // --- 0.35: Anwesenheit am Turniertag, Anmeldung per Adresse -----------------------------------
+
+    private boolean checkinLocked;
+    private String checkinToken;
+
+    /** Anmeldung per Adresse (Handy) von der Turnierleitung gesperrt? */
+    public boolean isCheckinLocked() {
+        return checkinLocked;
+    }
+
+    public void setCheckinLocked(boolean b) {
+        if (checkinLocked != b) {
+            checkinLocked = b;
+            markModified();
+        }
+    }
+
+    /** Anmeldung per Adresse möglich: nicht gesperrt und noch nicht alle Klassen beendet. */
+    public boolean isCheckinOpen() {
+        return !checkinLocked && !isCompletelyFinished();
+    }
+
+    /** Zufälliger Schlüssel in der Adresse der Anmeldeseite (steht im ausgedruckten QR-Code). */
+    public String getCheckinToken() {
+        if (checkinToken == null || checkinToken.isBlank()) {
+            String abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            java.security.SecureRandom r = new java.security.SecureRandom();
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 8; i++) sb.append(abc.charAt(r.nextInt(abc.length())));
+            checkinToken = sb.toString();
+        }
+        return checkinToken;
+    }
+
+    /** Nur für das Laden. */
+    public void restoreCheckin(boolean locked, String token) {
+        checkinLocked = locked;
+        checkinToken = token;
+    }
+
+    /** Anwesenheit setzen (Turnierleitung oder Anmeldeseite). */
+    public void setAttendance(Player p, Attendance a) {
+        if (p.getAttendance() != a) {
+            p.setAttendance(a);
+            markModified();
+        }
+    }
+
+    /**
+     * Anmeldung per Handy: Teilnehmende/Betreuende melden „anwesend“ oder „nicht anwesend“. „Nicht anwesend“ muss die
+     * Turnierleitung bestätigen; endgültig Abgemeldete ändert nur die Turnierleitung.
+     *
+     * @return {@code true}, wenn sich etwas geändert hat
+     */
+    public boolean checkinFromPhone(Player p, boolean present) {
+        if (!isCheckinOpen()) throw new IllegalStateException("Die Anmeldung ist geschlossen.");
+        if (p.getAttendance() == Attendance.WITHDRAWN) return false;
+        Attendance next = present ? Attendance.PRESENT : Attendance.WITHDRAW_REQUESTED;
+        if (p.getAttendance() == next) return false;
+        setAttendance(p, next);
+        return true;
+    }
+
+    /** Gemeldete einer Klasse (laut Meldeliste bzw. in der Klasse/in Paarungen) – Nachrücker zählen nicht. */
+    public List<Player> enteredPlayers(PlayingClass c) {
+        PlayingClass root = rootOf(c);
+        java.util.Set<Player> out = new java.util.LinkedHashSet<>();
+        for (Player p : players) if (p.isEnteredFor(root.getName())) out.add(p);
+        if (root.isDoubles()) for (DoublesPair pair : pairsIn(root)) for (Player m : pair.members()) if (m != null) out.add(m);
+        return new java.util.ArrayList<>(out);
+    }
+
+    /** Klassen „aus XML importiert“: Gemeldete, die noch nicht angemeldet oder endgültig abgemeldet sind. */
+    public List<Player> openAttendance(PlayingClass c) {
+        PlayingClass root = rootOf(c);
+        if (!root.isImportedFromXml()) return List.of();
+        return enteredPlayers(root).stream().filter(p -> !p.getAttendance().isSettled()).toList();
+    }
+
+    /** Grund, warum die Klasse wegen offener An-/Abmeldungen nicht starten kann – sonst {@code null}. */
+    public String attendanceProblem(PlayingClass c) {
+        List<Player> open = openAttendance(c);
+        if (open.isEmpty()) return null;
+        List<String> names = open.stream().limit(8).map(Player::getDisplayName).toList();
+        return "„" + rootOf(c).getName() + "“ kann noch nicht starten: " + open.size()
+                + (open.size() == 1 ? " gemeldete Person ist" : " gemeldete Personen sind") + " noch nicht angemeldet oder "
+                + "endgültig abgemeldet (" + String.join(", ", names) + (open.size() > names.size() ? ", …" : "") + ").";
+    }
+
+    /**
+     * „Alle anwesenden Gemeldeten übernehmen“: anwesende Personen mit Meldung für die Klasse kommen in die Klasse; im
+     * Doppel mit dem gemeldeten Partner, wenn auch er anwesend und noch nicht gepaart ist.
+     *
+     * @return Anzahl der übernommenen Personen
+     */
+    public int takeOverPresentEntries(PlayingClass c) {
+        requireNotStarted(c);
+        Map<String, Player> byKey = new java.util.HashMap<>();
+        for (Player p : players) byKey.put(p.identityKey(), p);
+        int n = 0;
+        for (Player p : new java.util.ArrayList<>(players)) {
+            if (!p.isPresent() || !p.getRegistrations().contains(c.getName())) continue;
+            if (c.isDoubles()) {
+                if (pairOf(p, c).map(DoublesPair::isComplete).orElse(false)) continue;
+                Player partner = p.getRegisteredPartner(c.getName()) == null ? null : byKey.get(p.getRegisteredPartner(c.getName()));
+                boolean partnerFree = partner != null && partner != p && partner.isPresent()
+                        && (partner.isEnteredFor(c.getName())) && !pairOf(partner, c).map(DoublesPair::isComplete).orElse(false);
+                if (partnerFree) {
+                    createPair(c, p, partner);
+                    n += 2;
+                    continue;
+                }
+            }
+            if (assign(p, c)) n++;
+        }
+        markModified();
+        return n;
+    }
+
+    /**
+     * 0.35 click-TT-Import: Meldungen kommen nicht mehr direkt in die Klasse, sondern als Meldung unter „Verfügbar“;
+     * die Doppelpartner laut Meldeliste werden gemerkt (für die Übernahme).
+     */
+    public MergeResult mergeImportedEntries(List<Player> imported, List<String[]> pairs) {
+        for (Player p : imported) p.entriesToRegistrations();
+        Map<String, Player> importedByKey = new java.util.HashMap<>();
+        for (Player p : imported) importedByKey.put(p.identityKey(), p);
+        for (String[] pr : pairs) {          // {Klasse, Schlüssel 1, Schlüssel 2}
+            Player a = importedByKey.get(pr[1]), b = importedByKey.get(pr[2]);
+            if (a != null && b != null && a != b) {
+                a.setRegisteredPartner(pr[0], b.identityKey());
+                b.setRegisteredPartner(pr[0], a.identityKey());
+            }
+        }
+        return merge(imported);
+    }
+
+    /**
+     * Ältere Turnierdateien (vor 0.35): In noch nicht ausgelosten Klassen kommen die Personen aus „In der Klasse“
+     * zurück zu den Meldungen („In der Klasse“ = 0); Doppelpaarungen werden als gemeldete Partner gemerkt.
+     */
+    public void migrateToAttendanceModel() {
+        for (PlayingClass c : classes) {
+            if (c.isPhase() || c.isDrawn()) continue;
+            String cn = c.getName();
+            if (c.isDoubles()) {
+                for (DoublesPair pair : new java.util.ArrayList<>(pairsIn(c))) {
+                    Player a = pair.getFirst(), b = pair.getSecond();
+                    if (a != null && b != null) {
+                        a.setRegisteredPartner(cn, b.identityKey());
+                        b.setRegisteredPartner(cn, a.identityKey());
+                    }
+                    pairs.remove(pair);
+                }
+            }
+            for (Player p : players) {
+                if (p.removeFromClass(cn)) p.addRegistration(cn);
+            }
+        }
+    }
+
     /** Setzt Modus und Auslosung der Klasse zurück. */
     public void clearDraw(PlayingClass c) {
         requireNotStarted(c);
@@ -3199,6 +3372,9 @@ public final class Tournament {
         for (PlayingClass c : new java.util.ArrayList<>(classes)) {
             if (c.isPhase() && classes.contains(c)) removeClass(c);
         }
+        for (Player p : players) p.setAttendance(Attendance.UNKNOWN);
+        checkinLocked = false;
+        checkinToken = null;
         for (PlayingClass c : classes) {
             c.setFollowUpClass(null);
             c.setStartedAt(null);
@@ -3231,6 +3407,9 @@ public final class Tournament {
         pairs.clear();
         matches.clear();
         tableClasses.clear();
+        for (Player p : players) p.setAttendance(Attendance.UNKNOWN);
+        checkinLocked = false;
+        checkinToken = null;
         setStartedAt(null);
         markModified();
     }
@@ -3259,6 +3438,7 @@ public final class Tournament {
         }
         pairs.clear();
         players.clear();
+        for (Player p : incoming) p.setAttendance(Attendance.PRESENT);     // CSV (Vorgabeturnier): gelten als angemeldet
         merge(incoming);
         markModified();
     }

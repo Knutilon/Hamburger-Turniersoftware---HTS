@@ -6,6 +6,27 @@ Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Pub
 Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
 (Label „Feature“ bzw. „bug“).
 
+## Neu in 0.35.0
+
+- **Anwesenheit am Turniertag:** Die Spalte „Angemeldet“ der Teilnehmenden heißt jetzt „am Turniertag anwesend“ und
+  lässt sich abhaken. Neues Menü „Anwesenheit“: Markierte anmelden, endgültig abmelden (gelb hervorgehoben),
+  Abmeldungen per Handy bestätigen (orange), zurücknehmen. Eigene Spalte „Nachrücker“ (Warteliste aus click-TT).
+- **Meldungen statt „In der Klasse“:** Der click-TT-Import legt die Gemeldeten als Meldung unter „Verfügbar“ an –
+  „In der Klasse“ beginnt bei 0. Unter „Verfügbar“ stehen nur Angemeldete (anwesend); „Alle anwesenden Gemeldeten
+  übernehmen“ holt sie in die Klasse (Doppel mit dem gemeldeten Partner). Von Hand erfasste Personen gelten sofort
+  als angemeldet. Ältere Turnierdateien: noch nicht ausgeloste Klassen werden so umgestellt.
+- **Startsperre für importierte Klassen:** Klassen „aus XML importiert“ starten erst, wenn alle Gemeldeten
+  angemeldet oder endgültig abgemeldet sind („Turnier starten“ startet die übrigen und nennt die offenen).
+- **Handy-Zugang im lokalen WLAN** (Knopf unter „Teilnehmende“, Port 8080, kein Internet nötig):
+  - Live-Anzeige (nur lesend): Tische und laufende Spiele, Klassen mit Gruppen und KO-Runden, Ergebnisse,
+    „Meine Spiele“ / „Meine Gruppe“ – das Handy merkt sich den Namen; aktualisiert sich alle 10 Sekunden.
+  - Anmeldung am Turniertag über einen QR-Code mit Schlüssel: Teilnehmende melden sich selbst an, Betreuende wählen
+    ihren Verein und haken die Anwesenden ab; „nicht anwesend“ bestätigt die Turnierleitung. Die Anmeldung lässt sich
+    sperren und wieder öffnen; sie endet, wenn alle Klassen beendet sind.
+  - „QR-Codes drucken“: A4-Aushang mit beiden QR-Codes und Feldern für WLAN-Name und Passwort.
+  - Beim ersten Start fragt die Windows-Firewall nach – „Private Netzwerke“ erlauben. Gäste-WLANs, die Geräte
+    voneinander trennen, funktionieren nicht.
+
 ## Neu in 0.34.0
 
 - **KO-Qualifikation „insgesamt“:** Im Dialog „Phase abschließen“ lässt sich für die KO-Qualifikation wählen, ob die
