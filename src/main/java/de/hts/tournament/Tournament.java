@@ -3399,6 +3399,38 @@ public final class Tournament {
         return new java.util.ArrayList<>(out);
     }
 
+    /**
+     * 0.39 (#62): Setzplätze einer per XML importierten Klasse – Rangfolge nach TTR der Gemeldeten (ohne endgültig
+     * Abgemeldete und reine Nachrücker); gleicher TTR = gleicher Platz (3, 3, 5 …), ohne TTR gemeinsam ganz unten; bei
+     * Doppeln zählt der Ø-TTR der Paarung. Leer, wenn die Klasse nicht per XML importiert wurde.
+     */
+    public java.util.Map<Player, Integer> seedPositions(PlayingClass c) {
+        PlayingClass root = rootOf(c);
+        if (!root.isImportedFromXml()) return java.util.Map.of();
+        java.util.Map<Player, Integer> ttrOf = new java.util.HashMap<>();
+        for (Player p : enteredPlayers(root)) {
+            if (p.getAttendance() == Attendance.WITHDRAWN) continue;
+            Integer t = p.getTtr();
+            if (root.isDoubles()) {
+                DoublesPair pair = pairOf(p, root).orElse(null);
+                if (pair != null && pair.getAverageTtr() != null) t = pair.getAverageTtr();
+            }
+            ttrOf.put(p, t);
+        }
+        List<Player> order = new java.util.ArrayList<>(ttrOf.keySet());
+        order.sort(java.util.Comparator.comparing((Player p) -> ttrOf.get(p), java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())));
+        java.util.Map<Player, Integer> out = new java.util.LinkedHashMap<>();
+        Integer prev = null;
+        int rank = 0;
+        for (int i = 0; i < order.size(); i++) {
+            Integer t = ttrOf.get(order.get(i));
+            if (i == 0 || !java.util.Objects.equals(t, prev)) rank = i + 1;
+            out.put(order.get(i), rank);
+            prev = t;
+        }
+        return out;
+    }
+
     /** Klassen „aus XML importiert“: Gemeldete, die noch nicht angemeldet oder endgültig abgemeldet sind. */
     public List<Player> openAttendance(PlayingClass c) {
         PlayingClass root = rootOf(c);

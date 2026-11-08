@@ -1,4 +1,4 @@
-# Zwischenstand HTS 0.38.0 (08.11.2026)
+# Zwischenstand HTS 0.39.0 (08.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -14,7 +14,7 @@ https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.
 (+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
-## Feature-Sammlung für 0.39.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 0.40.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
 
@@ -27,12 +27,58 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Passwort zusätzlich als Text unter dem QR-Code; Verschlüsselung WPA/WPA2 (Standard); Feld leer = kein WLAN-QR-Code
    (wie bisher Felder zum Ausfüllen).
 
-2. TEILNEHMENDE: SETZPOSITION NACH TTR (08.11.2026, Issue #62) – TEILWEISE GEKLÄRT. In der Übersicht „Teilnehmende“
-   wird eine Setzposition angezeigt: Rangfolge nach TTR innerhalb der Klasse, ohne TTR ganz unten; nur wenn auf eine
-   Klasse gefiltert ist und die Klasse per XML importiert wurde. Offen: gleicher TTR (Vorschlag: gleicher Setzplatz,
-   z. B. 3 und 3, dann 5); Doppel (Vorschlag: Ø-TTR).
-
 ## Umgesetzt
+
+0.39.0 (Issues #62–#66). README „Neu in 0.39.0“.
+#62 Tournament.seedPositions (XML-Klassen, ohne Abgemeldete/Nachrücker, Gleichstand gleicher Platz, ohne TTR unten,
+Doppel Ø-TTR); PlayerTableView Spalte „Setzplatz“ nur bei Klassenfilter (setSeedSource). #63 Ui.makeSearchable /
+setSearchItems (editierbare ComboBox, FilteredList der Einträge, Wert erst bei Auswahl; Esc/Fokusverlust stellt her) für
+die Vereinsfilter in PlayerTableView und ClassesView. #64 attendanceMenu: „Aktion für Markierte wählen“,
+„Handyabmeldungen bearbeiten“, CSS .action-menu, Ui.oneLineWhenPossible statt fester Umbruchbreite. #65 DrawView: eine
+FlowPane (Suche, Gleichstand, Knöpfe in neuer Reihenfolge, PDF zuletzt, Infozeile am Ende), printBtn .action-menu.
+#66 „Handyabmeldungen“ sichtbar bei laufendem LiveServer oder offenen Handyabmeldungen. Geprüft bei 1093 × 614 und
+911 × 512. Tests: 207 bestanden (Version039Test).
+Feature-Sammlung 0.39.0 (zur Nachverfolgung):
+
+2. TEILNEHMENDE: SETZPOSITION NACH TTR (08.11.2026, Issue #62) – GEKLÄRT. In der Übersicht „Teilnehmende“
+   wird eine Setzposition angezeigt: Rangfolge nach TTR innerhalb der Klasse, ohne TTR ganz unten; nur wenn auf eine
+   Klasse gefiltert ist und die Klasse per XML importiert wurde. Bestätigt: gleicher TTR = gleicher Setzplatz
+   (z. B. 3 und 3, dann 5); Doppel nach Ø-TTR.
+
+3. VEREINSFILTER ALS DURCHSUCHBARE AUSWAHL (08.11.2026, Issue #63) – GEKLÄRT. Die Auswahl „Verein:“ soll
+   durchsuchbar sein. Vorschläge: Eintippen filtert die Liste sofort (Teil des Namens genügt, Groß-/Kleinschreibung
+   egal, z. B. „hamb“ → „Hamburger TV“, „SC Hamburg“); Pfeiltasten + Enter wählen, Esc stellt den vorigen Wert her,
+   leeres Feld = „Alle“. Überall, wo nach Verein gefiltert wird: Teilnehmende sowie in den Klassen die Listen
+   „Verfügbar“ und „In der Klasse“.
+   Bestätigt (08.11.): Tippen filtert nur die Optionen der Auswahlliste; die Tabelle wird erst gefiltert, wenn ein
+   Wert ausgewählt wurde (Enter bzw. Klick).
+
+4. TEILNEHMENDE: KNOPFZEILE (08.11.2026, Issue #64) – GEKLÄRT. „Abgemeldete als PDF“ steht rechts neben
+   den beiden Auswahlmenüs (statt in einer zweiten Zeile – Ursache: FlowPane-Standardumbruchbreite 400 px). Die Menüs
+   „Aktion bezüglich Markierte“ und „Handyabmeldungen“ bekommen den Stil der Filterauswahlen (abgerundet, hellgrau,
+   Pfeil rechts). Vorschlag: denselben Stil auch für „PDF / Drucken ▾“ im Klassenkopf; Umbruch nur, wenn es wirklich
+   eng wird.
+
+5. KLASSENANSICHT: WERKZEUGZEILE IN EINER ZEILE (08.11.2026, Issue #65) – GEKLÄRT. Suche, „Gleichstand“,
+   „PDF / Drucken ▾“ und die Knöpfe (z. B. Neu auslosen, Auslosung verwerfen, bereit, starten) in einer Zeile
+   (Umbruch nur, wenn es wirklich nicht passt); alle Auswahlmenüs im Design der Auswahl „Gleichstand“ (weiß,
+   abgerundet, Rahmen, Pfeil). Rückfrage: gilt das Gleichstand-Design dann auch für die Menüs auf „Teilnehmende“ (#64)?
+   Reihenfolge der Knöpfe (08.11., Nutzer): ganz links „Auslosung verwerfen“, dann „Neu auslosen“, „bereit“,
+   „starten“, als letztes „PDF / Drucken“.
+   Design (08.11., Nutzer): Ja – auch die Menüs auf „Teilnehmende“. Vorlage sind zwei Beispiele: Auswahl wie
+   „Gleichstand“ (weiß, Rahmen, abgerundet, Pfeil) und Filter wie „Alle ▾“ (hellgrau gefüllt, abgerundet, ohne
+   Rahmen). Bei Aktions-Menüs zeigt der Text, wozu sie dienen (z. B. „Aktion für Markierte wählen“, „Suchen“).
+   Vorschlag (Rückfrage gestellt): Aktions- und Einstellungsmenüs im Gleichstand-Design mit erklärendem Text
+   („Aktion für Markierte wählen ▾“, „Handyabmeldungen bearbeiten ▾“, „PDF / Drucken ▾“, „Gleichstand: … ▾“);
+   Filter- und Suchauswahlen im „Alle“-Design (Verein, Klasse, Geschlecht, Status, Gruppe); durchsuchbare Auswahl
+   (#63) zeigt beim Öffnen „Verein suchen …“. BESTÄTIGT (Aufteilung und Texte). Vorschlag für die übrigen Knöpfe (je nach Zustand): Phasen-Knöpfe
+   („Phase anhalten/starten/fortsetzen“, „Phase neu starten“, „Phase vorzeitig beenden“, „Phase abschließen“ …) an
+   der Stelle von „bereit/starten“, „PDF / Drucken“ immer zuletzt.
+
+6. TEILNEHMENDE: „HANDYABMELDUNGEN“ NUR BEI LAUFENDEM HANDY-ZUGANG (08.11.2026, Issue #66) – GEKLÄRT (Vorschlag angenommen). Das
+   Menü „Handyabmeldungen“ auf „Teilnehmende“ erscheint nur, wenn unter „Mobile Einstellungen“ der Handy-Zugang
+   gestartet ist. Vorschlag: zusätzlich anzeigen, solange noch offene Handyabmeldungen (orange) bestehen – auch wenn
+   der Zugang inzwischen beendet ist –, damit sie bestätigt oder verworfen werden können.
 
 0.38.0 (Issues #46–#61 außer #34). README „Neu in 0.38.0“.
 #46 createGroupMatches: Versatz je Gruppe = maxRunden − eigene Runden. #47 Scoring.SHORT ohne Vorzeichen (auch „−“).

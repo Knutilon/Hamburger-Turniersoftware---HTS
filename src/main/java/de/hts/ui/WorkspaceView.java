@@ -110,6 +110,7 @@ public final class WorkspaceView {
         participantsCard.setPadding(new Insets(0, 40, 16, 40));
         participants.setOnEdit(this::editParticipant);
         participants.setClassSource(() -> tournament.rootClasses().stream().map(PlayingClass::getName).toList());
+        participants.setSeedSource(name -> tournament.findClass(name).map(tournament::seedPositions).orElse(java.util.Map.of()));   // 0.39 (#62)
         classes.setOnShowOpen(c -> {               // 0.37: „Offene Personen anzeigen“
             showPage(Page.PARTICIPANTS);
             participants.showClass(c.getName());
@@ -846,8 +847,10 @@ public final class WorkspaceView {
      * „Handyabmeldungen“ (alle bestätigen, Markierte bzw. alle zurück auf offen).
      */
     private javafx.scene.Node attendanceMenu() {
-        javafx.scene.control.MenuButton marked = new javafx.scene.control.MenuButton("Aktion bezüglich Markierte");
-        marked.getStyleClass().add("pill");
+        // 0.39 (#64): Aktionsmenüs im Design der Auswahl „Gleichstand“, Text sagt, wozu sie dienen
+        javafx.scene.control.MenuButton marked = new javafx.scene.control.MenuButton("Aktion für Markierte wählen");
+        marked.getStyleClass().add("action-menu");
+        marked.setMinWidth(Region.USE_PREF_SIZE);
         MenuItem present = new MenuItem("angemeldet (anwesend)");
         present.setOnAction(e -> setAttendance(de.hts.player.Attendance.PRESENT, "angemeldet"));
         MenuItem withdraw = new MenuItem("endgültig abmelden");
@@ -862,8 +865,10 @@ public final class WorkspaceView {
         marked.getItems().addAll(present, withdraw, new SeparatorMenuItem(), undo);
         marked.setTooltip(new Tooltip("Für die markierten Teilnehmenden – gelb = endgültig abgemeldet"));
 
-        javafx.scene.control.MenuButton phone = new javafx.scene.control.MenuButton("Handyabmeldungen");
-        phone.getStyleClass().add("pill");
+        javafx.scene.control.MenuButton phone = new javafx.scene.control.MenuButton("Handyabmeldungen bearbeiten");
+        phone.getStyleClass().add("action-menu");
+        phone.setMinWidth(Region.USE_PREF_SIZE);
+        phone.managedProperty().bind(phone.visibleProperty());
         MenuItem confirmAll = new MenuItem("alle bestätigen");
         confirmAll.setOnAction(e -> {
             List<Player> req = withAttendance(tournament.getPlayers(), de.hts.player.Attendance.WITHDRAW_REQUESTED);
@@ -893,11 +898,18 @@ public final class WorkspaceView {
         pdf.setMinWidth(Region.USE_PREF_SIZE);
         pdf.setTooltip(new Tooltip("Liste der endgültig Abgemeldeten je Klasse (Name, Vorname, Verein, TTR, abgemeldet durch)"));
         pdf.setOnAction(e -> Reports.showWithdrawn(getRoot().getScene() == null ? null : getRoot().getScene().getWindow(), tournament, this::setStatus));
-        Runnable updatePdf = () -> pdf.setDisable(tournament.getPlayers().stream()
-                .noneMatch(p -> p.getAttendance() == de.hts.player.Attendance.WITHDRAWN && !p.isReserveOnly()));
+        Runnable updatePdf = () -> {
+            pdf.setDisable(tournament.getPlayers().stream()
+                    .noneMatch(p -> p.getAttendance() == de.hts.player.Attendance.WITHDRAWN && !p.isReserveOnly()));
+            // 0.39 (#66): „Handyabmeldungen“ nur bei laufendem Handy-Zugang oder noch offenen Handyabmeldungen
+            phone.setVisible((liveServer != null && liveServer.isRunning()) || tournament.getPlayers().stream()
+                    .anyMatch(p -> p.getAttendance() == de.hts.player.Attendance.WITHDRAW_REQUESTED));
+        };
         updatePdf.run();
         participants.countTextProperty().addListener((o, a, b) -> updatePdf.run());
+        // 0.39 (#64): in einer Zeile, PDF rechts neben den Menüs (Umbruch nur, wenn es wirklich eng wird)
         javafx.scene.layout.FlowPane box = new javafx.scene.layout.FlowPane(8, 8, marked, phone, pdf);
+        Ui.oneLineWhenPossible(box);
         box.setAlignment(Pos.CENTER_LEFT);
         return box;
     }

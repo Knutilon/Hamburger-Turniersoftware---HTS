@@ -218,7 +218,8 @@ public final class ClassesView {
         filterRow.managedProperty().bind(filterRow.visibleProperty());
         clubFilter.setPromptText("Alle Vereine");
         clubFilter.valueProperty().addListener((o, a, b) -> updateFilters());
-        clubFilter.setTooltip(new Tooltip("Nach Verein filtern"));
+        clubFilter.setTooltip(new Tooltip("Nach Verein filtern – zum Suchen tippen"));
+        Ui.makeSearchable(clubFilter, "Verein suchen …");          // 0.39 (#63)
         clubFilter.setPrefWidth(170);
         // Einzel: kein Vereinsfilter (die Suche findet auch Vereine); Doppel: bleibt – hilft beim Paaren
         clubFilter.managedProperty().bind(clubFilter.visibleProperty());
@@ -243,7 +244,8 @@ public final class ClassesView {
         inSearch.textProperty().addListener((o, a, b) -> updateFilters());
         inClubFilter.setPromptText("Alle Vereine");
         inClubFilter.valueProperty().addListener((o, a, b) -> updateFilters());
-        inClubFilter.setTooltip(new Tooltip("Nach Verein filtern"));
+        inClubFilter.setTooltip(new Tooltip("Nach Verein filtern – zum Suchen tippen"));
+        Ui.makeSearchable(inClubFilter, "Verein suchen …");
         inClubFilter.setPrefWidth(170);
         inClubFilter.setVisible(false);
         inClubFilter.managedProperty().bind(inClubFilter.visibleProperty());
@@ -559,10 +561,10 @@ public final class ClassesView {
         clubs.add(ALL_CLUBS);
         tournament.getPlayers().stream().map(Player::getClubName).filter(java.util.Objects::nonNull).distinct()
                 .sorted(Collator.getInstance(Locale.GERMAN)).forEach(clubs::add);
-        if (!clubs.equals(clubFilter.getItems())) clubFilter.getItems().setAll(clubs);
+        Ui.setSearchItems(clubFilter, clubs);
         clubFilter.setValue(cur != null && clubs.contains(cur) ? cur : ALL_CLUBS);
         String curIn = inClubFilter.getValue();
-        if (!clubs.equals(inClubFilter.getItems())) inClubFilter.getItems().setAll(clubs);
+        Ui.setSearchItems(inClubFilter, clubs);
         inClubFilter.setValue(curIn != null && clubs.contains(curIn) ? curIn : ALL_CLUBS);
     }
 

@@ -243,7 +243,7 @@ public final class DrawView {
         tiebreakGroup.selectedToggleProperty().addListener((o, a, b) -> onPhaseSettingsChanged());
         tbLabel.getStyleClass().add("class-name");
         for (Node n : new Node[]{tbLabel, tbSets, tbH2h}) n.managedProperty().bind(n.visibleProperty());
-        printBtn.getStyleClass().add("pill");
+        printBtn.getStyleClass().add("action-menu");                // 0.39 (#65): wie „Gleichstand“
         printBtn.setTooltip(new Tooltip("PDF dieser Phase anzeigen (speichern/drucken): je Gruppe eine A4-Seite mit Tabelle und Spielplan"));
         printBtn.managedProperty().bind(printBtn.visibleProperty());
         printBtn.setMinWidth(Region.USE_PREF_SIZE);
@@ -349,8 +349,10 @@ public final class DrawView {
         startedLabel.setVisible(false);
         startedLabel.setManaged(false);
         allGroupsLabel.setVisible(false);
-        actionRow = new javafx.scene.layout.FlowPane(10, 8, printBtn, pauseBtn, restartBtn, endEarlyBtn, undoEndBtn, thirdBtn, backWrap,
-                followBtn, finishBtn, nextPhaseBtn, drawBtn, discardWrap, readyBtn, startBtn);
+        // 0.39 (#65): Reihenfolge – „Auslosung verwerfen“ bzw. „Zurück zu Phase …“ ganz links, dann „Neu auslosen“,
+        // „bereit“, „starten“ bzw. die Phasen-Knöpfe, „PDF / Drucken“ zuletzt
+        actionRow = new javafx.scene.layout.FlowPane(10, 8, discardWrap, backWrap, drawBtn, readyBtn, startBtn, pauseBtn, restartBtn,
+                endEarlyBtn, undoEndBtn, thirdBtn, followBtn, finishBtn, nextPhaseBtn, printBtn);
         actionRow.setAlignment(Pos.CENTER_LEFT);
         actionRow.setRowValignment(javafx.geometry.VPos.CENTER);
         settingsSummary.managedProperty().bind(settingsSummary.visibleProperty());
@@ -358,7 +360,7 @@ public final class DrawView {
         settingsSummary.setTextAlignment(javafx.scene.text.TextAlignment.RIGHT);
         // Suche in der Gruppenphase
         groupSearch.setPromptText("Suchen: Vorname, Nachname, Verein");
-        groupSearch.setPrefColumnCount(24);
+        groupSearch.setPrefWidth(Ui.textWidth("Suchen: Vorname, Nachname, Verein", false, 13) + 36);   // Platzhalter vollständig
         groupSearch.setMinWidth(Region.USE_PREF_SIZE);
         searchDelay.setOnFinished(e -> applySearch());
         groupSearch.textProperty().addListener((o, a, b) -> {
@@ -369,6 +371,7 @@ public final class DrawView {
         clearSearch.setTooltip(new Tooltip("Suche zurücksetzen"));
         clearSearch.setOnAction(e -> groupSearch.clear());
         clearSearch.visibleProperty().bind(groupSearch.textProperty().isNotEmpty());
+        clearSearch.managedProperty().bind(clearSearch.visibleProperty());
         groupSearch.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ENTER) {
                 if (searchDelay.getStatus() == javafx.animation.Animation.Status.RUNNING) {   // Eingabe noch nicht ausgewertet
@@ -388,16 +391,16 @@ public final class DrawView {
         searchRow.managedProperty().bind(searchRow.visibleProperty());
         // 0.38 (#56): Zeile 1 Suche · Gleichstand · rechts Infozeile; Zeile 2 alle Knöpfe (umbrechend)
         phaseRow.setVisible(false);
-        Region gap = new Region();
-        HBox.setHgrow(gap, Priority.ALWAYS);
         settingsSummary.setMinWidth(0);
-        javafx.scene.layout.FlowPane leftTools = new javafx.scene.layout.FlowPane(10, 8, searchRow, tiebreakBox);
-        leftTools.setAlignment(Pos.CENTER_LEFT);
-        leftTools.setRowValignment(javafx.geometry.VPos.CENTER);
-        HBox.setHgrow(leftTools, Priority.SOMETIMES);
-        HBox toolRow = new HBox(12, leftTools, gap, settingsSummary);
-        toolRow.setAlignment(Pos.CENTER_LEFT);
-        topRow = new VBox(8, followRow, toolRow, actionRow);
+        // 0.39 (#65): alles in EINER Zeile – Suche, Gleichstand, Knöpfe; rechts die Infozeile; Umbruch nur, wenn es nicht passt
+        actionRow.getChildren().add(0, tiebreakBox);
+        actionRow.getChildren().add(0, searchRow);
+        Ui.oneLineWhenPossible(actionRow);
+        HBox.setHgrow(actionRow, Priority.ALWAYS);
+        actionRow.setMinWidth(0);
+        settingsSummary.setMinWidth(Region.USE_PREF_SIZE);
+        actionRow.getChildren().add(settingsSummary);              // Infozeile („3 Gruppen · 23 Spiele offen“) am Ende
+        topRow = new VBox(8, followRow, actionRow);
         topRow.widthProperty().addListener((o, a, b) -> updateBannerWidth());
         controls = new VBox(10, modeRow, groupRow, swissRow, topRow);
 

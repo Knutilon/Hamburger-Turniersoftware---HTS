@@ -162,6 +162,13 @@ public final class PlayerTableView {
         reserve.setMinWidth(102);
         reserve.setMaxWidth(130);
 
+        // 0.39 (#62): Setzplatz nach TTR – nur bei Klassenfilter auf eine per XML importierte Klasse
+        seedCol.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(seeds.get(c.getValue())));
+        seedCol.setComparator(Ui.nullsLastBothWays(seedCol));
+        seedCol.setStyle("-fx-alignment: CENTER;");
+        seedCol.getStyleClass().add("col-center");
+        seedCol.setPrefWidth(90);
+        seedCol.setVisible(false);
         TableColumn<Player, String> lastname = textColumn("Nachname", Player::getLastname, 140, textCmp);
         TableColumn<Player, String> firstname = textColumn("Vorname", Player::getFirstname, 120, textCmp);
         TableColumn<Player, String> birth = textColumn("Geburtsdatum", Player::getBirthText, 100, textCmp);
@@ -183,7 +190,7 @@ public final class PlayerTableView {
         TableColumn<Player, String> licence = textColumn("Lizenz-Nr.", Player::getLicenceNr, 90, textCmp);
         licence.setSortable(false);
 
-        table.getColumns().addAll(List.of(registered, reserve, lastname, firstname, birth, sex, club, ttr, entries, licence));
+        table.getColumns().addAll(List.of(registered, reserve, seedCol, lastname, firstname, birth, sex, club, ttr, entries, licence));
         table.getSortOrder().addAll(List.of(lastname, firstname));
 
         // --- Suchleiste ---
@@ -212,7 +219,8 @@ public final class PlayerTableView {
         clubFilter.getItems().setAll(ALL_CLASSES);
         clubFilter.setValue(ALL_CLASSES);
         clubFilter.valueProperty().addListener((o, a, b) -> updateFilter());
-        clubFilter.setTooltip(new Tooltip("Nur Teilnehmende dieses Vereins"));
+        clubFilter.setTooltip(new Tooltip("Nur Teilnehmende dieses Vereins – zum Suchen tippen"));
+        Ui.makeSearchable(clubFilter, "Verein suchen …");          // 0.39 (#63)
         classFilter.getItems().setAll(ALL_CLASSES);
         classFilter.setValue(ALL_CLASSES);
         classFilter.valueProperty().addListener((o, a, b) -> updateFilter());
@@ -248,10 +256,24 @@ public final class PlayerTableView {
 
     // --- Filter ------------------------------------------------------------
 
+    private final TableColumn<Player, Integer> seedCol = new TableColumn<>("Setzplatz");
+    private java.util.Map<Player, Integer> seeds = java.util.Map.of();
+    private java.util.function.Function<String, java.util.Map<Player, Integer>> seedSource = n -> java.util.Map.of();
+
+    /** 0.39 (#62): liefert die Setzplätze einer Klasse (leer = Spalte ausblenden). */
+    public void setSeedSource(java.util.function.Function<String, java.util.Map<Player, Integer>> source) {
+        seedSource = source == null ? n -> java.util.Map.of() : source;
+        updateFilter();
+    }
+
     private void updateFilter() {
         PlayerFilter f = currentFilter();
         String cls = classFilter.getValue();
         boolean all = cls == null || ALL_CLASSES.equals(cls);
+        seeds = all ? java.util.Map.of() : seedSource.apply(cls);
+        boolean showSeeds = !seeds.isEmpty();
+        if (seedCol.isVisible() != showSeeds) seedCol.setVisible(showSeeds);
+        table.refresh();
         String club = clubFilter.getValue();
         boolean allClubs = club == null || ALL_CLASSES.equals(club);
         filtered.setPredicate(p -> f.test(p) && (all || p.isEnteredFor(cls) || p.getWaitingLists().contains(cls))
@@ -310,7 +332,7 @@ public final class PlayerTableView {
         items.add(ALL_CLASSES);
         items.addAll(clubs);
         String cur = clubFilter.getValue();
-        if (!items.equals(clubFilter.getItems())) clubFilter.getItems().setAll(items);
+        Ui.setSearchItems(clubFilter, items);
         clubFilter.setValue(cur != null && items.contains(cur) ? cur : ALL_CLASSES);
     }
 

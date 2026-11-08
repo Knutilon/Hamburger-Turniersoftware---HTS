@@ -6,6 +6,20 @@ Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Pub
 Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
 (Label „Feature“ bzw. „bug“).
 
+## Neu in 0.39.0
+
+- **Teilnehmende – Setzplatz:** Ist auf eine per XML importierte Klasse gefiltert, zeigt die Spalte „Setzplatz“ die
+  Rangfolge nach TTR in der Klasse (gleicher TTR = gleicher Platz, ohne TTR ganz unten, Doppel nach Ø-TTR).
+- **Vereinsfilter durchsuchbar:** Tippen filtert die Liste der Vereine (Teil des Namens genügt); die Tabelle ändert
+  sich erst, wenn ein Verein gewählt ist. Auf „Teilnehmende“ und in den Klassen.
+- **Einheitliche Menüs:** Aktions- und Einstellungsmenüs im Design der Auswahl „Gleichstand“ mit erklärendem Text
+  („Aktion für Markierte wählen“, „Handyabmeldungen bearbeiten“, „PDF / Drucken“); Filter im hellgrauen Design.
+- **Teilnehmende:** „Abgemeldete als PDF“ steht rechts neben den Menüs; „Handyabmeldungen bearbeiten“ erscheint nur bei
+  laufendem Handy-Zugang oder offenen Handyabmeldungen.
+- **Klassenansicht:** Suche, „Gleichstand“, alle Knöpfe und die Infozeile in einer Zeile (Umbruch nur, wenn es nicht
+  passt); Reihenfolge: „Auslosung verwerfen“ bzw. „Zurück zu Phase …“, „Neu auslosen“, „bereit“, „starten“ bzw. die
+  Phasen-Knöpfe, zuletzt „PDF / Drucken“.
+
 ## Neu in 0.38.0
 
 - **Gruppenauslosung – unvermeidbare Vereinsgleichheit:** Hat ein Verein mehr Teilnehmende als es Gruppen gibt, kommt

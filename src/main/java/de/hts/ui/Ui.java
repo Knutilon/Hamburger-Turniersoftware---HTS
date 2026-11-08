@@ -93,4 +93,98 @@ public final class Ui {
     public static void installButtonSizing() {
         ButtonSizing.installEverywhere();
     }
+
+    // --- 0.39 (#63): durchsuchbare Auswahl -----------------------------------------------------------
+
+    /**
+     * Macht eine Auswahl (z. B. „Verein:“) durchsuchbar: Tippen filtert nur die Einträge der Liste (Teil des Namens genügt,
+     * Groß-/Kleinschreibung egal); der Wert – und damit ein Tabellenfilter – ändert sich erst, wenn ein Eintrag gewählt
+     * wird (Klick oder Enter). Esc bzw. Verlassen des Feldes stellt den gewählten Wert wieder her; leeres Feld = erster
+     * Eintrag („Alle“). Einträge danach nur über {@link #setSearchItems} setzen.
+     */
+    @SuppressWarnings("unchecked")
+    public static void makeSearchable(javafx.scene.control.ComboBox<String> cb, String prompt) {
+        javafx.collections.ObservableList<String> master = javafx.collections.FXCollections.observableArrayList(cb.getItems());
+        javafx.collections.transformation.FilteredList<String> shown = new javafx.collections.transformation.FilteredList<>(master, x -> true);
+        cb.getProperties().put("search-master", master);
+        cb.setItems(shown);
+        cb.setEditable(true);
+        cb.getStyleClass().add("search-combo");
+        cb.getEditor().setPromptText(prompt);
+        cb.setConverter(new javafx.util.StringConverter<>() {
+            @Override
+            public String toString(String s) {
+                return s == null ? "" : s;
+            }
+
+            @Override
+            public String fromString(String text) {
+                String t = text == null ? "" : text.trim();
+                if (t.isEmpty()) return master.isEmpty() ? null : master.get(0);
+                for (String m : master) if (m.equalsIgnoreCase(t)) return m;
+                if (shown.size() == 1) return shown.get(0);         // eindeutiger Treffer
+                return cb.getValue();                                // sonst bleibt der bisherige Wert
+            }
+        });
+        cb.getEditor().textProperty().addListener((o, a, b) -> {
+            if (!cb.getEditor().isFocused()) return;
+            String v = cb.getValue();
+            if (v != null && v.equals(b)) {
+                shown.setPredicate(x -> true);
+                return;
+            }
+            String q = b == null ? "" : b.trim().toLowerCase(java.util.Locale.GERMAN);
+            shown.setPredicate(x -> q.isEmpty() || x.toLowerCase(java.util.Locale.GERMAN).contains(q));
+            if (!cb.isShowing() && cb.getScene() != null) cb.show();
+        });
+        Runnable restore = () -> {
+            shown.setPredicate(x -> true);
+            cb.getEditor().setText(cb.getValue() == null ? "" : cb.getValue());
+        };
+        cb.getEditor().focusedProperty().addListener((o, a, f) -> {
+            if (!f) restore.run();
+            else javafx.application.Platform.runLater(() -> cb.getEditor().selectAll());
+        });
+        cb.getEditor().addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                restore.run();
+                cb.hide();
+                e.consume();
+            }
+        });
+        cb.setOnHidden(e -> {
+            if (!cb.getEditor().isFocused()) shown.setPredicate(x -> true);
+        });
+    }
+
+    /** Einträge einer durchsuchbaren (oder normalen) Auswahl setzen; der gewählte Wert bleibt, falls vorhanden. */
+    @SuppressWarnings("unchecked")
+    public static void setSearchItems(javafx.scene.control.ComboBox<String> cb, java.util.List<String> items) {
+        Object m = cb.getProperties().get("search-master");
+        javafx.collections.ObservableList<String> target = m instanceof javafx.collections.ObservableList<?> ol
+                ? (javafx.collections.ObservableList<String>) ol : cb.getItems();
+        if (!items.equals(target)) target.setAll(items);
+    }
+
+    /**
+     * 0.39: Eine FlowPane, die auf breiten Bildschirmen alles in einer Zeile zeigt, ohne ihre Umgebung künstlich zu
+     * verbreitern: Die bevorzugte Umbruchbreite ist genau die Summe der sichtbaren Elemente (statt fest 400 px).
+     */
+    public static void oneLineWhenPossible(javafx.scene.layout.FlowPane fp) {
+        Runnable calc = () -> {
+            double w = 0;
+            int n = 0;
+            for (javafx.scene.Node c : fp.getChildren()) {
+                if (!c.isManaged()) continue;
+                w += c.prefWidth(-1);
+                n++;
+            }
+            w += Math.max(0, n - 1) * fp.getHgap() + fp.getInsets().getLeft() + fp.getInsets().getRight() + 1;
+            if (Math.abs(fp.getPrefWrapLength() - w) > 0.5) fp.setPrefWrapLength(w);
+        };
+        fp.needsLayoutProperty().addListener((o, a, b) -> {
+            if (b) javafx.application.Platform.runLater(calc);
+        });
+        javafx.application.Platform.runLater(calc);
+    }
 }
