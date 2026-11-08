@@ -398,7 +398,10 @@ public final class DrawView {
         Ui.oneLineWhenPossible(actionRow);
         HBox.setHgrow(actionRow, Priority.ALWAYS);
         actionRow.setMinWidth(0);
-        settingsSummary.setMinWidth(Region.USE_PREF_SIZE);
+        settingsSummary.setWrapText(true);                         // lange Infozeile bricht um statt abgeschnitten zu werden
+        settingsSummary.setTextAlignment(javafx.scene.text.TextAlignment.LEFT);
+        settingsSummary.setMinHeight(Region.USE_PREF_SIZE);
+        settingsSummary.maxWidthProperty().bind(actionRow.widthProperty().subtract(4));
         actionRow.getChildren().add(settingsSummary);              // Infozeile („3 Gruppen · 23 Spiele offen“) am Ende
         topRow = new VBox(8, followRow, actionRow);
         topRow.widthProperty().addListener((o, a, b) -> updateBannerWidth());
@@ -614,7 +617,9 @@ public final class DrawView {
             startedLabel.setText(started ? "Gestartet " + c.getStartedAt().format(TIME) + (c.isPaused() ? " · angehalten" : "") : "");
             boolean complete = tournament.isPhaseComplete(c);
             pauseBtn.setVisible(started && !complete && !first.isFinished());
-            pauseBtn.setText(c.isAwaitingStart() ? "Phase starten" : c.isPaused() ? "Phase fortsetzen" : "Phase anhalten");
+            pauseBtn.setText(c.isAwaitingStart() ? (m == TournamentMode.QUALIFICATION
+                    ? "Qualifikation Runde " + Math.max(1, tournament.qualificationRound(c)) + " starten" : "Phase starten")
+                    : c.isPaused() ? "Phase fortsetzen" : "Phase anhalten");
             pauseBtn.getStyleClass().removeAll("navy-pill", "pill");
             pauseBtn.getStyleClass().add(c.isPaused() ? "navy-pill" : "pill");
             pauseBtn.setMinWidth(Region.USE_PREF_SIZE);
@@ -883,6 +888,13 @@ public final class DrawView {
             followLabel.setText("Phase " + n + " ist abgeschlossen, die Klasse beendet (" + first.getFinishedAt().format(TIME)
                     + ") – Platzierungen im Reiter „Endergebnis“.");
             followRow.setVisible(true);
+        } else if (c.isAwaitingStart()) {
+            // 0.41 (#70): ausgelost, aber noch nicht gestartet
+            String what = c.getMode() == TournamentMode.QUALIFICATION
+                    ? "Qualifikation Runde " + Math.max(1, tournament.qualificationRound(c)) : "Phase " + n;
+            followLabel.setText(what + " ist ausgelost, aber noch nicht gestartet – die Spieler lassen sich per Drag & Drop "
+                    + "tauschen. „" + what + " starten“ reiht die Spiele ein.");
+            followRow.setVisible(true);
         } else if (c.isPaused()) {
             // angehalten: Hinweis im gelben Kasten oben links
             followLabel.setText("Phase " + n + " ist angehalten: Es werden keine neuen Spiele an die Tische gegeben. "
@@ -1020,7 +1032,8 @@ public final class DrawView {
     private void decideQualification(PlayingClass c, boolean winnersQualified) {
         try {
             tournament.decideQualification(c, winnersQualified);
-            status.accept(winnersQualified ? "Die Gewinner der Runde 1 sind qualifiziert." : "Runde 2 für die Gewinner angelegt.");
+            status.accept(winnersQualified ? "Die Gewinner der Runde 1 sind qualifiziert."
+                    : "Runde 2 ausgelost – Spieler ggf. per Drag & Drop tauschen, dann „Qualifikation Runde 2 starten“.");
         } catch (IllegalStateException ex) {
             showWarning(ex.getMessage());
         }
@@ -1037,7 +1050,8 @@ public final class DrawView {
             boolean first = c.isAwaitingStart();
             tournament.resumeClass(c);
             status.accept("Phase " + tournament.phaseNumber(c) + " von „" + tournament.rootOf(c).getName() + "“ "
-                    + (first ? "gestartet – die Spiele sind eingereiht." : "fortgesetzt."));
+                    + (first ? (c.getMode() == TournamentMode.QUALIFICATION ? "– Qualifikation Runde " + tournament.qualificationRound(c)
+                    + " gestartet, die Spiele sind eingereiht." : "gestartet – die Spiele sind eingereiht.") : "fortgesetzt."));
         } else {
             tournament.pauseClass(c);
             status.accept("Phase " + tournament.phaseNumber(c) + " von „" + tournament.rootOf(c).getName() + "“ angehalten.");
@@ -1791,7 +1805,8 @@ public final class DrawView {
                     : "nach Runde 1 wird entschieden, ob die Gewinner qualifiziert sind oder eine weitere Runde spielen";
             Label info = new Label("KO-Qualifikation: " + c.getQualField().size() + " Teilnehmende – " + how
                     + "; Runde 1 besser gegen schlechter Platzierte"
-                    + (c.isAwaitingStart() ? " · Phase noch nicht gestartet – Spieler per Drag & Drop tauschen, dann „Phase starten“"
+                    + (c.isAwaitingStart() ? " · Runde " + rounds + " noch nicht gestartet – Spieler per Drag & Drop tauschen, dann „Qualifikation Runde "
+                    + rounds + " starten“"
                     : qualEditable() ? " · Spieler der aktuellen Runde per Drag & Drop tauschen" : ""));
             info.getStyleClass().add("hint");
             info.setWrapText(true);
@@ -1834,6 +1849,20 @@ public final class DrawView {
             final int round = r;
             Label title = new Label("Qualifikation Runde " + r);
             title.getStyleClass().add("round-title");
+            Node titleNode = title;
+            if (!presentation && r == rounds && c.isAwaitingStart()) {
+                // 0.41 (#70): Runde ausgelost, noch nicht gestartet – Knopf direkt über den Karten
+                Button go = new Button("Qualifikation Runde " + r + " starten");
+                go.getStyleClass().add("navy-pill");
+                go.setMinWidth(Region.USE_PREF_SIZE);
+                go.setOnAction(e -> togglePause());
+                Label tip = new Label("Vorher lassen sich die Spieler dieser Runde per Drag & Drop tauschen.");
+                tip.getStyleClass().add("hint");
+                tip.setWrapText(true);
+                javafx.scene.layout.FlowPane head = new javafx.scene.layout.FlowPane(12, 6, title, go, tip);
+                head.setAlignment(Pos.CENTER_LEFT);
+                titleNode = head;
+            }
             javafx.scene.layout.FlowPane cards = new javafx.scene.layout.FlowPane(14, 10);
             fillRows(cards);
             boolean editable = r == rounds && qualEditable();
@@ -1852,7 +1881,7 @@ public final class DrawView {
                 card.setPrefWidth(matchWidth);
                 cards.getChildren().add(card);
             }
-            box.getChildren().addAll(title, cards);
+            box.getChildren().addAll(titleNode, cards);
         }
         List<Entrant> viaKo = tournament.qualifiedViaKo(c);
         if (!viaKo.isEmpty()) {

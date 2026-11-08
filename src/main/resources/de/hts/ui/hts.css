@@ -898,12 +898,21 @@
 .menu-button.action-menu > .arrow-button > .arrow { -fx-background-color: #4a5463; }
 .menu-button.action-menu:hover { -fx-border-color: #9fb0c8; }
 .menu-button.action-menu:disabled { -fx-opacity: 0.5; }
-/* 0.39 (#63): durchsuchbare Auswahl – das Eingabefeld sitzt unsichtbar in der Pille */
-.combo-box.search-combo > .arrow-button { -fx-background-color: transparent; -fx-padding: 0 4 0 6; }
-.combo-box.search-combo > .text-field, .combo-box.search-combo .text-field:focused {
+/* 0.40 (#63): durchsuchbare Auswahl (SearchChoice) – sieht aus wie eine Filterauswahl */
+.search-choice {
+    -fx-background-color: -hts-row;
+    -fx-background-radius: 999;
+    -fx-padding: 0 12 0 4;
+    -fx-min-height: 32;
+}
+.search-choice:focus-within { -fx-background-color: white; -fx-border-color: #c9d2e0; -fx-border-radius: 999; }
+.search-choice > .search-choice-field, .search-choice > .search-choice-field:focused {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
-    -fx-padding: 0 4 0 4;
+    -fx-border-color: transparent;
+    -fx-padding: 6 6 6 8;
 }
+.search-choice > .search-choice-arrow { -fx-text-fill: #4a5463; -fx-cursor: hand; -fx-font-size: 13px; }
+.search-choice-list { -fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: #c9d2e0; }
 /* 0.38 (#60): Entscheidung nach Runde 1 der KO-Qualifikation */
 .qual-decision { -fx-background-color: #fff7e0; -fx-background-radius: 8; -fx-padding: 8 12 8 12; }

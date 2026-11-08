@@ -6,6 +6,17 @@ Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Pub
 Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
 (Label „Feature“ bzw. „bug“).
 
+## Neu in 0.41.0
+
+- **Qualifikation:** Jede KO-Runde wird ausgelost, aber erst mit „Qualifikation Runde 1 starten“ bzw. „Qualifikation
+  Runde 2 starten“ eingereiht – bis dahin lassen sich die Spieler der Runde (inkl. Freilos) per Drag & Drop tauschen.
+  Der Knopf steht oben und direkt über den Karten der Runde.
+- **Fehler behoben – Vereinsfilter:** Das Feld zeigte anfangs nichts statt „Alle“, beim Tippen verschwand der Text und
+  die Tabelle sprang. Jetzt filtert Tippen nur die aufklappende Liste; erst Enter oder Klick wählt den Verein, Esc stellt
+  den bisherigen wieder her.
+- **Fehler behoben – Markierung bei „Teilnehmende“:** Lässt sich wieder ganz aufheben – erneuter Klick auf die einzige
+  markierte Zeile, Klick in den leeren Bereich der Tabelle oder Esc.
+
 ## Neu in 0.40.0
 
 - **Gruppenphase – feste Spielreihenfolge:** Die Spiele richten sich nach der Position in der Gruppe nach der

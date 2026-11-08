@@ -40,6 +40,7 @@ class Version033Test {
         // 0.38: Qualifikationsphase startet erst per „Phase starten“; nach Runde 1 wird entschieden (hier: weitere Runde)
         if (c.isAwaitingStart()) t.resumeClass(c);
         if (t.qualificationDecisionPending(c)) t.decideQualification(c, false);
+        if (c.isAwaitingStart()) t.resumeClass(c);
         for (int guard = 0; guard < 500; guard++) {
             Match open = t.matchesOf(c).stream()
                     .filter(m -> m.isReady() && (m.getStatus() == MatchStatus.ACTIVE || m.getStatus() == MatchStatus.QUEUED))
@@ -47,6 +48,7 @@ class Version033Test {
             if (open == null) {
                 if (t.qualificationDecisionPending(c)) {
                     t.decideQualification(c, false);
+                    if (c.isAwaitingStart()) t.resumeClass(c);       // 0.41: Runde 2 per „Qualifikation Runde 2 starten“
                     continue;
                 }
                 return;

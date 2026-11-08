@@ -82,11 +82,11 @@ public final class ClassesView {
     private final FinalResultView resultView;
     private boolean syncingTabs;
     private final Label classState = new Label();
-    private final ComboBox<String> clubFilter = new ComboBox<>();
+    private final SearchChoice clubFilter = new SearchChoice("Verein suchen …");
     private final ComboBox<de.hts.player.Sex> sexFilter = new ComboBox<>();
     /** Filter für „In der Klasse“ – wie bei „Verfügbar“. */
     private final TextField inSearch = new TextField();
-    private final ComboBox<String> inClubFilter = new ComboBox<>();
+    private final SearchChoice inClubFilter = new SearchChoice("Verein suchen …");
     private final ComboBox<de.hts.player.Sex> inSexFilter = new ComboBox<>();
     /** Hinweis, solange die Klasse ausgelost ist: Zuordnung gesperrt. */
     private final Label lockText = new Label();
@@ -216,10 +216,8 @@ public final class ClassesView {
         filterRow.getChildren().addAll(new Label("Einzelklasse:"), singlesFilter);
         filterRow.setAlignment(Pos.CENTER_LEFT);
         filterRow.managedProperty().bind(filterRow.visibleProperty());
-        clubFilter.setPromptText("Alle Vereine");
         clubFilter.valueProperty().addListener((o, a, b) -> updateFilters());
         clubFilter.setTooltip(new Tooltip("Nach Verein filtern – zum Suchen tippen"));
-        Ui.makeSearchable(clubFilter, "Verein suchen …");          // 0.39 (#63)
         clubFilter.setPrefWidth(170);
         // Einzel: kein Vereinsfilter (die Suche findet auch Vereine); Doppel: bleibt – hilft beim Paaren
         clubFilter.managedProperty().bind(clubFilter.visibleProperty());
@@ -242,10 +240,8 @@ public final class ClassesView {
         // gleiche Filter für „In der Klasse“
         inSearch.setPromptText("Suchen: Vorname, Nachname, Verein");
         inSearch.textProperty().addListener((o, a, b) -> updateFilters());
-        inClubFilter.setPromptText("Alle Vereine");
         inClubFilter.valueProperty().addListener((o, a, b) -> updateFilters());
         inClubFilter.setTooltip(new Tooltip("Nach Verein filtern – zum Suchen tippen"));
-        Ui.makeSearchable(inClubFilter, "Verein suchen …");
         inClubFilter.setPrefWidth(170);
         inClubFilter.setVisible(false);
         inClubFilter.managedProperty().bind(inClubFilter.visibleProperty());
@@ -556,16 +552,12 @@ public final class ClassesView {
     private static final String ALL_CLUBS = "Alle Vereine";
 
     private void updateClubFilterItems() {
-        String cur = clubFilter.getValue();
         List<String> clubs = new ArrayList<>();
         clubs.add(ALL_CLUBS);
         tournament.getPlayers().stream().map(Player::getClubName).filter(java.util.Objects::nonNull).distinct()
                 .sorted(Collator.getInstance(Locale.GERMAN)).forEach(clubs::add);
-        Ui.setSearchItems(clubFilter, clubs);
-        clubFilter.setValue(cur != null && clubs.contains(cur) ? cur : ALL_CLUBS);
-        String curIn = inClubFilter.getValue();
-        Ui.setSearchItems(inClubFilter, clubs);
-        inClubFilter.setValue(curIn != null && clubs.contains(curIn) ? curIn : ALL_CLUBS);
+        clubFilter.setItems(clubs);
+        inClubFilter.setItems(clubs);
     }
 
     private void updateSinglesFilterItems() {

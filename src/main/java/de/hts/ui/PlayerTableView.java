@@ -56,7 +56,7 @@ public final class PlayerTableView {
     /** 0.36: Klassenfilter – gemeldet, in der Klasse oder Nachrücker. */
     private final ComboBox<String> classFilter = new ComboBox<>();
     /** 0.37: Vereinsfilter (ersetzt den Statusfilter). */
-    private final ComboBox<String> clubFilter = new ComboBox<>();
+    private final SearchChoice clubFilter = new SearchChoice("Verein suchen …");     // 0.40: eigene durchsuchbare Auswahl
     private static final String ALL_CLASSES = "Alle";
 
     private final BorderPane root = new BorderPane();
@@ -93,7 +93,26 @@ public final class PlayerTableView {
                     onEdit.accept(row.getItem());
                 }
             });
+            // 0.41 (Bug #69): Markierung lässt sich wieder aufheben – Klick auf die einzige markierte Zeile, Klick in den
+            // leeren Bereich der Tabelle oder Esc; Strg+Klick schaltet einzelne Zeilen wie gewohnt um
+            row.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_PRESSED, e -> {
+                if (e.getButton() != javafx.scene.input.MouseButton.PRIMARY || e.isShiftDown() || e.isShortcutDown()) return;
+                if (insideCheckBox(e.getTarget())) return;
+                if (row.isEmpty()) {
+                    table.getSelectionModel().clearSelection();
+                    e.consume();
+                } else if (e.getClickCount() == 1 && row.isSelected() && table.getSelectionModel().getSelectedItems().size() == 1) {
+                    table.getSelectionModel().clearSelection();
+                    e.consume();
+                }
+            });
             return row;
+        });
+        table.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE && !table.getSelectionModel().isEmpty()) {
+                table.getSelectionModel().clearSelection();
+                e.consume();
+            }
         });
 
         Collator collator = Collator.getInstance(Locale.GERMAN);
@@ -216,11 +235,11 @@ public final class PlayerTableView {
         birthSearch.textProperty().addListener((o, a, b) -> updateFilter());
         sexFilter.valueProperty().addListener((o, a, b) -> updateFilter());
         registrationFilter.valueProperty().addListener((o, a, b) -> updateFilter());
-        clubFilter.getItems().setAll(ALL_CLASSES);
+        clubFilter.setItems(List.of(ALL_CLASSES));
         clubFilter.setValue(ALL_CLASSES);
         clubFilter.valueProperty().addListener((o, a, b) -> updateFilter());
         clubFilter.setTooltip(new Tooltip("Nur Teilnehmende dieses Vereins – zum Suchen tippen"));
-        Ui.makeSearchable(clubFilter, "Verein suchen …");          // 0.39 (#63)
+        clubFilter.setPrefWidth(260);
         classFilter.getItems().setAll(ALL_CLASSES);
         classFilter.setValue(ALL_CLASSES);
         classFilter.valueProperty().addListener((o, a, b) -> updateFilter());
@@ -331,9 +350,7 @@ public final class PlayerTableView {
         List<String> items = new java.util.ArrayList<>();
         items.add(ALL_CLASSES);
         items.addAll(clubs);
-        String cur = clubFilter.getValue();
-        Ui.setSearchItems(clubFilter, items);
-        clubFilter.setValue(cur != null && items.contains(cur) ? cur : ALL_CLASSES);
+        clubFilter.setItems(items);                                // gewählter Verein bleibt, sonst „Alle“
     }
 
     public void refresh() {
@@ -349,6 +366,14 @@ public final class PlayerTableView {
     private final javafx.beans.property.IntegerProperty refreshTick = new javafx.beans.property.SimpleIntegerProperty();
 
     // --- Hilfsmethoden -----------------------------------------------------
+
+    private static boolean insideCheckBox(Object target) {
+        for (javafx.scene.Node n = target instanceof javafx.scene.Node node ? node : null; n != null; n = n.getParent()) {
+            if (n instanceof CheckBox) return true;
+            if (n instanceof TableRow<?>) return false;
+        }
+        return false;
+    }
 
     private static TextField searchField(String prompt) {
         TextField tf = new TextField();

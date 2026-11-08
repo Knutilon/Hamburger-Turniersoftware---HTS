@@ -80,7 +80,8 @@ final class ResultEntry {
         ButtonType r = a.showAndWait().orElse(later);
         if (r == later) return;
         t.decideQualification(c, r == yes);
-        status.accept(r == yes ? "Die Gewinner der Runde 1 sind qualifiziert." : "Runde 2 für die Gewinner angelegt.");
+        status.accept(r == yes ? "Die Gewinner der Runde 1 sind qualifiziert."
+                : "Runde 2 ausgelost – Spieler ggf. per Drag & Drop tauschen, dann „Qualifikation Runde 2 starten“.");
     }
 
     /** 2er/3er Turnier: Aufstellung und Sieger je Partie. */

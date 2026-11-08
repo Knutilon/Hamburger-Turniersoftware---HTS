@@ -2237,11 +2237,13 @@ public final class Tournament {
             c.setQualification(c.getQualDirect(), c.getQualKo(), 1);
         } else {
             c.setQualDecision(2);
-            advanceQualification(c);
+            // 0.41 (#70): Runde 2 wird ausgelost, aber erst mit „Qualifikation Runde 2 starten“ eingereiht – bis dahin
+            // lassen sich die Spieler per Drag & Drop tauschen
             if (c.isStarted() && !c.isPaused()) {
-                queueReady(c);
-                dispatch();
+                c.setPaused(true);
+                c.setAwaitingStart(true);
             }
+            advanceQualification(c);
         }
         markModified();
     }
@@ -2262,6 +2264,10 @@ public final class Tournament {
         if (c.getQualDecision() == 1) {
             c.setQualification(c.getQualDirect(), c.getQualKo(), QUAL_WINS);
         } else {
+            if (c.isAwaitingStart()) {                       // Runde 2 war noch nicht gestartet
+                c.setAwaitingStart(false);
+                c.setPaused(false);
+            }
             List<Match> r2 = roundMatches(c, 2);
             for (Match m : r2) {
                 m.setTable(null);
@@ -3971,6 +3977,7 @@ public final class Tournament {
                         .findFirst().orElse(null);
                 if (pending == null) break;
                 decideQualification(pending, false);
+                if (pending.isAwaitingStart()) resumeClass(pending);     // beim Simulieren gleich starten
                 continue;
             }
             if (isTeamMatch(next)) {

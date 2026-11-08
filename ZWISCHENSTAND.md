@@ -1,4 +1,4 @@
-# Zwischenstand HTS 0.40.0 (08.11.2026)
+# Zwischenstand HTS 0.41.0 (08.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -14,7 +14,7 @@ https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.
 (+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
-## Feature-Sammlung für 0.41.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 0.42.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
 
@@ -28,6 +28,38 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    (wie bisher Felder zum Ausfüllen).
 
 ## Umgesetzt
+
+0.41.0 (Issues #68–#70). README „Neu in 0.41.0“.
+#68 SearchChoice (Textfeld + Popup-Liste) statt editierbarer ComboBox für die Vereinsfilter (PlayerTableView,
+ClassesView); Ui.makeSearchable entfernt. #69 PlayerTableView: Klick auf einzige markierte Zeile / leeren Bereich / Esc
+hebt die Markierung auf (nicht beim Kästchen „Angemeldet“, Doppelklick bleibt). #70 decideQualification(false): Phase
+angehalten + awaitingStart, Runde 2 erst per „Qualifikation Runde 2 starten“ (Knopf oben und über den Karten, gelber
+Hinweis); undo hebt das Warten auf; simulateAll startet gleich. Infozeile der Werkzeugzeile bricht um. Tests: 210
+bestanden (Version041Test). Geprüft mit Bildschirmfoto, Robot-Klicks und simulierten Tastatureingaben.
+Feature-Sammlung 0.41.0 (zur Nachverfolgung):
+
+2. BUG: VEREINSFILTER (durchsuchbar, #63) FEHLERHAFT (08.11.2026, Issue #68, Label „bug“) – BEHOBEN IM QUELLCODE, kommt
+   mit dem nächsten „kompilieren“. Ursachen: (a) Feld anfangs leer statt „Alle“ (Editor nach setEditable nicht mit dem
+   Wert abgeglichen); (b) beim Tippen filterte die editierbare ComboBox ihre eigenen Einträge – fiel der gewählte
+   Eintrag heraus, setzte JavaFX Auswahl und Wert zurück (Text verschwand, Tabelle sprang), Pfeiltasten änderten den
+   Wert sofort. Lösung: eigenes Steuerelement SearchChoice (Textfeld + aufklappende Liste): Tippen filtert nur die Liste,
+   Wert erst bei Enter/Klick, Pfeiltasten nur in der Liste, Esc/Fokusverlust stellt her (Esc wurde vom Popup
+   verschluckt – setHideOnEscape(false)). Geprüft mit simulierten Eingaben und Bildschirmfoto.
+
+3. BUG: TEILNEHMENDE – MARKIERUNG NICHT AUFHEBBAR (08.11.2026, Issue #69, Label „bug“) – BEHOBEN IM QUELLCODE, kommt
+   mit dem nächsten „kompilieren“. Ist einmal jemand markiert, blieb immer mindestens eine Zeile markiert (Standard-
+   verhalten der JavaFX-Tabelle). Jetzt: erneuter Klick auf die einzige markierte Zeile, Klick in den leeren Bereich der
+   Tabelle oder Esc hebt die Markierung auf; Strg+Klick wie gewohnt; Doppelklick öffnet weiterhin „Bearbeiten“; Klick
+   auf das Kästchen „Angemeldet“ ändert die Markierung nicht. Mit Robot-Klicks geprüft.
+
+4. QUALIFIKATION: JEDE RUNDE ERST PER „QUALI-RUNDE STARTEN“, AUCH RUNDE 2 PER DRAG & DROP (08.11.2026, Issue #70) –
+   GEKLÄRT (Vorschläge 1–4 angenommen). Auch in Qualifikationsrunde 2 sollen die Spieler per Drag & Drop getauscht werden können; für
+   beide Runden der Phase 2 gibt es „Quali-Runde starten“.
+   Vorschläge: (1) Runde 2 wird nach „Weitere KO-Runde für die Gewinner“ ausgelost, aber noch nicht eingereiht; über den
+   Karten der Runde der Knopf „Qualifikation Runde 2 starten“ (Runde 1 entsprechend „Qualifikation Runde 1 starten“
+   statt „Phase starten“). (2) Bis zum Start lassen sich alle Spieler der Runde inkl. Freilos per Drag & Drop tauschen
+   (nur innerhalb dieser Runde). (3) Andere Klassen nutzen die Tische weiter. (4) „Phase anhalten“ bleibt für eine
+   laufende Runde.
 
 0.40.0 (Issue #67). README „Neu in 0.40.0“.
 #67 GroupDraw.roundRobin: Tabelle FIXED für 4/6/8/10/12 (ungerade Größe = nächste gerade ohne die letzte Position),
