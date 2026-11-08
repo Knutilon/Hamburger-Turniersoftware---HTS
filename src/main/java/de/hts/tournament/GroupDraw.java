@@ -477,11 +477,44 @@ public final class GroupDraw {
     public record Pairing(int round, Entrant a, Entrant b) {
     }
 
+    /** 0.40 (#67): feste Spielreihenfolgen je Gruppengröße (gerade Größe; die ungerade eins kleiner lässt P n weg). */
+    private static final java.util.Map<Integer, int[][][]> FIXED = java.util.Map.of(
+            4, new int[][][]{{{1, 3}, {2, 4}}, {{1, 4}, {2, 3}}, {{1, 2}, {3, 4}}},
+            6, new int[][][]{{{1, 5}, {2, 4}, {3, 6}}, {{1, 6}, {2, 5}, {3, 4}}, {{1, 4}, {2, 3}, {5, 6}},
+                    {{1, 3}, {2, 6}, {4, 5}}, {{1, 2}, {3, 5}, {4, 6}}},
+            8, new int[][][]{{{1, 8}, {2, 7}, {3, 6}, {4, 5}}, {{1, 7}, {2, 6}, {3, 5}, {4, 8}}, {{1, 6}, {2, 5}, {3, 8}, {4, 7}},
+                    {{1, 5}, {2, 8}, {3, 7}, {4, 6}}, {{1, 4}, {2, 3}, {5, 8}, {6, 7}}, {{1, 3}, {2, 4}, {5, 7}, {6, 8}},
+                    {{1, 2}, {3, 4}, {5, 6}, {7, 8}}},
+            10, new int[][][]{{{1, 10}, {2, 9}, {3, 8}, {4, 7}, {5, 6}}, {{1, 9}, {2, 8}, {3, 10}, {4, 6}, {5, 7}},
+                    {{1, 8}, {2, 6}, {3, 7}, {4, 10}, {5, 9}}, {{1, 7}, {2, 10}, {3, 6}, {4, 9}, {5, 8}},
+                    {{1, 6}, {2, 5}, {3, 4}, {7, 10}, {8, 9}}, {{1, 5}, {2, 4}, {3, 9}, {6, 10}, {7, 8}},
+                    {{1, 4}, {2, 3}, {5, 10}, {6, 8}, {7, 9}}, {{1, 3}, {2, 7}, {4, 5}, {6, 9}, {8, 10}},
+                    {{1, 2}, {3, 5}, {4, 8}, {6, 7}, {9, 10}}},
+            12, new int[][][]{{{1, 12}, {2, 11}, {3, 10}, {4, 9}, {5, 8}, {6, 7}}, {{1, 11}, {2, 10}, {3, 9}, {4, 8}, {5, 7}, {6, 12}},
+                    {{1, 10}, {2, 9}, {3, 8}, {4, 7}, {5, 12}, {6, 11}}, {{1, 9}, {2, 8}, {3, 7}, {4, 12}, {5, 11}, {6, 10}},
+                    {{1, 8}, {2, 7}, {3, 12}, {4, 11}, {5, 10}, {6, 9}}, {{1, 7}, {2, 12}, {3, 11}, {4, 10}, {5, 9}, {6, 8}},
+                    {{1, 6}, {2, 5}, {3, 4}, {7, 12}, {8, 11}, {9, 10}}, {{1, 5}, {2, 4}, {3, 6}, {7, 11}, {8, 10}, {9, 12}},
+                    {{1, 4}, {2, 3}, {5, 6}, {7, 10}, {8, 9}, {11, 12}}, {{1, 3}, {2, 6}, {4, 5}, {7, 9}, {8, 12}, {10, 11}},
+                    {{1, 2}, {3, 5}, {4, 6}, {7, 8}, {9, 11}, {10, 12}}});
+
     /**
      * Spielplan „jeder gegen jeden“ nach dem Kreisverfahren: jede Runde spielt jede/r höchstens einmal,
      * bei ungerader Anzahl hat pro Runde eine/r spielfrei. Ergibt n·(n−1)/2 Begegnungen.
      */
     public static List<Pairing> roundRobin(List<Entrant> members) {
+        int[][][] fixed = FIXED.get(members.size() % 2 == 1 ? members.size() + 1 : members.size());
+        if (fixed != null && members.size() >= 3) {
+            // 0.39/0.40 (#67): feste Spielreihenfolge nach Position in der Gruppe (P1 = erste Position nach der Auslosung);
+            // bei ungerader Größe entfallen die Spiele gegen die fehlende letzte Position
+            List<Pairing> result = new ArrayList<>();
+            for (int r = 0; r < fixed.length; r++) {
+                for (int[] m : fixed[r]) {
+                    if (m[0] > members.size() || m[1] > members.size()) continue;
+                    result.add(new Pairing(r + 1, members.get(m[0] - 1), members.get(m[1] - 1)));
+                }
+            }
+            return result;
+        }
         List<Entrant> list = new ArrayList<>(members);
         if (list.size() % 2 == 1) list.add(null); // spielfrei
         int n = list.size();

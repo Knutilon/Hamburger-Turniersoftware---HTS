@@ -1,4 +1,4 @@
-# Zwischenstand HTS 0.39.0 (08.11.2026)
+# Zwischenstand HTS 0.40.0 (08.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -14,7 +14,7 @@ https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.
 (+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
-## Feature-Sammlung für 0.40.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 0.41.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
 
@@ -28,6 +28,34 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    (wie bisher Felder zum Ausfüllen).
 
 ## Umgesetzt
+
+0.40.0 (Issue #67). README „Neu in 0.40.0“.
+#67 GroupDraw.roundRobin: Tabelle FIXED für 4/6/8/10/12 (ungerade Größe = nächste gerade ohne die letzte Position),
+2er und über 12 weiter Kreisverfahren; P = Position in der Gruppe nach der Auslosung. Tests: 209 bestanden
+(Version040Test: Schemata wie vorgegeben, jede Paarung genau einmal für 2–14).
+Feature-Sammlung 0.40.0 (zur Nachverfolgung):
+
+2. GRUPPENPHASE: FESTE SPIELREIHENFOLGE NACH GRUPPENPOSITION (08.11.2026, Issue #67) – GEKLÄRT.
+   P1 = Gruppenkopf, P2 … in Setzreihenfolge der Gruppe. Bei 7 (5) Mitgliedern entfällt das Spiel gegen P8 (P6).
+   8er/7er: R1 1-8 2-7 3-6 4-5 · R2 1-7 2-6 3-5 4-8 · R3 1-6 2-5 3-8 4-7 · R4 1-5 2-8 3-7 4-6 · R5 1-4 2-3 5-8 6-7 ·
+            R6 1-3 2-4 5-7 6-8 · R7 1-2 3-4 5-6 7-8 (geprüft: jede Paarung genau einmal)
+   6er/5er (laut Nutzer): R1 1-5 2-4 3-4 · R2 1-6 2-5 3-6 · R3 1-4 2-3 5-6 · R4 1-3 2-6 4-5 · R5 1-2 3-5 4-6
+            → Tippfehler vermutet (P4 bzw. P6 je Runde doppelt); Vorschlag: R1 1-5 2-4 3-6 · R2 1-6 2-5 3-4
+   4er: R1 1-3 2-4 · R2 1-4 2-3 · R3 1-2 3-4      3er: R1 1-3 · R2 2-3 · R3 1-2
+   Bestätigt (08.11.): 6er/5er korrigiert: R1 1-5 2-4 3-6 · R2 1-6 2-5 3-4 · R3 1-4 2-3 5-6 · R4 1-3 2-6 4-5 ·
+   R5 1-2 3-5 4-6. Gilt für alle Gruppenphasen (Phase 1 und 2). Gemeinsames Ende (#46) bleibt. Nur für künftige
+   Auslosungen. Schema für 9/10 und 11/12 fortführen (über 12 wie bisher) – Tabellen BESTÄTIGT (alle Paarungen
+   geprüft):
+   12er/11er (wie 8er: erst obere gegen untere Hälfte, dann innerhalb der Hälften nach dem 6er-Schema):
+     R1 1-12 2-11 3-10 4-9 5-8 6-7 · R2 1-11 2-10 3-9 4-8 5-7 6-12 · R3 1-10 2-9 3-8 4-7 5-12 6-11 ·
+     R4 1-9 2-8 3-7 4-12 5-11 6-10 · R5 1-8 2-7 3-12 4-11 5-10 6-9 · R6 1-7 2-12 3-11 4-10 5-9 6-8 ·
+     R7 1-6 2-5 3-4 7-12 8-11 9-10 · R8 1-5 2-4 3-6 7-11 8-10 9-12 · R9 1-4 2-3 5-6 7-10 8-9 11-12 ·
+     R10 1-3 2-6 4-5 7-9 8-12 10-11 · R11 1-2 3-5 4-6 7-8 9-11 10-12
+   10er/9er: R1 1-10 2-9 3-8 4-7 5-6 · R2 1-9 2-8 3-10 4-6 5-7 · R3 1-8 2-6 3-7 4-10 5-9 · R4 1-7 2-10 3-6 4-9 5-8 ·
+     R5 1-6 2-5 3-4 7-10 8-9 · R6 1-5 2-4 3-9 6-10 7-8 · R7 1-4 2-3 5-10 6-8 7-9 · R8 1-3 2-7 4-5 6-9 8-10 ·
+     R9 1-2 3-5 4-8 6-7 9-10
+   Bestätigt: P = Position in der Gruppe nach der Auslosung (Reihenfolge, in der die Gruppe nach der Auslosung steht;
+   nach Drag & Drop die Position, auf die getauscht wurde).
 
 0.39.0 (Issues #62–#66). README „Neu in 0.39.0“.
 #62 Tournament.seedPositions (XML-Klassen, ohne Abgemeldete/Nachrücker, Gleichstand gleicher Platz, ohne TTR unten,

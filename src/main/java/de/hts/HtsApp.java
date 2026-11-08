@@ -17,7 +17,7 @@ public class HtsApp extends Application {
 
     public static final String NAME = "Hamburger Turniersoftware";
     public static final String SHORT_NAME = "HTS";
-    public static final String VERSION = "0.39.0";
+    public static final String VERSION = "0.40.0";
 
     /** Repository auf GitHub (Quellcode, Feature- und Bug-Sammlung) */
     public static final String REPO_URL = "https://github.com/Knutilon/Hamburger-Turniersoftware---HTS";

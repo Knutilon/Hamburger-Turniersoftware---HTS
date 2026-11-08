@@ -6,6 +6,14 @@ Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Pub
 Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
 (Label „Feature“ bzw. „bug“).
 
+## Neu in 0.40.0
+
+- **Gruppenphase – feste Spielreihenfolge:** Die Spiele richten sich nach der Position in der Gruppe nach der
+  Auslosung (P1, P2 …): zuerst stark gegen schwach, zum Schluss stark gegen stark (letzte Runde P1–P2). Feste Schemata
+  für 3er- bis 12er-Gruppen, bei ungerader Größe entfällt das Spiel gegen die fehlende letzte Position; z. B. 8er:
+  Runde 1 1-8 · 2-7 · 3-6 · 4-5. Gilt für alle Gruppenphasen bei künftigen Auslosungen; Gruppen mit mehr Runden
+  beginnen weiterhin früher.
+
 ## Neu in 0.39.0
 
 - **Teilnehmende – Setzplatz:** Ist auf eine per XML importierte Klasse gefiltert, zeigt die Spalte „Setzplatz“ die
