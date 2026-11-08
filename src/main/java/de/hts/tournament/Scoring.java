@@ -22,7 +22,8 @@ public final class Scoring {
     }
 
     private static final Pattern FULL = Pattern.compile("^\\s*(\\d{1,2})\\s*[:\\-/ ]\\s*(\\d{1,2})\\s*$");
-    private static final Pattern SHORT = Pattern.compile("^\\s*([+-])\\s*(\\d{1,2})\\s*$");
+    /** Kurzform: „+8“, „-8“ – 0.38: auch ohne Vorzeichen („8“ = „+8“); auch das typografische Minus „−“. */
+    private static final Pattern SHORT = Pattern.compile("^\\s*([+\\-\u2212]?)\\s*(\\d{1,2})\\s*$");
 
     /** Ist das ein gültiges Satzergebnis? */
     public static boolean isValidSet(int a, int b) {
@@ -42,7 +43,8 @@ public final class Scoring {
         if (m.matches()) {
             int loser = Integer.parseInt(m.group(2));
             int winner = loser <= 9 ? 11 : loser + 2;
-            return "+".equals(m.group(1)) ? new int[]{winner, loser} : new int[]{loser, winner};
+            boolean minus = "-".equals(m.group(1)) || "\u2212".equals(m.group(1));
+            return minus ? new int[]{loser, winner} : new int[]{winner, loser};
         }
         m = FULL.matcher(input);
         if (m.matches()) {

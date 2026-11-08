@@ -19,15 +19,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tische bestimmten Klassen zuordnen: Matrix Tisch × Klasse. Ein Tisch ohne Haken ist für alle Klassen da (Standard).
- * Ein reservierter Tisch bekommt aus der Warteschlange nur Spiele seiner Klassen – notfalls ein späteres Spiel.
+ * Tische den Klassen zuordnen: Matrix Tisch × Klasse. 0.38: Haken = Klasse darf an diesem Tisch spielen; standardmäßig
+ * sind alle Haken gesetzt. Ein Tisch ohne Haken bekommt keine Spiele, bleibt aber aktiv. Ein eingeschränkter Tisch
+ * bekommt aus der Warteschlange nur Spiele seiner Klassen – notfalls ein späteres Spiel.
  */
 final class TableAssignmentDialog extends Dialog<ButtonType> {
 
     TableAssignmentDialog(Window owner, Tournament t) {
         initOwner(owner);
         setTitle("Tische den Klassen zuordnen");
-        setHeaderText("Haken setzen = Tisch nur für diese Klasse(n). Ohne Haken spielt an dem Tisch jede Klasse.");
+        setHeaderText("Haken = Klasse darf an diesem Tisch spielen. Ein Tisch ohne Haken bekommt keine Spiele, bleibt aber aktiv.");
         List<PlayingClass> classes = t.rootClasses();
         int n = t.getTableCount();
         CheckBox[][] boxes = new CheckBox[n + 1][classes.size()];
@@ -37,8 +38,12 @@ final class TableAssignmentDialog extends Dialog<ButtonType> {
         grid.setPadding(new Insets(6));
         // einheitliche Spalten: Klassenname (umbrechend, gleiche Höhe) und „alle“ zentriert über den Haken
         double colW = 120;
-        javafx.scene.layout.ColumnConstraints first = new javafx.scene.layout.ColumnConstraints(70);
+        javafx.scene.layout.ColumnConstraints first = new javafx.scene.layout.ColumnConstraints();
+        first.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);          // Tischnamen nie abschneiden
         grid.getColumnConstraints().add(first);
+        javafx.scene.layout.ColumnConstraints rowBtn = new javafx.scene.layout.ColumnConstraints();
+        rowBtn.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        grid.getColumnConstraints().add(rowBtn);
         for (int k = 0; k < classes.size(); k++) {
             javafx.scene.layout.ColumnConstraints cc = new javafx.scene.layout.ColumnConstraints(colW);
             cc.setHalignment(javafx.geometry.HPos.CENTER);
@@ -60,7 +65,7 @@ final class TableAssignmentDialog extends Dialog<ButtonType> {
             int col = k;
             Button all = new Button("alle");
             all.getStyleClass().addAll("pill", "small-pill");
-            all.setTooltip(new javafx.scene.control.Tooltip("Alle Tische nur für „" + classes.get(k).getName() + "“ an/aus"));
+            all.setTooltip(new javafx.scene.control.Tooltip("„" + classes.get(k).getName() + "“ an allen Tischen erlauben bzw. an keinem"));
             all.setOnAction(e -> {
                 boolean target = false;
                 for (int tb = 1; tb <= n; tb++) target |= !boxes[tb][col].isSelected();
@@ -69,20 +74,32 @@ final class TableAssignmentDialog extends Dialog<ButtonType> {
             VBox head = new VBox(4, l, all);
             head.setAlignment(Pos.BOTTOM_CENTER);
             head.setPrefWidth(colW);
-            grid.add(head, k + 1, 0);
+            grid.add(head, k + 2, 0);
         }
         Label state = new Label();
         for (int tb = 1; tb <= n; tb++) {
             Label l = new Label(t.tableName(tb));
             l.getStyleClass().add("class-name");
+            l.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
             grid.add(l, 0, tb);
+            int row = tb;
+            Button rowAll = new Button("alle");
+            rowAll.getStyleClass().addAll("pill", "small-pill");
+            rowAll.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+            rowAll.setTooltip(new javafx.scene.control.Tooltip("An „" + t.tableName(tb) + "“ alle Klassen erlauben bzw. keine"));
+            rowAll.setOnAction(e -> {
+                boolean target = false;
+                for (int k = 0; k < classes.size(); k++) target |= !boxes[row][k].isSelected();
+                for (int k = 0; k < classes.size(); k++) boxes[row][k].setSelected(target);
+            });
+            grid.add(rowAll, 1, tb);
             for (int k = 0; k < classes.size(); k++) {
                 CheckBox cb = new CheckBox();
-                cb.setSelected(t.getTableClasses(tb).contains(classes.get(k).getName()));
+                cb.setSelected(!t.getTableExcluded(tb).contains(classes.get(k).getName()));
                 boxes[tb][k] = cb;
                 HBox cell = new HBox(cb);
                 cell.setAlignment(Pos.CENTER);
-                grid.add(cell, k + 1, tb);
+                grid.add(cell, k + 2, tb);
             }
         }
         ScrollPane sp = new ScrollPane(grid);
@@ -93,7 +110,7 @@ final class TableAssignmentDialog extends Dialog<ButtonType> {
         hint.getStyleClass().add("hint");
         hint.setWrapText(true);
         VBox content = new VBox(10, sp, hint, state);
-        content.setPrefWidth(Math.min(1000, 120 + classes.size() * 134));
+        content.setPrefWidth(Math.min(1000, Math.max(560, 200 + classes.size() * 134)));
         getDialogPane().setContent(content);
         getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
         DialogSizing.fit(this);
@@ -101,8 +118,8 @@ final class TableAssignmentDialog extends Dialog<ButtonType> {
             if (bt == ButtonType.OK) {
                 for (int tb = 1; tb <= n; tb++) {
                     List<String> names = new ArrayList<>();
-                    for (int k = 0; k < classes.size(); k++) if (boxes[tb][k].isSelected()) names.add(classes.get(k).getName());
-                    t.setTableClasses(tb, names);
+                    for (int k = 0; k < classes.size(); k++) if (!boxes[tb][k].isSelected()) names.add(classes.get(k).getName());
+                    t.setTableExcluded(tb, names);                        // ohne Haken = ausgeschlossen
                 }
                 t.dispatch();
             }

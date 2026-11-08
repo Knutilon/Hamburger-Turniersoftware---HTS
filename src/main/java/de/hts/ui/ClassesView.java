@@ -170,6 +170,13 @@ public final class ClassesView {
         classList.setOnMouseClicked(e -> {
             if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) editClass();
         });
+        // 0.38 (#52): Taste „Entf“ in der Klassenliste löscht die markierte Klasse – mit denselben Rückfragen
+        classList.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.DELETE && classList.getSelectionModel().getSelectedItem() != null) {
+                e.consume();
+                deleteClass();
+            }
+        });
         Button editBtn = new Button("Bearbeiten", Icons.of(Icons.EDIT, 14));
         editBtn.setOnAction(e -> editClass());
         Button delBtn = new Button("Löschen", Icons.of(Icons.TRASH, 14));
@@ -383,17 +390,38 @@ public final class ClassesView {
         VBox.setVgrow(classTabs, Priority.ALWAYS);
 
         // fester Klassenkopf: Titel + Infos + Status
-        VBox headText = new VBox(2, classTitle, classCriteria);
+        // 0.38 (#56): Klassenname und Kurzinfo in einer Zeile (bricht bei wenig Breite um)
+        VBox headText = new VBox(2);
+        HBox oneLine = new HBox(10);
+        oneLine.setAlignment(Pos.BASELINE_LEFT);
         headText.setMinWidth(0);
         HBox.setHgrow(headText, Priority.ALWAYS);
         classCriteria.setMinHeight(Region.USE_PREF_SIZE);
+        classTitle.setMinWidth(0);
+        Runnable arrange = () -> {
+            double w = headText.getWidth();
+            boolean fits = w <= 0 || classTitle.prefWidth(-1) + 10 + classCriteria.prefWidth(-1) <= w;
+            if (fits && !headText.getChildren().contains(oneLine)) {
+                oneLine.getChildren().setAll(classTitle, classCriteria);
+                headText.getChildren().setAll(oneLine);
+            } else if (!fits && headText.getChildren().contains(oneLine)) {
+                oneLine.getChildren().clear();
+                headText.getChildren().setAll(classTitle, classCriteria);      // zu schmal: Kurzinfo darunter, umbrechend
+            } else if (headText.getChildren().isEmpty()) {
+                headText.getChildren().setAll(classTitle, classCriteria);
+            }
+        };
+        headText.widthProperty().addListener((o, a, b) -> arrange.run());
+        classCriteria.textProperty().addListener((o, a, b) -> javafx.application.Platform.runLater(arrange));
+        classTitle.textProperty().addListener((o, a, b) -> javafx.application.Platform.runLater(arrange));
+        arrange.run();
         classState.setMinWidth(Region.USE_PREF_SIZE);
         lockChip.getStyleClass().addAll("chip", "chip-locked");
         lockChip.setMinWidth(Region.USE_PREF_SIZE);
         lockChip.managedProperty().bind(lockChip.visibleProperty());
         lockChip.setVisible(false);
         HBox classHead = new HBox(10, headText, lockChip, classState);
-        classHead.setAlignment(Pos.TOP_LEFT);
+        classHead.setAlignment(Pos.CENTER_LEFT);
         VBox classCard = new VBox(6, classHead, classTabs);
         classCard.getStyleClass().add("card");
 
@@ -1118,18 +1146,40 @@ public final class ClassesView {
     private void deleteClass() {
         PlayingClass c = selectedClass();
         if (c == null) return;
+        // 0.38 (#52): Rückfrage nennt nur, was es in der Klasse wirklich gibt; „Abbrechen“ ist vorausgewählt
+        List<String> lost = new java.util.ArrayList<>();
         long n = tournament.countIn(c);
-        Alert a = new Alert(Alert.AlertType.CONFIRMATION,
-                "Klasse „" + c.getName() + "“ löschen?" + (n > 0 ? "\n" + n + " Zuordnungen von Teilnehmenden gehen dabei verloren." : ""),
-                ButtonType.YES, ButtonType.NO);
+        if (n > 0) lost.add(n == 1 ? "1 Zuordnung von Teilnehmenden" : n + " Zuordnungen von Teilnehmenden");
+        long registered = tournament.getPlayers().stream().filter(p -> p.getRegistrations().contains(c.getName())
+                || p.getWaitingLists().contains(c.getName())).count();
+        if (registered > 0) lost.add(registered == 1 ? "1 Meldung bzw. Wartelisten-Eintrag" : registered + " Meldungen bzw. Wartelisten-Einträge");
+        if (c.isDrawn()) lost.add("die Auslosung" + (c.isStarted() ? " (die Klasse ist gestartet)" : ""));
+        List<PlayingClass> phases = tournament.phasesOf(c);
+        for (PlayingClass ph : phases) if (ph.isPhase()) lost.add("Phase " + tournament.phaseNumber(ph) + " (" + DrawView.tabTitle(ph) + ")");
+        long results = phases.stream().flatMap(ph -> tournament.matchesOf(ph).stream())
+                .filter(m -> m.getStatus() == de.hts.tournament.MatchStatus.DONE && !m.isCarried()).count();
+        if (results > 0) lost.add(results == 1 ? "1 eingetragenes Ergebnis" : results + " eingetragene Ergebnisse");
+        String text = "Klasse „" + c.getName() + "“ löschen?" + (lost.isEmpty() ? ""
+                : "\n\nDabei geht verloren:\n• " + String.join("\n• ", lost));
+        ButtonType del = new ButtonType("Löschen", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancel = new ButtonType("Abbrechen", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+        if (!confirm("Klasse löschen", text, del, cancel)) return;
+        if (results > 0 && !confirm("Klasse wirklich löschen?", "Wirklich löschen? " + (results == 1 ? "1 Ergebnis geht" : results
+                + " Ergebnisse gehen") + " unwiderruflich verloren.", del, cancel)) return;
+        tournament.removeClass(c);
+        status.accept("Klasse „" + c.getName() + "“ gelöscht.");
+        changed();
+    }
+
+    private boolean confirm(String title, String text, ButtonType yes, ButtonType no) {
+        Alert a = new Alert(Alert.AlertType.CONFIRMATION, text, yes, no);
         a.initOwner(window());
         a.setHeaderText(null);
-        a.setTitle("Klasse löschen");
-        if (a.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-            tournament.removeClass(c);
-            status.accept("Klasse „" + c.getName() + "“ gelöscht.");
-            changed();
-        }
+        a.setTitle(title);
+        ((javafx.scene.control.Button) a.getDialogPane().lookupButton(yes)).setDefaultButton(false);
+        ((javafx.scene.control.Button) a.getDialogPane().lookupButton(no)).setDefaultButton(true);   // Enter löscht nicht versehentlich
+        DialogSizing.fit(a);
+        return a.showAndWait().orElse(no) == yes;
     }
 
     // --- Tabellen --------------------------------------------------------------

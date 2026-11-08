@@ -739,6 +739,7 @@
 
 /* --- 0.16: pausierte Spiele --- */
 .status-paused { -fx-background-color: #fff3d6; -fx-text-fill: #8a5a00; }
+.status-cancelled { -fx-background-color: #eceff3; -fx-text-fill: #5b6475; }
 .table-card.table-paused { -fx-border-color: #f0b429; }
 
 /* --- 0.16.1: dunkelblaue Knöpfe in normaler Größe --- */
@@ -776,6 +777,9 @@
 .match-card.card-upcoming { -fx-border-color: transparent transparent transparent #b0b6bd; }
 .match-card.card-running { -fx-border-color: transparent transparent transparent -hts-turquoise; }
 .match-card.card-paused { -fx-border-color: transparent transparent transparent #f0b429; }
+/* 0.38 (#51): nicht gespielt (Phase vorzeitig beendet) */
+.match-card.card-cancelled { -fx-border-color: transparent transparent transparent #b8bfcc; -fx-opacity: 0.6; }
+.chip-cancelled { -fx-background-color: #eceff3; -fx-text-fill: #5b6475; }
 .match-card.card-done { -fx-border-color: transparent transparent transparent #111111; }
 .match-card.match-bye { -fx-border-color: transparent; }
 .group-card.drop-hover, .match-card.drop-hover { -fx-border-color: #00a5a8; -fx-border-width: 2; -fx-border-radius: 6; }
@@ -876,3 +880,8 @@
 .chip.chip-locked { -fx-background-color: #fcebeb; -fx-text-fill: #791f1f; }
 .lock-hint { -fx-text-fill: #b42318; -fx-font-size: 13px; }
 .hyperlink.lock-hint-link { -fx-text-fill: #a32d2d; -fx-underline: true; -fx-font-size: 13px; -fx-padding: 0; -fx-border-color: transparent; }
+
+/* 0.38 (#56): Gleichstand als Auswahl im Klassenkopf */
+.pill-combo { -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #c9d2e0; -fx-background-color: white; }
+/* 0.38 (#60): Entscheidung nach Runde 1 der KO-Qualifikation */
+.qual-decision { -fx-background-color: #fff7e0; -fx-background-radius: 8; -fx-padding: 8 12 8 12; }

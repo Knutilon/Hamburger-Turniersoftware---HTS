@@ -11,7 +11,9 @@ public enum MatchStatus {
     /** Ergebnis erfasst */
     DONE("abgeschlossen"),
     /** an einem Tisch, aber angehalten (Phase pausiert) – kein Ergebnis möglich, muss bewusst fortgesetzt werden */
-    PAUSED("pausiert");
+    PAUSED("pausiert"),
+    /** 0.38 (#51): Phase vorzeitig beendet – Spiel findet nicht mehr statt, zählt nirgends und wird nicht exportiert */
+    CANCELLED("nicht gespielt");
 
     /** Belegt das Spiel einen Tisch (aktiv oder pausiert)? */
     public boolean atTable() {

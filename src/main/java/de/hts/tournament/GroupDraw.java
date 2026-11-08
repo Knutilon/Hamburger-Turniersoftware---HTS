@@ -160,6 +160,11 @@ public final class GroupDraw {
             }
         }
         if (avoidClubs) repairClubClashes(result, ranking, groups, seeding == Seeding.POTS || seeding == Seeding.HEADS, n, random);
+        if (avoidClubs && entrants.stream().noneMatch(e -> e.id().startsWith("pair:"))) {
+            clubMatching(result, ranking, groups, seeding == Seeding.POTS || seeding == Seeding.HEADS);   // 0.38 (#48), nicht für Doppel
+            // falls dadurch doch noch ein Tausch Vereinsgleichheiten spart: Vermeiden hat Vorrang
+            repairClubClashes(result, ranking, groups, seeding == Seeding.POTS || seeding == Seeding.HEADS, n, random);
+        }
         // Mitglieder je Gruppe in Setzreihenfolge (Gruppenkopf zuerst)
         for (List<Entrant> g : result) g.sort(Comparator.comparingInt(ranking::indexOf));
         return result;
@@ -180,9 +185,10 @@ public final class GroupDraw {
         java.util.function.ToIntFunction<Entrant> potOf = e -> Math.min(rank.get(e) / groups, lastPot);
         int current = totalClashes(result);
         int best = current;
+        int floor = minimalClashes(ranking, groups);           // 0.38: weniger geht nicht – dann sofort fertig
         List<List<Entrant>> bestState = copy(result);
         Entrant lastA = null, lastB = null;
-        for (int guard = 0; guard < 40 * n && best > 0; guard++) {
+        for (int guard = 0; guard < 40 * n && best > floor; guard++) {
             int bestDist = Integer.MAX_VALUE, bestGain = 0;
             int bg = -1, bi = -1, bh = -1, bj = -1;
             List<int[]> plateau = new ArrayList<>();
@@ -237,6 +243,125 @@ public final class GroupDraw {
             result.get(g).clear();
             result.get(g).addAll(bestState.get(g));
         }
+    }
+
+    /**
+     * 0.38 (#48): Unvermeidbare Vereinsgleichheit – hat ein Verein mehr Mitglieder als es Gruppen gibt, kommen die
+     * Überzähligen gezielt zu den Stärksten ihres Vereins: Die Vereinsmitglieder werden nach Setzreihenfolge in Lagen
+     * zu je „Gruppenzahl“ geteilt; Lage 1 verteilt sich auf verschiedene Gruppen, in Lage 2 kommt der/die Schwächste
+     * zur Nr. 1, der/die Zweitschwächste zur Nr. 2 usw. (Richtung rückwärts), Lage 3 wieder vorwärts (Nr. 9 zu Nr. 1 und
+     * 8 bei 4 Gruppen), Lage 4 rückwärts … Dafür wird jeweils mit einem möglichst gleich starken Mitglied der Zielgruppe
+     * getauscht (bevorzugt höchstens Gruppenzahl − 1 Plätze entfernt, bei Stärkegruppen aus derselben Stärkegruppe);
+     * Gruppenköpfe bleiben. Vereine mit dem stärkeren Stärksten haben Vorrang; geht ein Tausch nicht, wird es mit der
+     * Gruppe des/der nächsten Vereinskameraden versucht („eine Gruppe nach hinten“).
+     */
+    static void clubMatching(List<List<Entrant>> result, List<Entrant> ranking, int groups, boolean pots) {
+        if (groups < 2) return;
+        java.util.Map<Entrant, Integer> rank = new java.util.HashMap<>();
+        for (int i = 0; i < ranking.size(); i++) rank.put(ranking.get(i), i);
+        int lastPot = Math.max(0, ranking.size() / groups - 1);
+        java.util.function.ToIntFunction<Entrant> potOf = e -> Math.min(rank.get(e) / groups, lastPot);
+        java.util.Map<String, List<Entrant>> byClub = new java.util.LinkedHashMap<>();
+        List<Entrant> byTtr = new ArrayList<>(ranking);                  // Vereins-Nr. immer nach TTR (auch bei „zufällig“)
+        byTtr.sort(Comparator.comparing(Entrant::ttr, Comparator.nullsLast(Comparator.reverseOrder())));
+        for (Entrant e : byTtr) {
+            if (e.clubs().size() != 1) continue;
+            byClub.computeIfAbsent(e.clubs().iterator().next(), k -> new ArrayList<>()).add(e);
+        }
+        List<List<Entrant>> big = new ArrayList<>();
+        for (List<Entrant> members : byClub.values()) if (members.size() > groups) big.add(members);
+        if (big.isEmpty()) return;
+        big.sort(Comparator.comparingInt(m -> byTtr.indexOf(m.get(0))));          // stärkerer Stärkster zuerst
+        java.util.Set<Entrant> fixed = new java.util.HashSet<>();
+        for (List<Entrant> members : big) fixed.addAll(members.subList(0, groups));
+        for (List<Entrant> members : big) {
+            // Lage 1 auf verschiedene Gruppen: steht ein/e Stärkere/r schon in derselben Gruppe, in eine freie tauschen
+            java.util.Set<Integer> used = new java.util.HashSet<>();
+            for (int j = 0; j < groups; j++) {
+                Entrant e = members.get(j);
+                int g = groupIndex(result, e);
+                if (used.contains(g)) {
+                    for (int f = 0; f < result.size(); f++) {
+                        if (!used.contains(f) && moveTo(result, e, f, fixed, rank, potOf, groups, pots, true)) break;
+                    }
+                    g = groupIndex(result, e);
+                }
+                used.add(g);
+            }
+            List<Integer> base = new ArrayList<>();
+            for (int j = 0; j < groups; j++) base.add(groupIndex(result, members.get(j)));
+            List<List<Entrant>> snapshot = copy(result);
+            int clashesBefore = totalClashes(result);
+            java.util.Set<Entrant> fixedBefore = new java.util.HashSet<>(fixed);
+            for (int idx = groups; idx < members.size(); idx++) {
+                int layer = idx / groups, pos = idx % groups;
+                int k = Math.min(groups, members.size() - layer * groups);
+                int j = layer % 2 == 1 ? k - 1 - pos : pos;                       // Lage 2 rückwärts, 3 vorwärts …
+                Entrant sMember = members.get(idx);
+                for (int t = 0; t < groups; t++) {
+                    if (moveTo(result, sMember, base.get((j + t) % groups), fixed, rank, potOf, groups, pots, false)) break;
+                }
+                fixed.add(sMember);
+            }
+            if (totalClashes(result) > clashesBefore) {            // nie mehr Vereinsgleichheiten als vorher
+                for (int g = 0; g < result.size(); g++) {
+                    result.get(g).clear();
+                    result.get(g).addAll(snapshot.get(g));
+                }
+                fixed.clear();
+                fixed.addAll(fixedBefore);
+                fixed.addAll(members);
+            }
+        }
+    }
+
+    private static int groupIndex(List<List<Entrant>> result, Entrant e) {
+        for (int g = 0; g < result.size(); g++) if (result.get(g).contains(e)) return g;
+        return -1;
+    }
+
+    /** Setzt {@code s} per Tausch in Gruppe {@code target}; {@code false}, wenn kein passender Tausch möglich ist. */
+    private static boolean moveTo(List<List<Entrant>> result, Entrant s, int target, java.util.Set<Entrant> fixed,
+                                  java.util.Map<Entrant, Integer> rank, java.util.function.ToIntFunction<Entrant> potOf,
+                                  int groups, boolean pots, boolean guard) {
+        int from = groupIndex(result, s);
+        if (from == target) return true;
+        if (from < 0 || target < 0) return false;
+        List<Entrant> fromG = result.get(from), toG = result.get(target);
+        List<Entrant> cands = new ArrayList<>();
+        java.util.Map<Entrant, Integer> score = new java.util.HashMap<>();
+        for (Entrant p : toG) {
+            if (fixed.contains(p) || rank.get(p) < groups) continue;     // Gruppenköpfe und schon Platzierte bleiben
+            int dist = Math.abs(rank.get(p) - rank.get(s));
+            int sc = dist;
+            if (dist > groups - 1) sc += 10_000;                                          // höchstens Gruppenzahl − 1 Plätze
+            if (pots && potOf.applyAsInt(p) != potOf.applyAsInt(s)) sc += 100_000;        // gleiche Stärkegruppe bevorzugt
+            if (clashCount(fromG, p, s) > 0 && !p.sameClub(s)) sc += 1_000_000;          // möglichst keine neue Gleichheit
+            cands.add(p);
+            score.put(p, sc);
+        }
+        cands.sort(Comparator.comparingInt(score::get));
+        int before = totalClashes(result);
+        for (Entrant best : cands) {
+            fromG.set(fromG.indexOf(s), best);
+            toG.set(toG.indexOf(best), s);
+            if (!guard || totalClashes(result) <= before) return true;     // nie mehr Vereinsgleichheiten als vorher
+            toG.set(toG.indexOf(s), best);
+            fromG.set(fromG.indexOf(best), s);
+        }
+        return false;
+    }
+
+    /** Untergrenze der Vereinsgleichheiten (Paare): je Verein so gleichmäßig wie möglich auf die Gruppen verteilt. */
+    static int minimalClashes(List<Entrant> entrants, int groups) {
+        java.util.Map<String, Integer> perClub = new java.util.HashMap<>();
+        for (Entrant e : entrants) if (e.clubs().size() == 1) perClub.merge(e.clubs().iterator().next(), 1, Integer::sum);
+        int sum = 0;
+        for (int m : perClub.values()) {
+            int q = m / groups, r = m % groups;
+            sum += r * (q + 1) * q / 2 + (groups - r) * q * (q - 1) / 2;
+        }
+        return sum;
     }
 
     private static List<List<Entrant>> copy(List<List<Entrant>> groups) {

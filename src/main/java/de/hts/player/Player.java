@@ -117,8 +117,20 @@ public class Player {
     }
 
     public void setAttendance(Attendance a) {
-        attendance = a == null ? Attendance.UNKNOWN : a;
+        Attendance next = a == null ? Attendance.UNKNOWN : a;
+        // 0.38 (#54): merken, ob die endgültige Abmeldung per Handy kam (bestätigte Handy-Abmeldung) oder von der Turnierleitung
+        if (next == Attendance.WITHDRAWN && attendance != Attendance.WITHDRAWN) withdrawnByPhone = attendance == Attendance.WITHDRAW_REQUESTED;
+        if (next != Attendance.WITHDRAWN) withdrawnByPhone = false;
+        attendance = next;
     }
+
+    private boolean withdrawnByPhone;
+
+    /** Endgültig abgemeldet über eine bestätigte Handy-Abmeldung (sonst durch die Turnierleitung). */
+    public boolean isWithdrawnByPhone() { return withdrawnByPhone; }
+
+    /** Nur zum Laden. */
+    public void restoreWithdrawnByPhone(boolean b) { withdrawnByPhone = b && attendance == Attendance.WITHDRAWN; }
 
     /** Am Turniertag anwesend („angemeldet“). */
     public boolean isPresent() {
@@ -128,6 +140,11 @@ public class Player {
     /** Nachrücker = laut Meldeliste (click-TT) auf der Warteliste mindestens einer Klasse. */
     public boolean isReserve() {
         return !waitingLists.isEmpty();
+    }
+
+    /** 0.38 (#55): nur Nachrücker (Warteliste), nirgends gemeldet – zählt nicht zu den An-/Abgemeldeten. */
+    public boolean isReserveOnly() {
+        return !waitingLists.isEmpty() && registrations.isEmpty() && classes.isEmpty();
     }
 
     /** Laut Meldeliste für die Klasse gemeldet (noch nicht oder schon in der Klasse). */

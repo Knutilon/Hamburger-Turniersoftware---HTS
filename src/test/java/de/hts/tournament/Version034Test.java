@@ -37,11 +37,20 @@ class Version034Test {
 
     /** Höherer TTR gewinnt; Sätze variieren mit der Spielnummer, damit die Verhältnisse sich unterscheiden. */
     private static void playAll(Tournament t, PlayingClass c) {
+        // 0.38: Qualifikationsphase startet erst per „Phase starten“; nach Runde 1 wird entschieden (hier: weitere Runde)
+        if (c.isAwaitingStart()) t.resumeClass(c);
+        if (t.qualificationDecisionPending(c)) t.decideQualification(c, false);
         for (int guard = 0; guard < 5000; guard++) {
             Match open = t.matchesOf(c).stream()
                     .filter(m -> m.isReady() && (m.getStatus() == MatchStatus.ACTIVE || m.getStatus() == MatchStatus.QUEUED))
                     .findFirst().orElse(null);
-            if (open == null) return;
+            if (open == null) {
+                if (t.qualificationDecisionPending(c)) {
+                    t.decideQualification(c, false);
+                    continue;
+                }
+                return;
+            }
             Entrant a = t.entrant(open, open.getA()), b = t.entrant(open, open.getB());
             boolean aWins = a.ttr() > b.ttr();
             int lose = 3 + open.getNumber() % 7;

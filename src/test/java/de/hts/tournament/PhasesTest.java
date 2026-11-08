@@ -39,11 +39,20 @@ class PhasesTest {
 
     /** Höherer TTR gewinnt immer 3:0. */
     private static void playAll(Tournament t, PlayingClass c) {
+        // 0.38: Qualifikationsphase startet erst per „Phase starten“; nach Runde 1 wird entschieden (hier: weitere Runde)
+        if (c.isAwaitingStart()) t.resumeClass(c);
+        if (t.qualificationDecisionPending(c)) t.decideQualification(c, false);
         for (int guard = 0; guard < 500; guard++) {
             Match open = t.matchesOf(c).stream()
                     .filter(m -> m.isReady() && (m.getStatus() == MatchStatus.ACTIVE || m.getStatus() == MatchStatus.QUEUED))
                     .findFirst().orElse(null);
-            if (open == null) return;
+            if (open == null) {
+                if (t.qualificationDecisionPending(c)) {
+                    t.decideQualification(c, false);
+                    continue;
+                }
+                return;
+            }
             Entrant a = t.entrant(open, open.getA()), b = t.entrant(open, open.getB());
             boolean aWins = a.ttr() > b.ttr();
             t.recordResult(open, aWins ? List.of(new int[]{11, 5}, new int[]{11, 6}, new int[]{11, 7})
@@ -213,9 +222,9 @@ class PhasesTest {
         t.setTableCount(4);
         PlayingClass m = groupsClass(t, "Mädchen", players(t, "M", 4, 1500), 1);
         PlayingClass j = groupsClass(t, "Jungen", players(t, "J", 8, 1800), 2);
-        t.setTableClasses(1, List.of("Jungen"));
-        t.setTableClasses(2, List.of("Jungen"));
-        t.setTableClasses(3, List.of("Jungen"));
+        t.setTableExcluded(1, List.of("Mädchen"));          // 0.38: Haken bei Mädchen entfernt
+        t.setTableExcluded(2, List.of("Mädchen"));
+        t.setTableExcluded(3, List.of("Mädchen"));
         // Mädchen zuerst gestartet -> stehen vorn in der Warteschlange, dürfen aber nur an Tisch 4
         t.startClass(m);
         t.startClass(j);
@@ -237,12 +246,13 @@ class PhasesTest {
         t.moveMatch(two, 3);
         assertEquals(3, two.getTable(), "Tausch");
         assertEquals(2, one.getTable());
-        t.setTableClasses(2, List.of("A"));
+        t.setTableExcluded(2, List.of("A"));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         TournamentFile.write(out, TournamentFile.Content.of(t));
         Tournament back = TournamentFile.read(new ByteArrayInputStream(out.toByteArray())).toTournament();
-        assertEquals(java.util.Set.of("A"), back.getTableClasses(2));
-        assertTrue(back.getTableClasses(1).isEmpty());
+        assertEquals(java.util.Set.of("A"), back.getTableExcluded(2));
+        assertTrue(back.getTableExcluded(1).isEmpty());
+        assertEquals(1, back.getClasses().size(), "keine leeren Kopien (Bug #59)");
     }
 
     @Test
@@ -403,18 +413,6 @@ class PhasesTest {
         List<Integer> ttr2 = rows.stream().filter(r -> r.info().equals("Nachrücker 2. Ranges")).map(r -> r.entrant().ttr()).toList();
         assertEquals(ttr2.stream().sorted(java.util.Comparator.reverseOrder()).toList(), ttr2);
 
-        // Zusatzrunde bei Bedarf: die 6 Verlierer der Runde 2 spielen noch einmal – die Gewinner sind qualifiziert
-        t.setQualExtra(q, true);
-        assertEquals(18 + 3, t.matchesOf(q).size());
-        assertFalse(t.isPhaseComplete(q));
-        assertTrue(t.matchesOf(q).stream().anyMatch(m -> m.getStage().equals(Tournament.QUAL_EXTRA_STAGE)));
-        playAll(t, q);
-        rows = t.finalResult(c).rows();
-        assertEquals(9, rows.stream().filter(r -> r.info().equals(Tournament.QUALIFIED_BY_KO)).count(), "6 + 3 Sieger der Zusatzrunde");
-        assertEquals(3, rows.stream().filter(r -> r.info().equals("Nachrücker 1. Ranges")).count(), "Verlierer der Zusatzrunde");
-        assertEquals(12, rows.stream().filter(r -> r.info().equals("Nachrücker 2. Ranges")).count(), "Verlierer Runde 1");
-        assertEquals(0, rows.stream().filter(r -> r.info().equals("Nachrücker 3. Ranges")).count());
-        assertThrows(IllegalStateException.class, () -> t.setQualExtra(q, false), "gespielt – nicht mehr abschaltbar");
         t.finishClass(q);
         // die übrigen nach Gruppenplatz: gleicher Gruppenplatz = gleicher Platz
         assertEquals(12, rows.stream().filter(r -> r.from() == 37).count(), "alle Gruppenvierten auf Platz 37");

@@ -62,6 +62,12 @@ final class Reports {
         PdfViewer.show(owner, t, name, PdfReports.phase(t, phase), fileName(name), status);
     }
 
+    /** 0.38 (#54): Liste der endgültig Abgemeldeten. */
+    static void showWithdrawn(Window owner, Tournament t, Consumer<String> status) {
+        String name = "Abgemeldete " + (t.getName() == null ? "Turnier" : t.getName());
+        PdfViewer.show(owner, t, name, PdfReports.withdrawnList(t), fileName(name), status);
+    }
+
     static void showTournamentResults(Window owner, Tournament t, Consumer<String> status) {
         String name = "Ergebnisse " + (t.getName() == null ? "Turnier" : t.getName());
         PdfViewer.show(owner, t, name, PdfReports.tournamentResults(t), fileName(name), status);

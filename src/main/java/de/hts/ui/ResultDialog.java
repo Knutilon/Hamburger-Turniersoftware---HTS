@@ -26,8 +26,8 @@ import java.util.List;
 /**
  * Ergebnis eines Spiels Satz für Satz erfassen (oder korrigieren).
  *
- * <p>Je Satz ein Feld: „11:8“, „7:11“, „12:14“ – oder kurz „+8“ (→ 11:8), „-7“ (→ 7:11), „+0“ (→ 11:0),
- * „+10“ (→ 12:10). Mit Enter geht es zum nächsten Satz. Die erste Zahl gehört immer zur erstgenannten Partei.
+ * <p>Je Satz ein Feld: „11:8“, „7:11“, „12:14“ – oder kurz „8“ bzw. „+8“ (→ 11:8), „-7“ (→ 7:11), „0“ (→ 11:0),
+ * „10“ (→ 12:10); ohne Vorzeichen gilt „+“ (0.38). Mit Enter geht es zum nächsten Satz. Die erste Zahl gehört immer zur erstgenannten Partei.
  * Ungültige Sätze (z. B. 13:14) werden rot markiert; gespeichert werden kann erst ein vollständiges, gültiges Ergebnis.
  * Alternativ kann eine Aufgabe markiert werden – dann gilt 11:0 je Gewinnsatz für den Gegner.
  */
@@ -80,7 +80,7 @@ public final class ResultDialog extends Dialog<ResultDialog.Result> {
         int maxSets = 2 * winningSets - 1;
         for (int i = 0; i < maxSets; i++) {
             TextField f = new TextField();
-            f.setPromptText(i == 0 ? "z. B. 11:8 oder +8" : "");
+            f.setPromptText(i == 0 ? "z. B. 11:8 oder 8" : "");
             f.setPrefColumnCount(8);
             f.getStyleClass().add("set-field");
             int idx = i;
@@ -130,8 +130,8 @@ public final class ResultDialog extends Dialog<ResultDialog.Result> {
         summary.setWrapText(true);
         error.getStyleClass().add("error");
         error.setWrapText(true);
-        Label hint = new Label("Eingabe: 11:8 · 7:11 · 18:16 – oder kurz +8 (= 11:8), -7 (= 7:11), +0 (= 11:0), "
-                + "+10 (= 12:10). Enter = nächster Satz; ist das Spiel entschieden, speichert ein weiteres Enter. "
+        Label hint = new Label("Eingabe: 11:8 · 7:11 · 18:16 – oder kurz 8 bzw. +8 (= 11:8), -7 (= 7:11), 0 (= 11:0), "
+                + "10 (= 12:10); ohne Vorzeichen gilt „+“. Enter = nächster Satz; ist das Spiel entschieden, speichert ein weiteres Enter. "
                 + "Gewinnsätze: " + winningSets + " – danach sind die übrigen Sätze gesperrt.");
         hint.getStyleClass().add("hint");
         hint.setWrapText(true);
@@ -176,7 +176,7 @@ public final class ResultDialog extends Dialog<ResultDialog.Result> {
         return 0;
     }
 
-    /** Kurzeingabe in die Langform umwandeln, z. B. „+8“ → „11:8“. */
+    /** Kurzeingabe in die Langform umwandeln, z. B. „+8“ bzw. „8“ → „11:8“. */
     private void normalize(TextField f) {
         int[] s = Scoring.parseSet(f.getText());
         if (s != null) {

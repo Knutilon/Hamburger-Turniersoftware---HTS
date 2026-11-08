@@ -186,12 +186,16 @@ public final class TablesView {
         javafx.scene.layout.GridPane.setFillHeight(card, true);
         javafx.scene.layout.GridPane.setValignment(card, javafx.geometry.VPos.TOP);
         Match m = tournament.activeMatchAt(t).orElse(null);
-        java.util.Set<String> only = tournament.getTableClasses(t);
-        String onlyText = only.isEmpty() ? "alle Klassen" : "nur: " + String.join(", ", only);
+        java.util.Set<String> excluded = tournament.getTableExcluded(t);
+        java.util.List<String> allowed = tournament.rootClasses().stream().map(de.hts.tournament.PlayingClass::getName)
+                .filter(n -> !excluded.contains(n)).toList();
+        boolean none = tournament.tableHasNoClass(t);
+        String onlyText = excluded.isEmpty() ? "alle Klassen" : none ? "keine Klasse zugeordnet" : "nur: " + String.join(", ", allowed);
         Label onlyLabel = new Label(onlyText);
-        onlyLabel.getStyleClass().addAll("hint", only.isEmpty() ? "table-all" : "table-only");
-        onlyLabel.setTextOverrun(javafx.scene.control.OverrunStyle.ELLIPSIS);
+        onlyLabel.getStyleClass().addAll("hint", excluded.isEmpty() ? "table-all" : "table-only");
+        onlyLabel.setWrapText(true);                         // 0.38: Klassenliste nicht abkürzen, sondern umbrechen
         onlyLabel.setMinWidth(0);
+        onlyLabel.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
         onlyLabel.setOnMouseClicked(e -> openAssignment());
         onlyLabel.setTooltip(new Tooltip(onlyText + "\nKlicken: Tische den Klassen zuordnen"));
         HBox.setHgrow(onlyLabel, Priority.SOMETIMES);

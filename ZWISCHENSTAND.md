@@ -1,4 +1,4 @@
-# Zwischenstand HTS 0.37.0 (07.11.2026)
+# Zwischenstand HTS 0.38.0 (08.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -14,7 +14,7 @@ https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.
 (+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
-## Feature-Sammlung für 0.38.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 0.39.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
 
@@ -27,7 +27,208 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Passwort zusätzlich als Text unter dem QR-Code; Verschlüsselung WPA/WPA2 (Standard); Feld leer = kein WLAN-QR-Code
    (wie bisher Felder zum Ausfüllen).
 
+2. TEILNEHMENDE: SETZPOSITION NACH TTR (08.11.2026, Issue #62) – TEILWEISE GEKLÄRT. In der Übersicht „Teilnehmende“
+   wird eine Setzposition angezeigt: Rangfolge nach TTR innerhalb der Klasse, ohne TTR ganz unten; nur wenn auf eine
+   Klasse gefiltert ist und die Klasse per XML importiert wurde. Offen: gleicher TTR (Vorschlag: gleicher Setzplatz,
+   z. B. 3 und 3, dann 5); Doppel (Vorschlag: Ø-TTR).
+
 ## Umgesetzt
+
+0.38.0 (Issues #46–#61 außer #34). README „Neu in 0.38.0“.
+#46 createGroupMatches: Versatz je Gruppe = maxRunden − eigene Runden. #47 Scoring.SHORT ohne Vorzeichen (auch „−“).
+#48 GroupDraw.clubMatching (Lagen, Tausch ≤ Gruppenzahl − 1, Lage 1 verteilt, Vereins-Rückgängig bei mehr Gleichheiten,
+danach repairClubClashes; minimalClashes als Abbruch; Entrant.clubs zwischengespeichert). #49 MatchesView Gruppenfilter,
+Spalte „Gruppe“, Filterzeile als FlowPane. #50 PlayingClass.awaitingStart, Qualifikationsphase angehalten bis „Phase
+starten“. #51 MatchStatus.CANCELLED, endPhaseEarly/undoEndPhaseEarly, PlayingClass.endedEarly. #52 ClassesView
+deleteClass (Verlustliste, zweite Rückfrage, Entf). #53 Tournament.originLabel (DrawView, LiveServer, PdfReports).
+#54 Player.withdrawnByPhone, PdfReports.withdrawnList, Knopf „Abgemeldete als PDF“. #55 Player.isReserveOnly
+(PlayerTableView, Zählung, Handy, assign → PRESENT). #56 DrawView-Werkzeugzeile (tiebreakBox, printBtn als MenuButton,
+endEarly/undoEnd/restart), ClassesView-Kopf einzeilig. #57 Tischzuordnung als Ausschlüsse (table-exclusions/
+excluded-class, alte table-classes umgerechnet), TableAssignmentDialog „alle“ je Zeile/Spalte, DialogSizing hvalue 0.
+#58 restartPhase. #59 TournamentFile liest nur direkte <class>-Kinder von <classes>, repairDuplicateClasses.
+#60 qualDecision, decideQualification/undo, Zusatzrunde entfernt, ResultEntry fragt nach Runde 1, simulateAll entscheidet
+„weitere Runde“. #61 qualifierPlaces, createNextPhase(c, places), placesProblem/parsePlaces, rankGroupPlaces, Dialog
+mit Optionsfeldern. Geprüft bei 1093 × 614 und 911 × 512. Tests: 206 bestanden (Version038Test, PhaseFixtures).
+Feature-Sammlung 0.38.0 (zur Nachverfolgung):
+
+2. GRUPPENSPIELE: GRUPPEN MIT MEHR RUNDEN VORNE EINREIHEN (08.11.2026, Issue #46) – GEKLÄRT.
+   Spiele von Gruppen mit höherer Rundenzahl (5er = 5 Runden, 4er = 3 Runden, 3er = 3 Runden, 6er = 5 Runden)
+   werden vor denen kleinerer Gruppen eingereiht. Bisher: Runde 1 aller Gruppen (A, B, C …), dann Runde 2 usw.
+   Bestätigt: Variante (a) „Auf gemeinsames Ende ausrichten“: Jede Gruppe beginnt um so viele Runden früher, wie sie
+   mehr Runden hat als die Gruppe mit den wenigsten (z. B. 5er spielen Runde 1–2 allein vorweg, ab dann alle
+   gemeinsam; alle Gruppen enden etwa gleichzeitig). Spielnummern folgen der neuen Reihenfolge. Gilt für alle
+   Gruppenphasen (Gruppen, Gruppen + KO, Qualifikation, Zwischenrunde), nur innerhalb einer Klasse.
+
+3. ERGEBNISEINGABE: SATZ OHNE VORZEICHEN GILT ALS „+“ (08.11.2026, Issue #47) – GEKLÄRT.
+   Weiter „+8“ / „-8“ / „11:8“; zusätzlich „8“ = „+8“ = 11:8, „10“ = 12:10, „0“ = 11:0. Hinweistext und Platzhalter
+   im Ergebnisdialog anpassen (z. B. „z. B. 11:8 oder 8“). Bestätigt: „l“ in der Nachricht = „-“.
+
+4. GRUPPENAUSLOSUNG: UNVERMEIDBARE VEREINSGLEICHHEIT – STÄRKSTER MIT SCHWÄCHSTEM (08.11.2026, Issue #48) –
+   GEKLÄRT. Hat ein Verein mehr Teilnehmende als es Gruppen gibt und ist „Vereinsgleichheit vermeiden“
+   an, soll der/die Schwächste des Vereins in die Gruppe des/der Stärksten des Vereins gelost werden (der/die
+   Zweitschwächste zum/zur Zweitstärksten usw.). Betrifft v. a. die Schlange: Der Rhythmus wird nur an dieser Stelle
+   unterbrochen und davor und danach normal fortgesetzt.
+   Bestätigt (08.11.): Beispiel 4 Gruppen, Verein X auf TTR-Platz 3, 5, 10, 13, 16 → X13 kommt in die Gruppe von X3.
+   Dafür werden ggf. Betroffene in der Schlange davor oder danach verschoben; eine Verschiebung beträgt höchstens
+   (Gruppenzahl − 1) Plätze.
+   Bestätigt (08.11.): Es gilt immer ein Matching „Schwächster zu Stärkstem“ (Nummerierung innerhalb des Vereins nach
+   TTR), Beispiel 4 Gruppen: 5 Gleiche → Nr. 5 zu Nr. 1; 6 → Nr. 6 zu Nr. 1, Nr. 5 zu Nr. 2; 7 → Nr. 7 zu Nr. 1,
+   Nr. 6 zu Nr. 2, Nr. 5 zu Nr. 3 (8 → zusätzlich Nr. 5 zu Nr. 4). Annahme „immer“ = bei allen Setzungsarten.
+   Bestätigt: (4) gilt NICHT für Doppel (dort bleibt es wie bisher).
+   Bestätigt (5): Sollen Überzählige zweier Vereine in dieselbe Gruppe, wird zuerst geprüft, ob die maximale
+   Gruppengröße das zulässt. Ja → beide in diese Gruppe, solange Schlange und höchstens (Gruppenzahl − 1) Plätze
+   Verschiebung passen. Sonst wird der von Verein B (Annahme: Verein mit dem schwächeren Stärksten) eine Gruppe nach
+   hinten verschoben (Annahme: in die nächste Gruppe der Schlangenrichtung, die noch Platz hat).
+   Präzisiert (08.11.): Verein B = Verein mit der schwächeren Nr. 1. Stehen Nr. 1 von A und Nr. 1 von B in derselben
+   Gruppe (z. B. B) und lässt sich die Vereinsgleichheit so nicht auflösen, wird Nr. 1 von Verein B in Gruppe C
+   verschoben und Nr. 2 von Verein B in Gruppe B (Spielertausch); danach wird erneut geprüft, ob sich die
+   Vereinsgleichheit auflösen lässt.
+   Sind 3 aus einem Verein je Gruppe nötig: Nr. 1, Nr. 5 und Nr. 9 in eine Gruppe (Beispiel des Nutzers „für
+   4er-Gruppen“). GEKLÄRT: Variante (a) – die Lagen wechseln die Richtung wie die Schlange; Beispiel 4 Gruppen,
+   12 Gleiche: A = 1, 8, 9 · B = 2, 7, 10 · C = 3, 6, 11 · D = 4, 5, 12 (bei 9 Gleichen: Nr. 9 zu Nr. 1 und 8). Muss für Gruppengrößen 3–10 funktionieren (präzisiert
+   08.11.) und mit bis zu 5 Mitgliedern desselben Vereins je Gruppe (bei Gruppen mit 5 oder mehr Mitgliedern; bei 3er-
+   bzw. 4er-Gruppen entsprechend bis 3 bzw. 4). Ab Lage 3 wechselt jede weitere Lage wieder die Richtung (Lage 4
+   rückwärts, Lage 5 vorwärts).
+   Vorschläge: (1) Überzählige = die Schwächsten des Vereins; Ziel = Gruppe mit den wenigsten Vereinskameraden, darunter
+   die mit dem/der stärksten Vereinskameraden. (2) Schlange: Tausch innerhalb derselben Schlangenrunde (der/die
+   Überzählige nimmt in seiner/ihrer Runde den Platz der Zielgruppe, wer dort gelandet wäre, rückt auf seinen/ihren
+   Platz); Gruppengrößen bleiben. (3) Auch bei Stärkegruppen, Gruppenkopf gesetzt und zufällig. (4) Doppel ebenso.
+   (5) Konkurrieren zwei Vereine um dieselbe Gruppe, hat der stärkere Vereinskamerad Vorrang, sonst nächste Gruppe.
+
+5. SPIELE: FILTER „GRUPPE“ UND SPALTE „GRUPPE“ (08.11.2026, Issue #49) – GEKLÄRT (Vorschläge angenommen).
+   In der Übersicht „Spiele“ eine Auswahl „Gruppe:“ neben „Klasse:“; die Spaltenüberschrift „Phase“ heißt „Gruppe“.
+   Vorschläge: Auswahl = „Alle Gruppen“ + alle Werte der Spalte (Gruppe A, B, … und KO-Runden wie „Viertelfinale“,
+   „Qualifikation Runde 1“) der gewählten Klasse; bei „Alle Klassen“ filtert „Gruppe A“ die Gruppe A aller Klassen.
+   Klassenwechsel setzt die Gruppe zurück, wenn es sie dort nicht gibt. In KO-Zeilen steht unter „Gruppe“ weiter der
+   Rundenname.
+
+6. QUALIFIKATIONSPHASE: KO-SPIELE VOR PHASENSTART PER DRAG & DROP TAUSCHEN (08.11.2026, Issue #50) – GEKLÄRT
+   (Vorschläge angenommen). Die Teilnehmenden der KO-Spiele der Qualifikationsphase sollen vor dem Phasenstart per Drag & Drop
+   getauscht werden können. Stand: Tauschen geht bereits in der aktuellen Runde, aber nur bei Spielen, die noch nicht
+   am Tisch sind – die Folgephase wird beim Anlegen sofort gestartet und belegt freie Tische gleich.
+   Vorschläge: Qualifikationsphase wird beim Anlegen ausgelost, aber noch nicht gestartet (Hinweis + Knopf „Phase
+   starten“ in der Auslosungsansicht); bis dahin alle Spieler der Runde 1 inkl. Freilos tauschbar; erst „Phase
+   starten“ reiht die Spiele ein. Nur für die Qualifikationsphase (andere Folgephasen starten weiter sofort).
+
+7. PHASE VORZEITIG BEENDEN (08.11.2026, Issue #51) – GEKLÄRT (Vorschläge angenommen). Eine Phase soll vorzeitig beendet werden
+   können: Alle noch offenen Spiele der Phase werden beendet und sind nicht Teil des XML-Exports; alle bisher
+   gespielten Spiele werden mit exportiert. (Hinweis: Export nimmt bisher nur beendete Klassen.)
+   Vorschläge: (1) Knopf „Phase vorzeitig beenden“ in der Auslosungsansicht mit Rückfrage (Anzahl offener Spiele,
+   auch solche am Tisch). (2) Offene Spiele bekommen den Status „nicht gespielt“ (grau), zählen in keiner Wertung,
+   Tische werden frei. (3) Die Klasse gilt damit als beendet (keine weitere Phase), Endergebnis aus dem Stand:
+   Gruppen nach den gespielten Spielen, KO mit geteilten Plätzen für die offenen Runden. (4) Rücknahme möglich
+   („Beenden zurücknehmen“), solange nicht exportiert bzw. keine weitere Phase angelegt.
+
+8. KLASSE LÖSCHEN: BESTÄTIGUNG UND TASTE „ENTF“ (08.11.2026, Issue #52) – GEKLÄRT (Vorschläge angenommen). Löschen einer Klasse
+   muss bestätigt werden; zusätzlich soll „Entf“ in der Klassenliste die markierte Klasse löschen (ebenfalls nur mit
+   Bestätigung). Stand: Knopf „Löschen“ fragt bereits einmal Ja/Nein („Klasse … löschen? n Zuordnungen gehen
+   verloren“). Vorschläge: Rückfrage mit allem, was verloren geht (Zuordnungen, Auslosung, Ergebnisse, weitere
+   Phasen), Knöpfe „Löschen“ / „Abbrechen“, „Abbrechen“ als Standard (Enter löscht nicht versehentlich); bei Klassen
+   mit eingetragenen Ergebnissen eine zweite Rückfrage. „Entf“ wirkt nur, wenn die Klassenliste den Fokus hat.
+   Ergänzung: In der Liste der verloren gehenden Elemente steht nur, was es in der Klasse wirklich gibt (z. B. keine
+   „Phase 2“, wenn es keine gibt; keine Ergebnisse, wenn keine eingetragen sind).
+
+9. QUALIFIKATIONSPHASE: GRUPPE MIT PLATZ ANZEIGEN (08.11.2026, Issue #53) – GEKLÄRT (überall, wie vorgeschlagen). In der
+   Qualifikationsphase steht statt nur des Gruppenbuchstabens auch der Platz aus der Gruppenphase davor, z. B. „A2“,
+   „A3“ statt „A“. Vorschlag: überall in der Qualifikationsphase (KO-Karten, Freilos, Listen „Qualifiziert …“ /
+   Nachrücker / Platzierte, Präsentationsansicht, Live-Anzeige und PDF-Ausdrucke), Spalte so breit wie nötig.
+
+10. TEILNEHMENDE: PDF DER ENDGÜLTIG ABGEMELDETEN (08.11.2026, Issue #54) – GEKLÄRT (Vorschläge angenommen). Auf der Seite
+   „Teilnehmende“ lässt sich eine PDF-Liste der endgültig Abgemeldeten erzeugen; der Knopf ist nur aktiv, wenn
+   mindestens eine Person endgültig abgemeldet ist. Vorschläge: Knopf „Abgemeldete als PDF“ neben den beiden Menüs;
+   Inhalt: Turniername, Datum, je Klasse (in der die Person gemeldet war) Name, Vorname, Verein, TTR, abgemeldet per
+   Handy oder durch die Turnierleitung; sortiert nach Klasse, dann Name; Öffnen im PDF-Fenster wie die übrigen
+   Ausdrucke (Drucken/Speichern dort).
+
+11. NACHRÜCKER ZÄHLEN NICHT ZU DEN ANGEMELDETEN (08.11.2026, Issue #55) – GEKLÄRT (Vorschläge angenommen). Nachrücker
+   (Warteliste) zählen nicht zu den Angemeldeten und müssen auch nicht ab- oder angemeldet werden.
+   Vorschläge: Wer nur auf Wartelisten steht, hat keinen An-/Abmeldestatus (Spalte „Angemeldet“ leer statt
+   Kästchen, keine Zeilenfarbe), zählt nicht in „… angemeldet / abgemeldet“ unten, blockiert keinen Start, erscheint
+   nicht bei „Offene Personen anzeigen“ und kann sich nicht per Handy abmelden. Wird ein Nachrücker in die Klasse
+   übernommen, gilt er/sie automatisch als angemeldet (wie manuell Hinzugefügte). Wer in einer Klasse gemeldet und in
+   einer anderen Nachrücker ist, behält den Status für die Klasse, in der er gemeldet ist.
+
+12. KLASSENANSICHT: KOPFBEREICH DER KLASSE KOMPAKTER (08.11.2026, Issue #56) – GEKLÄRT (Umfang eingeschränkt).
+   AUSDRÜCKLICH NUR der Kopfbereich der gewählten Klasse (rechte Karte oben) wird geändert – KEINE Änderung an der
+   Programm-Kopfzeile, am Seitenkopf „Klassen“, an der Klassenliste links und an der Darstellung der Gruppen.
+   Umsetzen wie im vom Nutzer markierten Ausschnitt der Skizze:
+   - Zeile 1: Klassenname, daneben Kurzinfo („Einzel · 66 in der Klasse · Gruppenphase“), rechts Marke „läuft“.
+   - Zeile 2: Reiter („Teilnehmende der Klasse“, „Phase 1 – Gruppenübersicht“ …).
+   - Werkzeugzeile (FlowPane, bricht um): Suche · Auswahl „Gleichstand: Satz-/Ballverhältnis ▾“ (statt zwei
+     Optionsfeldern „Bei gleichem Spielverhältnis“) · rechts „12 Gruppen · 150 Spiele offen“ · „PDF / Drucken ▾“
+     (Gruppenauswahl im Menü statt Text „alle Gruppen“) · „Phase anhalten“ · „← Auslosung verwerfen“. Das doppelte
+     „Gestartet 08.11.2026, 16:52 Uhr“ in der Werkzeugzeile entfällt. Texte nicht abkürzen.
+
+13. TISCHE DEN KLASSEN ZUORDNEN: HAKEN = DARF SPIELEN (08.11.2026, Issue #57) – GEKLÄRT (Vorschläge 1–5 angenommen).
+   - Standardmäßig sind alle Klassen allen Tischen zugeordnet; das zeigen gesetzte Haken. Soll eine Klasse an einem
+     Tisch NICHT spielen, wird der Haken bewusst entfernt.
+   - Hat ein Tisch keinen Haken mehr, wird an ihm kein Spiel mehr eingereiht; er bleibt aber aktiv (nicht
+     abgeschaltet).
+   Stand: Haken = Tisch nur für diese Klasse(n), ohne Haken spielt jede Klasse (Gegenlogik).
+   Vorschläge: Speicherung als „ausgeschlossene Klassen je Tisch“ → neu angelegte Klassen dürfen automatisch an allen
+   Tischen spielen (Haken gesetzt); Folgephasen folgen ihrer Klasse; Knopf „alle“ je Spalte schaltet alle Haken der
+   Klasse an bzw. aus, dazu je Zeile ein Knopf für den ganzen Tisch; neuer Erklärtext „Haken = Klasse darf an diesem
+   Tisch spielen. Ein Tisch ohne Haken bekommt keine Spiele, bleibt aber aktiv.“; auf der Seite „Tische“ Hinweis „keine
+   Klasse zugeordnet“ am Tisch. Bestehende Einschränkungen alter Turnierdateien werden umgerechnet. Nebenbei: Im
+   Dialog ist der Inhalt links abgeschnitten (Hinweistext unten beginnt mit „st das …“) – wird mit behoben.
+
+14. PHASE KOMPLETT NEU STARTEN (08.11.2026, Issue #58) – GEKLÄRT (Vorschläge 1–6 angenommen). Eine Phase lässt sich komplett neu
+   starten: Auslosung bzw. Übernahme aus vorherigen Phasen bleibt bestehen, nur alle Ergebnisse werden zurückgesetzt.
+   Vorschläge: (1) Knopf „Phase neu starten“ in der Werkzeugzeile der Klasse; Rückfrage mit Anzahl der Ergebnisse, die
+   verloren gehen (Standard „Abbrechen“). (2) Nur möglich, solange es keine weitere Phase gibt (sonst Hinweis: erst
+   die folgende Phase verwerfen). (3) Spiele an Tischen werden abgebrochen, Tische frei; alle Spiele wieder eingereiht
+   in der ursprünglichen Reihenfolge (bei angehaltener Phase: geplant). (4) KO: spätere Runden wieder ohne Gegner,
+   Freilose wie bei der Auslosung; Qualifikation (KO aufwärts) bzw. Schweizer System: nur Runde 1 bleibt, spätere
+   Runden werden neu angelegt; Zusatzrunde entfällt. (5) Übernommene Ergebnisse aus der Vorphase bleiben; Aufgaben,
+   kampflose Wertungen und „nicht relevant für Export“ werden mit zurückgesetzt. (6) Auch nach „Phase vorzeitig
+   beenden“ (#51) bzw. abgeschlossener Klasse möglich – die Klasse läuft dann wieder.
+
+15. BUG: VIELE KLASSEN MIT GLEICHEM NAMEN NACH ERNEUTEM ÖFFNEN (08.11.2026, Issue #59, Label „bug“) – URSACHE
+   GEFUNDEN. Beim Laden liest TournamentFile alle <class>-Elemente der Datei (getElementsByTagName sucht in der
+   ganzen Datei) – also auch die <class name=…>-Einträge der Tischzuordnung (<table-classes><table><class/>). Jede
+   Tisch-Klasse-Zuordnung wird so beim Öffnen zu einer zusätzlichen leeren Klasse gleichen Namens (ohne Modus/Phase;
+   die Teilnehmenden erscheinen, weil sie über den Namen zugeordnet sind). Nachgestellt: 1 Klasse, 16 Tische
+   zugeordnet → nach 1. Öffnen 17, nach 2. Öffnen 33 Klassen. Da die Tischzuordnung vor den Klassen gespeichert wird,
+   stehen die leeren Kopien vorn und verdecken die echte Klasse. Besteht seit Einführung der Tischzuordnung (≤ 0.28).
+   Die echten Klassen samt Phasen und Ergebnissen sind in der Datei weiter vorhanden.
+   Behebung: nur direkte Kinder von <classes> als Klassen lesen; Reparatur beim Öffnen beschädigter Dateien: leere
+   Kopien (gleicher Name, kein Modus, nicht gestartet, keine Spiele) entfernen, echte Klasse behalten; Test dazu.
+   Entschieden (08.11.): KEIN sofortiges 0.37.1 – Korrektur beim nächsten „kompilieren“ (0.38.0) mit einbauen.
+   Zusätzlich: Einträge der Tischzuordnung (#57: ausgeschlossene Klassen je Tisch) unter eigenem Elementnamen
+   speichern (z. B. <excluded-class>), damit keine Verwechslung mehr möglich ist; Test: Haken entfernen, wieder setzen,
+   speichern, öffnen → Klassenzahl unverändert.
+
+16. QUALIFIKATIONSPHASE: NACH RUNDE 1 FRAGEN „GEWINNER QUALIFIZIERT?“, ZUSATZRUNDE ENTFÄLLT (08.11.2026, Issue #60) –
+   GEKLÄRT (Vorschläge 1–4 angenommen). Nach Ende der Runde 1 der KO-Qualifikation wird gefragt, ob die Gewinner jetzt qualifiziert
+   sind. Ja → keine weitere Runde; die Verlierer der Runde 1 sind Nachrücker 1. Ranges (Rangfolge nach TTR).
+   Nein → für die Gewinner eine weitere KO-Runde (bisherige Logik für 2 Runden). Höchstens 2 KO-Runden. Die
+   Checkbox „Zusatzrunde für die Verlierer der Runde 2“ samt Zusatzrunde entfällt.
+   Stand: Runde 2 wird bisher automatisch für die GEWINNER der Runde 1 angelegt (wer 2 Spiele gewinnt, ist
+   qualifiziert). Nebenbei: Der Infotext über den Karten wird rechts abgeschnitten („… aktuellen Runde per“) – wird
+   mit behoben (Umbruch).
+   Vorschläge: (1) Abfrage als Dialog, sobald das letzte Ergebnis der Runde 1 eingetragen ist: „Gewinner sind
+   qualifiziert“ / „Weitere KO-Runde für die Gewinner“; wird der Dialog geschlossen, bleiben beide Knöpfe in der
+   Auslosungsansicht, bis entschieden ist (Phase gilt bis dahin als nicht abgeschlossen). (2) Entscheidung „Ja“ lässt
+   sich zurücknehmen, solange die Klasse nicht abgeschlossen ist; „Nein“, solange in Runde 2 noch kein Ergebnis
+   steht. (3) Feldgröße beim Anlegen weiter so prüfen, dass 2 Runden möglich sind. (4) Infotext: „KO-Qualifikation:
+   24 Teilnehmende – nach Runde 1 wird entschieden, ob die Gewinner qualifiziert sind oder eine weitere Runde
+   spielen …“.
+
+17. KO ALS FOLGEPHASE: KONKRETE GRUPPENPLÄTZE ALS AUFSTEIGER (08.11.2026, Issue #61) – GEKLÄRT. Bei
+   „KO-System“ als zweiter Phase kann man statt der Anzahl „Aufsteiger je Gruppe“ auch konkrete Gruppenplätze durch
+   Komma getrennt angeben, z. B. „2,3,4“ → genau diese Plätze ziehen in die KO-Phase ein. Rangliste: Gruppenplatz,
+   Spiel-, Satz-, Ballverhältnis, direkter Vergleich, Los. Sonst übliche KO-Setzung der Positionen (wie bei Doppel).
+   Vorschläge: (1) Eingabe: Zahl n = Plätze 1–n (wie bisher), Liste „2,3,4“, auch Bereich „2-4“; Fehlerhinweis am
+   Feld bei ungültiger Eingabe (Platz größer als die größte Gruppe, doppelt). (2) Setzpositionen nach Rangliste
+   (Nr. 1 oben, Nr. 2 unten, 3/4 in die anderen Viertel …), Freilose an die Bestplatzierten; Spieler derselben Gruppe
+   möglichst in verschiedene Hälften/Viertel (wie bisher). (3) Direkter Vergleich nur, wenn beide in derselben
+   Gruppe gespielt haben (sonst gleich weiter mit Los). (4) Kennzeichnung auf den KO-Karten „B3“ usw. (5) Nur für KO
+   als Folgephase (Gruppen-/Platzierungs-/Qualifikationsphase unverändert); Endergebnis: Nicht-Aufsteiger behalten ihre
+   Gruppenplätze.
+   Bestätigt (08.11.): (2)–(5) passen. (1) geändert: ENTWEDER–ODER – entweder wie bisher die Besten je Gruppe
+   („Top n“, Zahl) ODER konkrete Gruppenplätze (durch Komma getrennt, z. B. „2,3,4“). Umsetzung: zwei Optionsfelder
+   „Die Besten je Gruppe: [n]“ / „Bestimmte Gruppenplätze: [2,3,4]“, jeweils nur das gewählte Feld aktiv;
+   Fehlerhinweis am Feld bei ungültigen Plätzen.
 
 0.37.0 (Issues #42–#45; #34 weiter zurückgestellt). README „Neu in 0.37.0“.
 #42: PlayerTableView ohne „Zurücksetzen“.

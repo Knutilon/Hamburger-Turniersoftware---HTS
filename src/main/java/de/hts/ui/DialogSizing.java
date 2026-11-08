@@ -64,6 +64,8 @@ final class DialogSizing {
             Window w = pane.getScene().getWindow();
             if (w == null || !w.isShowing()) return;
             w.sizeToScene();
+            // 0.38: nie seitlich verschoben öffnen (Inhalt war links abgeschnitten)
+            if (pane.getContent() instanceof javafx.scene.control.ScrollPane sp) sp.setHvalue(sp.getHmin());
             Rectangle2D screen = Screen.getScreensForRectangle(w.getX(), w.getY(), Math.max(1, w.getWidth()), Math.max(1, w.getHeight()))
                     .stream().findFirst().orElse(Screen.getPrimary()).getVisualBounds();
             if (w.getHeight() > screen.getHeight()) w.setHeight(screen.getHeight());

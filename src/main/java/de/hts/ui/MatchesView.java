@@ -51,6 +51,9 @@ public final class MatchesView {
     private final TableView<Match> table = new TableView<>();
     private final ComboBox<Filter> filter = new ComboBox<>();
     private final ComboBox<String> classFilter = new ComboBox<>();
+    /** 0.38 (#49): Filter „Gruppe“ (Gruppen und KO-Runden der gewählten Klasse). */
+    private final ComboBox<String> groupFilter = new ComboBox<>();
+    private static final String ALL_GROUPS = "Alle Gruppen";
     private final Label counts = new Label();
     private final javafx.scene.control.TextField search = new javafx.scene.control.TextField();
     private boolean updating;
@@ -77,6 +80,9 @@ public final class MatchesView {
         classFilter.valueProperty().addListener((o, a, b) -> {
             if (!updating) refresh();
         });
+        groupFilter.valueProperty().addListener((o, a, b) -> {
+            if (!updating) refresh();
+        });
         Button result = new Button("Ergebnis eintragen / korrigieren", Icons.of(Icons.EDIT, 14));
         result.getStyleClass().add("navy-pill");
         result.disableProperty().bind(javafx.beans.binding.Bindings.createBooleanBinding(
@@ -93,8 +99,17 @@ public final class MatchesView {
         sl.getStyleClass().add("class-name");
         Label cl = new Label("Klasse:");
         cl.getStyleClass().add("class-name");
-        HBox bar = new HBox(10, search, sl, filter, cl, classFilter, counts, sp, result);
+        Label gl = new Label("Gruppe:");
+        gl.getStyleClass().add("class-name");
+        for (Label l : new Label[]{sl, cl, gl}) l.setMinWidth(Region.USE_PREF_SIZE);
+        // 0.38: Filterzeile bricht bei wenig Breite um (nichts wird abgekürzt)
+        search.setMinWidth(Region.USE_PREF_SIZE);
+        counts.setMinWidth(Region.USE_PREF_SIZE);
+        result.setMinWidth(Region.USE_PREF_SIZE);
+        javafx.scene.layout.FlowPane bar = new javafx.scene.layout.FlowPane(10, 8, search, labeledBox(sl, filter), labeledBox(cl, classFilter),
+                labeledBox(gl, groupFilter), counts, result);
         bar.setAlignment(Pos.CENTER_LEFT);
+        bar.setRowValignment(javafx.geometry.VPos.CENTER);
 
         setupTable();
         VBox card = new VBox(12, bar, table);
@@ -103,6 +118,12 @@ public final class MatchesView {
         VBox.setVgrow(card, Priority.ALWAYS);
         root.getChildren().add(card);
         root.setPadding(new Insets(0, 40, 16, 40));
+    }
+
+    private static HBox labeledBox(Label l, Node n) {
+        HBox b = new HBox(6, l, n);
+        b.setAlignment(Pos.CENTER_LEFT);
+        return b;
     }
 
     public Node getRoot() {
@@ -117,13 +138,31 @@ public final class MatchesView {
         tournament.getClasses().stream().map(PlayingClass::getName).forEach(names::add);
         classFilter.getItems().setAll(names);
         classFilter.setValue(cur != null && names.contains(cur) ? cur : "Alle Klassen");
+        String clsNow = classFilter.getValue();
+        // Gruppen bzw. Runden der gewählten Klasse (bei „Alle Klassen“: aller Klassen), Gruppen zuerst
+        List<String> stages = tournament.getMatches().stream()
+                .filter(m -> clsNow == null || clsNow.equals("Alle Klassen") || m.getClassName().equals(clsNow))
+                .map(Match::getStage).filter(st -> st != null && !st.isBlank()).distinct()
+                .sorted(Comparator.comparing((String st) -> st.startsWith("Gruppe ") ? 0 : 1)
+                        .thenComparing((x, y) -> x.startsWith("Gruppe ") && y.startsWith("Gruppe ")
+                                ? x.length() != y.length() ? Integer.compare(x.length(), y.length()) : x.compareTo(y)
+                                : 0))                                  // KO-Runden in Spielreihenfolge
+                .toList();
+        String curGroup = groupFilter.getValue();
+        List<String> gItems = new java.util.ArrayList<>();
+        gItems.add(ALL_GROUPS);
+        gItems.addAll(stages);
+        groupFilter.getItems().setAll(gItems);
+        groupFilter.setValue(curGroup != null && gItems.contains(curGroup) ? curGroup : ALL_GROUPS);   // sonst zurück auf „Alle Gruppen“
         updating = false;
 
         Filter f = filter.getValue();
         String cls = classFilter.getValue();
+        String grp = groupFilter.getValue();
         String q = search.getText() == null ? "" : search.getText().trim();
         List<Match> list = tournament.getMatches().stream()
                 .filter(m -> cls == null || cls.equals("Alle Klassen") || m.getClassName().equals(cls))
+                .filter(m -> grp == null || grp.equals(ALL_GROUPS) || grp.equals(m.getStage()))
                 .filter(m -> q.isEmpty() || matchesName(m, q))
                 .filter(m -> switch (f) {
                     case OPEN -> m.getStatus().atTable() || m.getStatus() == MatchStatus.QUEUED;
@@ -166,7 +205,7 @@ public final class MatchesView {
         table.getColumns().add(center(col("Tisch", m -> m.getTable() == null ? "" : tournament.getTableNames().containsKey(m.getTable())
                 ? tournament.tableName(m.getTable()) : String.valueOf(m.getTable()), 80)));
         table.getColumns().add(left(col("Klasse", Match::getClassName, 150)));
-        table.getColumns().add(left(col("Phase", Match::getStage, 110)));
+        table.getColumns().add(left(col("Gruppe", Match::getStage, 110)));     // 0.38 (#49): Überschrift „Gruppe“
         table.getColumns().add(center(col("Runde", Match::getRound, 60)));
         table.getColumns().add(center(col("Spiel", Match::getNumber, 55)));
         table.getColumns().add(left(col("Teilnehmende A", m -> name(m, m.getA()), 210)));

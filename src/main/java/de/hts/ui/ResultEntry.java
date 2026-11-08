@@ -57,7 +57,30 @@ final class ResultEntry {
         }
         status.accept("Spiel " + m.getNumber() + " (" + m.getClassName() + "): " + m.getResultText() + " – " + m.getSetsText()
                 + (correction ? " (korrigiert)" : table != null ? " · " + t.tableName(table) + " ist frei" : ""));
+        askQualification(owner, t, m, status);
         return true;
+    }
+
+    /** 0.38 (#60): Ist Runde 1 der KO-Qualifikation fertig, fragen, ob die Gewinner qualifiziert sind. */
+    static void askQualification(Window owner, Tournament t, Match m, Consumer<String> status) {
+        de.hts.tournament.PlayingClass c = t.findClass(m.getClassName()).orElse(null);
+        if (!t.qualificationDecisionPending(c)) return;
+        ButtonType yes = new ButtonType("Gewinner sind qualifiziert", javafx.scene.control.ButtonBar.ButtonData.YES);
+        ButtonType no = new ButtonType("Weitere KO-Runde für die Gewinner", javafx.scene.control.ButtonBar.ButtonData.NO);
+        ButtonType later = new ButtonType("Später entscheiden", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+        Alert a = new Alert(Alert.AlertType.CONFIRMATION,
+                "Runde 1 der KO-Qualifikation von „" + t.rootOf(c).getName() + "“ ist gespielt.\n\n"
+                        + "Sind die Gewinner jetzt qualifiziert? Dann sind die Verlierer Nachrücker 1. Ranges (nach TTR).\n"
+                        + "Sonst spielen die Gewinner eine weitere KO-Runde (höchstens 2 Runden).\n\n"
+                        + "„Später entscheiden“: Die Knöpfe stehen in der Auslosungsansicht der Phase.", yes, no, later);
+        a.initOwner(owner);
+        a.setHeaderText(null);
+        a.setTitle("Qualifikation nach Runde 1");
+        DialogSizing.fit(a);
+        ButtonType r = a.showAndWait().orElse(later);
+        if (r == later) return;
+        t.decideQualification(c, r == yes);
+        status.accept(r == yes ? "Die Gewinner der Runde 1 sind qualifiziert." : "Runde 2 für die Gewinner angelegt.");
     }
 
     /** 2er/3er Turnier: Aufstellung und Sieger je Partie. */
@@ -89,6 +112,7 @@ final class ResultEntry {
         }
         status.accept("Spiel " + m.getNumber() + " (" + m.getClassName() + "): " + m.getResultText()
                 + (correction ? " (korrigiert)" : table != null ? " · " + t.tableName(table) + " ist frei" : ""));
+        askQualification(owner, t, m, status);
         return true;
     }
 }

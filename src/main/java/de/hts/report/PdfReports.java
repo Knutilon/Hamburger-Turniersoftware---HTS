@@ -382,18 +382,22 @@ public final class PdfReports {
             case QUALIFICATION -> {
                 List<String> notes = new ArrayList<>();
                 List<String> d = new ArrayList<>();
-                for (var e : t.qualifiedDirect(phase)) d.add(clubbed(e));
+                java.util.Map<String, String> origin = t.qualificationPlaceLabels(phase);      // 0.38 (#53): „A2 Name (Verein)“
+                java.util.function.Function<de.hts.tournament.Entrant, String> lab = e ->
+                        (origin.get(e.id()) == null ? "" : origin.get(e.id()) + " ") + clubbed(e);
+                for (var e : t.qualifiedDirect(phase)) d.add(lab.apply(e));
                 notes.add("Qualifiziert durch Gruppenplatzierung (" + d.size() + "): " + (d.isEmpty() ? "–" : String.join(", ", d)));
                 if (t.qualificationRound(phase) > 0) {
-                    notes.add("KO-Qualifikation: " + phase.getQualField().size() + " Teilnehmende – qualifiziert nach "
-                            + phase.getQualRounds() + (phase.getQualRounds() == 1 ? " Sieg" : " Siegen")
-                            + (phase.isQualExtra() ? ", mit Zusatzrunde für die Verlierer der Runde " + phase.getQualRounds() : "") + ".");
-                    List<String> viaKo = t.qualifiedViaKo(phase).stream().map(PdfReports::clubbed).toList();
+                    notes.add("KO-Qualifikation: " + phase.getQualField().size() + " Teilnehmende – "
+                            + (phase.getQualDecision() == 0 && phase.getQualRounds() > 1 && t.qualificationRound(phase) < 2
+                            ? "nach Runde 1 wird entschieden, ob die Gewinner qualifiziert sind."
+                            : "qualifiziert nach " + phase.getQualRounds() + (phase.getQualRounds() == 1 ? " Sieg." : " Siegen.")));
+                    List<String> viaKo = t.qualifiedViaKo(phase).stream().map(lab).toList();
                     if (!viaKo.isEmpty()) notes.add("Qualifiziert durch KO-Runde (" + viaKo.size() + "): " + String.join(", ", viaKo));
                 }
                 List<List<de.hts.tournament.Entrant>> tiers = t.qualificationTiers(phase);
                 for (int i = 0; i < tiers.size(); i++) {
-                    List<String> names = tiers.get(i).stream().map(PdfReports::clubbed).toList();
+                    List<String> names = tiers.get(i).stream().map(lab).toList();
                     notes.add(t.qualificationTierLabel(phase, i) + " (" + names.size() + "): " + String.join(", ", names));
                 }
                 section(c, t, phase, title, "Qualifikation", -1, all, notes);
@@ -709,6 +713,9 @@ public final class PdfReports {
         }
         if (a != null) a += t.handicapSuffix(m, m.getA());
         if (b != null) b += t.handicapSuffix(m, m.getB());
+        String oa = t.originLabel(m, m.getA()), ob = t.originLabel(m, m.getB());     // 0.38 (#53): Herkunft „A2“
+        if (a != null && oa != null) a = oa + " " + a;
+        if (b != null && ob != null) b = ob + " " + b;
         String round = m.isCarried() ? "übern." : m.getPlacement() > 0 ? "Pl. " + m.getPlacement() + "/" + (m.getPlacement() + 1)
                 : m.isKnockout() ? "R" + m.getRound() : "R" + m.getRound();
         boolean done = m.getStatus() == MatchStatus.DONE;
@@ -863,6 +870,67 @@ public final class PdfReports {
             if (root.isDrawn()) writeFinal(c, t, root);
         }
         if (doc.getNumberOfPages() == 0) c.newPage();
+        c.finish();
+        return doc;
+    }
+
+    /**
+     * 0.38 (#54): Liste der endgültig Abgemeldeten – je Klasse, in der die Person gemeldet war: Name, Vorname, Verein, TTR,
+     * abgemeldet durch (Handy bzw. Turnierleitung); sortiert nach Klasse, dann Nachname und Vorname.
+     */
+    public static PDDocument withdrawnList(Tournament t) {
+        PDDocument doc = newDoc("Endgültig abgemeldet " + (t.getName() == null ? "" : t.getName()));
+        PdfCanvas c = new PdfCanvas(doc, PDRectangle.A4, 40);
+        List<de.hts.player.Player> all = t.getPlayers().stream()
+                .filter(p -> p.getAttendance() == de.hts.player.Attendance.WITHDRAWN && !p.isReserveOnly()).toList();
+        java.text.Collator col = java.text.Collator.getInstance(java.util.Locale.GERMAN);
+        java.util.Comparator<de.hts.player.Player> byName = java.util.Comparator.comparing((de.hts.player.Player p) -> p.getLastname() == null ? "" : p.getLastname(), col)
+                .thenComparing(p -> p.getFirstname() == null ? "" : p.getFirstname(), col);
+        java.util.LinkedHashMap<String, List<de.hts.player.Player>> byClass = new java.util.LinkedHashMap<>();
+        for (PlayingClass root : t.rootClasses()) {
+            List<de.hts.player.Player> in = all.stream().filter(p -> p.isEnteredFor(root.getName())).sorted(byName).toList();
+            if (!in.isEmpty()) byClass.put(root.getName(), in);
+        }
+        List<de.hts.player.Player> without = all.stream().filter(p -> t.rootClasses().stream().noneMatch(r -> p.isEnteredFor(r.getName())))
+                .sorted(byName).toList();
+        if (!without.isEmpty()) byClass.put("ohne Klasse", without);
+        float[] cols = {130, 110, 170, 40, 0};
+        cols[4] = c.width() - 130 - 110 - 170 - 40;
+        c.newPage();
+        c.y += c.text(c.left(), c.y, (t.getName() == null ? "" : t.getName()) + (t.getDate() != null ? " · " + t.getDate().format(DATE) : ""),
+                REGULAR, 9, c.width(), PdfCanvas.Align.LEFT, 0.3f);
+        c.y += c.text(c.left(), c.y, "Endgültig abgemeldet", BOLD, 16, c.width()) + 1;
+        c.y += c.text(c.left(), c.y, all.size() + (all.size() == 1 ? " Person" : " Personen") + " · Stand " + java.time.LocalDateTime.now().format(STAND),
+                REGULAR, 10, c.width());
+        c.y += 4;
+        c.line(c.left(), c.y, c.left() + c.width(), c.y, 0.8f);
+        c.y += 10;
+        for (var e : byClass.entrySet()) {
+            if (!c.fits(3 * ROW + 20)) c.newPage();
+            c.y += c.text(c.left(), c.y, e.getKey() + " (" + e.getValue().size() + ")", BOLD, 12, c.width()) + 2;
+            String[] heads = {"Name", "Vorname", "Verein", "TTR", "abgemeldet durch"};
+            float x = c.left();
+            for (int k = 0; k < heads.length; k++) {
+                c.text(x, c.y, heads[k], BOLD, 8.5f, cols[k] - 4);
+                x += cols[k];
+            }
+            c.y += 12;
+            c.line(c.left(), c.y, c.left() + c.width(), c.y, 0.5f);
+            c.y += 4;
+            for (de.hts.player.Player p : e.getValue()) {
+                if (!c.fits(ROW + 2)) c.newPage();
+                String[] v = {p.getLastname() == null ? "" : p.getLastname(), p.getFirstname() == null ? "" : p.getFirstname(),
+                        p.getClubName() == null ? "" : p.getClubName(), p.getTtr() == null ? "" : String.valueOf(p.getTtr()),
+                        p.isWithdrawnByPhone() ? "Handy" : "Turnierleitung"};
+                x = c.left();
+                for (int k = 0; k < v.length; k++) {
+                    c.text(x, c.y, v[k], k == 0 ? BOLD : REGULAR, 9.5f, cols[k] - 4);
+                    x += cols[k];
+                }
+                c.y += ROW + 2;
+            }
+            c.y += 10;
+        }
         c.finish();
         return doc;
     }

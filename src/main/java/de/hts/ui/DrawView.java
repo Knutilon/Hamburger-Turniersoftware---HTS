@@ -99,7 +99,15 @@ public final class DrawView {
     private final Label settingsSummary = new Label();
     /** IDs mit Vereinsgleichheit in der aktuellen Anzeige */
     private java.util.Set<String> clashIds = java.util.Set.of();
-    private final Button printBtn = new Button("PDF / Drucken");
+    /** 0.38 (#56): „PDF / Drucken ▾“ – Gruppenauswahl im Menü statt Text „alle Gruppen“. */
+    private final javafx.scene.control.MenuButton printBtn = new javafx.scene.control.MenuButton("PDF / Drucken");
+    /** 0.38 (#56): Gleichstand als Auswahl statt zweier Optionsfelder. */
+    private final javafx.scene.control.ComboBox<String> tiebreakBox = new javafx.scene.control.ComboBox<>();
+    private static final String TB_SETS = "Gleichstand: Satz- und Ballverhältnis", TB_H2H = "Gleichstand: direkter Vergleich";
+    /** 0.38 (#51, #58) */
+    private final Button endEarlyBtn = new Button("Phase vorzeitig beenden");
+    private final Button undoEndBtn = new Button("Beenden zurücknehmen");
+    private final Button restartBtn = new Button("Phase neu starten");
     private final Spinner<Integer> roundsSpinner = new Spinner<>(1, 99, 3);
     private final Label swissPreview = new Label();
     private final HBox swissRow;
@@ -170,7 +178,7 @@ public final class DrawView {
     private final Label searchInfo = new Label();
     private final Button thirdBtn = new Button("Spiel um Platz 3");
     private final Button nextPhaseBtn = new Button();
-    private HBox topRow;
+    private VBox topRow;
     /** reine Anzeige für den zweiten Bildschirm: nichts bearbeitbar, keine Knöpfe in den Karten */
     private boolean presentation;
     /** KO-Baum erst ab dieser Runde zeichnen (Präsentation) */
@@ -237,11 +245,41 @@ public final class DrawView {
         for (Node n : new Node[]{tbLabel, tbSets, tbH2h}) n.managedProperty().bind(n.visibleProperty());
         printBtn.getStyleClass().add("pill");
         printBtn.setTooltip(new Tooltip("PDF dieser Phase anzeigen (speichern/drucken): je Gruppe eine A4-Seite mit Tabelle und Spielplan"));
-        printBtn.setOnAction(e -> {
-            if (current == null) return;
-            Reports.showPhase(root.getScene() == null ? null : root.getScene().getWindow(), tournament, current, status);
-        });
         printBtn.managedProperty().bind(printBtn.visibleProperty());
+        printBtn.setMinWidth(Region.USE_PREF_SIZE);
+        tiebreakBox.getItems().setAll(TB_SETS, TB_H2H);
+        tiebreakBox.getStyleClass().add("pill-combo");
+        tiebreakBox.setMinWidth(Region.USE_PREF_SIZE);
+        tiebreakBox.managedProperty().bind(tiebreakBox.visibleProperty());
+        tiebreakBox.setTooltip(new Tooltip("Platzierung bei gleichem Spielverhältnis"));
+        tiebreakBox.valueProperty().addListener((o, a, b) -> {
+            if (updating || b == null) return;
+            (TB_H2H.equals(b) ? tbH2h : tbSets).setSelected(true);      // wie bisher über die (ausgeblendeten) Optionsfelder
+        });
+        endEarlyBtn.getStyleClass().add("pill");
+        endEarlyBtn.managedProperty().bind(endEarlyBtn.visibleProperty());
+        endEarlyBtn.setMinWidth(Region.USE_PREF_SIZE);
+        endEarlyBtn.setTooltip(new Tooltip("Alle offenen Spiele dieser Phase beenden (nicht gespielt, nicht im Export) – die Klasse ist "
+                + "danach beendet; das Endergebnis ergibt sich aus dem bisherigen Stand"));
+        endEarlyBtn.setOnAction(e -> endPhaseEarly());
+        undoEndBtn.getStyleClass().add("pill");
+        undoEndBtn.managedProperty().bind(undoEndBtn.visibleProperty());
+        undoEndBtn.setMinWidth(Region.USE_PREF_SIZE);
+        undoEndBtn.setOnAction(e -> {
+            if (current == null) return;
+            try {
+                tournament.undoEndPhaseEarly(current);
+                status.accept("Vorzeitiges Beenden zurückgenommen – die offenen Spiele sind wieder eingereiht.");
+            } catch (IllegalStateException ex) {
+                showWarning(ex.getMessage());
+            }
+            onChanged.run();
+        });
+        restartBtn.getStyleClass().add("pill");
+        restartBtn.managedProperty().bind(restartBtn.visibleProperty());
+        restartBtn.setMinWidth(Region.USE_PREF_SIZE);
+        restartBtn.setTooltip(new Tooltip("Auslosung bzw. Übernahme bleibt, alle Ergebnisse dieser Phase werden zurückgesetzt"));
+        restartBtn.setOnAction(e -> restartPhase());
         roundsSpinner.setEditable(true);
         roundsSpinner.setPrefWidth(80);
         roundsSpinner.valueProperty().addListener((o, a, b) -> {
@@ -296,8 +334,6 @@ public final class DrawView {
         settingsSummary.setMinHeight(Region.USE_PREF_SIZE);     // 0.36: umbrechen statt „…“
         // Knöpfe immer ausgeschrieben: links Auslosung, rechts Ablauf – bei wenig Platz bricht die Zeile um
         settingsBtn.setVisible(false);
-        HBox leftActions = new HBox(10, drawBtn, discardWrap);
-        leftActions.setAlignment(Pos.CENTER_LEFT);
         allGroupsLabel.getStyleClass().add("hint");
         allGroupsLabel.managedProperty().bind(allGroupsLabel.visibleProperty());
         thirdBtn.getStyleClass().addAll("pill", "switch-pill");
@@ -309,16 +345,16 @@ public final class DrawView {
         nextPhaseBtn.setOnAction(e -> {
             if (current != null && current.getFollowUpClass() != null) onOpenClass.accept(current.getFollowUpClass());
         });
-        HBox rightActions = new HBox(10, startedLabel, allGroupsLabel, thirdBtn, backWrap, printBtn, pauseBtn, followBtn, finishBtn,
-                nextPhaseBtn, readyBtn, startBtn);
-        rightActions.setAlignment(Pos.CENTER_LEFT);
-        rightActions.setAlignment(Pos.CENTER_LEFT);
-        actionRow = new javafx.scene.layout.FlowPane(24, 8, leftActions, rightActions);
-        actionRow.setAlignment(Pos.CENTER_RIGHT);
+        // 0.38 (#56): eine umbrechende Knopfzeile; „Gestartet …“ und „alle Gruppen“ entfallen (stehen im Kopf bzw. im Menü)
+        startedLabel.setVisible(false);
+        startedLabel.setManaged(false);
+        allGroupsLabel.setVisible(false);
+        actionRow = new javafx.scene.layout.FlowPane(10, 8, printBtn, pauseBtn, restartBtn, endEarlyBtn, undoEndBtn, thirdBtn, backWrap,
+                followBtn, finishBtn, nextPhaseBtn, drawBtn, discardWrap, readyBtn, startBtn);
+        actionRow.setAlignment(Pos.CENTER_LEFT);
         actionRow.setRowValignment(javafx.geometry.VPos.CENTER);
         settingsSummary.managedProperty().bind(settingsSummary.visibleProperty());
         settingsSummary.setAlignment(Pos.CENTER_RIGHT);
-        settingsSummary.setMaxWidth(Double.MAX_VALUE);
         settingsSummary.setTextAlignment(javafx.scene.text.TextAlignment.RIGHT);
         // Suche in der Gruppenphase
         groupSearch.setPromptText("Suchen: Vorname, Nachname, Verein");
@@ -350,15 +386,19 @@ public final class DrawView {
         searchRow = new HBox(8, groupSearch, clearSearch, searchInfo);
         searchRow.setAlignment(Pos.CENTER_LEFT);
         searchRow.managedProperty().bind(searchRow.visibleProperty());
-        // links: Spielverhältnis + Suche; rechts daneben: Startinfo/Knöpfe und darunter die Infozeile
-        VBox leftCol = new VBox(10, followRow, phaseRow, searchRow);
-        VBox rightCol = new VBox(6, actionRow, settingsSummary);
-        rightCol.setAlignment(Pos.TOP_RIGHT);
-        HBox.setHgrow(rightCol, Priority.ALWAYS);
-        topRow = new HBox(24, leftCol, rightCol);
-        // gelber Hinweis nur so breit wie nötig – höchstens bis an die Knöpfe heran, sonst Zeilenumbruch
+        // 0.38 (#56): Zeile 1 Suche · Gleichstand · rechts Infozeile; Zeile 2 alle Knöpfe (umbrechend)
+        phaseRow.setVisible(false);
+        Region gap = new Region();
+        HBox.setHgrow(gap, Priority.ALWAYS);
+        settingsSummary.setMinWidth(0);
+        javafx.scene.layout.FlowPane leftTools = new javafx.scene.layout.FlowPane(10, 8, searchRow, tiebreakBox);
+        leftTools.setAlignment(Pos.CENTER_LEFT);
+        leftTools.setRowValignment(javafx.geometry.VPos.CENTER);
+        HBox.setHgrow(leftTools, Priority.SOMETIMES);
+        HBox toolRow = new HBox(12, leftTools, gap, settingsSummary);
+        toolRow.setAlignment(Pos.CENTER_LEFT);
+        topRow = new VBox(8, followRow, toolRow, actionRow);
         topRow.widthProperty().addListener((o, a, b) -> updateBannerWidth());
-        topRow.setAlignment(Pos.TOP_LEFT);
         controls = new VBox(10, modeRow, groupRow, swissRow, topRow);
 
         warning.getStyleClass().add("warning");
@@ -510,9 +550,10 @@ public final class DrawView {
                     + (tournament.phaseNumber(c) - 1) + " (wieder offen)");
             backBtn.setText("Zurück zu Phase " + Math.max(1, tournament.phaseNumber(c) - 1));
             String open = openText(c);
-            settingsSummary.setText(c.getMode() == TournamentMode.GROUPS && c.isDrawn()
+            settingsSummary.setText((c.getMode() == TournamentMode.GROUPS && c.isDrawn()
                     ? c.getGroups().size() + " Gruppen" + open
-                    : summary(c) + open);
+                    : summary(c) + open) + (c.isAwaitingStart() ? " · noch nicht gestartet" : c.isPaused() ? " · angehalten" : "")
+                    + (c.isEndedEarly() ? " · vorzeitig beendet" : ""));
             searchRow.setVisible(c.isDrawn() && (c.getMode() == TournamentMode.GROUPS
                     || (c.getMode() == TournamentMode.KNOCKOUT && !c.getDraw().isEmpty())));
             clashIds = c.isDrawn() ? tournament.clubClashes(c) : java.util.Set.of();
@@ -537,13 +578,15 @@ public final class DrawView {
                     .setMax(de.hts.tournament.SwissSystem.maxRounds(Math.max(2, n)));
             roundsSpinner.getValueFactory().setValue(tournament.swissRounds(c));
             updateSwissPreview(c);
-            phaseRow.setVisible(m == TournamentMode.GROUPS);
+            tiebreakBox.setVisible(m == TournamentMode.GROUPS);
             printBtn.setVisible(c.isDrawn());
-            allGroupsLabel.setVisible(c.isDrawn() && m == TournamentMode.GROUPS);
+            fillPrintMenu(c);
             (c.getTiebreak() == de.hts.tournament.GroupStanding.Tiebreak.HEAD_TO_HEAD ? tbH2h : tbSets).setSelected(true);
+            tiebreakBox.setValue(c.getTiebreak() == de.hts.tournament.GroupStanding.Tiebreak.HEAD_TO_HEAD ? TB_H2H : TB_SETS);
             boolean fixed = c.getFollowUpClass() != null || first.isFinished();
             tbSets.setDisable(fixed);
             tbH2h.setDisable(fixed);
+            tiebreakBox.setDisable(fixed);
             updateFollowRow(c);
 
             if (c.isDrawn()) seeded.setSelected(c.isDrawSeeded());
@@ -568,10 +611,14 @@ public final class DrawView {
             startedLabel.setText(started ? "Gestartet " + c.getStartedAt().format(TIME) + (c.isPaused() ? " · angehalten" : "") : "");
             boolean complete = tournament.isPhaseComplete(c);
             pauseBtn.setVisible(started && !complete && !first.isFinished());
-            pauseBtn.setText(c.isPaused() ? "Phase fortsetzen" : "Phase anhalten");
+            pauseBtn.setText(c.isAwaitingStart() ? "Phase starten" : c.isPaused() ? "Phase fortsetzen" : "Phase anhalten");
             pauseBtn.getStyleClass().removeAll("navy-pill", "pill");
             pauseBtn.getStyleClass().add(c.isPaused() ? "navy-pill" : "pill");
             pauseBtn.setMinWidth(Region.USE_PREF_SIZE);
+            endEarlyBtn.setVisible(!presentation && tournament.endEarlyProblem(c) == null && !complete);
+            undoEndBtn.setVisible(!presentation && c.isEndedEarly() && c.getFollowUpClass() == null);
+            restartBtn.setVisible(!presentation && tournament.restartProblem(c) == null && !c.isAwaitingStart()
+                    && (tournament.restartResultCount(c) > 0 || c.isEndedEarly()));
             boolean thirdPossible = m == TournamentMode.KNOCKOUT && c.isDrawn() && (tournament.canHaveThirdPlace(c) || c.isThirdPlace());
             thirdBtn.setVisible(thirdPossible);
             if (thirdPossible) {
@@ -764,7 +811,7 @@ public final class DrawView {
     /** Gelber Hinweis höchstens bis an die Knöpfe rechts heran (sonst Zeilenumbruch). */
     private void updateBannerWidth() {
         if (topRow == null || actionRow == null) return;
-        double avail = topRow.getWidth() - actionRow.prefWidth(-1) - 24 - 8;
+        double avail = topRow.getWidth() - 8;
         double max = Math.max(260, avail);
         followRow.setMaxWidth(max);
         // Höhe für den Zeilenumbruch selbst bestimmen (die Elternlayouts fragen die Höhe ohne Breite ab)
@@ -876,6 +923,7 @@ public final class DrawView {
             } else {
                 PlayingClass next = choice.kind() == TournamentMode.QUALIFICATION
                         ? tournament.createQualificationPhase(c, choice.qualifiers(), choice.koPerGroup(), choice.koTotal(), choice.reserve(), random)
+                        : choice.places() != null ? tournament.createNextPhase(c, choice.places(), random)
                         : tournament.createNextPhase(c, choice.kind(), choice.qualifiers(), choice.groupSize(), random);
                 status.accept("Phase " + tournament.phaseNumber(next) + " (" + tabTitle(next) + ") erstellt, nach Platzierung ausgelost"
                         + (next.isStarted() ? " und gestartet – die Spiele sind eingereiht." : "."));
@@ -887,6 +935,95 @@ public final class DrawView {
         }
     }
 
+    /** 0.38 (#56): Menü „PDF / Drucken“ – ganze Phase bzw. je Gruppe. */
+    private void fillPrintMenu(PlayingClass c) {
+        printBtn.getItems().clear();
+        javafx.stage.Window w = root.getScene() == null ? null : root.getScene().getWindow();
+        boolean groups = c.getMode() == TournamentMode.GROUPS && c.getGroups().size() > 1;
+        javafx.scene.control.MenuItem all = new javafx.scene.control.MenuItem(groups ? "Alle Gruppen" : "Ganze Phase");
+        all.setOnAction(e -> Reports.showPhase(root.getScene() == null ? null : root.getScene().getWindow(), tournament, c, status));
+        printBtn.getItems().add(all);
+        if (groups) {
+            printBtn.getItems().add(new javafx.scene.control.SeparatorMenuItem());
+            for (int g = 0; g < c.getGroups().size(); g++) {
+                int gi = g;
+                javafx.scene.control.MenuItem mi = new javafx.scene.control.MenuItem("Gruppe " + GroupDraw.groupName(g));
+                mi.setOnAction(e -> Reports.showGroup(root.getScene() == null ? w : root.getScene().getWindow(), tournament, c, gi, status));
+                printBtn.getItems().add(mi);
+            }
+        }
+    }
+
+    /** 0.38 (#51): Phase vorzeitig beenden – mit Rückfrage. */
+    private void endPhaseEarly() {
+        PlayingClass c = current;
+        if (c == null) return;
+        long open = tournament.openMatchCount(c);
+        long atTable = tournament.matchesOf(c).stream().filter(m -> m.getStatus().atTable()).count();
+        ButtonType end = new ButtonType("Phase beenden", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        Alert a = new Alert(Alert.AlertType.CONFIRMATION, "Phase " + tournament.phaseNumber(c) + " von „" + tournament.rootOf(c).getName()
+                + "“ vorzeitig beenden?\n\n" + (open == 1 ? "1 offenes Spiel wird" : open + " offene Spiele werden") + " beendet"
+                + (atTable > 0 ? " (davon " + atTable + " an einem Tisch)" : "") + " – sie gelten als „nicht gespielt“, zählen in keiner "
+                + "Wertung und kommen nicht in den XML-Export. Alle bisher gespielten Spiele bleiben und werden exportiert.\n\n"
+                + "Die Klasse ist danach beendet; das Endergebnis ergibt sich aus dem bisherigen Stand. „Beenden zurücknehmen“ "
+                + "geht, solange keine weitere Phase angelegt ist.", end, ButtonType.CANCEL);
+        a.initOwner(window());
+        a.setHeaderText(null);
+        a.setTitle("Phase vorzeitig beenden");
+        ((Button) a.getDialogPane().lookupButton(end)).setDefaultButton(false);
+        ((Button) a.getDialogPane().lookupButton(ButtonType.CANCEL)).setDefaultButton(true);
+        DialogSizing.fit(a);
+        if (a.showAndWait().orElse(ButtonType.CANCEL) != end) return;
+        try {
+            tournament.endPhaseEarly(c);
+            status.accept("Phase vorzeitig beendet – " + open + " Spiel(e) nicht gespielt.");
+        } catch (IllegalStateException ex) {
+            showWarning(ex.getMessage());
+        }
+        onChanged.run();
+    }
+
+    /** 0.38 (#58): Phase komplett neu starten – mit Rückfrage. */
+    private void restartPhase() {
+        PlayingClass c = current;
+        if (c == null) return;
+        String problem = tournament.restartProblem(c);
+        if (problem != null) {
+            showWarning(problem);
+            return;
+        }
+        long results = tournament.restartResultCount(c);
+        ButtonType go = new ButtonType("Phase neu starten", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        Alert a = new Alert(Alert.AlertType.CONFIRMATION, "Phase " + tournament.phaseNumber(c) + " von „" + tournament.rootOf(c).getName()
+                + "“ neu starten?\n\n" + (results == 1 ? "1 Ergebnis geht" : results + " Ergebnisse gehen") + " verloren. Die Auslosung "
+                + "bzw. die Übernahme aus der Vorphase bleibt; Spiele an Tischen werden abgebrochen und alle Spiele neu eingereiht.",
+                go, ButtonType.CANCEL);
+        a.initOwner(window());
+        a.setHeaderText(null);
+        a.setTitle("Phase neu starten");
+        ((Button) a.getDialogPane().lookupButton(go)).setDefaultButton(false);
+        ((Button) a.getDialogPane().lookupButton(ButtonType.CANCEL)).setDefaultButton(true);
+        DialogSizing.fit(a);
+        if (a.showAndWait().orElse(ButtonType.CANCEL) != go) return;
+        try {
+            tournament.restartPhase(c);
+            status.accept("Phase " + tournament.phaseNumber(c) + " neu gestartet – alle Ergebnisse zurückgesetzt.");
+        } catch (IllegalStateException ex) {
+            showWarning(ex.getMessage());
+        }
+        onChanged.run();
+    }
+
+    private void decideQualification(PlayingClass c, boolean winnersQualified) {
+        try {
+            tournament.decideQualification(c, winnersQualified);
+            status.accept(winnersQualified ? "Die Gewinner der Runde 1 sind qualifiziert." : "Runde 2 für die Gewinner angelegt.");
+        } catch (IllegalStateException ex) {
+            showWarning(ex.getMessage());
+        }
+        onChanged.run();
+    }
+
     /** Schlüssel für {@code onOpenClass}: zum Reiter „Endergebnis“ wechseln. */
     static final String RESULT_TAB = "#endergebnis";
 
@@ -894,8 +1031,10 @@ public final class DrawView {
         PlayingClass c = current;
         if (c == null) return;
         if (c.isPaused()) {
+            boolean first = c.isAwaitingStart();
             tournament.resumeClass(c);
-            status.accept("Phase " + tournament.phaseNumber(c) + " von „" + tournament.rootOf(c).getName() + "“ fortgesetzt.");
+            status.accept("Phase " + tournament.phaseNumber(c) + " von „" + tournament.rootOf(c).getName() + "“ "
+                    + (first ? "gestartet – die Spiele sind eingereiht." : "fortgesetzt."));
         } else {
             tournament.pauseClass(c);
             status.accept("Phase " + tournament.phaseNumber(c) + " von „" + tournament.rootOf(c).getName() + "“ angehalten.");
@@ -1148,9 +1287,12 @@ public final class DrawView {
         boolean showQual = current.getNextPhase() != TournamentMode.NONE
                 && (current.getMode() == TournamentMode.GROUPS || current.getMode() == TournamentMode.SWISS);
         int qualCount = current.getNextPhase() == TournamentMode.PLACEMENT ? 2 : current.getQualifiers();
+        java.util.Set<Integer> qualPlaces = current.getNextPhase() == TournamentMode.KNOCKOUT && !current.getQualifierPlaces().isEmpty()
+                ? new java.util.HashSet<>(current.getQualifierPlaces()) : null;       // 0.38 (#61): bestimmte Gruppenplätze
         int r = 1;
         for (de.hts.tournament.GroupStanding.Row row : rows) {
-            boolean qualified = showQual && row.place() <= qualCount && row.played() > 0;
+            boolean qualified = showQual && (qualPlaces != null ? qualPlaces.contains(row.place()) : row.place() <= qualCount)
+                    && row.played() > 0;
             Label pl = new Label(String.valueOf(row.place()));
             pl.getStyleClass().add(row.place() == 1 && row.played() > 0 ? "seed" : "pos");
             pl.setMinWidth(22);
@@ -1249,6 +1391,7 @@ public final class DrawView {
             case QUEUED -> 1;
             case PLANNED -> 2;
             case DONE -> 3;
+            case CANCELLED -> 4;
         };
     }
 
@@ -1610,6 +1753,7 @@ public final class DrawView {
             case ACTIVE -> "card-running";
             case PAUSED -> "card-paused";
             case DONE -> "card-done";
+            case CANCELLED -> "card-cancelled";
         };
     }
 
@@ -1636,36 +1780,56 @@ public final class DrawView {
         int rounds = tournament.qualificationRound(c);
         if (rounds > 0) {
             int n = c.getQualRounds();
-            Label info = new Label("KO-Qualifikation: " + c.getQualField().size() + " Teilnehmende – wer " + n
-                    + (n == 1 ? " Spiel" : " Spiele") + " gewinnt (Freilos zählt als Sieg), ist qualifiziert; Runde 1 besser gegen "
-                    + "schlechter Platzierte, Runde 2 frei gelost"
-                    + (qualEditable() ? " · Spieler der aktuellen Runde per Drag & Drop tauschen" : ""));
+            boolean decided = c.getQualDecision() != 0 || n < 2;
+            String how = c.getQualDecision() == 1 || n == 1
+                    ? "die Gewinner der Runde 1 sind qualifiziert (Freilos zählt als Sieg), die Verlierer Nachrücker 1. Ranges nach TTR"
+                    : c.getQualDecision() == 2
+                    ? "wer 2 Spiele gewinnt (Freilos zählt als Sieg), ist qualifiziert; Runde 2 frei gelost"
+                    : "nach Runde 1 wird entschieden, ob die Gewinner qualifiziert sind oder eine weitere Runde spielen";
+            Label info = new Label("KO-Qualifikation: " + c.getQualField().size() + " Teilnehmende – " + how
+                    + "; Runde 1 besser gegen schlechter Platzierte"
+                    + (c.isAwaitingStart() ? " · Phase noch nicht gestartet – Spieler per Drag & Drop tauschen, dann „Phase starten“"
+                    : qualEditable() ? " · Spieler der aktuellen Runde per Drag & Drop tauschen" : ""));
             info.getStyleClass().add("hint");
             info.setWrapText(true);
+            info.setMinWidth(0);
+            info.setPrefWidth(0);                                   // 0.38: umbrechen statt rechts abschneiden
+            info.setMinHeight(Region.USE_PREF_SIZE);
             box.getChildren().add(info);
-            int losersN = (c.getQualField().size() + 1) / 2 / 2;      // Spiele in Runde 2 = Verlierer der Runde 2
-            CheckBox extra = new CheckBox("Zusatzrunde für die Verlierer der Runde " + n + " – deren Gewinner sind ebenfalls qualifiziert");
-            extra.setSelected(c.isQualExtra());
-            extra.setDisable(tournament.rootOf(c).isFinished() || (losersN < 2 && !c.isQualExtra()));
-            extra.setTooltip(new Tooltip(losersN < 2 ? "Mit nur einem Verlierer in Runde " + n + " gibt es keine Zusatzrunde."
-                    : "Die Verlierer der Runde " + n + " spielen noch ein Spiel; die Gewinner sind qualifiziert, die Verlierer "
-                    + "Nachrücker 1. Ranges. Bei ungerader Zahl hat der Bestplatzierte ein Freilos (zählt als Sieg)."));
-            extra.setOnAction(e -> {
-                try {
-                    tournament.setQualExtra(c, extra.isSelected());
-                    status.accept(extra.isSelected() ? "Zusatzrunde zugeschaltet." : "Zusatzrunde entfernt.");
-                } catch (IllegalStateException ex) {
-                    status.accept(ex.getMessage());
-                    showWarning(ex.getMessage());
-                }
-                onChanged.run();
-            });
-            if (!presentation) box.getChildren().add(extra);
+            // 0.38 (#60): nach Runde 1 fragen, ob die Gewinner qualifiziert sind
+            if (!presentation && tournament.qualificationDecisionPending(c)) {
+                Label ask = new Label("Runde 1 ist gespielt: Sind die Gewinner jetzt qualifiziert?");
+                ask.getStyleClass().add("class-name");
+                ask.setWrapText(true);
+                Button yes = new Button("Gewinner sind qualifiziert");
+                yes.getStyleClass().add("navy-pill");
+                yes.setOnAction(e -> decideQualification(c, true));
+                Button no = new Button("Weitere KO-Runde für die Gewinner");
+                no.getStyleClass().add("pill");
+                no.setOnAction(e -> decideQualification(c, false));
+                javafx.scene.layout.FlowPane decide = new javafx.scene.layout.FlowPane(10, 8, ask, yes, no);
+                decide.setAlignment(Pos.CENTER_LEFT);
+                decide.getStyleClass().add("qual-decision");
+                box.getChildren().add(decide);
+            } else if (!presentation && decided && tournament.canUndoQualificationDecision(c)) {
+                Button undo = new Button(c.getQualDecision() == 1 ? "Entscheidung zurücknehmen (doch weitere KO-Runde möglich)"
+                        : "Entscheidung zurücknehmen (Runde 2 entfernen)");
+                undo.getStyleClass().add("pill");
+                undo.setOnAction(e -> {
+                    try {
+                        tournament.undoQualificationDecision(c);
+                        status.accept("Entscheidung nach Runde 1 zurückgenommen.");
+                    } catch (IllegalStateException ex) {
+                        showWarning(ex.getMessage());
+                    }
+                    onChanged.run();
+                });
+                box.getChildren().add(undo);
+            }
         }
         for (int r = 1; r <= rounds; r++) {
             final int round = r;
-            Label title = new Label(r > c.getQualRounds() ? "Zusatzrunde (Verlierer der Runde " + c.getQualRounds() + ")"
-                    : "Qualifikation Runde " + r);
+            Label title = new Label("Qualifikation Runde " + r);
             title.getStyleClass().add("round-title");
             javafx.scene.layout.FlowPane cards = new javafx.scene.layout.FlowPane(14, 10);
             fillRows(cards);
@@ -1821,7 +1985,9 @@ public final class DrawView {
     private Node qualRow(PlayingClass c, Entrant e, Match m, boolean isA, boolean editable) {
         if (e == null) return new Label("–");
         Integer g = c.getQualField().get(e.id());
-        Label grp = new Label(g == null ? "" : GroupDraw.groupName(g));
+        String origin = tournament.qualificationPlaceLabels(c).get(e.id());          // 0.38 (#53): „A2“ statt „A“
+        Label grp = new Label(origin != null ? origin : g == null ? "" : GroupDraw.groupName(g));
+        grp.setMinWidth(Region.USE_PREF_SIZE);
         grp.getStyleClass().add("seed");
         grp.setMinWidth(22);
         Label name = new Label(withClub(e));

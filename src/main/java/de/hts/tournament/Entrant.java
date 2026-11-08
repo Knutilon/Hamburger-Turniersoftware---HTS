@@ -15,10 +15,14 @@ public record Entrant(String id, String name, Integer ttr, String detail) {
     /** Vereine der Partei (Einzel: einer, Doppel: einer oder zwei) – für die Prüfung auf Vereinsgleichheit. */
     public java.util.Set<String> clubs() {
         if (detail == null || detail.isBlank()) return java.util.Set.of();
-        java.util.Set<String> set = new java.util.HashSet<>();
-        for (String c : detail.split(" / ")) if (!c.isBlank()) set.add(c.trim().toLowerCase(java.util.Locale.GERMAN));
-        return set;
+        return CLUBS.computeIfAbsent(detail, d -> {          // 0.38: zwischengespeichert (Auslosung prüft sehr oft)
+            java.util.Set<String> set = new java.util.HashSet<>();
+            for (String c : d.split(" / ")) if (!c.isBlank()) set.add(c.trim().toLowerCase(java.util.Locale.GERMAN));
+            return java.util.Set.copyOf(set);
+        });
     }
+
+    private static final java.util.Map<String, java.util.Set<String>> CLUBS = new java.util.concurrent.ConcurrentHashMap<>();
 
     /** Haben beide Parteien einen gemeinsamen Verein? */
     public boolean sameClub(Entrant other) {

@@ -320,6 +320,9 @@ public final class LiveServer {
         String a = t.entrantName(m, m.getA()), bb = t.entrantName(m, m.getB());
         String w = m.winner();
         String na = a == null ? "–" : esc(a), nb = bb == null ? "–" : esc(bb);
+        String oa = t.originLabel(m, m.getA()), ob = t.originLabel(m, m.getB());      // 0.38: Herkunft, z. B. „A2“
+        if (a != null && oa != null) na = "<span class=\"muted\">" + esc(oa) + "</span> " + na;
+        if (bb != null && ob != null) nb = "<span class=\"muted\">" + esc(ob) + "</span> " + nb;
         if (w != null && w.equals(m.getA())) na = "<span class=\"win\">" + na + "</span>";
         if (w != null && w.equals(m.getB())) nb = "<span class=\"win\">" + nb + "</span>";
         String chip = switch (m.getStatus()) {
@@ -449,7 +452,8 @@ public final class LiveServer {
 
     private String playersJson() {
         StringBuilder b = new StringBuilder("[");
-        List<Player> list = sortedPlayers();
+        List<Player> list = new ArrayList<>(sortedPlayers());
+        list.removeIf(Player::isReserveOnly);                    // 0.38 (#55): Nachrücker melden sich nicht an oder ab
         for (int i = 0; i < list.size(); i++) {
             Player p = list.get(i);
             if (i > 0) b.append(',');

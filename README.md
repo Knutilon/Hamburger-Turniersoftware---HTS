@@ -6,6 +6,34 @@ Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Pub
 Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
 (Label „Feature“ bzw. „bug“).
 
+## Neu in 0.38.0
+
+- **Gruppenauslosung – unvermeidbare Vereinsgleichheit:** Hat ein Verein mehr Teilnehmende als es Gruppen gibt, kommt
+  der/die Schwächste zum/zur Stärksten des Vereins, der/die Zweitschwächste zum/zur Zweitstärksten usw.; ab drei je
+  Gruppe wechselt die Richtung wie bei der Schlange (z. B. 4 Gruppen, 12 Gleiche: 1/8/9 · 2/7/10 · 3/6/11 · 4/5/12).
+  Gilt für alle Setzungsarten, nicht für Doppel.
+- **Gruppenspiele:** Gruppen mit mehr Runden (z. B. 5er-Gruppen) beginnen früher, damit alle Gruppen etwa gleichzeitig
+  fertig werden; die Spielnummern folgen dieser Reihenfolge.
+- **Ergebnis eintragen:** Ein Satz ohne Vorzeichen gilt als „+“ („8“ = 11:8, „10“ = 12:10).
+- **Qualifikationsphase:** wird ausgelost, aber erst mit „Phase starten“ gestartet – bis dahin lassen sich die Spieler
+  per Drag & Drop tauschen. Nach Runde 1 fragt HTS, ob die Gewinner qualifiziert sind (die Verlierer sind dann
+  Nachrücker 1. Ranges nach TTR) oder eine weitere KO-Runde spielen; die Zusatzrunde entfällt. Überall steht die
+  Herkunft „A2“, „B3“ statt nur des Gruppenbuchstabens (Karten, Listen, Präsentation, Live-Anzeige, PDF).
+- **KO als Folgephase:** entweder die Besten je Gruppe oder bestimmte Gruppenplätze (z. B. „2,3,4“).
+- **Phase vorzeitig beenden** (offene Spiele „nicht gespielt“, nicht im XML-Export; zurücknehmbar) und **Phase neu
+  starten** (Auslosung bleibt, alle Ergebnisse werden zurückgesetzt).
+- **Klassenkopf kompakter:** Name und Kurzinfo in einer Zeile, eine Werkzeugzeile mit Suche, „Gleichstand: …“,
+  „PDF / Drucken ▾“ (Gruppenauswahl im Menü) und den Phasen-Knöpfen.
+- **Tische den Klassen zuordnen:** Haken = Klasse darf an diesem Tisch spielen; standardmäßig sind alle Haken gesetzt.
+  Ein Tisch ohne Haken bekommt keine Spiele, bleibt aber aktiv („keine Klasse zugeordnet“).
+- **Spiele:** neuer Filter „Gruppe“, die Spalte „Phase“ heißt „Gruppe“.
+- **Teilnehmende:** „Abgemeldete als PDF“ (je Klasse, mit „abgemeldet durch Handy/Turnierleitung“); reine Nachrücker
+  haben keinen An-/Abmeldestatus und werden bei Übernahme in die Klasse automatisch angemeldet.
+- **Klasse löschen:** Rückfrage nennt, was verloren geht („Abbrechen“ vorausgewählt), bei Ergebnissen eine zweite
+  Rückfrage; auch mit der Taste „Entf“ in der Klassenliste.
+- **Fehler behoben:** Nach dem Zuordnen von Tischen zu Klassen entstanden beim erneuten Öffnen leere Kopien der Klassen
+  (viele Klassen gleichen Namens). Betroffene Turnierdateien werden beim Öffnen automatisch repariert.
+
 ## Neu in 0.37.0
 
 - **Neuer Menüpunkt „Mobile Einstellungen“:** „Handy-Zugang starten“, „QR-Codes drucken“ und „Anmeldung per Adresse

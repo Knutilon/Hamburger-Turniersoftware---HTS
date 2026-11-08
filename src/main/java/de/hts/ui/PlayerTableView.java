@@ -82,8 +82,9 @@ public final class PlayerTableView {
                 protected void updateItem(Player p, boolean empty) {
                     super.updateItem(p, empty);
                     getStyleClass().removeAll("attendance-withdrawn", "attendance-requested");
-                    if (!empty && p != null && p.getAttendance() == Attendance.WITHDRAWN) getStyleClass().add("attendance-withdrawn");
-                    if (!empty && p != null && p.getAttendance() == Attendance.WITHDRAW_REQUESTED) getStyleClass().add("attendance-requested");
+                    boolean reserve = p != null && p.isReserveOnly();          // 0.38 (#55): Nachrücker ohne Zeilenfarbe
+                    if (!empty && p != null && !reserve && p.getAttendance() == Attendance.WITHDRAWN) getStyleClass().add("attendance-withdrawn");
+                    if (!empty && p != null && !reserve && p.getAttendance() == Attendance.WITHDRAW_REQUESTED) getStyleClass().add("attendance-requested");
                 }
             };
             row.setOnMouseClicked(e -> {
@@ -123,6 +124,13 @@ public final class PlayerTableView {
                     setGraphic(null);
                     setText(null);
                     setTooltip(null);
+                    return;
+                }
+                Player rowP = getTableRow() == null ? null : getTableRow().getItem();
+                if (rowP != null && rowP.isReserveOnly()) {               // 0.38 (#55): Nachrücker – kein Status
+                    setGraphic(null);
+                    setText(null);
+                    setTooltip(new Tooltip("Nachrücker – zählt nicht zu den Angemeldeten, keine An- oder Abmeldung nötig"));
                     return;
                 }
                 if (a == Attendance.WITHDRAWN || a == Attendance.WITHDRAW_REQUESTED) {
@@ -224,9 +232,9 @@ public final class PlayerTableView {
         searchBar.getStyleClass().add("search-bar");
 
         countText = Bindings.createStringBinding(() -> {
-            long present = source.stream().filter(Player::isPresent).count();
-            long withdrawn = source.stream().filter(p -> p.getAttendance() == Attendance.WITHDRAWN).count();
-            long requested = source.stream().filter(p -> p.getAttendance() == Attendance.WITHDRAW_REQUESTED).count();
+            long present = source.stream().filter(p -> !p.isReserveOnly() && p.isPresent()).count();
+            long withdrawn = source.stream().filter(p -> !p.isReserveOnly() && p.getAttendance() == Attendance.WITHDRAWN).count();
+            long requested = source.stream().filter(p -> !p.isReserveOnly() && p.getAttendance() == Attendance.WITHDRAW_REQUESTED).count();
             String base = filtered.size() == source.size()
                     ? source.size() + " Teilnehmende"
                     : filtered.size() + " von " + source.size() + " Teilnehmenden";

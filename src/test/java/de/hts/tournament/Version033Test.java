@@ -37,11 +37,20 @@ class Version033Test {
 
     /** Höherer TTR gewinnt immer 3:0. */
     private static void playAll(Tournament t, PlayingClass c) {
+        // 0.38: Qualifikationsphase startet erst per „Phase starten“; nach Runde 1 wird entschieden (hier: weitere Runde)
+        if (c.isAwaitingStart()) t.resumeClass(c);
+        if (t.qualificationDecisionPending(c)) t.decideQualification(c, false);
         for (int guard = 0; guard < 500; guard++) {
             Match open = t.matchesOf(c).stream()
                     .filter(m -> m.isReady() && (m.getStatus() == MatchStatus.ACTIVE || m.getStatus() == MatchStatus.QUEUED))
                     .findFirst().orElse(null);
-            if (open == null) return;
+            if (open == null) {
+                if (t.qualificationDecisionPending(c)) {
+                    t.decideQualification(c, false);
+                    continue;
+                }
+                return;
+            }
             Entrant a = t.entrant(open, open.getA()), b = t.entrant(open, open.getB());
             boolean aWins = a.ttr() > b.ttr();
             t.recordResult(open, aWins ? List.of(new int[]{11, 5}, new int[]{11, 6}, new int[]{11, 7})
@@ -101,7 +110,7 @@ class Version033Test {
     }
 
     @Test
-    void zusatzrundeMitFreilosQualifiziert() {
+    void verliererRundeZweiInFeldreihenfolge() {
         Tournament t = new Tournament();
         t.setTableCount(20);
         PlayingClass c = groupsClass(t, "Jugend", 15, 3);
@@ -119,16 +128,6 @@ class Version033Test {
         fieldOrder.retainAll(rank1.stream().map(Entrant::id).toList());
         assertEquals(fieldOrder, rank1.stream().map(Entrant::id).toList(), "Gruppenplatz, Verhältnisse, TTR");
 
-        t.setQualExtra(q, true);
-        assertEquals(6 + 3 + 1, t.matchesOf(q).size(), "3 Verlierer: Freilos + 1 Spiel");
-        playAll(t, q);
-        var rows = t.finalResult(c).rows();
-        assertEquals(3, count(rows, Tournament.QUALIFIED_BY_GROUP));
-        assertEquals(3 + 2, count(rows, Tournament.QUALIFIED_BY_KO), "Sieger der Zusatzrunde (inkl. Freilos) qualifiziert");
-        assertEquals(1, count(rows, "Nachrücker 1. Ranges"), "Verlierer der Zusatzrunde");
-        assertEquals(6, count(rows, "Nachrücker 2. Ranges"), "Verlierer Runde 1");
-        List<Integer> ttr = rows.stream().filter(r -> r.info().equals("Nachrücker 2. Ranges")).map(r -> r.entrant().ttr()).toList();
-        assertEquals(ttr.stream().sorted(java.util.Comparator.reverseOrder()).toList(), ttr, "Rang 2 nur nach TTR");
     }
 
     @Test

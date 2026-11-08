@@ -141,7 +141,7 @@ public final class TournamentFile {
             return new Content(t.getId(), t.getName(), t.getDate(), t.getLocation(), t.getStartedAt(),
                     new ArrayList<>(t.getClasses()), new ArrayList<>(t.getPlayers()), pairs,
                     t.getTableCount(), new ArrayList<>(t.getMatches()), t.getWinningSets(),
-                    t.getTableClassMap().entrySet().stream().collect(java.util.stream.Collectors.toMap(
+                    t.getTableExcludedMap().entrySet().stream().collect(java.util.stream.Collectors.toMap(
                             Map.Entry::getKey, e -> List.copyOf(e.getValue()))), folders(t));
         }
 
@@ -186,7 +186,7 @@ public final class TournamentFile {
             t.ensurePairsForEntries();
             t.setTableCount(tables);
             t.setWinningSets(winningSets);
-            if (tableClasses != null) tableClasses.forEach(t::setTableClasses);
+            if (tableClasses != null) tableClasses.forEach(t::setTableExcluded);   // 0.38: ausgeschlossene Klassen je Tisch
             if (folders != null) {
                 t.setFolder(folders.get("folder"));
                 t.setPdfDir(folders.get("dir-pdf"));
@@ -282,12 +282,14 @@ public final class TournamentFile {
             root.setAttribute("winning-sets", String.valueOf(content.winningSets()));
             if (content.folders() != null) content.folders().forEach(root::setAttribute);
             if (content.tableClasses() != null && !content.tableClasses().isEmpty()) {
-                Element tc = doc.createElement("table-classes");
+                // 0.38: Tische mit bewusst ausgeschlossenen Klassen – eigener Elementname, damit beim Lesen nie
+                // eine Verwechslung mit <class> der Klassenliste möglich ist (Bug #59)
+                Element tc = doc.createElement("table-exclusions");
                 for (Map.Entry<Integer, List<String>> e : new java.util.TreeMap<>(content.tableClasses()).entrySet()) {
                     Element te = doc.createElement("table");
                     te.setAttribute("nr", String.valueOf(e.getKey()));
                     for (String cn : e.getValue()) {
-                        Element ce = doc.createElement("class");
+                        Element ce = doc.createElement("excluded-class");
                         ce.setAttribute("name", cn);
                         te.appendChild(ce);
                     }
@@ -317,10 +319,16 @@ public final class TournamentFile {
                 el.setAttribute("tiebreak", c.getTiebreak().name());
                 el.setAttribute("next-phase", c.getNextPhase().name());
                 el.setAttribute("qualifiers", String.valueOf(c.getQualifiers()));
+                if (!c.getQualifierPlaces().isEmpty()) {
+                    el.setAttribute("qualifier-places", String.join(",", c.getQualifierPlaces().stream().map(String::valueOf).toList()));
+                }
                 set(el, "follow-up", c.getFollowUpClass());
                 set(el, "source", c.getSourceClass());
                 set(el, "started-at", c.getStartedAt());
                 if (c.isPaused()) el.setAttribute("paused", "true");
+                if (c.isAwaitingStart()) el.setAttribute("awaiting-start", "true");
+                if (c.isEndedEarly()) el.setAttribute("ended-early", "true");
+                if (c.getQualDecision() != 0) el.setAttribute("qual-decision", String.valueOf(c.getQualDecision()));
                 if (!c.getWithdrawn().isEmpty()) el.setAttribute("withdrawn", String.join(",", c.getWithdrawn()));
                 set(el, "finished-at", c.getFinishedAt());
                 if (c.getMode() == TournamentMode.KNOCKOUT) el.setAttribute("mode", "knockout");
@@ -473,6 +481,7 @@ public final class TournamentFile {
         set(el, "nationality", p.getNationality());
         set(el, "region", p.getRegion());
         if (p.getAttendance() != de.hts.player.Attendance.UNKNOWN) el.setAttribute("attendance", p.getAttendance().code());
+        if (p.isWithdrawnByPhone()) el.setAttribute("withdrawn-by", "phone");
         for (String c : p.getClassNames()) {
             Element entry = doc.createElement("entry");
             entry.setAttribute("competition", c);
@@ -524,9 +533,12 @@ public final class TournamentFile {
         }
 
         List<PlayingClass> classes = new ArrayList<>();
-        NodeList classList = root.getElementsByTagName("class");
-        for (int i = 0; i < classList.getLength(); i++) {
-            Element el = (Element) classList.item(i);
+        // 0.38 (Bug #59): nur die direkten <class>-Kinder von <classes> – getElementsByTagName fand früher auch die
+        // <class>-Einträge der Tischzuordnung und legte für jeden davon eine leere Klasse gleichen Namens an
+        List<Element> classList = new ArrayList<>();
+        for (Element ce : children(root, "classes")) classList.addAll(children(ce, "class"));
+        for (int i = 0; i < classList.size(); i++) {
+            Element el = classList.get(i);
             String name = attr(el, "name");
             if (name == null) continue;
             ClassType type = parseType(attr(el, "type"));
@@ -548,10 +560,17 @@ public final class TournamentFile {
                 // unbekannter Wert: Standard behalten
             }
             pc.setQualifiers(intOr(el, "qualifiers", 2));
+            if (attr(el, "qualifier-places") != null) {
+                List<Integer> qp = Tournament.parsePlaces(attr(el, "qualifier-places"));
+                if (qp != null) pc.setQualifierPlaces(qp);
+            }
             pc.setFollowUpClass(attr(el, "follow-up"));
             pc.setSourceClass(attr(el, "source"));
             pc.setStartedAt(dateTime(attr(el, "started-at")));
             pc.setPaused("true".equals(attr(el, "paused")));
+            pc.setAwaitingStart("true".equals(attr(el, "awaiting-start")));
+            pc.setEndedEarly("true".equals(attr(el, "ended-early")));
+            if (attr(el, "qual-decision") != null) pc.setQualDecision(Integer.parseInt(attr(el, "qual-decision").trim()));
             if (attr(el, "withdrawn") != null) for (String w : attr(el, "withdrawn").split(",")) if (!w.isBlank()) pc.addWithdrawn(w);
             pc.setFinishedAt(dateTime(attr(el, "finished-at")));
             if ("knockout".equals(attr(el, "mode"))) pc.setMode(TournamentMode.KNOCKOUT);
@@ -650,6 +669,7 @@ public final class TournamentFile {
             }
             classes.add(pc);
         }
+        classes = repairDuplicateClasses(classes);
 
         List<Player> players = new ArrayList<>();
         NodeList list = root.getElementsByTagName("player");
@@ -708,17 +728,26 @@ public final class TournamentFile {
         }
         Integer tables = intAttr(root, "tables");
         Map<Integer, List<String>> tableClasses = new java.util.TreeMap<>();
-        NodeList tcs = root.getElementsByTagName("table-classes");
-        if (tcs.getLength() > 0) {
-            NodeList tl = ((Element) tcs.item(0)).getElementsByTagName("table");
-            for (int i = 0; i < tl.getLength(); i++) {
-                Element te = (Element) tl.item(i);
+        for (Element tcs : children(root, "table-exclusions")) {
+            for (Element te : children(tcs, "table")) {
                 Integer nr = intAttr(te, "nr");
                 if (nr == null) continue;
                 List<String> names = new ArrayList<>();
-                NodeList cl = te.getElementsByTagName("class");
-                for (int k = 0; k < cl.getLength(); k++) names.add(((Element) cl.item(k)).getAttribute("name"));
+                for (Element ce : children(te, "excluded-class")) names.add(ce.getAttribute("name"));
                 if (!names.isEmpty()) tableClasses.put(nr, names);
+            }
+        }
+        // Dateien bis 0.37: <table-classes> = Tisch NUR für diese Klassen → umrechnen in ausgeschlossene Klassen
+        List<String> rootNames = classes.stream().filter(pc -> !pc.isPhase()).map(PlayingClass::getName).distinct().toList();
+        for (Element tcs : children(root, "table-classes")) {
+            for (Element te : children(tcs, "table")) {
+                Integer nr = intAttr(te, "nr");
+                if (nr == null) continue;
+                java.util.Set<String> allowed = new java.util.HashSet<>();
+                for (Element ce : children(te, "class")) allowed.add(ce.getAttribute("name").trim().toLowerCase(java.util.Locale.GERMAN));
+                if (allowed.isEmpty()) continue;
+                List<String> ex = rootNames.stream().filter(n -> !allowed.contains(n.trim().toLowerCase(java.util.Locale.GERMAN))).toList();
+                if (!ex.isEmpty()) tableClasses.put(nr, ex);
             }
         }
         return new Content(attr(root, "id"), attr(root, "name"), date, attr(root, "location"), startedAt,
@@ -751,6 +780,7 @@ public final class TournamentFile {
         p.setNationality(attr(el, "nationality"));
         p.setRegion(attr(el, "region"));
         p.setAttendance(de.hts.player.Attendance.ofCode(attr(el, "attendance")));
+        p.restoreWithdrawnByPhone("phone".equals(attr(el, "withdrawn-by")));
 
         for (Node n = el.getFirstChild(); n != null; n = n.getNextSibling()) {
             if (n instanceof Element e && e.hasAttribute("competition")) {
@@ -824,6 +854,45 @@ public final class TournamentFile {
         if (value != null && !value.toString().isBlank()) {
             el.setAttribute(name, value.toString());
         }
+    }
+
+    /** Direkte Kind-Elemente mit diesem Namen (nicht wie getElementsByTagName die ganze Unterstruktur). */
+    static List<Element> children(Element parent, String tag) {
+        List<Element> out = new ArrayList<>();
+        for (org.w3c.dom.Node n = parent.getFirstChild(); n != null; n = n.getNextSibling()) {
+            if (n instanceof Element e && tag.equals(e.getTagName())) out.add(e);
+        }
+        return out;
+    }
+
+    /**
+     * Reparatur für Dateien, die durch Bug #59 (bis 0.37) leere Kopien von Klassen bekommen haben: Gibt es mehrere
+     * Klassen gleichen Namens, bleibt die mit den meisten Daten (gestartet, Modus, Auslosung, Phasen …); bei Gleichstand
+     * die letzte (die leeren Kopien standen vorn).
+     */
+    static List<PlayingClass> repairDuplicateClasses(List<PlayingClass> in) {
+        Map<String, PlayingClass> keep = new java.util.LinkedHashMap<>();
+        for (PlayingClass pc : in) {
+            String key = pc.getName().trim().toLowerCase(java.util.Locale.GERMAN);
+            PlayingClass prev = keep.get(key);
+            if (prev == null || weight(pc) >= weight(prev)) {
+                if (prev != null) keep.remove(key);      // Reihenfolge der behaltenen Klasse übernehmen
+                keep.put(key, pc);
+            }
+        }
+        return new ArrayList<>(keep.values());
+    }
+
+    private static int weight(PlayingClass pc) {
+        int w = 0;
+        if (pc.getStartedAt() != null) w += 64;
+        if (pc.getMode() != TournamentMode.NONE) w += 32;
+        if (!pc.getGroups().isEmpty() || !pc.getDraw().isEmpty()) w += 16;
+        if (pc.getFollowUpClass() != null || pc.getSourceClass() != null) w += 8;
+        if (pc.isReady()) w += 4;
+        if (pc.isImportedFromXml()) w += 2;
+        if (pc.getBirthyearFrom() != null || pc.getBirthyearTo() != null || pc.getMaxParticipants() != null) w += 1;
+        return w;
     }
 
     private static String attr(Element el, String name) {

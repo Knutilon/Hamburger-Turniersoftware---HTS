@@ -225,7 +225,16 @@ class Version035Test {
             String data = http.send(HttpRequest.newBuilder(URI.create(base + "/anmeldung/" + token + "/daten.json")).build(),
                     HttpResponse.BodyHandlers.ofString()).body();
             assertTrue(data.contains("\"open\":true") && data.contains("TSV Nord"));
-            Player reserve = byName(t, "Nach");
+            // 0.38 (#55): reine Nachrücker melden sich nicht per Handy an oder ab
+            Player nach = byName(t, "Nach");
+            http.send(HttpRequest.newBuilder(URI.create(base + "/anmeldung/" + token + "/melden"))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString("ids=" + nach.getId() + "&anwesend=1")).build(), HttpResponse.BodyHandlers.ofString());
+            assertEquals(Attendance.UNKNOWN, nach.getAttendance());
+            assertFalse(data.contains(nach.getId()), "Nachrücker nicht in der Anmeldeliste");
+            changes[0] = 0;
+            Player reserve = byName(t, "S6");
+            t.setAttendance(reserve, Attendance.UNKNOWN);
             String res = http.send(HttpRequest.newBuilder(URI.create(base + "/anmeldung/" + token + "/melden"))
                     .header("Content-Type", "application/x-www-form-urlencoded")
                     .POST(HttpRequest.BodyPublishers.ofString("ids=" + reserve.getId() + "&anwesend=1")).build(), HttpResponse.BodyHandlers.ofString()).body();

@@ -221,6 +221,13 @@ public final class PlayingClass {
     public void setNextPhase(TournamentMode m) { nextPhase = m == null ? TournamentMode.NONE : m; }
     public int getQualifiers() { return qualifiers; }
     public void setQualifiers(int q) { qualifiers = Math.max(1, q); }
+
+    /** 0.38 (#61): bestimmte Gruppenplätze, die in die KO-Folgephase einziehen (z. B. 2, 3, 4); leer = Plätze 1–qualifiers. */
+    private java.util.List<Integer> qualifierPlaces = java.util.List.of();
+    public java.util.List<Integer> getQualifierPlaces() { return qualifierPlaces; }
+    public void setQualifierPlaces(java.util.List<Integer> places) {
+        qualifierPlaces = places == null ? java.util.List.of() : places.stream().distinct().sorted().toList();
+    }
     public String getFollowUpClass() { return followUpClass; }
     public void setFollowUpClass(String n) { followUpClass = n; }
     public String getSourceClass() { return sourceClass; }
@@ -268,6 +275,21 @@ public final class PlayingClass {
     public int getQualDirect() { return qualDirect; }
     public int getQualKo() { return qualKo; }
     public int getQualRounds() { return qualRounds; }
+    /** 0.38 (#60): Entscheidung nach Runde 1 – 0 = offen, 1 = Gewinner qualifiziert, 2 = weitere KO-Runde. */
+    private int qualDecision;
+    public int getQualDecision() { return qualDecision; }
+    public void setQualDecision(int d) { qualDecision = Math.max(0, Math.min(2, d)); }
+
+    /** 0.38 (#51): Phase vorzeitig beendet (offene Spiele „nicht gespielt“). */
+    private boolean endedEarly;
+    public boolean isEndedEarly() { return endedEarly; }
+    public void setEndedEarly(boolean b) { endedEarly = b; }
+
+    /** 0.38 (#50): Phase ausgelost, aber noch nicht gestartet („Phase starten“). */
+    private boolean awaitingStart;
+    public boolean isAwaitingStart() { return awaitingStart; }
+    public void setAwaitingStart(boolean b) { awaitingStart = b; }
+
     public void setQualification(int direct, int ko, int rounds) { qualDirect = Math.max(0, direct); qualKo = Math.max(0, ko); qualRounds = Math.max(0, rounds); }
     /** Qualifikation: Nachrücker je Gruppe direkt aus der Gruppenphase (ohne Spiel), z. B. Dritte + Vierte = 2. */
     private int qualReserve;

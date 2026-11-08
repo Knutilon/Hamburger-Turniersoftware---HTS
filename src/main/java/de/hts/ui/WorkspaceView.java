@@ -887,7 +887,17 @@ public final class WorkspaceView {
         });
         phone.getItems().addAll(confirmAll, new SeparatorMenuItem(), markedOpen, allOpen);
         phone.setTooltip(new Tooltip("Per Handy gemeldete Abmeldungen (orange) bestätigen oder verwerfen"));
-        HBox box = new HBox(8, marked, phone);
+        // 0.38 (#54): PDF der endgültig Abgemeldeten – nur aktiv, wenn mindestens eine Person abgemeldet ist
+        Button pdf = new Button("Abgemeldete als PDF");
+        pdf.getStyleClass().add("pill");
+        pdf.setMinWidth(Region.USE_PREF_SIZE);
+        pdf.setTooltip(new Tooltip("Liste der endgültig Abgemeldeten je Klasse (Name, Vorname, Verein, TTR, abgemeldet durch)"));
+        pdf.setOnAction(e -> Reports.showWithdrawn(getRoot().getScene() == null ? null : getRoot().getScene().getWindow(), tournament, this::setStatus));
+        Runnable updatePdf = () -> pdf.setDisable(tournament.getPlayers().stream()
+                .noneMatch(p -> p.getAttendance() == de.hts.player.Attendance.WITHDRAWN && !p.isReserveOnly()));
+        updatePdf.run();
+        participants.countTextProperty().addListener((o, a, b) -> updatePdf.run());
+        javafx.scene.layout.FlowPane box = new javafx.scene.layout.FlowPane(8, 8, marked, phone, pdf);
         box.setAlignment(Pos.CENTER_LEFT);
         return box;
     }
