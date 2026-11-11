@@ -1,3 +1,11 @@
+/*
+ * HTS – Hamburger Turniersoftware
+ * Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Dieses Programm ist freie Software unter der GNU Affero General
+ * Public License v3.0; Einzelheiten in der Datei LICENSE.
+ */
 package de.hts.ui;
 
 import de.hts.HtsApp;
@@ -9,11 +17,12 @@ import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
 /**
- * Info-Fenster (Knopf „(i)“ rechts oben): Programm, Version, Signatur, Lizenz (GPL 3.0), Links zur Feature- und
+ * Info-Fenster (Knopf „(i)“ rechts oben): Programm, Version, Signatur, Lizenz (AGPL 3.0, seit 0.42), Links zur Feature- und
  * Bug-Sammlung auf GitHub und Hinweise zu den mitgelieferten Bibliotheken.
  */
 public final class InfoDialog extends Dialog<ButtonType> {
@@ -23,6 +32,25 @@ public final class InfoDialog extends Dialog<ButtonType> {
     static final String BUGS = HtsApp.REPO_URL + "/issues?q=is%3Aissue+label%3Abug";
     static final String NEW_BUG = HtsApp.REPO_URL + "/issues/new?labels=bug";
     static final String LICENSE = HtsApp.REPO_URL + "/blob/main/LICENSE";
+
+    /** 0.42 (#73): Lizenzhinweis – derselbe Text steht in der Datei NOTICE und oben in der README. */
+    public static final String NOTICE = """
+            HTS - Hamburger Turniersoftware is an application for executing tournaments
+            Copyright (C) 2026  Richard Johan Frederich Michaelis, Hamburg, Germany
+
+            This program is free software: you can redistribute it and/or modify
+            it under the terms of the GNU Affero General Public License as
+            published by the Free Software Foundation, either version 3 of the
+            License, or (at your option) any later version.
+
+            This program is distributed in the hope that it will be useful,
+            but WITHOUT ANY WARRANTY; without even the implied warranty of
+            MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+            GNU Affero General Public License for more details.
+
+            You should have received a copy of the GNU Affero General Public License
+            along with this program.  If not, see <https://www.gnu.org/licenses/>.
+            """;
 
     /** Den Info-Knopf als letzten (rechten) Knopf in die Kopfleiste setzen. */
     public static void install(AppHeader header, java.util.function.Supplier<Window> owner) {
@@ -39,18 +67,23 @@ public final class InfoDialog extends Dialog<ButtonType> {
         name.getStyleClass().add("round-title");
         Label version = new Label("Version " + HtsApp.VERSION);
         version.getStyleClass().add("hint");
-        Label signature = new Label("Richard Michaelis");
+        Label signature = new Label(HtsApp.AUTHOR);
         signature.getStyleClass().add("info-signature");
         VBox head = new VBox(2, name, version, signature);
         HBox top = new HBox(14, logo, head);
         top.setAlignment(Pos.CENTER_LEFT);
 
-        Label license = new Label("Copyright © 2026 Richard Michaelis. HTS ist freie Software (Open Source) unter der "
-                + "GNU General Public License v3.0 (GPL-3.0): Sie dürfen HTS nutzen, verändern und weitergeben. Wer eine "
-                + "veränderte Fassung weitergibt, muss sie ebenfalls unter der GPL-3.0 samt Quellcode weitergeben. "
-                + "HTS wird ohne jede Gewährleistung bereitgestellt.");
+        Label license = new Label("Copyright © 2026 " + HtsApp.AUTHOR + ". HTS ist freie Software (Open Source) unter "
+                + "der GNU Affero General Public License v3.0 oder später (AGPL-3.0-or-later): Sie dürfen HTS nutzen, "
+                + "verändern und weitergeben. Wer eine veränderte Fassung weitergibt oder anderen über ein Netzwerk zur "
+                + "Nutzung anbietet (z. B. die Handy-Seiten), muss ihnen den Quellcode ebenfalls unter der AGPL zugänglich "
+                + "machen. HTS wird ohne jede Gewährleistung bereitgestellt.");
         license.setWrapText(true);
-        Hyperlink licenseLink = link("Lizenztext (GPL-3.0)", LICENSE);
+        Label notice = new Label(NOTICE.strip());
+        notice.getStyleClass().add("hint");
+        notice.setStyle("-fx-font-family: 'Consolas', 'Courier New', monospace; -fx-font-size: 11px;");
+        notice.setMinHeight(Region.USE_PREF_SIZE);
+        Hyperlink licenseLink = link("Lizenztext (AGPL-3.0)", LICENSE);
         Hyperlink source = link("Quellcode auf GitHub", HtsApp.REPO_URL);
 
         Label feedbackHead = new Label("Mitmachen");
@@ -68,7 +101,7 @@ public final class InfoDialog extends Dialog<ButtonType> {
         libs.getStyleClass().add("hint");
         libs.setWrapText(true);
 
-        VBox content = new VBox(12, top, license, new HBox(10, licenseLink, source), feedbackHead, feedback, libsHead, libs);
+        VBox content = new VBox(12, top, license, notice, new HBox(10, licenseLink, source), feedbackHead, feedback, libsHead, libs);
         content.setPadding(new Insets(8, 6, 4, 6));
         content.setPrefWidth(560);
         getDialogPane().setContent(content);

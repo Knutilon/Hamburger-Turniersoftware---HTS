@@ -1,3 +1,11 @@
+/*
+ * HTS – Hamburger Turniersoftware
+ * Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Dieses Programm ist freie Software unter der GNU Affero General
+ * Public License v3.0; Einzelheiten in der Datei LICENSE.
+ */
 package de.hts.ui;
 
 import de.hts.tournament.Match;
@@ -90,7 +98,7 @@ public final class MatchesView {
                 table.getSelectionModel().selectedItemProperty()));
         result.setOnAction(e -> enterResult(table.getSelectionModel().getSelectedItem()));
         search.setPromptText("Suchen: Vorname, Nachname, Verein");
-        search.setPrefColumnCount(16);
+        Ui.growingSearch(search);                          // 0.42 (#74)
         search.textProperty().addListener((o, a, b) -> refresh());
         counts.getStyleClass().add("hint");
         Region sp = new Region();
@@ -103,7 +111,6 @@ public final class MatchesView {
         gl.getStyleClass().add("class-name");
         for (Label l : new Label[]{sl, cl, gl}) l.setMinWidth(Region.USE_PREF_SIZE);
         // 0.38: Filterzeile bricht bei wenig Breite um (nichts wird abgekürzt)
-        search.setMinWidth(Region.USE_PREF_SIZE);
         counts.setMinWidth(Region.USE_PREF_SIZE);
         result.setMinWidth(Region.USE_PREF_SIZE);
         javafx.scene.layout.FlowPane bar = new javafx.scene.layout.FlowPane(10, 8, search, labeledBox(sl, filter), labeledBox(cl, classFilter),

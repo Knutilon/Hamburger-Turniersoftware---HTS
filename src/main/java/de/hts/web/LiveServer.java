@@ -1,3 +1,11 @@
+/*
+ * HTS – Hamburger Turniersoftware
+ * Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Dieses Programm ist freie Software unter der GNU Affero General
+ * Public License v3.0; Einzelheiten in der Datei LICENSE.
+ */
 package de.hts.web;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -276,6 +284,8 @@ public final class LiveServer {
             button.light{background:#e5e7eb;color:#173a6c}.ok{color:#0f6e56}.warn{color:#9a3412}
             label.pl{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eee}
             label.pl input{width:22px;height:22px}
+            footer.src{padding:16px 12px 24px;text-align:center;font-size:12px;color:#667}
+            footer.src a{color:#667}
             """;
 
     private static final String RELOAD = """
@@ -284,12 +294,16 @@ public final class LiveServer {
             setTimeout(function(){sessionStorage.setItem(k,scrollY);location.reload();},10000);})();</script>
             """;
 
+    /** 0.42 (#73): AGPL § 13 – wer HTS über das Netzwerk nutzt, kommt an den Quellcode. */
+    static final String SOURCE_FOOTER = "<footer class=\"src\">HTS " + de.hts.HtsApp.VERSION + " · freie Software · <a href=\""
+            + de.hts.HtsApp.REPO_URL + "\" target=\"_blank\" rel=\"noopener\">Quellcode (AGPL-3.0)</a></footer>";
+
     private String page(String title, String body, boolean reload) {
         String name = t.getName() == null || t.getName().isBlank() ? "Turnier" : t.getName();
         return "<!doctype html><html lang=\"de\"><head><meta charset=\"utf-8\">"
                 + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>" + esc(title) + " – " + esc(name)
                 + "</title><style>" + CSS + "</style></head><body><header><a href=\"/live\"><h1>" + esc(name) + "</h1></a><div class=\"sub\">"
-                + esc(title) + "</div></header><main>" + body + "</main>" + (reload ? RELOAD : "") + "</body></html>";
+                + esc(title) + "</div></header><main>" + body + "</main>" + SOURCE_FOOTER + (reload ? RELOAD : "") + "</body></html>";
     }
 
     // --- Live-Anzeige ----------------------------------------------------------------------------

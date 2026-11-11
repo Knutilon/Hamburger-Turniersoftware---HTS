@@ -1,3 +1,11 @@
+/*
+ * HTS – Hamburger Turniersoftware
+ * Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Dieses Programm ist freie Software unter der GNU Affero General
+ * Public License v3.0; Einzelheiten in der Datei LICENSE.
+ */
 package de.hts.persistence;
 
 import de.hts.player.Player;
@@ -68,7 +76,12 @@ public final class TournamentFile {
      * 3 = zusätzlich Turnier-ID und Startzeit (HTS 0.4),
      * 4 = zusätzlich Einzel/Doppel, Teilnehmenden-IDs und Doppelpaarungen (HTS 0.5/0.6),
      * 5 = zusätzlich Anmelde-Reihenfolge, Höchstzahl, Modus und Auslosung je Klasse (HTS 0.7/0.8),
-     * 6 = zusätzlich Tische, Spiele mit Status/Ergebnis, Klassenstart (ab HTS 0.9).
+     * 6 = zusätzlich Tische, Spiele mit Status/Ergebnis, Klassenstart (ab HTS 0.9),
+     * 7 = zusätzlich Anwesenheit, Meldungen, Phasen-Details (ab HTS 0.35).
+     * <p>Zusage ab 0.42 (#76): Jede neuere HTS-Version öffnet ältere Turnierdateien. Neue Angaben kommen als optionale
+     * Attribute hinzu (ältere Versionen überlesen sie); nur wenn sich die Bedeutung vorhandener Angaben ändert, steigt die
+     * Formatnummer, und {@link #read} wandelt ältere Dateien beim Öffnen um. Für jede veröffentlichte Version liegt eine
+     * Beispiel-Turnierdatei unter {@code src/test/resources/turnierdatei-<Version>.hts} (Test: TournamentFileCompatTest).
      */
     static final int FORMAT_VERSION = 7;
     private static final String ROOT = "hts-tournament";
@@ -273,6 +286,7 @@ public final class TournamentFile {
             Document doc = newBuilder().newDocument();
             Element root = doc.createElement(ROOT);
             root.setAttribute("format-version", String.valueOf(FORMAT_VERSION));
+            root.setAttribute("hts-version", de.hts.HtsApp.VERSION);   // 0.42 (#76): mit welcher Version gespeichert
             set(root, "id", content.id());
             set(root, "name", content.tournamentName());
             set(root, "date", content.date());
@@ -486,6 +500,7 @@ public final class TournamentFile {
             Element entry = doc.createElement("entry");
             entry.setAttribute("competition", c);
             entry.setAttribute("order", String.valueOf(p.getClassOrder(c)));
+            if (p.getClassOrigin(c) != null) entry.setAttribute("from", p.getClassOrigin(c));   // 0.42 (#75)
             el.appendChild(entry);
         }
         for (String c : p.getWaitingLists()) {
@@ -797,6 +812,7 @@ public final class TournamentFile {
                     String order = e.getAttribute("order");
                     if (order != null && order.matches("\\d+")) p.addToClass(c, Long.parseLong(order));
                     else p.addToClass(c);
+                    if (e.hasAttribute("from")) p.restoreClassOrigin(c, e.getAttribute("from"));
                 }
             }
         }

@@ -1,3 +1,11 @@
+/*
+ * HTS – Hamburger Turniersoftware
+ * Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Dieses Programm ist freie Software unter der GNU Affero General
+ * Public License v3.0; Einzelheiten in der Datei LICENSE.
+ */
 package de.hts.ui;
 
 import de.hts.player.Player;
@@ -250,8 +258,9 @@ public final class ClassesView {
         inSexFilter.setConverter(sexFilter.getConverter());
         inSexFilter.valueProperty().addListener((o, a, b) -> updateFilters());
         inSexFilter.setTooltip(new Tooltip("Nach Geschlecht filtern"));
-        inSearch.setPrefColumnCount(10);
-        search.setPrefColumnCount(10);
+        // 0.42 (#74): Platzhalter nie abgeschnitten, auf breiten Bildschirmen breiter (bis 450 Bildpunkte)
+        Ui.growingSearch(inSearch);
+        Ui.growingSearch(search);
         // 0.36: Zeilen brechen bei wenig Platz um (statt Texte/Knöpfe abzuschneiden)
         javafx.scene.layout.FlowPane searchRow = new javafx.scene.layout.FlowPane(8, 6, search, clubFilter, sexFilter, onlyMatching);
         searchRow.setAlignment(Pos.CENTER_LEFT);
@@ -301,6 +310,7 @@ public final class ClassesView {
         DrawView.installAutoScroll(scroll);              // beim Ziehen am Rand weiterblättern
         pairSearch.setPromptText("Suchen: Vorname, Nachname, Verein");
         pairSearch.textProperty().addListener((o, a, b) -> updateFilters());
+        Ui.growingSearch(pairSearch);
         pairsList.setPadding(new Insets(2));
         partnerBtn.getStyleClass().add("pill");
         partnerBtn.setTooltip(new Tooltip("Alle Teilnehmenden ohne Partner/in einander rein zufällig zulosen – "

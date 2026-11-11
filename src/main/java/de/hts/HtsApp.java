@@ -1,3 +1,11 @@
+/*
+ * HTS – Hamburger Turniersoftware
+ * Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Dieses Programm ist freie Software unter der GNU Affero General
+ * Public License v3.0; Einzelheiten in der Datei LICENSE.
+ */
 package de.hts;
 
 import de.hts.persistence.TournamentStore;
@@ -17,10 +25,12 @@ public class HtsApp extends Application {
 
     public static final String NAME = "Hamburger Turniersoftware";
     public static final String SHORT_NAME = "HTS";
-    public static final String VERSION = "0.41.0";
+    public static final String VERSION = "0.42.0";
 
     /** Repository auf GitHub (Quellcode, Feature- und Bug-Sammlung) */
     public static final String REPO_URL = "https://github.com/Knutilon/Hamburger-Turniersoftware---HTS";
+    /** 0.42 (#72/#73): Urheber (Copyright) – einheitlich in Info-Fenster, NOTICE, README und Datei-Köpfen. */
+    public static final String AUTHOR = "Richard Johan Frederich Michaelis, Hamburg, Germany";
 
     private static javafx.application.HostServices hostServices;
 

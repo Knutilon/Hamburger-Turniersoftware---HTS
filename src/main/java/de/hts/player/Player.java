@@ -1,3 +1,11 @@
+/*
+ * HTS – Hamburger Turniersoftware
+ * Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Dieses Programm ist freie Software unter der GNU Affero General
+ * Public License v3.0; Einzelheiten in der Datei LICENSE.
+ */
 package de.hts.player;
 
 import java.time.LocalDate;
@@ -179,18 +187,41 @@ public class Player {
 
     // --- Klassen -----------------------------------------------------------
 
-    /** Meldet die Person in einer Klasse an (ein Wartelisten-Hinweis dazu entfällt). */
+    /** Herkunft einer Klassenzuordnung (0.42, Bug #75): vorher gemeldet bzw. Nachrücker laut Meldeliste. */
+    public static final String FROM_REGISTRATION = "registration";
+    public static final String FROM_WAITING_LIST = "waiting-list";
+
+    /** Klasse → Herkunft der Zuordnung; wird beim Zurückziehen aus der Klasse wiederhergestellt. */
+    private final java.util.Map<String, String> classOrigins = new java.util.TreeMap<>();
+
+    /** Meldet die Person in einer Klasse an (ein Wartelisten-Hinweis dazu entfällt, die Herkunft wird gemerkt). */
     public void addToClass(String className) {
-        classes.putIfAbsent(className, nextOrder());
-        waitingLists.remove(className);
-        registrations.remove(className);
+        if (classes.containsKey(className)) return;
+        classes.put(className, nextOrder());
+        rememberOrigin(className);
+    }
+
+    private void rememberOrigin(String className) {
+        if (registrations.remove(className)) classOrigins.put(className, FROM_REGISTRATION);
+        else if (waitingLists.remove(className)) classOrigins.put(className, FROM_WAITING_LIST);
+    }
+
+    /** Herkunft der Zuordnung ({@link #FROM_REGISTRATION}, {@link #FROM_WAITING_LIST}) oder {@code null}. */
+    public String getClassOrigin(String className) {
+        return classes.containsKey(className) ? classOrigins.get(className) : null;
+    }
+
+    /** Nur zum Laden. */
+    public void restoreClassOrigin(String className, String origin) {
+        if (classes.containsKey(className) && (FROM_REGISTRATION.equals(origin) || FROM_WAITING_LIST.equals(origin))) {
+            classOrigins.put(className, origin);
+        }
     }
 
     /** Beim Laden: Anmeldung mit gespeicherter Reihenfolge. */
     public void addToClass(String className, long order) {
         classes.put(className, order);
-        waitingLists.remove(className);
-        registrations.remove(className);
+        rememberOrigin(className);
         synchronized (Player.class) {
             lastOrder = Math.max(lastOrder, order);
         }
@@ -201,9 +232,17 @@ public class Player {
         return classes.get(className);
     }
 
-    /** @return {@code true}, wenn die Person in der Klasse war */
+    /**
+     * Nimmt die Person aus der Klasse. 0.42 (Bug #75): Wer vorher gemeldet bzw. Nachrücker war, ist es danach wieder –
+     * nur die Zuordnung entfällt (die Anwesenheit bleibt ohnehin unverändert).
+     * @return {@code true}, wenn die Person in der Klasse war
+     */
     public boolean removeFromClass(String className) {
-        return classes.remove(className) != null;
+        if (classes.remove(className) == null) return false;
+        String origin = classOrigins.remove(className);
+        if (FROM_REGISTRATION.equals(origin)) registrations.add(className);
+        else if (FROM_WAITING_LIST.equals(origin)) waitingLists.add(className);
+        return true;
     }
 
     public boolean isInClass(String className) {
@@ -216,6 +255,8 @@ public class Player {
         if (order != null) classes.put(newName, order);
         if (waitingLists.remove(oldName)) waitingLists.add(newName);
         if (registrations.remove(oldName)) registrations.add(newName);
+        String origin = classOrigins.remove(oldName);
+        if (origin != null) classOrigins.put(newName, origin);
         String partner = registeredPartners.remove(oldName);
         if (partner != null) registeredPartners.put(newName, partner);
     }
@@ -225,6 +266,7 @@ public class Player {
         classes.remove(className);
         waitingLists.remove(className);
         registrations.remove(className);
+        classOrigins.remove(className);
         registeredPartners.remove(className);
     }
 
@@ -234,7 +276,8 @@ public class Player {
 
     /** Merkt sich, dass die Person laut Meldeliste in dieser Klasse auf der Warteliste steht. */
     public void addWaitingList(String className) {
-        if (!classes.containsKey(className)) waitingLists.add(className);
+        if (classes.containsKey(className)) classOrigins.putIfAbsent(className, FROM_WAITING_LIST);
+        else waitingLists.add(className);
     }
 
     public Set<String> getWaitingLists() {
@@ -243,7 +286,11 @@ public class Player {
 
     /** Merkt sich eine Meldung laut Meldeliste, ohne die Person schon in die Klasse zu nehmen. */
     public void addRegistration(String className) {
-        if (!classes.containsKey(className) && !waitingLists.contains(className)) registrations.add(className);
+        if (classes.containsKey(className)) {
+            classOrigins.putIfAbsent(className, FROM_REGISTRATION);   // erneuter Import: schon übernommen
+        } else if (!waitingLists.contains(className)) {
+            registrations.add(className);
+        }
     }
 
     public Set<String> getRegistrations() {

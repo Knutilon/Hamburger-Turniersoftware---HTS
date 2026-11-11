@@ -2,9 +2,43 @@
 
 Turniersoftware für Tischtennis, Java 21 + JavaFX.
 
-Copyright © 2026 Richard Michaelis · freie Software unter der [GNU General Public License v3.0](LICENSE) ·
+Copyright © 2026 Richard Johan Frederich Michaelis, Hamburg, Germany · freie Software unter der
+[GNU Affero General Public License v3.0 oder später](LICENSE) (AGPL-3.0-or-later, Hinweis in [NOTICE](NOTICE)) ·
 Wünsche und Fehler bitte als [Issue](https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/issues)
 (Label „Feature“ bzw. „bug“).
+
+```
+HTS - Hamburger Turniersoftware is an application for executing tournaments
+Copyright (C) 2026  Richard Johan Frederich Michaelis, Hamburg, Germany
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+```
+
+## Neu in 0.42.0
+
+- **Lizenz jetzt AGPL-3.0 oder später** (bisher GPL-3.0): Datei LICENSE mit dem AGPL-Text, Lizenzhinweis in NOTICE,
+  hier oben und im Info-Fenster. Die Handy-Seiten (Live-Anzeige, Anmeldung) zeigen unten „Quellcode (AGPL-3.0)“ mit
+  Link zum GitHub-Projekt. Jede Quelldatei beginnt mit Copyright- und Lizenzhinweis.
+- **Suchfelder** zeigen ihren Platzhalter „Suchen: Vorname, Nachname, Verein“ immer vollständig und werden auf breiten
+  Bildschirmen breiter (bis 450 Bildpunkte) – Klassen (Verfügbar, In der Klasse, Doppel), Spiele, Auslosung.
+- **Turnierdateien bleiben lesbar:** Neuere HTS-Versionen öffnen ältere Turnierdateien; jede Datei vermerkt, mit welcher
+  Version sie gespeichert wurde. Ein automatischer Test öffnet Beispiel-Turnierdateien früherer Versionen.
+- **Fehler behoben – Geschlecht beim XML-Import:** Spielerinnen (in click-TT `sex="0"`) werden als „w“ übernommen –
+  vorher blieb die Spalte „G“ leer, z. B. wenn nur eine Mädchen-Klasse importiert wurde.
+- **Fehler behoben – Zurückziehen nach „Verfügbar“:** Wer aus „In der Klasse“ zurückgezogen wird, bleibt angemeldet und
+  ist wieder „gemeldet“ (bzw. wieder Nachrücker) – vorher ging die Meldung verloren (kein „gemeldet“, kein Setzplatz,
+  „Alle anwesenden Gemeldeten übernehmen“ griff nicht mehr). Gilt für Übernahmen ab 0.42.0.
 
 ## Neu in 0.41.0
 

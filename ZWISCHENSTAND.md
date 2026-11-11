@@ -1,8 +1,8 @@
-# Zwischenstand HTS 0.41.0 (08.11.2026)
+# Zwischenstand HTS 0.42.0 (11.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
-Bei jedem „kompilieren“: Quellcode (src, pom.xml, README.md, ZWISCHENSTAND.md, CLAUDE.md, docs, samples, .gitignore,
+Bei jedem „kompilieren“: Quellcode (src, pom.xml, README.md, ZWISCHENSTAND.md, CLAUDE.md, LICENSE, NOTICE, docs, samples, .gitignore,
 „HTS starten.bat“) als EIN Commit „HTS x.y.z“ auf main in https://github.com/Knutilon/Hamburger-Turniersoftware---HTS
 (Klon /home/claude/hamburger-turniersoftware---hts, push mit -c push.negotiate=false). Keine Releases/Tags, keine
 alte Versionshistorie. Windows-ZIP weiter per Datei. Repo ist öffentlich. 0.28.0 hochgeladen (Commit b4cb270).
@@ -14,9 +14,22 @@ https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.
 (+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
-## Feature-Sammlung für 0.42.0 (NICHT kompilieren – bis „… kompilieren“)
+## Weg zu 1.0.0 (11.11.2026, mit dem Nutzer besprochen)
 
-(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ anlegen)
+- Praxistest 1 erfolgreich; Praxistest 2 am Wochenende 14./15.11.2026.
+- Kern ist vollständig. Handy-/Netzwerk-Funktionen (Handy-Zugang, Live-Anzeige, Anmeldung per QR-Code) gehören NICHT
+  zum Kern und blockieren 1.0.0 nicht.
+- Turnierdateien bleiben ab 1.0 lesbar (Feature-Sammlung Punkt „Turnierdateien bleiben lesbar“).
+- Plan: 0.9.0 als Testversion (nur noch Fehlerbehebungen), nach erfolgreichem Praxiseinsatz 1.0.0; danach 1.0.x =
+  Fehlerbehebungen, 1.x.0 = neue Funktionen.
+- 0.42.0 umgesetzt (11.11.2026). Nächstes „kompilieren“ = 0.9.0 als Testversion (nur Fehlerbehebungen).
+- click-TT-Upload der Ergebnisdatei wird beim Praxistest am Wochenende geprüft; klappt er, die Einschränkung unter
+  „Bekannte Grenzen“ in Doku/README streichen.
+
+## Feature-Sammlung für 0.9.0 (NICHT kompilieren – bis „… kompilieren“)
+
+(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; 0.9.0 = Testversion, nur
+Fehlerbehebungen – neue Funktionen erst nach 1.0.0)
 
 1. ZURÜCKGESTELLT (07.11.2026, auf Wunsch des Nutzers – beim Kompilieren NICHT umsetzen): WLAN-QR-CODE AUF DEM
    AUSHANG (Issue #34): In HTS einmal WLAN-Name und Passwort eintragen; der Aushang
@@ -29,7 +42,91 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 ## Umgesetzt
 
-0.41.0 (Issues #68–#70). README „Neu in 0.41.0“.
+0.42.0 (Issues #71–#76). README „Neu in 0.42.0“.
+#71 Sex.fromClickTt: 0 und 2 = weiblich. #75 Player merkt die Herkunft einer Klassenzuordnung (classOrigins:
+registration / waiting-list, Turnierdatei: <entry from="…">); removeFromClass stellt Meldung bzw. Warteliste wieder her
+(auch removePair, Doppel); erneuter Import setzt die Herkunft. Ältere Turnierdateien kennen die Herkunft nicht.
+#74 Ui.growingSearch (min = Platzhalterbreite, max 450, HBox-Hgrow bzw. FlowPane-Restplatz) für Klassen (Verfügbar,
+In der Klasse, Doppel), Spiele, Auslosung. #72 Datei-Kopf in allen 102 .java-Dateien (FileHeaderTest). #73 LICENSE =
+AGPL-3.0-Text (choosealicense), NOTICE, README-Kopf, Info-Fenster (HtsApp.AUTHOR, InfoDialog.NOTICE), pom <licenses>,
+LiveServer.SOURCE_FOOTER „Quellcode (AGPL-3.0)“; ZIP mit LICENSE.txt + NOTICE.txt. #76 Datei-Attribut hts-version,
+Zusage im Javadoc von FORMAT_VERSION (bleibt 7, neue Angaben nur optional), Beispieldateien
+src/test/resources/turnierdatei-0.41.0.hts (mit dem 0.41-Jar erzeugt) und -0.42.0.hts samt .properties
+(TournamentFileCompatTest; Generator src/test/java/de/hts/persistence/CompatFixtureGenerator.java – bei JEDEM
+„kompilieren“ mit der neuen Version eine weitere Datei turnierdatei-<Version>.hts/.properties ablegen).
+Doku-Markdown: Lizenz, Dateien-Zusage, Zurückziehen (Claude-Docs-Dokument/PDF nicht neu erzeugt). Tests: 218 bestanden.
+Bildschirmfotos 1093×614, 911×512, 1900×1000 (Klassen, Teilnehmende, Spiele).
+Feature-Sammlung 0.42.0 (zur Nachverfolgung):
+2. BUG (11.11.2026, Meldung des Nutzers mit Turnierteilnehmer_08.11.2026.xml): GESCHLECHT BEIM XML-IMPORT. Wird beim
+   Import nur die Klasse „Mädchen 13 Einzel“ ausgewählt, stehen die Spielerinnen ohne Wert in Spalte „G“. Ursache:
+   click-TT schreibt bei Spielerinnen sex="0" (Spieler sex="1"); Sex.fromClickTt kennt nur 1 = m und 2 = w, 0 wird
+   „unbekannt“. Lösung: sex="0" als „w“ importieren (2 weiterhin als „w“ lesen). Test mit der Beispieldatei ergänzen.
+3. DATEI-HEADER (11.11.2026): Am Anfang jeder .java-Datei ein Kommentarblock mit dem Copyright-Hinweis
+   „Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany“. ENTSCHIEDEN (Nutzer, 11.11.2026): alle
+   .java-Dateien in src/main und src/test (ca. 100), Block vor „package“, genau in dieser Form:
+     /*
+      * HTS – Hamburger Turniersoftware
+      * Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+      *
+      * SPDX-License-Identifier: AGPL-3.0-or-later
+      * Dieses Programm ist freie Software unter der GNU Affero General
+      * Public License v3.0; Einzelheiten in der Datei LICENSE.
+      */
+   Ein Test prüft, dass keine Datei ohne Header ist.
+4. LIZENZ AUF AGPL ÄNDERN (11.11.2026): Lizenz von GPL-3.0 auf GNU Affero General Public License v3.0 umstellen.
+   ENTSCHIEDEN (Nutzer, 11.11.2026): „AGPL-3.0 oder später“ (AGPL-3.0-or-later); Quellcode-Link auf den Handy-Seiten
+   ja. LICENSE durch den AGPL-3.0-Text ersetzen; Info-Fenster, README, pom.xml
+   (<licenses>), Dokumentation und Datei-Header anpassen. Wegen des Handy-Zugangs (Netzwerk-Klausel § 13) auf den
+   Handy-Seiten unten einen Link „Quellcode (AGPL-3.0)“ zum GitHub-Projekt zeigen. Mitgelieferte Bibliotheken
+   (PDFBox Apache 2.0, JavaFX/Temurin GPL 2 mit Classpath Exception) sind damit vereinbar. Bisher veröffentlichte
+   Versionen bleiben unter GPL-3.0.
+   LIZENZHINWEIS (11.11.2026, Text vom Nutzer, Tippfehler korrigiert, voller Name – ENTSCHIEDEN): neue Datei NOTICE
+   (LICENSE bleibt reiner AGPL-Text, damit GitHub die Lizenz erkennt), derselbe Hinweis oben in der README und im
+   Info-Fenster:
+     HTS - Hamburger Turniersoftware is an application for executing tournaments
+     Copyright (C) 2026  Richard Johan Frederich Michaelis, Hamburg, Germany
+
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU Affero General Public License as
+     published by the Free Software Foundation, either version 3 of the
+     License, or (at your option) any later version.
+
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU Affero General Public License for more details.
+
+     You should have received a copy of the GNU Affero General Public License
+     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+   Copyright-Name überall einheitlich „Richard Johan Frederich Michaelis, Hamburg, Germany“ (auch README-Kopf,
+   Info-Fenster, Datei-Header #72).
+5. SUCHFELDER WACHSEN MIT (11.11.2026, Screenshot Klassenansicht „Verfügbar“ / „In der Klasse“): Auf größeren
+   Bildschirmen die Suchzeilen breiter machen. Dabei fiel auf: der Platzhalter „Suchen: Vorname, Nachname, Verein“ ist
+   dort abgeschnitten („Suchen: Vorname, Na“) – verstößt gegen „Texte nie abkürzen“. Umsetzung: Suchfelder in
+   Klassen (Verfügbar, In der Klasse, Doppelpaarungen), Spiele und Auslosung mindestens so breit wie der Platzhalter;
+   wird die Zeile breiter, wächst das Suchfeld mit (Filter-Auswahl und „nur passende“ behalten ihre Breite), höchstens
+   450 Bildpunkte (ENTSCHIEDEN, Nutzer 11.11.2026); wird es eng, bricht die Filterzeile um statt den Platzhalter zu kürzen.
+6. BUG (11.11.2026): ZURÜCKZIEHEN NACH „VERFÜGBAR“ LÖSCHT DIE MELDUNG. Zieht man Teilnehmende von „In der Klasse“
+   zurück nach „Verfügbar“, soll nur die Zuordnung zur Klasse entfallen – angemeldet (anwesend) und gemeldet bleiben.
+   Geprüft mit Turnierteilnehmer_08.11.2026.xml: Die Anwesenheit bleibt erhalten, aber die MELDUNG geht verloren
+   (Player.addToClass entfernt registrations/waitingLists, unassign stellt sie nicht wieder her). Folgen: Spalte
+   „Klassen“ zeigt nicht mehr „gemeldet: …“, keine Markierung „gemeldet“ unter „Verfügbar“, kein Setzplatz, „Alle
+   anwesenden Gemeldeten übernehmen“ holt die Person nicht mehr; ein Nachrücker verliert seinen Wartelistenplatz.
+   ENTSCHIEDEN (Nutzer, 11.11.2026: „passt so“): beim Übernehmen merken, ob die Person gemeldet bzw. Nachrücker war (auch in der
+   Turnierdatei); beim Zurückziehen wieder „gemeldet“ bzw. „Nachrücker“. Anwesenheit bleibt unverändert. Gilt für
+   Ziehen, Doppelklick und Pfeilknopf, Einzel und Doppel. Test ergänzen.
+7. TURNIERDATEIEN BLEIBEN LESBAR (11.11.2026, Weg zu 1.0.0, vom Nutzer freigegeben): Jede neuere HTS-Version öffnet
+   ältere Turnierdateien. Grundlage gibt es schon (format-version, derzeit 7; neuere Formate werden mit Hinweis
+   abgelehnt). Vorschlag: zusätzlich die Programmversion in die Datei schreiben; je Formatänderung eine Umwandlung beim
+   Öffnen; je veröffentlichter Version eine Beispiel-Turnierdatei (mit Gruppen, KO, Qualifikation, Doppel, Anwesenheit)
+   unter src/test/resources ablegen, ein Test öffnet alle und prüft Klassen, Spiele und Ergebnisse. In Doku und README
+   den Satz „Neuere Versionen müssen ältere Turnierdateien nicht unbedingt lesen können“ ersetzen durch die Zusage.
+
+
+
+0.41.0 (Issues #68–#70). README „Neu in 0.41.0“. DOKU AKTUALISIERT auf 0.41.0 (11.11.2026, auf Zuruf): docs/HTS-Dokumentation.md, PDF (29 Seiten) und
+Claude-Docs-Dokument (neue Abschnitte 11 Handy-Zugang, 12 Vorgabeturnier/2er-3er, alter Abschnitt 11 jetzt 13; Statusbild
+mit „nicht gespielt“). Noch nicht im Repository (Commit mit dem nächsten „kompilieren“ oder auf Zuruf).
 #68 SearchChoice (Textfeld + Popup-Liste) statt editierbarer ComboBox für die Vereinsfilter (PlayerTableView,
 ClassesView); Ui.makeSearchable entfernt. #69 PlayerTableView: Klick auf einzige markierte Zeile / leeren Bereich / Esc
 hebt die Markierung auf (nicht beim Kästchen „Angemeldet“, Doppelklick bleibt). #70 decideQualification(false): Phase

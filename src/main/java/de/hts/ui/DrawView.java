@@ -1,3 +1,11 @@
+/*
+ * HTS – Hamburger Turniersoftware
+ * Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Dieses Programm ist freie Software unter der GNU Affero General
+ * Public License v3.0; Einzelheiten in der Datei LICENSE.
+ */
 package de.hts.ui;
 
 import de.hts.tournament.Entrant;
@@ -360,8 +368,7 @@ public final class DrawView {
         settingsSummary.setTextAlignment(javafx.scene.text.TextAlignment.RIGHT);
         // Suche in der Gruppenphase
         groupSearch.setPromptText("Suchen: Vorname, Nachname, Verein");
-        groupSearch.setPrefWidth(Ui.textWidth("Suchen: Vorname, Nachname, Verein", false, 13) + 36);   // Platzhalter vollständig
-        groupSearch.setMinWidth(Region.USE_PREF_SIZE);
+        Ui.growingSearch(groupSearch);                     // 0.42 (#74): Platzhalter vollständig, wächst bis 450
         searchDelay.setOnFinished(e -> applySearch());
         groupSearch.textProperty().addListener((o, a, b) -> {
             if (!updating && current != null) searchDelay.playFromStart();

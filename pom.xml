@@ -6,8 +6,15 @@
 
     <groupId>de.hts</groupId>
     <artifactId>hts</artifactId>
-    <version>0.41.0</version>
+    <version>0.42.0</version>
     <name>Hamburger Turniersoftware (HTS)</name>
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License v3.0 or later</name>
+            <url>https://www.gnu.org/licenses/agpl-3.0.html</url>
+            <comments>SPDX-License-Identifier: AGPL-3.0-or-later; Hinweis in der Datei NOTICE</comments>
+        </license>
+    </licenses>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>

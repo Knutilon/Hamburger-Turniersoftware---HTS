@@ -1,3 +1,11 @@
+/*
+ * HTS – Hamburger Turniersoftware
+ * Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Dieses Programm ist freie Software unter der GNU Affero General
+ * Public License v3.0; Einzelheiten in der Datei LICENSE.
+ */
 package de.hts.ui;
 
 /** Programmweite Einstellungen der Oberfläche. */
@@ -116,5 +124,47 @@ public final class Ui {
             if (b) javafx.application.Platform.runLater(calc);
         });
         javafx.application.Platform.runLater(calc);
+    }
+
+    /** 0.42 (#74): größte Breite eines mitwachsenden Suchfelds. */
+    public static final double SEARCH_MAX_WIDTH = 450;
+
+    /**
+     * 0.42 (#74): Suchfeld mindestens so breit wie sein Platzhalter (nie abgeschnitten), auf breiten Bildschirmen
+     * wächst es mit dem freien Platz seiner Zeile bis {@link #SEARCH_MAX_WIDTH}. In einer HBox über Hgrow, in einer
+     * FlowPane über den Platz, den die übrigen Elemente der Zeile übrig lassen (wird es eng, bricht die Zeile um).
+     */
+    public static void growingSearch(javafx.scene.control.TextField f) {
+        double min = Math.ceil(textWidth(f.getPromptText(), false, 13) + 36);
+        f.setPrefColumnCount(1);
+        f.setMinWidth(min);
+        f.setPrefWidth(min);
+        f.setMaxWidth(SEARCH_MAX_WIDTH);
+        javafx.scene.layout.HBox.setHgrow(f, javafx.scene.layout.Priority.ALWAYS);
+        javafx.beans.value.ChangeListener<Object> relayout = (o, a, b) -> fitInFlow(f, min);
+        f.parentProperty().addListener((o, oldP, newP) -> {
+            if (oldP instanceof javafx.scene.layout.FlowPane old) old.widthProperty().removeListener(relayout);
+            if (newP instanceof javafx.scene.layout.FlowPane fp) {
+                fp.widthProperty().addListener(relayout);
+                fp.needsLayoutProperty().addListener((oo, aa, bb) -> {
+                    if (bb) javafx.application.Platform.runLater(() -> fitInFlow(f, min));
+                });
+                javafx.application.Platform.runLater(() -> fitInFlow(f, min));
+            }
+        });
+    }
+
+    private static void fitInFlow(javafx.scene.control.TextField f, double min) {
+        if (!(f.getParent() instanceof javafx.scene.layout.FlowPane fp) || fp.getWidth() <= 0) return;
+        double others = 0;
+        int n = 0;
+        for (javafx.scene.Node c : fp.getChildren()) {
+            if (c == f || !c.isManaged()) continue;
+            others += c.prefWidth(-1);
+            n++;
+        }
+        double free = fp.getWidth() - fp.getInsets().getLeft() - fp.getInsets().getRight() - others - n * fp.getHgap() - 2;
+        double w = Math.max(min, Math.min(SEARCH_MAX_WIDTH, Math.floor(free)));
+        if (Math.abs(f.getPrefWidth() - w) > 0.5) f.setPrefWidth(w);
     }
 }
