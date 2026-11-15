@@ -120,6 +120,7 @@ public final class WorkspaceView {
         participants.setClassSource(() -> tournament.rootClasses().stream().map(PlayingClass::getName).toList());
         participants.setSeedSource(name -> tournament.findClass(name).map(tournament::seedPositions).orElse(java.util.Map.of()));   // 0.39 (#62)
         participants.setFeeSource(tournament::feeOf, tournament::hasFees);                                                         // 1.0 (#82)
+        participants.setPendingMark(p -> tournament.isRunning() && tournament.paymentPending(p));                                  // 1.1 (#89)
         classes.setOnShowOpen(c -> {               // 0.37: „Offene Personen anzeigen“
             showPage(Page.PARTICIPANTS);
             participants.showClass(c.getName());
@@ -349,8 +350,9 @@ public final class WorkspaceView {
         right.setRowValignment(javafx.geometry.VPos.CENTER);
         right.setMinWidth(0);
         HBox.setHgrow(right, Priority.ALWAYS);
-        HBox titleRow = new HBox(12, titles, right);
-        titleRow.setAlignment(Pos.CENTER_LEFT);
+        // 1.1: reicht die Breite nicht für Titel und Knöpfe nebeneinander, rutschen die Knöpfe in eine eigene Zeile
+        // darunter (vorher überlagerten sie bei 125 %/150 % Skalierung die Zeile „Gestartet …“)
+        HeaderRow titleRow = new HeaderRow(titles, right);
         titleRow.getStyleClass().add("page-header");
 
         pageActions.setAlignment(Pos.CENTER_LEFT);
@@ -627,16 +629,19 @@ public final class WorkspaceView {
         MenuItem confirmReq = new MenuItem("Abmeldung bestätigen");
         confirmReq.setOnAction(e -> setAttendance(de.hts.player.Attendance.WITHDRAWN, "endgültig abgemeldet"));
         // 1.0 (#82): Startgebühr per Rechtsklick
-        MenuItem payCash = new MenuItem("Startgebühr bezahlt (bar)");
+        // 1.1 (#89): Bezahlt – bar / Überweisung, Gebühr erlassen, Zahlung rückgängig
+        MenuItem payCash = new MenuItem("Bezahlt – bar");
         payCash.setOnAction(e -> paySelected(de.hts.player.Player.Payment.CASH));
-        MenuItem payTransfer = new MenuItem("Startgebühr bezahlt (Überweisung)");
+        MenuItem payTransfer = new MenuItem("Bezahlt – Überweisung");
         payTransfer.setOnAction(e -> paySelected(de.hts.player.Player.Payment.TRANSFER));
-        MenuItem payUndo = new MenuItem("Zahlung zurücknehmen");
+        MenuItem payWaive = new MenuItem("Gebühr erlassen");
+        payWaive.setOnAction(e -> waiveSelected());
+        MenuItem payUndo = new MenuItem("Zahlung rückgängig");
         payUndo.setOnAction(e -> undoPaymentSelected());
         MenuItem receipt = new MenuItem("Quittung (PDF)");
         receipt.setOnAction(e -> receiptSelected());
         SeparatorMenuItem paySep = new SeparatorMenuItem();
-        ContextMenu menu = new ContextMenu(present, withdraw, undo, confirmReq, paySep, payCash, payTransfer, payUndo, receipt,
+        ContextMenu menu = new ContextMenu(present, withdraw, undo, confirmReq, paySep, payCash, payTransfer, payWaive, payUndo, receipt,
                 new SeparatorMenuItem(), edit, new SeparatorMenuItem(), delete);
         menu.setOnShowing(e -> {
             Player p = participants.getSelected();
@@ -644,8 +649,9 @@ public final class WorkspaceView {
             paySep.setVisible(fees);
             payCash.setVisible(fees && !p.isPaid() && tournament.feeOf(p) > 0);
             payTransfer.setVisible(fees && !p.isPaid() && tournament.feeOf(p) > 0);
+            payWaive.setVisible(fees && !p.isPaid() && tournament.feeOf(p) > 0);
             payUndo.setVisible(fees && p.isPaid());
-            receipt.setVisible(fees && p.isPaid());
+            receipt.setVisible(fees && p.isPaid() && p.getPayment() != de.hts.player.Player.Payment.WAIVED);
             de.hts.player.Attendance a = p == null ? null : p.getAttendance();
             undo.setVisible(a == de.hts.player.Attendance.WITHDRAWN);
             confirmReq.setVisible(a == de.hts.player.Attendance.WITHDRAW_REQUESTED);
@@ -1066,19 +1072,21 @@ public final class WorkspaceView {
         updatePdf.run();
         participants.countTextProperty().addListener((o, a, b) -> updatePdf.run());
         // 1.0 (#82): Startgebühren – Markierte als bezahlt, Verein abrechnen, Kassenübersicht
-        MenuItem mPayCash = new MenuItem("Startgebühr bezahlt (bar)");
+        MenuItem mPayCash = new MenuItem("Bezahlt – bar");
         mPayCash.setOnAction(e -> paySelected(de.hts.player.Player.Payment.CASH));
-        MenuItem mPayTransfer = new MenuItem("Startgebühr bezahlt (Überweisung)");
+        MenuItem mPayTransfer = new MenuItem("Bezahlt – Überweisung");
         mPayTransfer.setOnAction(e -> paySelected(de.hts.player.Player.Payment.TRANSFER));
-        MenuItem mPayUndo = new MenuItem("Zahlung zurücknehmen");
+        MenuItem mPayWaive = new MenuItem("Gebühr erlassen");
+        mPayWaive.setOnAction(e -> waiveSelected());
+        MenuItem mPayUndo = new MenuItem("Zahlung rückgängig");
         mPayUndo.setOnAction(e -> undoPaymentSelected());
         MenuItem mReceipt = new MenuItem("Quittung für Markierte (PDF)");
         mReceipt.setOnAction(e -> receiptSelected());
         SeparatorMenuItem feeSep = new SeparatorMenuItem();
-        marked.getItems().addAll(feeSep, mPayCash, mPayTransfer, mPayUndo, mReceipt);
+        marked.getItems().addAll(feeSep, mPayCash, mPayTransfer, mPayWaive, mPayUndo, mReceipt);
         marked.setOnShowing(e -> {
             boolean fees = tournament.hasFees();
-            for (MenuItem mi : new MenuItem[]{feeSep, mPayCash, mPayTransfer, mPayUndo, mReceipt}) mi.setVisible(fees);
+            for (MenuItem mi : new MenuItem[]{feeSep, mPayCash, mPayTransfer, mPayWaive, mPayUndo, mReceipt}) mi.setVisible(fees);
         });
         javafx.scene.control.MenuButton fees = new javafx.scene.control.MenuButton("Startgebühren");
         fees.getStyleClass().add("action-menu");
@@ -1119,14 +1127,31 @@ public final class WorkspaceView {
         refreshAfterAttendance();
     }
 
+    /** 1.1 (#89): Gebühr der Markierten erlassen (mit optionalem Grund). */
+    private void waiveSelected() {
+        List<Player> sel = selectedPlayers().stream().filter(p -> !p.isPaid() && tournament.feeOf(p) > 0).toList();
+        if (sel.isEmpty()) {
+            setStatus(participants.getTable().getSelectionModel().isEmpty() ? "Bitte zuerst Teilnehmende markieren."
+                    : "Unter den Markierten ist keine offene Startgebühr.");
+            return;
+        }
+        FeeWaiveDialog d = new FeeWaiveDialog(stage, tournament, sel);
+        String reason = d.showAndWait().orElse(null);
+        if (reason == null) return;
+        int sum = sel.stream().mapToInt(tournament::feeOf).sum();
+        tournament.waiveFee(sel, reason);
+        setStatus(sel.size() + (sel.size() == 1 ? " Startgebühr" : " Startgebühren") + " erlassen: " + Tournament.euro(sum) + ".");
+        refreshAfterAttendance();
+    }
+
     private void undoPaymentSelected() {
         List<Player> sel = selectedPlayers().stream().filter(de.hts.player.Player::isPaid).toList();
         if (sel.isEmpty()) {
             setStatus("Unter den Markierten hat niemand bezahlt.");
             return;
         }
-        if (!confirm("Zahlung zurücknehmen", (sel.size() == 1 ? "Die Zahlung von " + sel.get(0).getDisplayName() : sel.size() + " Zahlungen")
-                + " zurücknehmen? Die Startgebühr ist danach wieder offen.")) return;
+        if (!confirm("Zahlung rückgängig", (sel.size() == 1 ? "Die Zahlung von " + sel.get(0).getDisplayName() : sel.size() + " Zahlungen")
+                + " rückgängig machen? Die Startgebühr ist danach wieder offen; „angemeldet“ und die Klassen bleiben.")) return;
         tournament.undoPayment(sel);
         setStatus(sel.size() + " Zahlung(en) zurückgenommen.");
         refreshAfterAttendance();
@@ -1197,6 +1222,44 @@ public final class WorkspaceView {
         refreshAfterAttendance();
     }
 
+    private boolean askingPhone;
+
+    /** 1.1 (#93): per Handy gemeldete Ergebnisse bestätigen (übernehmen oder verwerfen). */
+    private void askPhoneResults() {
+        if (askingPhone) return;
+        if (tournament.isPhoneResultsDirect()) {
+            onRunningChanged();
+            return;
+        }
+        askingPhone = true;
+        try {
+            for (Tournament.PhoneResult r : tournament.pendingPhoneResults()) {
+                de.hts.tournament.Match m = r.match();
+                ButtonType take = new ButtonType("Übernehmen", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+                ButtonType drop = new ButtonType("Verwerfen", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+                javafx.scene.control.Alert a = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION,
+                        tournament.entrantName(m, m.getA()) + "  –  " + tournament.entrantName(m, m.getB()) + "\n" + r.setsText(), take, drop);
+                a.initOwner(stage);
+                a.setTitle("Ergebnis vom Handy");
+                a.setHeaderText("Ergebnis vom Handy: " + tournament.tableName(r.table()) + " · " + m.getClassName() + " · Spiel " + m.getNumber());
+                if (a.showAndWait().orElse(drop) == take) {
+                    try {
+                        tournament.acceptPhoneResult(r);
+                        setStatus("Spiel " + m.getNumber() + ": Ergebnis vom Handy übernommen (" + r.setsText() + ").");
+                    } catch (IllegalArgumentException | IllegalStateException ex) {
+                        error("Ergebnis vom Handy", ex.getMessage());
+                    }
+                } else {
+                    tournament.rejectPhoneResult(r);
+                    setStatus("Spiel " + m.getNumber() + ": Ergebnis vom Handy verworfen.");
+                }
+            }
+        } finally {
+            askingPhone = false;
+        }
+        onRunningChanged();
+    }
+
     private void refreshAfterAttendance() {
         participants.refresh();
         classes.refresh();
@@ -1252,7 +1315,10 @@ public final class WorkspaceView {
                 setStatus("Handy-Zugang beendet.");
             } else {
                 try {
-                    liveServer = new de.hts.web.LiveServer(tournament, javafx.application.Platform::runLater, this::refreshAfterAttendance);
+                    liveServer = new de.hts.web.LiveServer(tournament, javafx.application.Platform::runLater, () -> {
+                        refreshAfterAttendance();
+                        askPhoneResults();                       // 1.1 (#93)
+                    });
                     liveServer.start();
                     setStatus("Handy-Zugang gestartet.");
                 } catch (java.io.IOException ex) {
@@ -1281,8 +1347,43 @@ public final class WorkspaceView {
                     name.replaceAll("[\\\\/:*?\"<>|]", "_") + ".pdf", this::setStatus);
             if (liveServer == null) setStatus("Hinweis: Der Handy-Zugang ist noch nicht gestartet.");
         });
+        // 1.1 (#93): Ergebnisse per Handy eintragen (Standard aus)
+        javafx.scene.control.CheckBox phone = new javafx.scene.control.CheckBox("Ergebnisse per Handy eintragen (je Tisch ein QR-Code)");
+        phone.setSelected(tournament.isPhoneResults());
+        phone.setWrapText(true);
+        javafx.scene.control.CheckBox direct = new javafx.scene.control.CheckBox("Handy-Ergebnisse direkt übernehmen (ohne Bestätigung)");
+        direct.setSelected(tournament.isPhoneResultsDirect());
+        direct.setWrapText(true);
+        direct.disableProperty().bind(phone.selectedProperty().not());
+        Button tableQr = new Button("QR-Codes für die Tische drucken");
+        tableQr.getStyleClass().add("pill");
+        tableQr.disableProperty().bind(phone.selectedProperty().not());
+        phone.selectedProperty().addListener((o, a, b) -> {
+            tournament.setPhoneResults(b);
+            setStatus(b ? "Ergebnisse per Handy eingeschaltet." : "Ergebnisse per Handy ausgeschaltet.");
+        });
+        direct.selectedProperty().addListener((o, a, b) -> tournament.setPhoneResultsDirect(b));
+        tableQr.setOnAction(e -> {
+            String host = de.hts.web.LiveServer.localAddresses().stream().findFirst().orElse(null);
+            if (host == null) {
+                error("QR-Codes", "Dieser Rechner hat keine Netzwerkverbindung – bitte mit dem WLAN-Router verbinden.");
+                return;
+            }
+            int port = liveServer != null ? liveServer.port() : de.hts.web.LiveServer.PORT;
+            java.util.Map<Integer, String> urls = new java.util.LinkedHashMap<>();
+            for (int tb = 1; tb <= tournament.getTableCount(); tb++) urls.put(tb, de.hts.web.LiveServer.resultUrl(host, port, tournament, tb));
+            String name = "Tisch-QR-Codes " + (tournament.getName() == null ? "Turnier" : tournament.getName());
+            PdfViewer.show(stage, tournament, name, de.hts.report.PdfReports.tableQrSheet(tournament, urls),
+                    name.replaceAll("[\\\\/:*?\"<>|]", "_") + ".pdf", this::setStatus);
+        });
+        Label phoneHint = new Label("Am Tisch den QR-Code scannen: Das Handy zeigt das laufende Spiel, die Sätze werden wie in HTS geprüft. "
+                + "Gemeldete Ergebnisse erscheinen hier im Programm zur Bestätigung (übernehmen oder verwerfen).");
+        phoneHint.getStyleClass().add("hint");
+        phoneHint.setWrapText(true);
+        phoneHint.setMinHeight(Region.USE_PREF_SIZE);
+        VBox phoneBox = new VBox(8, phone, direct, tableQr, phoneHint);
         update.run();
-        card.getChildren().addAll(state, buttons, codes, hints);
+        card.getChildren().addAll(state, buttons, codes, phoneBox, hints);
         javafx.scene.control.ScrollPane sp = new javafx.scene.control.ScrollPane(card);
         sp.setFitToWidth(true);
         sp.getStyleClass().add("page-scroll");
@@ -1331,5 +1432,69 @@ public final class WorkspaceView {
         a.setTitle(title);
         a.setHeaderText(null);
         a.showAndWait();
+    }
+
+    /** 1.1: Titel links, Knöpfe rechts – bei zu wenig Breite die Knöpfe in einer eigenen Zeile (rechtsbündig) darunter. */
+    static final class HeaderRow extends javafx.scene.layout.Pane {
+        private static final double GAP = 12;
+        private final Region left;
+        private final Region right;
+
+        HeaderRow(Region left, Region right) {
+            this.left = left;
+            this.right = right;
+            getChildren().addAll(left, right);
+        }
+
+        private double innerWidth(double w) {
+            return w - snappedLeftInset() - snappedRightInset();
+        }
+
+        @Override
+        public javafx.geometry.Orientation getContentBias() {
+            return javafx.geometry.Orientation.HORIZONTAL;       // Höhe hängt von der Breite ab (eine oder zwei Zeilen)
+        }
+
+        private boolean oneRow(double w) {
+            return w < 0 || left.prefWidth(-1) + GAP + right.prefWidth(-1) <= innerWidth(w) + 0.5;
+        }
+
+        @Override
+        protected double computePrefWidth(double h) {
+            return snappedLeftInset() + snappedRightInset() + left.prefWidth(-1) + GAP + right.prefWidth(-1);
+        }
+
+        @Override
+        protected double computeMinWidth(double h) {
+            return snappedLeftInset() + snappedRightInset() + left.minWidth(-1);
+        }
+
+        @Override
+        protected double computePrefHeight(double w) {
+            double ins = snappedTopInset() + snappedBottomInset();
+            if (oneRow(w)) return ins + Math.max(left.prefHeight(-1), right.prefHeight(right.prefWidth(-1)));
+            return ins + left.prefHeight(-1) + GAP / 2 + right.prefHeight(innerWidth(w));
+        }
+
+        @Override
+        protected double computeMinHeight(double w) {
+            return computePrefHeight(w);
+        }
+
+        @Override
+        protected void layoutChildren() {
+            double x0 = snappedLeftInset(), y0 = snappedTopInset(), iw = innerWidth(getWidth());
+            double lw = Math.min(left.prefWidth(-1), iw), lh = left.prefHeight(lw);
+            if (oneRow(getWidth())) {
+                double rw = right.prefWidth(-1), rh = right.prefHeight(rw);
+                double h = Math.max(lh, rh);
+                left.resizeRelocate(x0, y0 + (h - lh) / 2, lw, lh);
+                right.resizeRelocate(x0 + iw - rw, y0 + (h - rh) / 2, rw, rh);
+            } else {
+                left.resizeRelocate(x0, y0, lw, lh);
+                double rh = right.prefHeight(iw);
+                right.resizeRelocate(x0, y0 + lh + GAP / 2, iw, rh);
+            }
+        }
     }
 }

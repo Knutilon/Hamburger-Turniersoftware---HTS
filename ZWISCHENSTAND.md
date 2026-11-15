@@ -1,4 +1,4 @@
-# Zwischenstand HTS 1.0.0 (15.11.2026)
+# Zwischenstand HTS 1.1.0 (15.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -28,12 +28,12 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 - Nutzer 15.11.2026: ALLE Punkte der Feature-Sammlung sind für 1.0.0: #34 WLAN-QR-Code, #77 Zeitplan, #78 doppelte
   Person beim erneuten Import, #79 Spielerabgleich (Design freigegeben); #34 dagegen ersetzt durch „Reiter Mobile
   Einstellungen ausblenden“ (Handy-Funktionen kommen später wieder).
-- click-TT-Upload der Ergebnisdatei wird beim Praxistest am Wochenende geprüft; klappt er, die Einschränkung unter
-  „Bekannte Grenzen“ in Doku/README streichen.
+- click-TT-Upload der Ergebnisdatei: Praxistest erfolgreich (Nutzer 15.11.2026); Einschränkung unter „Bekannte
+  Grenzen“ in der Doku gestrichen (mit 1.1.0 ausgeliefert).
 
-## Feature-Sammlung für 1.1.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 1.2.0 (NICHT kompilieren – bis „… kompilieren“)
 
-(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.0.x)
+(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.1.x)
 
 1. WIEDER ZURÜCKGESTELLT (15.11.2026: statt dessen Punkt 5 – Reiter „Mobile Einstellungen“ ausblenden; NICHT in
    1.0.0 umsetzen, erst wenn die Handy-Funktionen später ausgebaut werden): WLAN-QR-CODE AUF DEM
@@ -44,8 +44,92 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    als Programmeinstellung auf dem Laptop (gleicher Router für alle Turniere), nicht in der Turnierdatei; Name und
    Passwort zusätzlich als Text unter dem QR-Code; Verschlüsselung WPA/WPA2 (Standard); Feld leer = kein WLAN-QR-Code
    (wie bisher Felder zum Ausfüllen).
+2. LINUX- UND MACOS-PAKET (Nutzer 15.11.2026, Issue #90, für 1.1.0 gewünscht; NICHT umgesetzt, weil die Downloads gesperrt waren – kommt, sobald die Dateien da sind): je Release zusätzlich
+   hts-x.y.z-linux.tar.gz (x86_64, Temurin-21-JRE Linux + JavaFX 21 linux-Jars, „HTS starten.sh“) und ein
+   macOS-Paket (Apple Silicon/aarch64, „HTS starten.command“). Windows-ZIP bleibt. Prüfen: Schrift (Segoe UI →
+   Ersatz), Speicherort, PDF öffnen, Spielzettel-Druck. macOS nicht signiert → README-Hinweis (Rechtsklick „Öffnen“).
+   Neue Komponenten in docs/ABHAENGIGKEITEN.md. ACHTUNG: Download von JRE/JavaFX ist in dieser Umgebung derzeit
+   gesperrt (repo.maven.apache.org, api.adoptium.net abgelehnt) → Domains freigeben lassen oder Dateien vom Nutzer.
+3. HTS ALS APP AUF IPAD/ANDROID (Nutzer 15.11.2026, Issue #92, Wunsch: mit 1.1.0): Machbarkeit klären – JavaFX mobil
+   nur über Gluon/GraalVM; Android-SDK; iPad braucht Mac mit Xcode + Apple-Entwicklerkonto; App-Store; Dateien
+   .hts/XML/PDF auf dem Tablet. In dieser Umgebung nicht baubar (Rückmeldung an Nutzer 15.11.2026).
 
 ## Umgesetzt
+
+1.1.0 (15.11.2026, Issues #83–#89, #91, #93). README „Neu in 1.1.0“.
+Fehlerbehebungen aus dem Belastungstest (vorher „1.0.1“): #83 Tournament.rankKnockout zählt Spiele je Runde; #84
+ClickTtResultExporter.withoutId nur ohne click-TT-Nummer; #85 TablesView (Warteschlange max. 100 + Hinweis, FlowPane,
+Umbruch), Tournament.entrantName per Index/playerById-Cache, Ui.fitColumns misst jeden Text einmal; #87 DrawView
+Verein/Tischname umbrechen (Tischname min = Vorzugsbreite bis 130). Zusätzlich: WorkspaceView.HeaderRow (Knöpfe oben
+rechts bei Platzmangel in eigener Zeile, vorher Überlagerung von „Gestartet …“ bei 911 px), Spalte „Bezahlt“ mit
+fit-min. Doku: click-TT-Upload-Einschränkung gestrichen.
+#86 Tournament.displayedStart/startText („ab 14:25“): DrawView Rundenlabel und KO-Rundentitel, PdfReports (Gruppen
+„Runde k · ab … Uhr“, KO-Überschrift, sonst Spalte Runde), PresentationShow Warteschlange.
+#88 PlayingClass.scheduleStart (Datei: schedule-start), Tournament.scheduleStartOf/nearestTime/setScheduleStart,
+ClassDialog Feld „Startzeit“ (auch bei gesperrter Klasse: „Startzeit speichern“), resumeClass gibt Runde 1 bei
+Startzeit in der Zukunft nicht frei.
+#89 Gebühr nur Einzelklassen (feeClassesOf/hasFees ohne isDoubles), markPaid → angemeldet, Payment.WAIVED +
+waivedReason (Datei: paid="waived", waived-reason), waiveFee, paymentPending, availableForClasses, presentUnpaid,
+takeOverPresentEntries nur Bezahlte; PlayerTableView setPendingMark (hellblau fee-pending-row, Hinweis mit „Nur diese
+zeigen“), ClassesView feeHint + „Bezahlt – bar und in die Klasse“, FeeWaiveDialog, Kassenübersicht „erlassen (nicht
+in der Summe)“, Menütexte „Bezahlt – bar/Überweisung“, „Gebühr erlassen“, „Zahlung rückgängig“.
+#91 TouchSupport (Stilklasse „touch“ bei Fingerbedienung, langes Antippen = Kontextmenü), hts.css .touch-Regeln.
+#93 Tournament phoneResults/phoneResultsDirect (Datei), tableResultToken, submitPhoneResult, Posteingang;
+LiveServer /ergebnis/<Schlüssel>/<Tisch>; Mobile Einstellungen (ausgeblendet): Optionen + „QR-Codes für die Tische
+drucken“ (PdfReports.tableQrSheet); WorkspaceView.askPhoneResults.
+Tests: Version110Test, PhasesTest.koPlatzbereicheNachTatsaechlichAusgeschiedenen; Beispieldatei turnierdatei-1.1.0.hts.
+Belastungstest (60 Klassen) nach den Änderungen ohne Probleme.
+
+Feature-Sammlung 1.1.0 (zur Nachverfolgung):
+1. KO-Endergebnis: Platzbereiche nie größer als die Teilnehmerzahl (120 im 128er-Feld: 65.–120. statt 65.–128.)
+   (Issue #83; Tournament.rankKnockout zählt die Spiele je Runde; Test PhasesTest.koPlatzbereicheNachTatsaechlichAusgeschiedenen).
+2. click-TT-Export: am Turniertag zugeloste Doppel nicht mehr als „von Hand nachgetragen“; withoutId nur für Personen
+   ohne click-TT-Nummer, sonst Grund „Doppel so nicht in click-TT gemeldet“ / „in click-TT nicht für diese Konkurrenz
+   gemeldet“ (Issue #84).
+3. Große Turniere: „Tische“ 11 s → 0,5 s (Warteschlange zeigt die nächsten 100 + Hinweis), „Spiele“ 6 s → 0,2 s
+   (entrantName per Index, Ui.fitColumns misst jeden Text einmal mit wiederverwendetem Messknoten); „Tische“ bei
+   1093×614/911×512 ohne „…“ (FlowPane, Umbruch) (Issue #85).
+4. Gruppenübersicht: lange Vereinsnamen (z. B. „TuS Germania Schnelsen“) und lange Tischnamen in der Spieleliste
+   umbrechen statt „…“ (Issue #87, Hinweis aus Screenshot des Nutzers 15.11.2026; DrawView club/tableInfo).
+2. ZEITPLAN: STARTZEITEN IN DER PHASENÜBERSICHT (Nutzer 15.11.2026, Issue #86, für 1.1.0): Bei Klassen „mit
+   Zeitplan“ steht in der Spieleliste der Phasenübersicht hinter der Rundennummer die geplante Startzeit, z. B.
+   „R2 · ab 14:25“ (Status rechts bleibt). Vor dem Start der Klasse KEINE Zeit (erst ab Start echte Uhrzeiten, aus
+   Tournament.plannedStart). Zusätzlich im PDF der Phase (Gruppen-/KO-Übersicht), auf den Gruppenaushängen
+   (Knopf „Drucken“ je Gruppe, PdfReports.group) und in der Präsentationsansicht – auf den Gruppen-/KO-Seiten
+   ebenso wie in der Warteschlange je Klasse (Nutzer 15.11.2026, 21:03). Nicht auf dem Spielzettel.
+3. ZEITPLAN: STARTZEIT EINSTELLBAR (Nutzer 15.11.2026, Issue #88, für 1.1.0): In „Klasse anlegen/bearbeiten“ bei
+   „mit Zeitplan“ zusätzlich eine Startzeit (Uhrzeit, bis 12 Stunden vor oder nach jetzt); Runde n frühestens
+   Startzeit + (n − 1) × Rundendauer (PlayingClass.scheduleAnchor statt Startzeitpunkt der Klasse).
+   - Feld leer: wie bisher ab dem Start der Klasse.
+   - Startzeit in der Zukunft, Klasse vorher gestartet: Runde 1 wartet bis zur Startzeit (wartende Runde mit
+     „Runde jetzt starten“ vorziehbar, automatische Einreihung zur Startzeit).
+   - Startzeit in der Vergangenheit: fällige Runden laufen nacheinander wie gewohnt, ohne Wartefrage.
+   - Auch nach dem Start änderbar (z. B. Verzögerung): noch nicht gestartete Runden bekommen neue Zeiten, laufende
+     bleiben.
+4. STARTGEBÜHREN ÜBERARBEITEN (Nutzer 15.11.2026, Issue #89, für 1.1.0; Design freigegeben:
+   „HTS – Bezahlt, angemeldet, erlassen“ https://claude.ai/artifact/JqDwZ3NVcuJ4Yjc94VjHrF, Ordner $S/bezahlt):
+   - Gebühr je Person = Summe der EINZELklassen (click-TT competition-Gebühr); Doppel ohne Gebühr; ggf. + Nachmeldung.
+   - „Bezahlt“ (bar/Überweisung) oder „erlassen“ setzt automatisch „angemeldet“ (Attendance PRESENT). Angemeldet ≠
+     bezahlt (angemeldet = technisch, z. B. click-TT-Export; bezahlt = organisatorisch).
+   - Klasse → „Verfügbar“: VOR Turnierstart nur Bezahlte/Erlassene (Hinweis „n Angemeldete haben noch nicht bezahlt
+     …“; „Alle anwesenden Gemeldeten übernehmen“ nimmt nur Bezahlte). NACH Turnierstart auch Angemeldete ohne
+     Zahlung, hellblau markiert (#e8f7f9 / Rand #a8dde4 / Text #0f4552 / Kennzeichnung „offen n,00 €“ #1d6b7a) und
+     übernehmbar; Knopf „Bezahlt – bar und in die Klasse“. In der Klasse bleiben Unbezahlte markiert.
+   - Regel nur, wenn das Turnier Gebühren hat bzw. die Person etwas zu zahlen hat (sonst wie bisher „angemeldet“).
+   - Teilnehmende nach Turnierstart: Angemeldete ohne Zahlung hellblau hinterlegt, Kennzeichnung „offen“; hellblauer
+     Hinweis (KEIN Warngelb) mit Anzahl und Knopf „Nur diese zeigen“; Rechtsklick/Aktion: „Bezahlt – bar“, „Bezahlt –
+     Überweisung“, „Gebühr erlassen“ (ohne „…“), „Zahlung rückgängig“; Summenzeile bezahlt · erlassen · offen (Betrag).
+   - Neuer Zahlungsstand „erlassen“ (Player.Payment.WAIVED) mit optionalem Grund (erscheint in der Kassenübersicht);
+     Fenster „Gebühr erlassen“ zeigt Gebühren je Klasse und Summe; Hinweis hellblau „Gilt wie bezahlt …“.
+   - „Zahlung rückgängig“: angemeldet und Klassen bleiben unverändert.
+6. BEDIENUNG AUF WINDOWS-TABLETS (Nutzer 15.11.2026, Issue #91, für 1.1.0): Touch: Bedienelemente ≥ ca. 44 px,
+   Ziehen per Finger (Teilnehmende, Gruppen, Tische), Kontextmenü per langem Antippen, Wischen zum Blättern,
+   Bildschirmtastatur verdeckt keine Eingaben.
+8. ERGEBNISSE PER HANDY EINTRAGEN (Nutzer 15.11.2026, Issue #93, für 1.1.0 – EINBAUEN, ABER AUSGEBLENDET wie der
+   ganze Handy-Zugang, HtsApp.MOBILE_ENABLED = false): in „Mobile Einstellungen“ Option „Ergebnisse per Handy
+   eintragen“ (Standard aus); je Tisch QR-Code mit geschütztem Link; Handy zeigt das aktuelle Spiel des Tisches,
+   Satzergebnisse mit derselben Prüfung wie in HTS; in HTS „Ergebnis vom Handy“ zur Bestätigung (übernehmen/
+   verwerfen), Option „direkt übernehmen“.
 
 1.0.0 (Issues #77–#82). README „Neu in 1.0.0“.
 #80 HtsApp.MOBILE_ENABLED = false (Menüpunkt weg, Code bleibt). #78 Tournament.adoptManualPersons in
@@ -1032,7 +1116,7 @@ resumeMatch einzeln, resumeClass alle); withdrawMatch; KO in angehaltener Phase 
 löscht/ersetzt Spiele, setzt Folgespiele zurück); Export: Gesamtergebnis-PDF und click-TT „Ergebnisse.xml“
 (ClickTtResultExporter nach poinTT-Vorbild: CTTMatch-Attribute, placement, kampflose ausgelassen, DOCTYPE
 liga.nu TournamentPortal.dtd). Importdatei wird als <id>.clicktt.xml im Turnierordner abgelegt.
-Offen: Export-Datei mit echtem click-TT-Upload testen.
+Erledigt (15.11.2026): Export-Datei mit echtem click-TT-Upload getestet – erfolgreich.
 
 Stand 0.15.0:
 

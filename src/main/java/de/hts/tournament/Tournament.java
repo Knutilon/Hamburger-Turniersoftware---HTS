@@ -51,7 +51,10 @@ public final class Tournament {
     private final BooleanProperty modified = new SimpleBooleanProperty(false);
 
     public Tournament() {
-        players.addListener((ListChangeListener<Player>) c -> markModified());
+        players.addListener((ListChangeListener<Player>) c -> {
+            playerIdCache = null;
+            markModified();
+        });
         classes.addListener((ListChangeListener<PlayingClass>) c -> markModified());
         pairs.addListener((ListChangeListener<DoublesPair>) c -> markModified());
         matches.addListener((ListChangeListener<Match>) c -> markModified());
@@ -1154,8 +1157,58 @@ public final class Tournament {
 
     /** Geplanter Beginn der Runde des Spiels laut Zeitplan. */
     public LocalDateTime plannedStart(PlayingClass phase, Match m) {
-        LocalDateTime anchor = phase.getScheduleAnchor() == null ? LocalDateTime.now() : phase.getScheduleAnchor();
+        LocalDateTime anchor = scheduleStartOf(phase);
+        if (anchor == null) anchor = phase.getScheduleAnchor() == null ? LocalDateTime.now() : phase.getScheduleAnchor();
         return anchor.plusMinutes((long) (slotOf(phase, m) - 1) * rootOf(phase).getScheduleMinutes());
+    }
+
+    /** 1.1 (#88): eingestellte Startzeit, gilt für die erste Phase der Klasse; sonst {@code null}. */
+    public LocalDateTime scheduleStartOf(PlayingClass phase) {
+        PlayingClass root = rootOf(phase);
+        if (root.getScheduleStart() == null) return null;
+        List<PlayingClass> ph = phasesOf(root);
+        return !ph.isEmpty() && ph.get(0) == phase ? root.getScheduleStart() : null;
+    }
+
+    /**
+     * 1.1 (#86): Startzeit der Runde zum Anzeigen – nur mit Zeitplan und wenn die Zeit feststeht (Phase gestartet oder
+     * Startzeit eingestellt); sonst {@code null}.
+     */
+    public LocalDateTime displayedStart(PlayingClass phase, Match m) {
+        if (phase == null || m == null || !hasSchedule(phase)) return null;
+        if (scheduleStartOf(phase) == null && (phase.getScheduleAnchor() == null || !phase.isStarted())) return null;
+        return plannedStart(phase, m);
+    }
+
+    /** Anzeige „ab 14:25“ für ein Spiel (leer ohne Zeitplan bzw. vor dem Start). */
+    public String startText(Match m) {
+        PlayingClass phase = m == null ? null : findClass(m.getClassName()).orElse(null);
+        LocalDateTime t = displayedStart(phase, m);
+        return t == null ? "" : "ab " + t.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+    }
+
+    /** 1.1 (#88): Uhrzeit → nächstgelegener Zeitpunkt (höchstens 12 Stunden vor oder nach {@code now}). */
+    public static LocalDateTime nearestTime(java.time.LocalTime time, LocalDateTime now) {
+        LocalDateTime best = null;
+        for (int d = -1; d <= 1; d++) {
+            LocalDateTime c = now.toLocalDate().plusDays(d).atTime(time.withSecond(0).withNano(0));
+            if (best == null || Math.abs(java.time.Duration.between(now, c).toMinutes()) < Math.abs(java.time.Duration.between(now, best).toMinutes())) best = c;
+        }
+        return best;
+    }
+
+    /**
+     * 1.1 (#88): Startzeit des Zeitplans setzen ({@code null} = ab Start der Klasse); auch nach dem Start – noch nicht
+     * freigegebene Runden bekommen damit neue Zeiten, laufende bleiben.
+     */
+    public void setScheduleStart(PlayingClass root, LocalDateTime start) {
+        root.setScheduleStart(start);
+        List<PlayingClass> ph = phasesOf(root);
+        if (!ph.isEmpty() && ph.get(0).isStarted() && hasSchedule(ph.get(0))) {
+            queueReady(ph.get(0));
+            dispatch();
+        }
+        markModified();
     }
 
     private boolean previousRoundDone(PlayingClass phase, Match m) {
@@ -1252,7 +1305,8 @@ public final class Tournament {
     public void resumeClass(PlayingClass c) {
         if (!c.isPaused()) return;
         c.setPaused(false);
-        if (c.isAwaitingStart() && hasSchedule(c)) {          // 1.0 (#77): von Hand gestartet = die bereiten Runden jetzt
+        LocalDateTime fixed = scheduleStartOf(c);
+        if (c.isAwaitingStart() && hasSchedule(c) && (fixed == null || !LocalDateTime.now().isBefore(fixed))) {   // 1.0 (#77): von Hand gestartet = die bereiten Runden jetzt
             for (Match m : matchesOf(c)) if (m.getStatus() == MatchStatus.PLANNED && m.isReady()) c.getReleasedRounds().add(roundKey(c, m));
         }
         c.setAwaitingStart(false);
@@ -2769,6 +2823,9 @@ public final class Tournament {
             if (m.getKoRound() >= 0 && (size >> (m.getKoRound() + 1)) == 1 && m.winner() != null) champion = m.winner();
         }
         long alive = slots.stream().filter(e -> e != null && !lostIn.containsKey(e.id())).count();
+        // 1.0: mit Freilosen scheiden in einer Runde weniger aus, als sie Plätze hat (120 im 128er-Feld: 65.–120., nicht –128.)
+        java.util.Map<Integer, Integer> losers = new java.util.HashMap<>();      // Spiele je Runde = Ausscheidende je Runde
+        for (Match m : ms) if (m != third && m.getKoRound() >= 0) losers.merge(m.getKoRound(), 1, Integer::sum);
         List<Placing> list = new java.util.ArrayList<>();
         for (Entrant e : slots) {
             if (e == null) continue;
@@ -2782,7 +2839,7 @@ public final class Tournament {
                 else list.add(new Placing(3, 4, e, "ausgeschieden: " + lost.getStage() + " – Spiel um Platz 3 offen"));
             } else if (lost != null) {
                 int inRound = size >> lost.getKoRound();
-                int from = inRound / 2 + 1, to = inRound == 4 ? 3 : inRound;
+                int from = inRound / 2 + 1, to = inRound == 4 ? 3 : Math.min(inRound, from + losers.getOrDefault(lost.getKoRound(), 1) - 1);
                 if (inRound == 4) from = 3;
                 list.add(new Placing(from, to, e, inRound == 2 ? "Finale verloren" : "ausgeschieden: " + lost.getStage()));
             } else {
@@ -3043,9 +3100,18 @@ public final class Tournament {
     }
 
     private Player playerById(String id) {
-        for (Player p : players) if (p.getId().equals(id)) return p;
-        return null;
+        if (id == null) return null;
+        java.util.Map<String, Player> cache = playerIdCache;
+        Player hit = cache == null ? null : cache.get(id);
+        if (hit != null && id.equals(hit.getId())) return hit;
+        // 1.0.1: Index neu aufbauen (Liste geändert, ID geändert oder unbekannt) – große Turniere: keine lineare Suche je Zelle
+        cache = new java.util.HashMap<>();
+        for (Player p : players) cache.put(p.getId(), p);
+        playerIdCache = cache;
+        return cache.get(id);
     }
+
+    private java.util.Map<String, Player> playerIdCache;
 
     /** Vorgabe einer Partie (positiv = Team A) nach den Vorgaberegeln, 0 ohne Vorgabeturnier/Aufstellung. */
     public int rubberHandicap(Match m, Rubber r, List<String> lineupA, List<String> lineupB) {
@@ -3298,9 +3364,17 @@ public final class Tournament {
     public String entrantName(Match m, String entrantId) {
         if (entrantId == null) return null;
         PlayingClass c = findClass(m.getClassName()).orElse(null);
-        java.util.Map<String, Entrant> idx = c == null ? java.util.Map.of() : entrantIndex(c);
-        Entrant e = idx.get(entrantId);
-        return e == null ? "(entfernt)" : e.name();
+        if (c == null) return "(entfernt)";
+        // 1.0.1: gezielt nachschlagen statt je Aufruf den Index aller Personen zu bauen (Seite „Spiele“ bei 10 000 Spielen)
+        if (entrantId.startsWith("pair:")) {
+            String pid = entrantId.substring(5);
+            for (DoublesPair pair : pairs) {
+                if (pair.getId().equals(pid) && pair.getClassName().equals(c.getName()))
+                    return (c.isTeam() ? Entrant.ofTeam(pair) : Entrant.of(pair)).name();
+            }
+        }
+        Player p = playerById(entrantId);
+        return p == null ? "(entfernt)" : Entrant.of(p).name();
     }
 
     /** Personen einer Partei als {Name „Nachname, Vorname“, Verein}: Einzel eine Zeile, Doppel je Person eine. */
@@ -3502,6 +3576,92 @@ public final class Tournament {
         return checkinToken;
     }
 
+    // --- 1.1 (#93): Ergebnisse per Handy (mit dem Handy-Zugang vorerst ausgeblendet) ---------------------------
+
+    private boolean phoneResults;
+    private boolean phoneResultsDirect;
+
+    /** Ein per Handy gemeldetes Ergebnis, das die Turnierleitung noch bestätigen muss. */
+    public record PhoneResult(Match match, int table, List<int[]> sets, LocalDateTime at) {
+        public String setsText() {
+            return String.join(", ", sets.stream().map(x -> x[0] + ":" + x[1]).toList());
+        }
+    }
+
+    private final List<PhoneResult> phoneInbox = new java.util.ArrayList<>();
+
+    /** Option „Ergebnisse per Handy eintragen“ (Mobile Einstellungen, Standard aus). */
+    public boolean isPhoneResults() { return phoneResults; }
+
+    public void setPhoneResults(boolean b) {
+        if (phoneResults != b) {
+            phoneResults = b;
+            markModified();
+        }
+    }
+
+    /** Per Handy gemeldete Ergebnisse ohne Bestätigung übernehmen. */
+    public boolean isPhoneResultsDirect() { return phoneResultsDirect; }
+
+    public void setPhoneResultsDirect(boolean b) {
+        if (phoneResultsDirect != b) {
+            phoneResultsDirect = b;
+            markModified();
+        }
+    }
+
+    /** Schlüssel in der Adresse der Ergebnisseite eines Tisches (aus dem Turnier-Schlüssel abgeleitet, je Tisch anders). */
+    public String tableResultToken(int table) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] h = md.digest((getCheckinToken() + ":ergebnis:" + getId() + ":" + table).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            String abc = "abcdefghjkmnpqrstuvwxyz23456789";
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 10; i++) sb.append(abc.charAt((h[i] & 0xff) % abc.length()));
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
+     * Ergebnis per Handy für das Spiel an einem Tisch melden. Geprüft wird wie bei der Eingabe in HTS; mit „direkt
+     * übernehmen“ wird es sofort eingetragen, sonst wartet es auf die Bestätigung.
+     * @return {@code true}, wenn direkt übernommen
+     * @throws IllegalArgumentException ungültiges Ergebnis; IllegalStateException kein passendes Spiel am Tisch
+     */
+    public boolean submitPhoneResult(int table, int matchNumber, List<int[]> sets) {
+        if (!phoneResults) throw new IllegalStateException("Ergebnisse per Handy sind ausgeschaltet.");
+        Match m = activeMatchAt(table).orElse(null);
+        if (m == null || m.getNumber() != matchNumber) throw new IllegalStateException("An diesem Tisch läuft dieses Spiel nicht mehr.");
+        if (m.getStatus() != MatchStatus.ACTIVE) throw new IllegalStateException("Das Spiel ist angehalten.");
+        evaluateScore(m, sets, 0);                       // wirft bei ungültigem Ergebnis
+        if (phoneResultsDirect) {
+            recordResult(m, sets, 0);
+            return true;
+        }
+        phoneInbox.removeIf(r -> r.match() == m);
+        phoneInbox.add(new PhoneResult(m, table, List.copyOf(sets), LocalDateTime.now().withNano(0)));
+        return false;
+    }
+
+    /** Wartende Handy-Ergebnisse (ältestes zuerst); Spiele, die inzwischen anders erledigt sind, fallen heraus. */
+    public List<PhoneResult> pendingPhoneResults() {
+        phoneInbox.removeIf(r -> r.match().getStatus() != MatchStatus.ACTIVE || !matches.contains(r.match()));
+        return List.copyOf(phoneInbox);
+    }
+
+    /** Handy-Ergebnis übernehmen. */
+    public void acceptPhoneResult(PhoneResult r) {
+        phoneInbox.remove(r);
+        recordResult(r.match(), r.sets(), 0);
+    }
+
+    /** Handy-Ergebnis verwerfen. */
+    public void rejectPhoneResult(PhoneResult r) {
+        phoneInbox.remove(r);
+    }
+
     /** Nur für das Laden. */
     public void restoreCheckin(boolean locked, String token) {
         checkinLocked = locked;
@@ -3601,11 +3761,11 @@ public final class Tournament {
         for (Player p : players) byKey.put(p.identityKey(), p);
         int n = 0;
         for (Player p : new java.util.ArrayList<>(players)) {
-            if (!p.isPresent() || !p.getRegistrations().contains(c.getName())) continue;
+            if (!p.isPresent() || !p.getRegistrations().contains(c.getName()) || paymentPending(p)) continue;   // 1.1 (#89): nur Bezahlte
             if (c.isDoubles()) {
                 if (pairOf(p, c).map(DoublesPair::isComplete).orElse(false)) continue;
                 Player partner = p.getRegisteredPartner(c.getName()) == null ? null : byKey.get(p.getRegisteredPartner(c.getName()));
-                boolean partnerFree = partner != null && partner != p && partner.isPresent()
+                boolean partnerFree = partner != null && partner != p && partner.isPresent() && !paymentPending(partner)
                         && (partner.isEnteredFor(c.getName())) && !pairOf(partner, c).map(DoublesPair::isComplete).orElse(false);
                 if (partnerFree) {
                     createPair(c, p, partner);
@@ -3816,12 +3976,15 @@ public final class Tournament {
 
     /** Wird in diesem Turnier überhaupt eine Gebühr erhoben (Klassen- oder Nachmeldegebühr)? */
     public boolean hasFees() {
-        return lateFeeCents > 0 || classes.stream().anyMatch(c -> !c.isPhase() && c.getFeeCents() != null);
+        return lateFeeCents > 0 || classes.stream().anyMatch(c -> !c.isPhase() && !c.isDoubles() && c.getFeeCents() != null);
     }
 
-    /** Hauptklassen mit Gebühr, für die die Person gemeldet bzw. in denen sie ist (ohne reine Wartelisten). */
+    /**
+     * Hauptklassen mit Gebühr, für die die Person gemeldet bzw. in denen sie ist (ohne reine Wartelisten). 1.1 (#89):
+     * nur Einzelklassen – Doppel (und Teams) sind ohne Gebühr.
+     */
     public List<PlayingClass> feeClassesOf(Player p) {
-        return classes.stream().filter(c -> !c.isPhase() && c.getFeeCents() != null && p.isEnteredFor(c.getName())).toList();
+        return classes.stream().filter(c -> !c.isPhase() && !c.isDoubles() && c.getFeeCents() != null && p.isEnteredFor(c.getName())).toList();
     }
 
     /** Nachmeldung = Person ohne click-TT-Nummer (von Hand erfasst). */
@@ -3843,11 +4006,42 @@ public final class Tournament {
         return !p.isPaid() && feeOf(p) > 0;
     }
 
-    /** Bezahlung der Personen vermerken (Betrag = ihre aktuelle Gebühr); {@code byClub}: Sammelabrechnung. */
+    /**
+     * Bezahlung der Personen vermerken (Betrag = ihre aktuelle Gebühr); {@code byClub}: Sammelabrechnung. 1.1 (#89):
+     * Wer bezahlt hat, ist damit auch angemeldet.
+     */
     public void markPaid(Collection<Player> ps, Player.Payment how, String byClub) {
         LocalDateTime now = LocalDateTime.now();
-        for (Player p : ps) p.setPayment(how, feeOf(p), now, byClub);
+        for (Player p : ps) {
+            p.setPayment(how, feeOf(p), now, byClub);
+            if (how != null && how != Player.Payment.NONE && !p.isPresent()) setAttendance(p, Attendance.PRESENT);
+        }
         markModified();
+    }
+
+    /** 1.1 (#89): Gebühr erlassen (gilt wie bezahlt, Person ist damit angemeldet); {@code reason} optional. */
+    public void waiveFee(Collection<Player> ps, String reason) {
+        markPaid(ps, Player.Payment.WAIVED, null);
+        for (Player p : ps) p.setWaivedReason(reason);
+        markModified();
+    }
+
+    /** 1.1 (#89): Angemeldet bzw. gemeldet, Gebühr fällig, aber weder bezahlt noch erlassen. */
+    public boolean paymentPending(Player p) {
+        return hasFees() && !p.isPaid() && feeOf(p) > 0;
+    }
+
+    /**
+     * 1.1 (#89): Steht unter „Verfügbar“ – angemeldet und (bei Gebühren) bezahlt bzw. erlassen; nach dem Turnierstart
+     * auch Angemeldete ohne Zahlung (sie werden markiert).
+     */
+    public boolean availableForClasses(Player p) {
+        return p.isPresent() && (!paymentPending(p) || isRunning());
+    }
+
+    /** 1.1 (#89): Angemeldete mit offener Gebühr (für den Hinweis nach dem Turnierstart). */
+    public List<Player> presentUnpaid() {
+        return players.stream().filter(p -> p.isPresent() && paymentPending(p)).toList();
     }
 
     public void undoPayment(Collection<Player> ps) {

@@ -77,14 +77,24 @@ public final class TablesView {
             Reports.setAutoPrintSlips(b);
             status.accept(b ? "Spielzettel werden automatisch gedruckt." : "Spielzettel werden nicht mehr automatisch gedruckt.");
         });
-        Region gap = new Region();
-        HBox.setHgrow(gap, Priority.ALWAYS);
         Button assign = new Button("Tische den Klassen zuordnen");
         assign.getStyleClass().add("pill");
         assign.setTooltip(new Tooltip("Bestimmte Tische nur für bestimmte Klassen – Standard: alle Tische für alle Klassen"));
         assign.setOnAction(e -> openAssignment());
-        HBox countRow = new HBox(10, countLabel, tableCount, assign, gap, autoPrint);
+        // 1.0.1: bei schmalem Fenster umbrechen statt „…“ (1366 × 768 mit 125 %/150 %)
+        countLabel.setMinWidth(Region.USE_PREF_SIZE);
+        tableCount.setMinWidth(Region.USE_PREF_SIZE);
+        assign.setMinWidth(Region.USE_PREF_SIZE);
+        autoPrint.setWrapText(true);
+        autoPrint.setMinHeight(Region.USE_PREF_SIZE);
+        HBox countBox = new HBox(10, countLabel, tableCount);
+        countBox.setAlignment(Pos.CENTER_LEFT);
+        countBox.setMinWidth(Region.USE_PREF_SIZE);
+        javafx.scene.layout.FlowPane countRow = new javafx.scene.layout.FlowPane(12, 8, countBox, assign, autoPrint);
         countRow.setAlignment(Pos.CENTER_LEFT);
+        countRow.setMinWidth(0);
+        Ui.oneLineWhenPossible(countRow);
+        autoPrint.maxWidthProperty().bind(countRow.widthProperty());
 
         tables.setHgap(CARD_GAP);
         tables.setVgap(CARD_GAP);
@@ -136,11 +146,21 @@ public final class TablesView {
         }
         int pos = 1;
         for (Match m : queue) {
+            if (pos > QUEUE_SHOWN) {            // 1.0.1: große Turniere – nur die nächsten Spiele als Zeilen (sonst sekundenlanger Aufbau)
+                Label more = new Label("Weitere " + (queue.size() - QUEUE_SHOWN) + " eingereihte Spiele – alle unter „Spiele“ mit dem Filter „eingereiht“.");
+                more.getStyleClass().add("hint");
+                more.setWrapText(true);
+                more.setMinHeight(Region.USE_PREF_SIZE);
+                queueList.getChildren().add(more);
+                break;
+            }
             Label nr = new Label(String.valueOf(pos++));
             nr.getStyleClass().add("pos");
             nr.setMinWidth(24);
             Label what = new Label(m.getClassName() + " · " + m.getStage() + " · Spiel " + m.getNumber());
             what.getStyleClass().add("hint");
+            what.setWrapText(true);                              // 1.0.1: nicht abkürzen
+            what.setMinHeight(Region.USE_PREF_SIZE);
             Label who = new Label(tournament.entrantName(m, m.getA()) + tournament.handicapSuffix(m, m.getA()) + "  –  "
                     + tournament.entrantName(m, m.getB()) + tournament.handicapSuffix(m, m.getB()));
             who.getStyleClass().add("match-name");
@@ -152,13 +172,19 @@ public final class TablesView {
             call.setTooltip(new Tooltip("Dieses Spiel sofort an einen freien Tisch holen"));
             call.setDisable(tournament.freeTables().isEmpty());
             call.setOnAction(e -> moveMatch(m));
-            HBox row = new HBox(8, nr, new VBox(1, who, what), qsp, call);
+            call.setMinWidth(Region.USE_PREF_SIZE);
+            who.setMinHeight(Region.USE_PREF_SIZE);
+            VBox texts = new VBox(1, who, what);
+            texts.setMinWidth(0);
+            HBox.setHgrow(texts, Priority.ALWAYS);
+            HBox row = new HBox(8, nr, texts, qsp, call);
             row.setAlignment(Pos.CENTER_LEFT);
             row.getStyleClass().add("queue-row");
             queueList.getChildren().add(row);
         }
     }
 
+    static final int QUEUE_SHOWN = 100;
     static final double CARD_WIDTH = 340;
     static final double CARD_GAP = 14;
 
@@ -243,8 +269,9 @@ public final class TablesView {
         }
         Label what = new Label(m.getClassName() + " · " + m.getStage() + " · Spiel " + m.getNumber());
         what.getStyleClass().add("hint");
-        what.setTextOverrun(javafx.scene.control.OverrunStyle.ELLIPSIS);
+        what.setWrapText(true);                                  // 1.0.1: umbrechen statt „…“
         what.setMinWidth(0);
+        what.setMinHeight(Region.USE_PREF_SIZE);
         Label a = new Label(tournament.entrantName(m, m.getA()));
         Label vs = new Label("gegen");
         vs.getStyleClass().add("hint");

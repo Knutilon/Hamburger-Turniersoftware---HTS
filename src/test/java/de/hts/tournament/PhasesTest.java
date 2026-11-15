@@ -286,6 +286,25 @@ class PhasesTest {
         assertEquals(List.of(1, 1, 3, 3, 5, 5, 7, 7, 7, 10, 10, 10), t.finalResult(c).rows().stream().map(Tournament.Placing::from).toList());
     }
 
+    /** 1.0.1: Platzbereiche im KO nie größer als die Zahl der Teilnehmenden (12 im 16er-Feld: 9.–12., nicht 9.–16.). */
+    @Test
+    void koPlatzbereicheNachTatsaechlichAusgeschiedenen() {
+        for (int n : new int[]{6, 12, 120}) {
+            Tournament t = new Tournament();
+            t.setTableCount(8);
+            PlayingClass c = t.addClass(new PlayingClass("KO " + n));
+            players(t, "K", n, 2000).forEach(p -> t.assign(p, c));
+            t.drawKnockout(c, true, new Random(1));
+            t.startClass(c);
+            playAll(t, c);
+            t.finishClass(c);
+            var rows = t.finalResult(c).rows();
+            assertEquals(n, rows.size());
+            for (var r : rows) assertTrue(r.to() <= n, n + " Teilnehmende, aber Platz " + r.placeText());
+            assertEquals(n, rows.stream().mapToInt(Tournament.Placing::to).max().orElse(0), "letzter Bereich endet bei " + n);
+        }
+    }
+
     @Test
     void koKorrekturMitFolgespielenUndTauschWaehrendDerPhase() {
         Tournament t = new Tournament();

@@ -1369,6 +1369,8 @@ public final class DrawView {
             Label club = new Label(row.entrant().detail() == null ? "" : row.entrant().detail());
             club.getStyleClass().add("hint");
             club.setMaxWidth(140);
+            club.setWrapText(true);                         // 1.0.1: lange Vereinsnamen umbrechen statt „…“
+            club.setMinHeight(Region.USE_PREF_SIZE);
             if (row.entrant().detail() != null) club.setTooltip(new Tooltip(row.entrant().detail()));
             Label ttr = new Label(row.entrant().ttr() == null ? "–" : String.valueOf(row.entrant().ttr()));
             ttr.getStyleClass().addAll("table-num", "hint");
@@ -1475,10 +1477,12 @@ public final class DrawView {
             Label nr = new Label(String.valueOf(m.getNumber()));
             nr.getStyleClass().add("pos");
             nr.setMinWidth(30);
-            Label rd = new Label(m.isCarried() ? "übern." : m.getPlacement() > 0 ? "Pl. " + m.getPlacement() + "/" + (m.getPlacement() + 1) : "R" + m.getRound());
+            String at = m.isCarried() ? "" : tournament.startText(m);          // 1.1 (#86): „R2 · ab 14:25“
+            Label rd = new Label((m.isCarried() ? "übern." : m.getPlacement() > 0 ? "Pl. " + m.getPlacement() + "/" + (m.getPlacement() + 1) : "R" + m.getRound())
+                    + (at.isEmpty() ? "" : " · " + at));
             if (m.isCarried()) rd.setTooltip(new Tooltip("Ergebnis aus Phase 1 übernommen"));
             rd.getStyleClass().add("hint");
-            rd.setMinWidth(m.getPlacement() > 0 || m.isCarried() ? 52 : 28);
+            rd.setMinWidth(m.getPlacement() > 0 || m.isCarried() || !at.isEmpty() ? Region.USE_PREF_SIZE : 28);
             Label a = new Label(tournament.entrantName(m, m.getA()));
             Label vs = new Label("–");
             vs.getStyleClass().add("hint");
@@ -1550,10 +1554,11 @@ public final class DrawView {
         String name = m.getStatus().atTable() && m.getTable() != null ? tournament.tableName(m.getTable()) : "";
         Label l = new Label(name);
         l.getStyleClass().addAll("hint", "table-info");
-        // lange Tischnamen an engen Stellen gekürzt („…“), voller Name im Tooltip
-        l.setTextOverrun(javafx.scene.control.OverrunStyle.ELLIPSIS);
+        // 1.0.1: lange Tischnamen umbrechen statt „…“, voller Name zusätzlich im Tooltip
+        l.setWrapText(true);
+        l.setMinHeight(Region.USE_PREF_SIZE);
         l.setMaxWidth(130);
-        l.setMinWidth(Math.min(58, l.prefWidth(-1)));
+        l.setMinWidth(Math.min(130, l.prefWidth(-1)));            // kurze Namen nie mitten im Wort umbrechen
         if (name.length() > 14) l.setTooltip(new Tooltip(name));
         if (m.getStatus().atTable()) l.setPrefWidth(Math.min(130, Math.max(58, l.prefWidth(-1))));
         return l;
@@ -1695,7 +1700,12 @@ public final class DrawView {
             KnockoutBracket.Round round = rounds.get(r);
             double x = (r - f0) * (matchWidth + gap);
             double unit = (cardH + MATCH_GAP) * Math.pow(2, r - f0);
-            Label roundTitle = new Label(round.name());
+            String at = "";                                         // 1.1 (#86): geplante Startzeit der Runde
+            for (int i = 0; i < round.matches().size() && at.isEmpty(); i++) {
+                Match rm = byPos.get(r + ":" + i);
+                if (rm != null) at = tournament.startText(rm);
+            }
+            Label roundTitle = new Label(round.name() + (at.isEmpty() ? "" : " · " + at));
             roundTitle.getStyleClass().add("round-title");
             roundTitle.relocate(x, 4);
             titleBar.getChildren().add(roundTitle);

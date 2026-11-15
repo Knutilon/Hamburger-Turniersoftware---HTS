@@ -467,7 +467,8 @@ public final class PdfReports {
             if (ko && !m.getStage().equals(lastStage)) {
                 if (!c.fits(ROW * 2)) continuation(c, t, title, sub, cols);
                 c.y += 3;
-                c.y += c.text(c.left(), c.y, m.getStage(), BOLD, 9, c.width());
+                String at = t.startText(m);                       // 1.1 (#86): geplante Startzeit der Runde
+                c.y += c.text(c.left(), c.y, m.getStage() + (at.isEmpty() ? "" : " · " + at + " Uhr"), BOLD, 9, c.width());
                 lastStage = m.getStage();
             }
             if (!c.fits(ROW * planLines(t, m) + 2)) continuation(c, t, title, sub, cols);
@@ -510,7 +511,8 @@ public final class PdfReports {
                 }
             }
             float x0 = c.left() + col * (colW + gap);
-            c.text(x0, c.y, "Runde " + e.getKey(), BOLD, 8.5f, colW);
+            String at = t.startText(rm.get(0));                    // 1.1 (#86): geplante Startzeit der Runde
+            c.text(x0, c.y, "Runde " + e.getKey() + (at.isEmpty() ? "" : " · " + at + " Uhr"), BOLD, 8.5f, colW);
             c.y += 10;
             c.line(x0, c.y, x0 + colW, c.y, 0.4f);
             c.y += 2.5f;
@@ -726,6 +728,8 @@ public final class PdfReports {
         if (b != null && ob != null) b = ob + " " + b;
         String round = m.isCarried() ? "übern." : m.getPlacement() > 0 ? "Pl. " + m.getPlacement() + "/" + (m.getPlacement() + 1)
                 : m.isKnockout() ? "R" + m.getRound() : "R" + m.getRound();
+        String at = koStyle(m) ? "" : t.startText(m);             // 1.1 (#86): KO-Runden tragen die Zeit in der Überschrift
+        if (!at.isEmpty() && !m.isCarried() && m.getPlacement() == 0) round += " " + at.substring(3);
         boolean done = m.getStatus() == MatchStatus.DONE;
         float gray = done ? 0f : 0.35f;
         String w = m.winner();
@@ -745,6 +749,8 @@ public final class PdfReports {
     private static void doublesMatchRow(PdfCanvas c, Tournament t, Match m, float[] cols, List<String[]> pa, List<String[]> pb) {
         int lines = Math.max(pa == null ? 1 : pa.size(), pb == null ? 1 : pb.size());
         String round = m.isCarried() ? "übern." : m.getPlacement() > 0 ? "Pl. " + m.getPlacement() + "/" + (m.getPlacement() + 1) : "R" + m.getRound();
+        String at = koStyle(m) ? "" : t.startText(m);             // 1.1 (#86)
+        if (!at.isEmpty() && !m.isCarried() && m.getPlacement() == 0) round += " " + at.substring(3);
         boolean done = m.getStatus() == MatchStatus.DONE;
         float gray = done ? 0f : 0.35f;
         String w = m.winner();
@@ -826,6 +832,36 @@ public final class PdfReports {
             text(cs, REGULAR, 8, 50, 40, "Nur im Turnier-WLAN erreichbar – kein Internet nötig. Erstellt mit HTS – Hamburger Turniersoftware.");
         } catch (java.io.IOException e) {
             throw new java.io.UncheckedIOException(e);
+        }
+        return doc;
+    }
+
+    /** 1.1 (#93): QR-Codes „Ergebnis eintragen“ je Tisch, drei je A4-Seite (zum Ausschneiden und Aufstellen). */
+    public static PDDocument tableQrSheet(Tournament t, java.util.Map<Integer, String> urls) {
+        PDDocument doc = newDoc("Tisch-QR-Codes " + (t.getName() == null ? "Turnier" : t.getName()));
+        float w = PDRectangle.A4.getWidth(), h = PDRectangle.A4.getHeight();
+        List<java.util.Map.Entry<Integer, String>> list = new ArrayList<>(urls.entrySet());
+        for (int i = 0; i < list.size(); i += 3) {
+            org.apache.pdfbox.pdmodel.PDPage page = new org.apache.pdfbox.pdmodel.PDPage(PDRectangle.A4);
+            doc.addPage(page);
+            try (org.apache.pdfbox.pdmodel.PDPageContentStream cs = new org.apache.pdfbox.pdmodel.PDPageContentStream(doc, page)) {
+                for (int k = 0; k < 3 && i + k < list.size(); k++) {
+                    var e = list.get(i + k);
+                    float top = h - 40 - k * ((h - 80) / 3);
+                    float size = 190;
+                    qrBlock(cs, e.getValue(), 50, top - size - 20, size, t.tableName(e.getKey()) + " – Ergebnis eintragen",
+                            List.of("Nach dem Spiel scannen (Kamera-App, Turnier-WLAN)", "und die Sätze eintragen. Die Turnierleitung", "bestätigt das Ergebnis."));
+                    if (k < 2) {
+                        cs.setStrokingColor(0.75f);
+                        cs.setLineWidth(0.5f);
+                        cs.moveTo(30, top - (h - 80) / 3 + 6);
+                        cs.lineTo(w - 30, top - (h - 80) / 3 + 6);
+                        cs.stroke();
+                    }
+                }
+            } catch (java.io.IOException ex) {
+                throw new java.io.UncheckedIOException(ex);
+            }
         }
         return doc;
     }
@@ -1008,7 +1044,7 @@ public final class PdfReports {
         PDDocument doc = newDoc("Quittung Startgebühr " + (t.getName() == null ? "" : t.getName()));
         PdfCanvas c = new PdfCanvas(doc, PDRectangle.A4, 50);
         List<de.hts.player.Player> ps = paid.stream().sorted(byName()).toList();
-        int sum = ps.stream().mapToInt(de.hts.player.Player::getPaidCents).sum();
+        int sum = ps.stream().filter(p -> p.getPayment() != de.hts.player.Player.Payment.WAIVED).mapToInt(de.hts.player.Player::getPaidCents).sum();
         c.newPage();
         listHead(c, t, "Quittung – Startgebühr", null);
         String from = club != null ? club + " (Sammelabrechnung)"
@@ -1039,14 +1075,16 @@ public final class PdfReports {
         PDDocument doc = newDoc("Kassenübersicht " + (t.getName() == null ? "" : t.getName()));
         PdfCanvas c = new PdfCanvas(doc, PDRectangle.A4, 40);
         List<de.hts.player.Player> ps = t.getPlayers().stream().filter(p -> p.isPaid() || t.feeOf(p) > 0).sorted(byName()).toList();
-        int cash = 0, transfer = 0, open = 0;
+        int cash = 0, transfer = 0, open = 0, waived = 0;
         List<String[]> rows = new ArrayList<>();
         for (de.hts.player.Player p : ps) {
             int amount = p.isPaid() ? p.getPaidCents() : t.feeOf(p);
             if (p.getPayment() == de.hts.player.Player.Payment.CASH) cash += amount;
             else if (p.getPayment() == de.hts.player.Player.Payment.TRANSFER) transfer += amount;
+            else if (p.getPayment() == de.hts.player.Player.Payment.WAIVED) waived += amount;      // 1.1 (#89)
             else open += amount;
-            String state = p.isPaid() ? p.getPayment().getLabel() + (p.getPaidByClub() != null ? " (Verein)" : "") : "offen";
+            String state = p.isPaid() ? p.getPayment().getLabel() + (p.getPaidByClub() != null ? " (Verein)" : "")
+                    + (p.getWaivedReason() != null ? ": " + p.getWaivedReason() : "") : "offen";
             rows.add(new String[]{p.getDisplayName(), p.getClubName() == null ? "" : p.getClubName(), feeClasses(t, p),
                     Tournament.euro(amount), state, p.getPaidAt() == null ? "" : p.getPaidAt().format(DateTimeFormatter.ofPattern("dd.MM. HH:mm"))});
         }
@@ -1054,9 +1092,10 @@ public final class PdfReports {
         listHead(c, t, "Kassenübersicht Startgebühren", ps.size() + (ps.size() == 1 ? " Person" : " Personen") + " · Stand "
                 + java.time.LocalDateTime.now().format(STAND));
         String[][] sums = {{"bezahlt bar", Tournament.euro(cash)}, {"bezahlt per Überweisung", Tournament.euro(transfer)},
-                {"noch offen", Tournament.euro(open)}, {"gesamt", Tournament.euro(cash + transfer + open)}};
+                {"noch offen", Tournament.euro(open)}, {"gesamt", Tournament.euro(cash + transfer + open)},
+                {"erlassen (nicht in der Summe)", Tournament.euro(waived)}};
         for (String[] r : sums) {
-            c.text(c.left(), c.y, r[0], r[0].equals("gesamt") ? BOLD : REGULAR, 10.5f, 200);
+            c.text(c.left(), c.y, r[0], r[0].equals("gesamt") ? BOLD : REGULAR, 10.5f, 200);   // Beschriftung
             c.y += c.text(c.left() + 200, c.y, r[1], BOLD, 10.5f, 90, PdfCanvas.Align.RIGHT, 0f) + 3;
         }
         c.y += 10;

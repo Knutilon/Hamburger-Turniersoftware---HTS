@@ -286,7 +286,20 @@ public final class ClassesView {
         javafx.scene.layout.FlowPane availableHead = new javafx.scene.layout.FlowPane(10, 6, availableTitle, takeOverBtn, newParticipantBtn);
         availableHead.setAlignment(Pos.CENTER_LEFT);
         availableTitle.setMinWidth(Region.USE_PREF_SIZE);
-        VBox availableBox = new VBox(8, availableHead, filterRow, searchRow, availableTable);
+        // 1.1 (#89): Hinweis auf Angemeldete ohne Zahlung (vor dem Start nicht hier) bzw. Bezahlen und übernehmen
+        feeHint.getStyleClass().add("fee-pending-banner");
+        feeHint.setWrapText(true);
+        feeHint.setMinHeight(Region.USE_PREF_SIZE);
+        feeHint.managedProperty().bind(feeHint.visibleProperty());
+        feeHint.setVisible(false);
+        payAndAddBtn.getStyleClass().addAll("pill", "fee-pending-button");
+        payAndAddBtn.setMinWidth(Region.USE_PREF_SIZE);
+        payAndAddBtn.managedProperty().bind(payAndAddBtn.visibleProperty());
+        payAndAddBtn.setVisible(false);
+        payAndAddBtn.setTooltip(new Tooltip("Markierte mit offener Gebühr als bar bezahlt vermerken und in die Klasse übernehmen"));
+        payAndAddBtn.setOnAction(e -> payAndAdd());
+        availableHead.getChildren().add(payAndAddBtn);
+        VBox availableBox = new VBox(8, availableHead, feeHint, filterRow, searchRow, availableTable);
         VBox.setVgrow(availableTable, Priority.ALWAYS);
         availableBox.getStyleClass().add("card");
         installDropTarget(availableBox, this::dropOnAvailable);
@@ -724,7 +737,8 @@ public final class ClassesView {
         String club = clubFilter.getValue();
         de.hts.player.Sex sx = sexFilter.getValue();
         // 0.35: unter „Verfügbar“ nur am Turniertag Angemeldete (anwesend)
-        available.setPredicate(p -> p.isPresent() && (c.isDoubles() || !p.isInClass(c.getName()))
+        // 1.1 (#89): bei Gebühren vor dem Turnierstart nur Bezahlte bzw. Erlassene
+        available.setPredicate(p -> tournament.availableForClasses(p) && (c.isDoubles() || !p.isInClass(c.getName()))
                 && (club == null || club.equals(ALL_CLUBS) || club.equals(p.getClubName()))
                 && (sx == null || sx == de.hts.player.Sex.UNKNOWN || p.getSex() == sx)
                 && (f == null || p.isInClass(f.getName()))
@@ -740,6 +754,15 @@ public final class ClassesView {
         long inTotal = tournament.getPlayers().stream().filter(p -> p.isInClass(c.getName())).count();
 
         availableTitle.setText("Verfügbar (" + available.size() + ")");
+        boolean running = tournament.isRunning();
+        long unpaid = tournament.getPlayers().stream().filter(p -> p.isPresent() && tournament.paymentPending(p)
+                && (p.isEnteredFor(c.getName()) || p.getRegistrations().contains(c.getName()))).count();
+        feeHint.setVisible(unpaid > 0);
+        feeHint.setText(!running
+                ? (unpaid == 1 ? "1 Angemeldete/r hat" : unpaid + " Angemeldete haben") + " noch nicht bezahlt und erscheint hier nach dem Bezahlen. "
+                        + "„Alle anwesenden Gemeldeten übernehmen“ nimmt nur Bezahlte."
+                : "Angemeldete ohne Zahlung sind hellblau markiert und lassen sich übernehmen – oder gleich mit „Bezahlt – bar und in die Klasse“.");
+        payAndAddBtn.setVisible(running && unpaid > 0 && !c.isDoubles());
         Ui.fitColumns(availableTable);             // 0.36: Spalten so breit wie ihr Inhalt, notfalls Scrollleiste
         Ui.fitColumns(assignedTable);
         if (c.isDoubles()) {
@@ -1115,6 +1138,33 @@ public final class ClassesView {
         changed();
     }
 
+    /** 1.1 (#89): Markierte (nach dem Turnierstart, Gebühr offen) bar bezahlt vermerken und übernehmen. */
+    private void payAndAdd() {
+        PlayingClass c = selectedClass();
+        if (c == null || isLocked(c)) return;
+        List<Player> sel = new ArrayList<>(availableTable.getSelectionModel().getSelectedItems());
+        if (sel.isEmpty()) {
+            status.accept("Bitte zuerst Teilnehmende unter „Verfügbar“ markieren.");
+            return;
+        }
+        List<Player> pay = sel.stream().filter(tournament::paymentPending).toList();
+        int sum = pay.stream().mapToInt(tournament::feeOf).sum();
+        tournament.markPaid(pay, Player.Payment.CASH, null);
+        if (c.isDoubles()) {
+            status.accept(pay.size() + " Startgebühr(en) bar bezahlt (" + de.hts.tournament.Tournament.euro(sum) + ").");
+            changed();
+            return;
+        }
+        int n = 0;
+        for (Player p : sel) if (tournament.assign(p, c)) n++;
+        status.accept(pay.size() + " Startgebühr(en) bar bezahlt (" + de.hts.tournament.Tournament.euro(sum) + "), "
+                + n + " in „" + c.getName() + "“ übernommen.");
+        changed();
+    }
+
+    private final Label feeHint = new Label();
+    private final Button payAndAddBtn = new Button("Bezahlt – bar und in die Klasse");
+
     private void removeSelected() {
         PlayingClass c = selectedClass();
         if (c == null || isLocked(c)) return;
@@ -1238,10 +1288,11 @@ public final class ClassesView {
                 @Override
                 protected void updateItem(Player p, boolean empty) {
                     super.updateItem(p, empty);
-                    getStyleClass().removeAll("misfit", "waiting-list", "paired", "over-limit");
+                    getStyleClass().removeAll("misfit", "waiting-list", "paired", "over-limit", "fee-pending-row");
                     setTooltip(null);
                     PlayingClass c = selectedClass();
                     if (empty || p == null || c == null) return;
+                    if (tournament.isRunning() && tournament.paymentPending(p)) getStyleClass().add("fee-pending-row");   // 1.1 (#89)
                     PlayingClass.Fit fit = tournament.fit(c, p);
                     if (fit == PlayingClass.Fit.NO) {
                         getStyleClass().add("misfit");

@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<hts-tournament checkin-token="S6NX5SNF" format-version="7" hts-version="1.1.0" late-fee-cents="200" model="35" phone-results="true" started-at="2026-11-15T21:48:10" tables="8" tname.1="Center Court" winning-sets="3">
+  <table-exclusions>
+    <table nr="8">
+      <excluded-class name="Herren Doppel"/>
+    </table>
+  </table-exclusions>
+  <classes>
+    <class avoid-same-club="true" discipline="singles" follow-up="Herren A – Phase 2" group-count="3" group-seeding="SNAKE" group-size="2" groups-by="count" lot-seed="-8254985153167821497" mode="groups" name="Herren A" next-phase="KNOCKOUT" qualifiers="2" ready="true" started-at="2026-11-15T21:48:10" tiebreak="SETS_POINTS" type="adults">
+      <group-draw seeded="true">
+        <group>
+          <member ref="514f05537e50"/>
+          <member ref="f254cb45a25f"/>
+          <member ref="f1a2803a283a"/>
+          <member ref="27abdc87b504"/>
+        </group>
+        <group>
+          <member ref="d88a4c32de42"/>
+          <member ref="6721b4ebccbb"/>
+          <member ref="01ed8613c061"/>
+          <member ref="ed2fcb342a72"/>
+        </group>
+        <group>
+          <member ref="9943155394df"/>
+          <member ref="07d92538d11d"/>
+          <member ref="a8d9985556c2"/>
+          <member ref="ea30146d694d"/>
+        </group>
+      </group-draw>
+    </class>
+    <class avoid-same-club="true" discipline="singles" group-count="2" group-seeding="SNAKE" group-size="2" groups-by="size" lot-seed="-4971030886054769831" mode="knockout" name="Herren A – Phase 2" next-phase="NONE" qualifiers="2" ready="true" seed-labels="d88a4c32de42=B1,514f05537e50=A1,9943155394df=C1,f254cb45a25f=A2,6721b4ebccbb=B2,07d92538d11d=C2" source="Herren A" started-at="2026-11-15T21:48:10" tiebreak="SETS_POINTS" type="adults">
+      <draw seeded="true">
+        <slot ref="d88a4c32de42"/>
+        <slot bye="true"/>
+        <slot ref="f254cb45a25f"/>
+        <slot ref="07d92538d11d"/>
+        <slot ref="514f05537e50"/>
+        <slot bye="true"/>
+        <slot ref="9943155394df"/>
+        <slot ref="6721b4ebccbb"/>
+      </draw>
+    </class>
+    <class avoid-same-club="true" discipline="singles" follow-up="Jugend Q – Phase 2" group-count="4" group-seeding="SNAKE" group-size="4" groups-by="count" lot-seed="-2991082949287265551" mode="groups" name="Jugend Q" next-phase="QUALIFICATION" qual="1,2,2,0" qualifiers="3" ready="true" started-at="2026-11-15T21:48:10" tiebreak="SETS_POINTS" type="adults">
+      <group-draw seeded="true">
+        <group>
+          <member ref="4062871dccf1"/>
+          <member ref="50e73c6cac07"/>
+          <member ref="7464ce42aa3d"/>
+          <member ref="1e3c45ef8943"/>
+        </group>
+        <group>
+          <member ref="81726ce6b41c"/>
+          <member ref="06a039eb40f9"/>
+          <member ref="6267f86b52bd"/>
+          <member ref="735e0cdc365a"/>
+        </group>
+        <group>
+          <member ref="08a5734a73e9"/>
+          <member ref="505e814b3539"/>
+          <member ref="004499f6358f"/>
+          <member ref="568ff86688a4"/>
+        </group>
+        <group>
+          <member ref="e0ab8de3d21d"/>
+          <member ref="86b3bce7460c"/>
+          <member ref="9b6785b6dd90"/>
+          <member ref="58ceabf8a1b5"/>
+        </group>
+      </group-draw>
+    </class>
+    <class avoid-same-club="true" discipline="singles" group-count="2" group-seeding="SNAKE" group-size="4" groups-by="size" lot-seed="-4966073432109750151" mode="qualification" name="Jugend Q – Phase 2" next-phase="NONE" qual="1,2,2,0" qual-field="86b3bce7460c=3,50e73c6cac07=0,06a039eb40f9=1,505e814b3539=2,004499f6358f=2,6267f86b52bd=1,7464ce42aa3d=0,9b6785b6dd90=3" qual-ko-counts="2,2,2,2" qual-place="86b3bce7460c=2,50e73c6cac07=2,06a039eb40f9=2,505e814b3539=2,004499f6358f=3,6267f86b52bd=3,7464ce42aa3d=3,9b6785b6dd90=3" qualified-direct="e0ab8de3d21d,4062871dccf1,08a5734a73e9,81726ce6b41c" qualifiers="2" ready="true" seed-labels="e0ab8de3d21d=D1,4062871dccf1=A1,08a5734a73e9=C1,81726ce6b41c=B1,86b3bce7460c=D2,50e73c6cac07=A2,06a039eb40f9=B2,505e814b3539=C2,004499f6358f=C3,6267f86b52bd=B3,7464ce42aa3d=A3,9b6785b6dd90=D3" source="Jugend Q" started-at="2026-11-15T21:48:11" swiss-byes="-" tiebreak="SETS_POINTS" type="adults"/>
+    <class avoid-same-club="true" discipline="singles" fee-cents="800" group-count="2" group-seeding="SNAKE" group-size="4" groups-by="size" name="Damen Einzel" next-phase="NONE" qualifiers="2" schedule-minutes="20" schedule-start="2026-11-15T14:30" tiebreak="SETS_POINTS" type="adults"/>
+    <class avoid-same-club="true" discipline="doubles" group-count="2" group-seeding="SNAKE" group-size="4" groups-by="size" mode="knockout" name="Herren Doppel" next-phase="NONE" qualifiers="2" ready="true" started-at="2026-11-15T21:48:11" tiebreak="SETS_POINTS" type="adults">
+      <draw seeded="true">
+        <slot ref="pair:3ac9e7abe20f"/>
+        <slot ref="pair:30ad9da14d4b"/>
+        <slot ref="pair:4dc445060af6"/>
+        <slot ref="pair:648280944c9b"/>
+      </draw>
+    </class>
+  </classes>
+  <players>
+    <player attendance="present" birthyear="1991" club-name="Verein B" firstname="VorHerren A1" id="514f05537e50" internal-nr="Herren A-1" lastname="NachHerren A1" licence-nr="9000111" sex="m" ttr="1838">
+      <entry competition="Herren A" order="1794775690869000"/>
+      <entry competition="Herren Doppel" order="1794775691007000"/>
+    </player>
+    <player attendance="present" birthyear="1992" club-name="Verein C" firstname="VorHerren A2" id="d88a4c32de42" internal-nr="Herren A-2" lastname="NachHerren A2" licence-nr="9000112" sex="m" ttr="1768">
+      <entry competition="Herren A" order="1794775690869001"/>
+      <entry competition="Herren Doppel" order="1794775691007001"/>
+    </player>
+    <player attendance="present" birthyear="1993" club-name="Verein D" firstname="VorHerren A3" id="ea30146d694d" internal-nr="Herren A-3" lastname="NachHerren A3" licence-nr="9000113" sex="m" ttr="1211">
+      <entry competition="Herren A" order="1794775690869002"/>
+      <entry competition="Herren Doppel" order="1794775691007002"/>
+    </player>
+    <player attendance="present" birthyear="1994" club-name="Verein E" firstname="VorHerren A4" id="a8d9985556c2" internal-nr="Herren A-4" lastname="NachHerren A4" licence-nr="9000114" sex="m" ttr="1355">
+      <entry competition="Herren A" order="1794775690869003"/>
+      <entry competition="Herren Doppel" order="1794775691007003"/>
+    </player>
+    <player attendance="present" birthyear="1995" club-name="Verein F" firstname="VorHerren A5" id="27abdc87b504" internal-nr="Herren A-5" lastname="NachHerren A5" licence-nr="9000115" sex="m" ttr="1133">
+      <entry competition="Herren A" order="1794775690869004"/>
+      <entry competition="Herren Doppel" order="1794775691007004"/>
+    </player>
+    <player attendance="present" birthyear="1996" club-name="Verein A" firstname="VorHerren A6" id="6721b4ebccbb" internal-nr="Herren A-6" lastname="NachHerren A6" licence-nr="9000116" sex="m" ttr="1607">
+      <entry competition="Herren A" order="1794775690869005"/>
+      <entry competition="Herren Doppel" order="1794775691007005"/>
+    </player>
+    <player attendance="present" birthyear="1997" club-name="Verein B" firstname="VorHerren A7" id="01ed8613c061" internal-nr="Herren A-7" lastname="NachHerren A7" licence-nr="9000117" sex="m" ttr="1440">
+      <entry competition="Herren A" order="1794775690869006"/>
+      <entry competition="Herren Doppel" order="1794775691007006"/>
+    </player>
+    <player attendance="present" birthyear="1998" club-name="Verein C" firstname="VorHerren A8" id="f254cb45a25f" internal-nr="Herren A-8" lastname="NachHerren A8" licence-nr="9000118" sex="m" ttr="1633">
+      <entry competition="Herren A" order="1794775690869007"/>
+      <entry competition="Herren Doppel" order="1794775691007007"/>
+    </player>
+    <player attendance="present" birthyear="1999" club-name="Verein D" firstname="VorHerren A9" id="f1a2803a283a" internal-nr="Herren A-9" lastname="NachHerren A9" licence-nr="9000119" sex="m" ttr="1493">
+      <entry competition="Herren A" order="1794775690869008"/>
+    </player>
+    <player attendance="present" birthyear="2000" club-name="Verein E" firstname="VorHerren A10" id="ed2fcb342a72" internal-nr="Herren A-10" lastname="NachHerren A10" licence-nr="90001110" sex="m" ttr="1207">
+      <entry competition="Herren A" order="1794775690869009"/>
+    </player>
+    <player attendance="present" birthyear="2001" club-name="Verein F" firstname="VorHerren A11" id="9943155394df" internal-nr="Herren A-11" lastname="NachHerren A11" licence-nr="90001111" sex="m" ttr="1714">
+      <entry competition="Herren A" order="1794775690869010"/>
+    </player>
+    <player attendance="present" birthyear="2002" club-name="Verein A" firstname="VorHerren A12" id="07d92538d11d" internal-nr="Herren A-12" lastname="NachHerren A12" licence-nr="90001112" sex="m" ttr="1694">
+      <entry competition="Herren A" order="1794775690869011"/>
+    </player>
+    <player attendance="present" birthyear="1991" club-name="Verein B" firstname="VorJugend Q1" id="568ff86688a4" internal-nr="Jugend Q-1" lastname="NachJugend Q1" licence-nr="9000121" sex="m" ttr="1166">
+      <entry competition="Jugend Q" order="1794775690984000"/>
+    </player>
+    <player attendance="present" birthyear="1992" club-name="Verein C" firstname="VorJugend Q2" id="004499f6358f" internal-nr="Jugend Q-2" lastname="NachJugend Q2" licence-nr="9000122" sex="m" ttr="1312">
+      <entry competition="Jugend Q" order="1794775690984001"/>
+    </player>
+    <player attendance="present" birthyear="1993" club-name="Verein D" firstname="VorJugend Q3" id="e0ab8de3d21d" internal-nr="Jugend Q-3" lastname="NachJugend Q3" licence-nr="9000123" sex="m" ttr="1656">
+      <entry competition="Jugend Q" order="1794775690984002"/>
+    </player>
+    <player attendance="present" birthyear="1994" club-name="Verein E" firstname="VorJugend Q4" id="735e0cdc365a" internal-nr="Jugend Q-4" lastname="NachJugend Q4" licence-nr="9000124" sex="m" ttr="1233">
+      <entry competition="Jugend Q" order="1794775690984003"/>
+    </player>
+    <player attendance="present" birthyear="1995" club-name="Verein F" firstname="VorJugend Q5" id="505e814b3539" internal-nr="Jugend Q-5" lastname="NachJugend Q5" licence-nr="9000125" sex="m" ttr="1524">
+      <entry competition="Jugend Q" order="1794775690984004"/>
+    </player>
+    <player attendance="present" birthyear="1996" club-name="Verein A" firstname="VorJugend Q6" id="86b3bce7460c" internal-nr="Jugend Q-6" lastname="NachJugend Q6" licence-nr="9000126" sex="m" ttr="1611">
+      <entry competition="Jugend Q" order="1794775690984005"/>
+    </player>
+    <player attendance="present" birthyear="1997" club-name="Verein B" firstname="VorJugend Q7" id="4062871dccf1" internal-nr="Jugend Q-7" lastname="NachJugend Q7" licence-nr="9000127" sex="m" ttr="1950">
+      <entry competition="Jugend Q" order="1794775690984006"/>
+    </player>
+    <player attendance="present" birthyear="1998" club-name="Verein C" firstname="VorJugend Q8" id="81726ce6b41c" internal-nr="Jugend Q-8" lastname="NachJugend Q8" licence-nr="9000128" sex="m" ttr="1915">
+      <entry competition="Jugend Q" order="1794775690984007"/>
+    </player>
+    <player attendance="present" birthyear="1999" club-name="Verein D" firstname="VorJugend Q9" id="06a039eb40f9" internal-nr="Jugend Q-9" lastname="NachJugend Q9" licence-nr="9000129" sex="m" ttr="1396">
+      <entry competition="Jugend Q" order="1794775690984008"/>
+    </player>
+    <player attendance="present" birthyear="2000" club-name="Verein E" firstname="VorJugend Q10" id="08a5734a73e9" internal-nr="Jugend Q-10" lastname="NachJugend Q10" licence-nr="90001210" sex="m" ttr="1821">
+      <entry competition="Jugend Q" order="1794775690984009"/>
+    </player>
+    <player attendance="present" birthyear="2001" club-name="Verein F" firstname="VorJugend Q11" id="1e3c45ef8943" internal-nr="Jugend Q-11" lastname="NachJugend Q11" licence-nr="90001211" sex="m" ttr="1168">
+      <entry competition="Jugend Q" order="1794775690984010"/>
+    </player>
+    <player attendance="present" birthyear="2002" club-name="Verein A" firstname="VorJugend Q12" id="6267f86b52bd" internal-nr="Jugend Q-12" lastname="NachJugend Q12" licence-nr="90001212" sex="m" ttr="1372">
+      <entry competition="Jugend Q" order="1794775690984011"/>
+    </player>
+    <player attendance="present" birthyear="2003" club-name="Verein B" firstname="VorJugend Q13" id="58ceabf8a1b5" internal-nr="Jugend Q-13" lastname="NachJugend Q13" licence-nr="90001213" sex="m" ttr="1261">
+      <entry competition="Jugend Q" order="1794775690984012"/>
+    </player>
+    <player attendance="present" birthyear="2004" club-name="Verein C" firstname="VorJugend Q14" id="50e73c6cac07" internal-nr="Jugend Q-14" lastname="NachJugend Q14" licence-nr="90001214" sex="m" ttr="1407">
+      <entry competition="Jugend Q" order="1794775690984013"/>
+    </player>
+    <player attendance="present" birthyear="2005" club-name="Verein D" firstname="VorJugend Q15" id="7464ce42aa3d" internal-nr="Jugend Q-15" lastname="NachJugend Q15" licence-nr="90001215" sex="m" ttr="1395">
+      <entry competition="Jugend Q" order="1794775690984014"/>
+    </player>
+    <player attendance="present" birthyear="2006" club-name="Verein E" firstname="VorJugend Q16" id="9b6785b6dd90" internal-nr="Jugend Q-16" lastname="NachJugend Q16" licence-nr="90001216" sex="m" ttr="1364">
+      <entry competition="Jugend Q" order="1794775690984015"/>
+    </player>
+    <player attendance="present" birthyear="1991" club-name="Verein B" firstname="VorDamen1" id="468bbe9f89fc" internal-nr="Damen-1" lastname="NachDamen1" licence-nr="9000131" paid="cash" paid-at="2026-11-15T21:48:11" paid-cents="800" sex="m" ttr="1392">
+      <entry competition="Damen Einzel" from="registration" order="1794775691005000"/>
+    </player>
+    <player attendance="present" birthyear="1992" club-name="Verein C" firstname="VorDamen2" id="43f200be5788" internal-nr="Damen-2" lastname="NachDamen2" licence-nr="9000132" paid="waived" paid-at="2026-11-15T21:48:11" paid-cents="800" sex="w" ttr="1200" waived-reason="Helfer">
+      <entry competition="Damen Einzel" from="registration" order="1794775691005001"/>
+    </player>
+    <player attendance="withdrawn" birthyear="1993" club-name="Verein D" firstname="VorDamen3" id="ea0446b9d4c8" internal-nr="Damen-3" lastname="NachDamen3" licence-nr="9000133" sex="m" ttr="1375">
+      <registration competition="Damen Einzel"/>
+    </player>
+    <player attendance="withdraw-requested" birthyear="1994" club-name="Verein E" firstname="VorDamen4" id="7aa036d42cb1" internal-nr="Damen-4" lastname="NachDamen4" licence-nr="9000134" sex="w" ttr="1398">
+      <registration competition="Damen Einzel"/>
+    </player>
+    <player birthyear="1995" club-name="Verein F" firstname="VorDamen5" id="c4f84a30c347" internal-nr="Damen-5" lastname="NachDamen5" licence-nr="9000135" sex="m" ttr="1263">
+      <registration competition="Damen Einzel"/>
+    </player>
+    <player birthyear="1996" club-name="Verein A" firstname="VorDamen6" id="97bb286f9b8e" internal-nr="Damen-6" lastname="NachDamen6" licence-nr="9000136" sex="w" ttr="1210">
+      <waiting-list competition="Damen Einzel"/>
+    </player>
+  </players>
+  <matches>
+    <match a="514f05537e50" b="f1a2803a283a" class="Herren A" finished-at="2026-11-15T21:48:10" group="0" id="82ce233c397c" ko-index="-1" ko-round="-1" number="1" points="11-4,9-11,11-4,11-4" queue="1" round="1" sets-a="3" sets-b="1" stage="Gruppe A" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="f254cb45a25f" b="27abdc87b504" class="Herren A" finished-at="2026-11-15T21:48:10" group="0" id="34024cd80003" ko-index="-1" ko-round="-1" number="2" points="11-5,9-11,11-5,11-5" queue="2" round="1" sets-a="3" sets-b="1" stage="Gruppe A" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="d88a4c32de42" b="01ed8613c061" class="Herren A" finished-at="2026-11-15T21:48:10" group="1" id="2e72a71e0d52" ko-index="-1" ko-round="-1" number="3" points="11-6,9-11,11-6,11-6" queue="3" round="1" sets-a="3" sets-b="1" stage="Gruppe B" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="6721b4ebccbb" b="ed2fcb342a72" class="Herren A" finished-at="2026-11-15T21:48:10" group="1" id="da2a73791a65" ko-index="-1" ko-round="-1" number="4" points="11-7,9-11,11-7,11-7" queue="4" round="1" sets-a="3" sets-b="1" stage="Gruppe B" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="9943155394df" b="a8d9985556c2" class="Herren A" finished-at="2026-11-15T21:48:10" group="2" id="8fad140009af" ko-index="-1" ko-round="-1" number="5" points="11-8,9-11,11-8,11-8" queue="5" round="1" sets-a="3" sets-b="1" stage="Gruppe C" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="07d92538d11d" b="ea30146d694d" class="Herren A" finished-at="2026-11-15T21:48:10" group="2" id="f6662a0414c7" ko-index="-1" ko-round="-1" number="6" points="11-9,9-11,11-9,11-9" queue="6" round="1" sets-a="3" sets-b="1" stage="Gruppe C" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="514f05537e50" b="27abdc87b504" class="Herren A" finished-at="2026-11-15T21:48:10" group="0" id="f567e5ff4713" ko-index="-1" ko-round="-1" number="7" points="11-3,9-11,11-3,11-3" queue="7" round="2" sets-a="3" sets-b="1" stage="Gruppe A" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="f254cb45a25f" b="f1a2803a283a" class="Herren A" finished-at="2026-11-15T21:48:10" group="0" id="ecbf0d6b99cc" ko-index="-1" ko-round="-1" number="8" points="11-4,9-11,11-4,11-4" queue="8" round="2" sets-a="3" sets-b="1" stage="Gruppe A" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="d88a4c32de42" b="ed2fcb342a72" class="Herren A" finished-at="2026-11-15T21:48:10" group="1" id="60b81d5aa70e" ko-index="-1" ko-round="-1" number="9" points="11-5,9-11,11-5,11-5" queue="9" round="2" sets-a="3" sets-b="1" stage="Gruppe B" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="6721b4ebccbb" b="01ed8613c061" class="Herren A" finished-at="2026-11-15T21:48:10" group="1" id="1892e79aeb50" ko-index="-1" ko-round="-1" number="10" points="11-6,9-11,11-6,11-6" queue="10" round="2" sets-a="3" sets-b="1" stage="Gruppe B" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="9943155394df" b="ea30146d694d" class="Herren A" finished-at="2026-11-15T21:48:10" group="2" id="06e18fc467bd" ko-index="-1" ko-round="-1" number="11" points="11-7,9-11,11-7,11-7" queue="11" round="2" sets-a="3" sets-b="1" stage="Gruppe C" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="07d92538d11d" b="a8d9985556c2" class="Herren A" finished-at="2026-11-15T21:48:10" group="2" id="fe9e429259d0" ko-index="-1" ko-round="-1" number="12" points="11-8,9-11,11-8,11-8" queue="12" round="2" sets-a="3" sets-b="1" stage="Gruppe C" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="514f05537e50" b="f254cb45a25f" class="Herren A" finished-at="2026-11-15T21:48:10" group="0" id="fa45ea1f9ef5" ko-index="-1" ko-round="-1" number="13" points="11-9,9-11,11-9,11-9" queue="13" round="3" sets-a="3" sets-b="1" stage="Gruppe A" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="f1a2803a283a" b="27abdc87b504" class="Herren A" finished-at="2026-11-15T21:48:10" group="0" id="7d5511dff0e0" ko-index="-1" ko-round="-1" number="14" points="11-3,9-11,11-3,11-3" queue="14" round="3" sets-a="3" sets-b="1" stage="Gruppe A" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="d88a4c32de42" b="6721b4ebccbb" class="Herren A" finished-at="2026-11-15T21:48:10" group="1" id="5466477d71fa" ko-index="-1" ko-round="-1" number="15" points="11-4,9-11,11-4,11-4" queue="15" round="3" sets-a="3" sets-b="1" stage="Gruppe B" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="01ed8613c061" b="ed2fcb342a72" class="Herren A" finished-at="2026-11-15T21:48:10" group="1" id="b9a0fb52fbed" ko-index="-1" ko-round="-1" number="16" points="11-5,9-11,11-5,11-5" queue="16" round="3" sets-a="3" sets-b="1" stage="Gruppe B" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="9943155394df" b="07d92538d11d" class="Herren A" finished-at="2026-11-15T21:48:10" group="2" id="4af8f63d8eb8" ko-index="-1" ko-round="-1" number="17" points="11-6,9-11,11-6,11-6" queue="17" round="3" sets-a="3" sets-b="1" stage="Gruppe C" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="a8d9985556c2" b="ea30146d694d" class="Herren A" finished-at="2026-11-15T21:48:10" group="2" id="24544402bef0" ko-index="-1" ko-round="-1" number="18" points="11-7,9-11,11-7,11-7" queue="18" round="3" sets-a="3" sets-b="1" stage="Gruppe C" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="f254cb45a25f" b="07d92538d11d" class="Herren A – Phase 2" finished-at="2026-11-15T21:48:10" group="-1" id="ba3963f38a58" ko-index="1" ko-round="0" number="1" points="4-11,11-9,4-11,4-11" queue="19" round="1" sets-a="1" sets-b="3" stage="Viertelfinale" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="9943155394df" b="6721b4ebccbb" class="Herren A – Phase 2" finished-at="2026-11-15T21:48:10" group="-1" id="bbbb48a56104" ko-index="3" ko-round="0" number="2" points="11-5,9-11,11-5,11-5" queue="20" round="1" sets-a="3" sets-b="1" stage="Viertelfinale" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="d88a4c32de42" b="07d92538d11d" class="Herren A – Phase 2" finished-at="2026-11-15T21:48:10" group="-1" id="4cc49196b558" ko-index="0" ko-round="1" number="3" points="11-6,9-11,11-6,11-6" queue="21" round="2" sets-a="3" sets-b="1" stage="Halbfinale" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="514f05537e50" b="9943155394df" class="Herren A – Phase 2" group="-1" id="24f943e3d8f1" ko-index="1" ko-round="1" number="4" queue="22" round="2" stage="Halbfinale" started-at="2026-11-15T21:48:10" status="ACTIVE" table="2"/>
+    <match a="d88a4c32de42" class="Herren A – Phase 2" group="-1" id="b3e08892b4a4" ko-index="0" ko-round="2" number="5" queue="0" round="3" stage="Finale" status="PLANNED"/>
+    <match a="4062871dccf1" b="7464ce42aa3d" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="0" id="4a35898c50b0" ko-index="-1" ko-round="-1" number="1" points="11-4,9-11,11-4,11-4" queue="23" round="1" sets-a="3" sets-b="1" stage="Gruppe A" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="50e73c6cac07" b="1e3c45ef8943" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="0" id="371e170fb5dc" ko-index="-1" ko-round="-1" number="2" points="11-5,9-11,11-5,11-5" queue="24" round="1" sets-a="3" sets-b="1" stage="Gruppe A" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="81726ce6b41c" b="6267f86b52bd" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="1" id="d6adb05767bf" ko-index="-1" ko-round="-1" number="3" points="11-6,9-11,11-6,11-6" queue="25" round="1" sets-a="3" sets-b="1" stage="Gruppe B" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="06a039eb40f9" b="735e0cdc365a" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="1" id="81227c8a93ae" ko-index="-1" ko-round="-1" number="4" points="11-7,9-11,11-7,11-7" queue="26" round="1" sets-a="3" sets-b="1" stage="Gruppe B" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="08a5734a73e9" b="004499f6358f" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="2" id="9d39751573c5" ko-index="-1" ko-round="-1" number="5" points="11-8,9-11,11-8,11-8" queue="27" round="1" sets-a="3" sets-b="1" stage="Gruppe C" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="505e814b3539" b="568ff86688a4" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="2" id="4b87ec2cbbaf" ko-index="-1" ko-round="-1" number="6" points="11-9,9-11,11-9,11-9" queue="28" round="1" sets-a="3" sets-b="1" stage="Gruppe C" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="e0ab8de3d21d" b="9b6785b6dd90" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="3" id="63e0225d373a" ko-index="-1" ko-round="-1" number="7" points="11-3,9-11,11-3,11-3" queue="29" round="1" sets-a="3" sets-b="1" stage="Gruppe D" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="86b3bce7460c" b="58ceabf8a1b5" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="3" id="8080f1c21e56" ko-index="-1" ko-round="-1" number="8" points="11-4,9-11,11-4,11-4" queue="30" round="1" sets-a="3" sets-b="1" stage="Gruppe D" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="4062871dccf1" b="1e3c45ef8943" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="0" id="3cb4c92febc5" ko-index="-1" ko-round="-1" number="9" points="11-5,9-11,11-5,11-5" queue="31" round="2" sets-a="3" sets-b="1" stage="Gruppe A" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="50e73c6cac07" b="7464ce42aa3d" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="0" id="c0e3329c2e7a" ko-index="-1" ko-round="-1" number="10" points="11-6,9-11,11-6,11-6" queue="32" round="2" sets-a="3" sets-b="1" stage="Gruppe A" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="81726ce6b41c" b="735e0cdc365a" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="1" id="8c5a9ded41b6" ko-index="-1" ko-round="-1" number="11" points="11-7,9-11,11-7,11-7" queue="33" round="2" sets-a="3" sets-b="1" stage="Gruppe B" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="06a039eb40f9" b="6267f86b52bd" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="1" id="e24f3a4549c6" ko-index="-1" ko-round="-1" number="12" points="11-8,9-11,11-8,11-8" queue="34" round="2" sets-a="3" sets-b="1" stage="Gruppe B" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="08a5734a73e9" b="568ff86688a4" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="2" id="d7457716e397" ko-index="-1" ko-round="-1" number="13" points="11-9,9-11,11-9,11-9" queue="35" round="2" sets-a="3" sets-b="1" stage="Gruppe C" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="505e814b3539" b="004499f6358f" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="2" id="de2e87cab896" ko-index="-1" ko-round="-1" number="14" points="11-3,9-11,11-3,11-3" queue="36" round="2" sets-a="3" sets-b="1" stage="Gruppe C" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="e0ab8de3d21d" b="58ceabf8a1b5" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="3" id="99db72de66ec" ko-index="-1" ko-round="-1" number="15" points="11-4,9-11,11-4,11-4" queue="37" round="2" sets-a="3" sets-b="1" stage="Gruppe D" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="86b3bce7460c" b="9b6785b6dd90" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="3" id="758ce55d905b" ko-index="-1" ko-round="-1" number="16" points="11-5,9-11,11-5,11-5" queue="38" round="2" sets-a="3" sets-b="1" stage="Gruppe D" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="4062871dccf1" b="50e73c6cac07" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="0" id="f8b9542b1390" ko-index="-1" ko-round="-1" number="17" points="11-6,9-11,11-6,11-6" queue="39" round="3" sets-a="3" sets-b="1" stage="Gruppe A" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="7464ce42aa3d" b="1e3c45ef8943" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="0" id="e5a721af84c1" ko-index="-1" ko-round="-1" number="18" points="11-7,9-11,11-7,11-7" queue="40" round="3" sets-a="3" sets-b="1" stage="Gruppe A" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="81726ce6b41c" b="06a039eb40f9" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="1" id="1e820a7fe985" ko-index="-1" ko-round="-1" number="19" points="11-8,9-11,11-8,11-8" queue="41" round="3" sets-a="3" sets-b="1" stage="Gruppe B" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="6267f86b52bd" b="735e0cdc365a" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="1" id="cd0bbd781fb1" ko-index="-1" ko-round="-1" number="20" points="11-9,9-11,11-9,11-9" queue="42" round="3" sets-a="3" sets-b="1" stage="Gruppe B" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="08a5734a73e9" b="505e814b3539" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="2" id="ef1ce50c46db" ko-index="-1" ko-round="-1" number="21" points="11-3,9-11,11-3,11-3" queue="43" round="3" sets-a="3" sets-b="1" stage="Gruppe C" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="004499f6358f" b="568ff86688a4" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="2" id="332a7f86a24c" ko-index="-1" ko-round="-1" number="22" points="11-4,9-11,11-4,11-4" queue="44" round="3" sets-a="3" sets-b="1" stage="Gruppe C" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="e0ab8de3d21d" b="86b3bce7460c" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="3" id="72602bcce94f" ko-index="-1" ko-round="-1" number="23" points="11-5,9-11,11-5,11-5" queue="45" round="3" sets-a="3" sets-b="1" stage="Gruppe D" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="9b6785b6dd90" b="58ceabf8a1b5" class="Jugend Q" finished-at="2026-11-15T21:48:10" group="3" id="e15a997312f6" ko-index="-1" ko-round="-1" number="24" points="11-6,9-11,11-6,11-6" queue="46" round="3" sets-a="3" sets-b="1" stage="Gruppe D" started-at="2026-11-15T21:48:10" status="DONE"/>
+    <match a="505e814b3539" b="9b6785b6dd90" class="Jugend Q – Phase 2" finished-at="2026-11-15T21:48:11" group="-1" id="ff55b0a09d8f" ko-index="-1" ko-round="-1" number="1" points="11-4,9-11,11-4,11-4" queue="47" round="1" sets-a="3" sets-b="1" stage="Qualifikation Runde 1" started-at="2026-11-15T21:48:11" status="DONE"/>
+    <match a="06a039eb40f9" b="004499f6358f" class="Jugend Q – Phase 2" finished-at="2026-11-15T21:48:11" group="-1" id="f95edda99eba" ko-index="-1" ko-round="-1" number="2" points="11-5,9-11,11-5,11-5" queue="48" round="1" sets-a="3" sets-b="1" stage="Qualifikation Runde 1" started-at="2026-11-15T21:48:11" status="DONE"/>
+    <match a="86b3bce7460c" b="7464ce42aa3d" class="Jugend Q – Phase 2" finished-at="2026-11-15T21:48:11" group="-1" id="026ff2c907fb" ko-index="-1" ko-round="-1" number="3" points="11-6,9-11,11-6,11-6" queue="49" round="1" sets-a="3" sets-b="1" stage="Qualifikation Runde 1" started-at="2026-11-15T21:48:11" status="DONE"/>
+    <match a="50e73c6cac07" b="6267f86b52bd" class="Jugend Q – Phase 2" finished-at="2026-11-15T21:48:11" group="-1" id="404e8c5e48e1" ko-index="-1" ko-round="-1" number="4" points="11-7,9-11,11-7,11-7" queue="50" round="1" sets-a="3" sets-b="1" stage="Qualifikation Runde 1" started-at="2026-11-15T21:48:11" status="DONE"/>
+    <match a="pair:3ac9e7abe20f" b="pair:30ad9da14d4b" class="Herren Doppel" finished-at="2026-11-15T21:48:11" group="-1" id="0b4fdc2a92b6" ko-index="0" ko-round="0" number="1" points="11-4,9-11,11-4,11-4" queue="51" round="1" sets-a="3" sets-b="1" stage="Halbfinale" status="DONE"/>
+    <match a="pair:4dc445060af6" b="pair:648280944c9b" class="Herren Doppel" finished-at="2026-11-15T21:48:11" group="-1" id="bb1f427cb731" ko-index="1" ko-round="0" number="2" points="5-11,11-9,5-11,5-11" queue="52" round="1" sets-a="1" sets-b="3" stage="Halbfinale" started-at="2026-11-15T21:48:11" status="DONE"/>
+    <match a="pair:3ac9e7abe20f" b="pair:648280944c9b" class="Herren Doppel" group="-1" id="a753d3b47c1a" ko-index="0" ko-round="1" number="3" queue="53" round="2" stage="Finale" status="QUEUED"/>
+  </matches>
+  <pairs>
+    <pair class="Herren Doppel" first="514f05537e50" id="3ac9e7abe20f" second="d88a4c32de42"/>
+    <pair class="Herren Doppel" first="ea30146d694d" id="30ad9da14d4b" second="a8d9985556c2"/>
+    <pair class="Herren Doppel" first="27abdc87b504" id="4dc445060af6" second="6721b4ebccbb"/>
+    <pair class="Herren Doppel" first="01ed8613c061" id="648280944c9b" second="f254cb45a25f"/>
+  </pairs>
+</hts-tournament>

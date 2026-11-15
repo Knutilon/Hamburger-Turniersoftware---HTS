@@ -143,6 +143,11 @@ public final class LiveServer {
         return "http://" + host + ":" + port + "/anmeldung/" + token;
     }
 
+    /** 1.1 (#93): Adresse der Ergebnisseite eines Tisches. */
+    public static String resultUrl(String host, int port, Tournament t, int table) {
+        return "http://" + host + ":" + port + "/ergebnis/" + t.tableResultToken(table) + "/" + table;
+    }
+
     // --- Verteilung ------------------------------------------------------------------------------
 
     private void handle(HttpExchange ex) throws IOException {
@@ -161,6 +166,10 @@ public final class LiveServer {
             }
             if (path.startsWith("/anmeldung/")) {
                 handleCheckin(ex, path.substring("/anmeldung/".length()), method);
+                return;
+            }
+            if (path.startsWith("/ergebnis/")) {                 // 1.1 (#93): Ergebnis per Handy am Tisch
+                handleResult(ex, path.substring("/ergebnis/".length()), method);
                 return;
             }
             if (!"GET".equals(method)) {
@@ -539,6 +548,93 @@ public final class LiveServer {
         b.append("<script>try{localStorage.setItem('hts-me',JSON.stringify({id:").append(json(p.getId())).append(",name:")
                 .append(json(p.getDisplayName())).append("}));}catch(e){}</script>");
         return page("Meine Spiele", b.toString(), true);
+    }
+
+    // --- 1.1 (#93): Ergebnis per Handy ----------------------------------------------------------
+
+    private void handleResult(HttpExchange ex, String rest, String method) throws Exception {
+        String[] parts = rest.split("/");
+        int table;
+        try {
+            table = parts.length >= 2 ? Integer.parseInt(parts[1]) : -1;
+        } catch (NumberFormatException e) {
+            table = -1;
+        }
+        final int tb = table;
+        boolean ok = tb >= 1 && call(() -> t.isPhoneResults() && tb <= t.getTableCount() && parts[0].equals(t.tableResultToken(tb)));
+        if (!ok) {
+            send(ex, 404, "text/html", page("Nicht gefunden", "<p>Diese Seite gibt es nicht (oder Ergebnisse per Handy sind ausgeschaltet).</p>", false));
+            return;
+        }
+        if (parts.length == 2 && "GET".equals(method)) {
+            send(ex, 200, "text/html", call(() -> resultEntryPage(tb)));
+        } else if (parts.length == 3 && parts[2].equals("melden") && "POST".equals(method)) {
+            byte[] body;
+            try (InputStream in = ex.getRequestBody()) {
+                body = in.readNBytes(16 * 1024);
+            }
+            Map<String, String> form = parseQuery(new String(body, StandardCharsets.UTF_8));
+            send(ex, 200, "application/json", call(() -> submitResult(tb, form.getOrDefault("nr", ""), form.getOrDefault("saetze", ""))));
+        } else {
+            send(ex, 404, "text/plain", "Nicht gefunden");
+        }
+    }
+
+    /** „11:5,9:11,11:7“ → Sätze; leere Sätze werden übersprungen. */
+    static List<int[]> parseSets(String s) {
+        List<int[]> out = new ArrayList<>();
+        for (String part : s.split(",")) {
+            String p = part.trim();
+            if (p.isEmpty() || p.equals(":")) continue;
+            String[] ab = p.split(":");
+            if (ab.length != 2 || ab[0].isBlank() || ab[1].isBlank()) throw new IllegalArgumentException("Bitte jeden Satz vollständig angeben, z. B. 11:7.");
+            out.add(new int[]{Integer.parseInt(ab[0].trim()), Integer.parseInt(ab[1].trim())});
+        }
+        if (out.isEmpty()) throw new IllegalArgumentException("Bitte die Sätze eintragen.");
+        return out;
+    }
+
+    private String submitResult(int table, String nr, String sets) {
+        try {
+            boolean direct = t.submitPhoneResult(table, Integer.parseInt(nr.trim()), parseSets(sets));
+            onChange.run();
+            return "{\"ok\":true,\"msg\":" + json(direct ? "Ergebnis eingetragen – danke!" : "Ergebnis gemeldet – die Turnierleitung bestätigt es.") + "}";
+        } catch (NumberFormatException e) {
+            return "{\"ok\":false,\"msg\":" + json("Bitte nur Zahlen eintragen.") + "}";
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return "{\"ok\":false,\"msg\":" + json(e.getMessage()) + "}";
+        }
+    }
+
+    private String resultEntryPage(int table) {
+        Match m = t.activeMatchAt(table).orElse(null);
+        StringBuilder b = new StringBuilder();
+        b.append("<h2>").append(esc(t.tableName(table))).append("</h2>");
+        if (m == null || m.getStatus() != de.hts.tournament.MatchStatus.ACTIVE) {
+            b.append("<p class=\"muted\">Gerade läuft hier kein Spiel. Seite neu laden, sobald das nächste Spiel am Tisch ist.</p>")
+                    .append("<button onclick=\"location.reload()\">Neu laden</button>");
+            return page("Ergebnis eintragen", b.toString(), false);
+        }
+        int maxSets = t.winningSets(m) * 2 - 1;
+        String a = t.entrantName(m, m.getA()), bn = t.entrantName(m, m.getB());
+        b.append("<div class=\"card\"><div class=\"muted\">").append(esc(className(m))).append(" · ").append(esc(m.getStage()))
+                .append(" · Spiel ").append(m.getNumber()).append("</div><p><b>").append(esc(a)).append("</b><br>gegen<br><b>")
+                .append(esc(bn)).append("</b></p></div>");
+        b.append("<div class=\"card\"><table class=\"sets\"><tr><th>Satz</th><th>").append(esc(a)).append("</th><th>")
+                .append(esc(bn)).append("</th></tr>");
+        for (int k = 1; k <= maxSets; k++) {
+            b.append("<tr><td>").append(k).append("</td><td><input inputmode=\"numeric\" class=\"pa\" size=\"3\"></td>")
+                    .append("<td><input inputmode=\"numeric\" class=\"pb\" size=\"3\"></td></tr>");
+        }
+        b.append("</table><button onclick=\"send()\">Ergebnis melden</button></div><div id=\"msg\" class=\"card ok\" style=\"display:none\"></div>");
+        b.append("<script>function send(){var a=[].map.call(document.querySelectorAll('.pa'),x=>x.value.trim()),")
+                .append("b=[].map.call(document.querySelectorAll('.pb'),x=>x.value.trim()),s=[];")
+                .append("for(var i=0;i<a.length;i++){if(a[i]===''&&b[i]==='')continue;s.push(a[i]+':'+b[i]);}")
+                .append("fetch(location.pathname+'/melden',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},")
+                .append("body:'nr=").append(m.getNumber()).append("&saetze='+encodeURIComponent(s.join(','))}).then(r=>r.json()).then(d=>{")
+                .append("var e=document.getElementById('msg');e.style.display='block';e.className='card '+(d.ok?'ok':'warn');e.textContent=d.msg;})")
+                .append(".catch(()=>{var e=document.getElementById('msg');e.style.display='block';e.className='card warn';e.textContent='Keine Verbindung zum Turnier-Laptop.';});}</script>");
+        return page("Ergebnis eintragen", b.toString(), false);
     }
 
     // --- Anmeldung -------------------------------------------------------------------------------

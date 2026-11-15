@@ -534,7 +534,8 @@ public final class PresentationShow {
             Label nr = new Label((offset + i + 1) + ".");
             nr.getStyleClass().add("pos");
             Label cls = new Label(m.getClassName());
-            Label st = new Label(m.getStage());
+            String at = tournament.startText(m);                     // 1.1 (#86): geplante Startzeit der Runde
+            Label st = new Label(m.getStage() + (at.isEmpty() ? "" : " · " + at));
             Label no = new Label(String.valueOf(m.getNumber()));
             Label who = new Label(tournament.partyFullName(m, m.getA()) + tournament.handicapSuffix(m, m.getA()) + "  –  "
                     + tournament.partyFullName(m, m.getB()) + tournament.handicapSuffix(m, m.getB()));

@@ -319,6 +319,10 @@ public final class PlayingClass {
     public java.time.LocalDateTime getScheduleAnchor() { return scheduleAnchor; }
     public void setScheduleAnchor(java.time.LocalDateTime t) { scheduleAnchor = t; }
     public java.util.Set<String> getReleasedRounds() { return releasedRounds; }
+    /** 1.1 (#88): eingestellte Startzeit des Zeitplans (an der Hauptklasse; {@code null} = ab Start der Klasse). */
+    private java.time.LocalDateTime scheduleStart;
+    public java.time.LocalDateTime getScheduleStart() { return scheduleStart; }
+    public void setScheduleStart(java.time.LocalDateTime t) { scheduleStart = t == null ? null : t.withSecond(0).withNano(0); }
     public java.util.Set<String> getAskedRounds() { return askedRounds; }
 
     public void setQualification(int direct, int ko, int rounds) { qualDirect = Math.max(0, direct); qualKo = Math.max(0, ko); qualRounds = Math.max(0, rounds); }

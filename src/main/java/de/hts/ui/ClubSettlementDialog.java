@@ -124,7 +124,7 @@ final class ClubSettlementDialog extends Dialog<ClubSettlementDialog.Result> {
                     + (tournament.isLateEntry(p) && tournament.getLateFeeCents() > 0 ? " + Nachmeldung" : ""));
             cls.getStyleClass().add("hint");
             Label fee = new Label(Tournament.euro(p.isPaid() ? p.getPaidCents() : tournament.feeOf(p)));
-            Label state = new Label(p.isPaid() ? "bezahlt (" + p.getPayment().getLabel() + ")" : "offen");
+            Label state = new Label(p.getPayment() == Player.Payment.WAIVED ? "erlassen" : p.isPaid() ? "bezahlt (" + p.getPayment().getLabel() + ")" : "offen");
             state.getStyleClass().add(p.isPaid() ? "fee-paid-label" : "fee-open-label");
             rows.addRow(r++, cb, name, cls, fee, state);
         }

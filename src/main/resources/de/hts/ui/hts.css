@@ -930,3 +930,29 @@
 .match-option { -fx-background-color: white; -fx-border-color: -hts-line; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 8 10 8 10; }
 .match-option-selected { -fx-border-color: -hts-navy; -fx-border-width: 2; }
 .match-done-row { -fx-background-color: white; -fx-border-color: -hts-line; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 10 16 10 16; }
+
+/* 1.1 (#89): Angemeldet, aber noch nicht bezahlt – hellblau (kein Warngelb); erlassen */
+.table-row-cell.fee-pending-row { -fx-background-color: #e8f7f9; }
+.table-row-cell.fee-pending-row:selected { -fx-background-color: -fx-selection-bar; }
+.table-cell.fee-pending { -fx-text-fill: #1d6b7a; -fx-font-weight: bold; }
+.table-cell.fee-waived { -fx-text-fill: #4b3d7a; -fx-font-weight: bold; }
+.table-row-cell:selected .table-cell.fee-pending, .table-row-cell:selected .table-cell.fee-waived { -fx-text-fill: white; }
+.fee-pending-banner { -fx-background-color: #e8f7f9; -fx-border-color: #a8dde4; -fx-border-radius: 10; -fx-background-radius: 10;
+    -fx-padding: 8 14 8 14; -fx-text-fill: #0f4552; }
+.fee-pending-text { -fx-text-fill: #0f4552; }
+.fee-pending-count { -fx-background-color: #1d6b7a; -fx-text-fill: white; -fx-background-radius: 999; -fx-padding: 2 10 2 10;
+    -fx-font-weight: bold; }
+.fee-pending-button { -fx-background-color: white; -fx-border-color: #1d6b7a; -fx-text-fill: #1d6b7a; -fx-border-radius: 999;
+    -fx-background-radius: 999; -fx-font-weight: bold; -fx-padding: 5 14 5 14; }
+.fee-pending-button:selected { -fx-background-color: #1d6b7a; -fx-text-fill: white; }
+
+/* 1.1 (#91): Bedienung mit dem Finger (Stilklasse „touch“ am Fenster, sobald es berührt wird) */
+.touch .button, .touch .toggle-button, .touch .menu-button, .touch .combo-box-base, .touch .text-field { -fx-min-height: 44px; }
+.touch .check-box .box, .touch .radio-button .radio { -fx-padding: 0.55em; }
+.touch .check-box, .touch .radio-button { -fx-min-height: 40px; }
+.touch .table-row-cell { -fx-cell-size: 42px; }
+.touch .list-cell { -fx-padding: 10 8 10 8; }
+.touch .menu-item { -fx-padding: 0.9em 1.4em 0.9em 1.4em; }
+.touch .scroll-bar:vertical { -fx-pref-width: 22px; }
+.touch .scroll-bar:horizontal { -fx-pref-height: 22px; }
+.touch .spinner .increment-arrow-button, .touch .spinner .decrement-arrow-button { -fx-padding: 0.7em 0.9em 0.7em 0.9em; }

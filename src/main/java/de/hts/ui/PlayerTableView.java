@@ -36,6 +36,9 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.util.StringConverter;
 
 import java.text.Collator;
@@ -89,8 +92,10 @@ public final class PlayerTableView {
                 @Override
                 protected void updateItem(Player p, boolean empty) {
                     super.updateItem(p, empty);
-                    getStyleClass().removeAll("attendance-withdrawn", "attendance-requested");
+                    getStyleClass().removeAll("attendance-withdrawn", "attendance-requested", "fee-pending-row");
                     boolean reserve = p != null && p.isReserveOnly();          // 0.38 (#55): Nachrücker ohne Zeilenfarbe
+                    // 1.1 (#89): nach dem Turnierstart Angemeldete ohne Zahlung hellblau markieren
+                    if (!empty && p != null && p.isPresent() && pendingMark.test(p)) getStyleClass().add("fee-pending-row");
                     if (!empty && p != null && !reserve && p.getAttendance() == Attendance.WITHDRAWN) getStyleClass().add("attendance-withdrawn");
                     if (!empty && p != null && !reserve && p.getAttendance() == Attendance.WITHDRAW_REQUESTED) getStyleClass().add("attendance-requested");
                 }
@@ -231,13 +236,18 @@ public final class PlayerTableView {
             @Override
             protected void updateItem(Player p, boolean empty) {
                 super.updateItem(p, empty);
-                getStyleClass().removeAll("fee-open", "fee-paid");
+                getStyleClass().removeAll("fee-open", "fee-paid", "fee-waived", "fee-pending");
                 setTooltip(null);
                 if (empty || p == null) {
                     setText(null);
                     return;
                 }
-                if (p.isPaid()) {
+                if (p.getPayment() == Player.Payment.WAIVED) {            // 1.1 (#89)
+                    setText("erlassen");
+                    getStyleClass().add("fee-waived");
+                    setTooltip(new Tooltip("Gebühr erlassen (" + de.hts.tournament.Tournament.euro(p.getPaidCents()) + ")"
+                            + (p.getWaivedReason() != null ? ": " + p.getWaivedReason() : "")));
+                } else if (p.isPaid()) {
                     setText(p.getPayment().getLabel() + (p.getPaidByClub() != null ? " (Verein)" : ""));
                     getStyleClass().add("fee-paid");
                     setTooltip(new Tooltip("Bezahlt: " + de.hts.tournament.Tournament.euro(p.getPaidCents()) + ", "
@@ -245,7 +255,7 @@ public final class PlayerTableView {
                             + (p.getPaidAt() != null ? ", " + p.getPaidAt().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM. HH:mm")) + " Uhr" : "")));
                 } else if (feeSource.applyAsInt(p) > 0) {
                     setText("offen");
-                    getStyleClass().add("fee-open");
+                    getStyleClass().add(p.isPresent() && pendingMark.test(p) ? "fee-pending" : "fee-open");
                 } else {
                     setText("");
                 }
@@ -253,6 +263,8 @@ public final class PlayerTableView {
         });
         paidCol.setSortable(false);
         paidCol.setVisible(false);
+        // 1.1: Spalte zeigt eine Person (kein Text) – Breite nach dem längsten möglichen Eintrag, nie „Überweis…“
+        paidCol.getProperties().put("fit-min", Ui.textWidth("Überweisung (Verein)", true, 13) + 24);
 
         table.getColumns().addAll(List.of(registered, paidCol, feeCol, reserve, seedCol, lastname, firstname, birth, sex, club, ttr,
                 entries, licence));
@@ -315,8 +327,41 @@ public final class PlayerTableView {
                     + (requested > 0 ? " · " + requested + " Abmeldung(en) zu bestätigen" : "");
         }, filtered, source, refreshTick);
 
-        root.setTop(searchBar);
+        // 1.1 (#89): Hinweis (hellblau) auf Angemeldete ohne Zahlung nach dem Turnierstart
+        pendingCount.getStyleClass().add("fee-pending-count");
+        pendingCount.setMinWidth(Region.USE_PREF_SIZE);
+        Label pendingText = new Label("Angemeldet, aber noch nicht bezahlt – hellblau markiert. Bezahlen oder erlassen per "
+                + "Rechtsklick oder „Aktion für Markierte wählen“.");
+        pendingText.setWrapText(true);
+        pendingText.setMinWidth(0);
+        pendingText.getStyleClass().add("fee-pending-text");
+        HBox.setHgrow(pendingText, Priority.ALWAYS);
+        onlyPending.getStyleClass().add("fee-pending-button");
+        onlyPending.setMinWidth(Region.USE_PREF_SIZE);
+        onlyPending.selectedProperty().addListener((o, a, b) -> {
+            onlyPending.setText(b ? "Alle zeigen" : "Nur diese zeigen");
+            updateFilter();
+        });
+        pendingBanner.getChildren().addAll(pendingCount, pendingText, onlyPending);
+        pendingBanner.setAlignment(Pos.CENTER_LEFT);
+        pendingBanner.getStyleClass().add("fee-pending-banner");
+        pendingBanner.managedProperty().bind(pendingBanner.visibleProperty());
+        pendingBanner.setVisible(false);
+        VBox top = new VBox(searchBar, pendingBanner);
+        VBox.setMargin(pendingBanner, new Insets(4, 10, 6, 10));
+        root.setTop(top);
         root.setCenter(table);
+    }
+
+    private final HBox pendingBanner = new HBox(12);
+    private final Label pendingCount = new Label();
+    private final javafx.scene.control.ToggleButton onlyPending = new javafx.scene.control.ToggleButton("Nur diese zeigen");
+
+    private void updatePendingBanner() {
+        long n = source.stream().filter(p -> p.isPresent() && pendingMark.test(p)).count();
+        pendingCount.setText(String.valueOf(n));
+        pendingBanner.setVisible(n > 0);
+        if (n == 0 && onlyPending.isSelected()) onlyPending.setSelected(false);
     }
 
     // --- Filter ------------------------------------------------------------
@@ -326,6 +371,14 @@ public final class PlayerTableView {
     private final TableColumn<Player, Player> paidCol = new TableColumn<>("Bezahlt");
     private java.util.function.ToIntFunction<Player> feeSource = p -> 0;
     private java.util.function.BooleanSupplier feesActive = () -> false;
+    private java.util.function.Predicate<Player> pendingMark = p -> false;
+
+    /** 1.1 (#89): welche Zeilen hellblau markiert werden (angemeldet, Gebühr offen, Turnier läuft). */
+    public void setPendingMark(java.util.function.Predicate<Player> mark) {
+        pendingMark = mark == null ? p -> false : mark;
+        table.refresh();
+        updatePendingBanner();
+    }
 
     /** 1.0 (#82): Gebühr je Person (Cent) und ob das Turnier überhaupt Gebühren hat (sonst Spalten ausblenden). */
     public void setFeeSource(java.util.function.ToIntFunction<Player> fee, java.util.function.BooleanSupplier active) {
@@ -352,8 +405,10 @@ public final class PlayerTableView {
         table.refresh();
         String club = clubFilter.getValue();
         boolean allClubs = club == null || ALL_CLASSES.equals(club);
+        boolean pendingOnly = onlyPending.isSelected();
         filtered.setPredicate(p -> f.test(p) && (all || p.isEnteredFor(cls) || p.getWaitingLists().contains(cls))
-                && (allClubs || club.equals(p.getClubName())));
+                && (allClubs || club.equals(p.getClubName()))
+                && (!pendingOnly || (p.isPresent() && pendingMark.test(p))));
     }
 
     /** Klassen für den Klassenfilter (Namen der Klassen ohne Folgephasen); eine gewählte Klasse bleibt erhalten. */
@@ -417,6 +472,7 @@ public final class PlayerTableView {
         setClassNames(classSource.get());
         updateClubs();
         table.refresh();
+        updatePendingBanner();
         updateFilter();
         Ui.fitColumns(table);                          // 0.36: Spalten so breit wie ihr Inhalt, notfalls Scrollleiste
         refreshTick.set(refreshTick.get() + 1);

@@ -779,7 +779,6 @@ Neuere Versionen öffnen ältere Turnierdateien (Zusage seit 0.42.0; jede Datei 
 - Eine Aufgabe wirkt nur in der Phase, in der sie passiert; für eine spätere Phase muss die Partei von Hand berücksichtigt werden.
 - Gruppen lassen sich nur vor dem Start der Phase per Drag & Drop ändern.
 - Der Handy-Zugang funktioniert nicht in WLANs, die Geräte voneinander trennen (Gäste-WLAN).
-- Die click-TT-Ergebnisdatei ist noch nicht gegen einen echten Upload in click-TT geprüft.
 - „Fertiges Turnier importieren“ übernimmt nur Phase 1 je Konkurrenz.
 - Ein Tisch lässt sich nur deaktivieren, solange kein Spiel an ihm liegt.
 

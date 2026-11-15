@@ -97,7 +97,7 @@ public final class TournamentFile {
 
     private static Map<String, String> readFolders(Element root) {
         Map<String, String> m = new java.util.LinkedHashMap<>();
-        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on", "pres-next", "late-fee-cents", "handicap", "hc", "imported", "model", "checkin-locked", "checkin-token")) {
+        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on", "pres-next", "late-fee-cents", "handicap", "hc", "imported", "model", "checkin-locked", "checkin-token", "phone-results", "phone-results-direct")) {
             String v = root.getAttribute(k);
             if (v != null && !v.isBlank()) m.put(k, v);
         }
@@ -168,6 +168,8 @@ public final class TournamentFile {
             m.put("model", "35");                       // 0.35: Anwesenheit / „In der Klasse“ erst nach Übernahme
             if (t.isCheckinLocked()) m.put("checkin-locked", "true");
             m.put("checkin-token", t.getCheckinToken());
+            if (t.isPhoneResults()) m.put("phone-results", "true");                       // 1.1 (#93)
+            if (t.isPhoneResultsDirect()) m.put("phone-results-direct", "true");
             if (t.isHandicap()) {
                 m.put("handicap", "true");
                 m.put("hc", t.getHandicapRules().encode());
@@ -210,6 +212,8 @@ public final class TournamentFile {
                 t.setHandicap("true".equals(folders.get("handicap")));
                 t.setImportedFinished("true".equals(folders.get("imported")));
                 t.restoreCheckin("true".equals(folders.get("checkin-locked")), folders.get("checkin-token"));
+                t.setPhoneResults("true".equals(folders.get("phone-results")));          // 1.1 (#93)
+                t.setPhoneResultsDirect("true".equals(folders.get("phone-results-direct")));
                 if (folders.get("hc") != null) t.restoreHandicapRules(de.hts.tournament.HandicapRules.decode(folders.get("hc")));
                 folders.forEach((k, v) -> {
                     if (!k.startsWith(TABLE_NAME_KEY)) return;
@@ -348,6 +352,7 @@ public final class TournamentFile {
                 if (c.isAwaitingStart()) el.setAttribute("awaiting-start", "true");
                 set(el, "schedule-minutes", c.getScheduleMinutes());               // 1.0 (#77): Zeitplan
                 if (c.getScheduleAnchor() != null) el.setAttribute("schedule-anchor", c.getScheduleAnchor().withNano(0).toString());
+                if (c.getScheduleStart() != null) el.setAttribute("schedule-start", c.getScheduleStart().toString());   // 1.1 (#88)
                 if (!c.getReleasedRounds().isEmpty()) el.setAttribute("schedule-released", String.join(",", c.getReleasedRounds()));
                 if (!c.getAskedRounds().isEmpty()) el.setAttribute("schedule-asked", String.join(",", c.getAskedRounds()));
                 if (c.isEndedEarly()) el.setAttribute("ended-early", "true");
@@ -510,6 +515,7 @@ public final class TournamentFile {
             el.setAttribute("paid-cents", String.valueOf(p.getPaidCents()));
             if (p.getPaidAt() != null) el.setAttribute("paid-at", p.getPaidAt().withNano(0).toString());
             if (p.getPaidByClub() != null) el.setAttribute("paid-by-club", p.getPaidByClub());
+            if (p.getWaivedReason() != null) el.setAttribute("waived-reason", p.getWaivedReason());     // 1.1 (#89)
         }
         for (String c : p.getClassNames()) {
             Element entry = doc.createElement("entry");
@@ -603,6 +609,7 @@ public final class TournamentFile {
             pc.setScheduleMinutes(intAttr(el, "schedule-minutes"));
             try {
                 if (attr(el, "schedule-anchor") != null) pc.setScheduleAnchor(java.time.LocalDateTime.parse(attr(el, "schedule-anchor")));
+                if (attr(el, "schedule-start") != null) pc.setScheduleStart(java.time.LocalDateTime.parse(attr(el, "schedule-start")));
             } catch (RuntimeException ignored) {
                 // unlesbar: Zeitplan beginnt neu
             }
@@ -829,6 +836,7 @@ public final class TournamentFile {
                 // Zeitpunkt unlesbar
             }
             p.setPayment(de.hts.player.Player.Payment.ofCode(attr(el, "paid")), cents == null ? 0 : cents, at, attr(el, "paid-by-club"));
+            p.setWaivedReason(attr(el, "waived-reason"));
         }
 
         for (Node n = el.getFirstChild(); n != null; n = n.getNextSibling()) {

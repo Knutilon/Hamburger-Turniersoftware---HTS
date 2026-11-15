@@ -28,10 +28,15 @@ public final class Ui {
     /** Breite eines Textes in der Programmschrift (13 px, Segoe UI). */
     public static double textWidth(String s, boolean bold, double size) {
         if (s == null || s.isEmpty()) return 0;
-        javafx.scene.text.Text t = new javafx.scene.text.Text(s);
-        t.setFont(javafx.scene.text.Font.font(FAMILY, bold ? javafx.scene.text.FontWeight.BOLD : javafx.scene.text.FontWeight.NORMAL, size));
+        // 1.0.1: ein wiederverwendeter Messknoten statt eines neuen je Aufruf (große Turniere: zehntausende Zellen)
+        javafx.scene.text.Text t = bold ? MEASURE_BOLD : MEASURE;
+        javafx.scene.text.Font font = javafx.scene.text.Font.font(FAMILY, bold ? javafx.scene.text.FontWeight.BOLD : javafx.scene.text.FontWeight.NORMAL, size);
+        if (!font.equals(t.getFont())) t.setFont(font);
+        t.setText(s);
         return Math.ceil(t.getLayoutBounds().getWidth());
     }
+
+    private static final javafx.scene.text.Text MEASURE = new javafx.scene.text.Text(), MEASURE_BOLD = new javafx.scene.text.Text();
 
     /**
      * Spalten so breit wie ihr Inhalt (Titel fett, Zellen normal) – keine „…“; ist die Tabelle breiter als das Fenster,
@@ -48,10 +53,12 @@ public final class Ui {
             Object fixed = c.getProperties().get("fit-min");
             if (fixed instanceof Number n) w = Math.max(w, n.doubleValue());
             if (!Boolean.TRUE.equals(c.getProperties().get("fit-header-only"))) {
+                java.util.Set<String> seen = new java.util.HashSet<>();         // 1.0.1: jeden Text nur einmal messen
                 for (S item : table.getItems()) {
                     javafx.beans.value.ObservableValue<?> v = c.getCellObservableValue(item);
                     Object val = v == null ? null : v.getValue();
-                    if (val instanceof CharSequence || val instanceof Number) w = Math.max(w, textWidth(String.valueOf(val), false, 13) + 18);
+                    if ((val instanceof CharSequence || val instanceof Number) && seen.add(String.valueOf(val)))
+                        w = Math.max(w, textWidth(String.valueOf(val), false, 13) + 18);
                 }
             }
             need.put(c, Math.ceil(w));
@@ -100,6 +107,7 @@ public final class Ui {
     /** Alle Knöpfe in allen Fenstern ausgeschrieben (nie mit „…“ gekürzt). */
     public static void installButtonSizing() {
         ButtonSizing.installEverywhere();
+        TouchSupport.installEverywhere();                // 1.1 (#91): Bedienung mit dem Finger
     }
 
     /**

@@ -25,6 +25,37 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.1.0
+
+- **Zeitplan – Startzeiten sichtbar:** Bei Klassen „mit Zeitplan“ steht hinter jeder Runde die geplante Startzeit,
+  z. B. „R2 · ab 14:25“ – in der Phasenübersicht, im PDF der Phase, auf den Gruppenaushängen („Drucken“ je Gruppe) und
+  in der Präsentationsansicht (Gruppen-/KO-Seiten und Warteschlange). Vor dem Start der Klasse erscheint keine Zeit
+  (außer es ist eine Startzeit eingestellt).
+- **Zeitplan – Startzeit einstellbar:** In „Klasse anlegen/bearbeiten“ bei „mit Zeitplan“ eine Uhrzeit eintragen (bis
+  12 Stunden vor oder nach jetzt); davon aus werden die Runden im eingestellten Rhythmus gerechnet. Leer = ab dem Start
+  der Klasse. Liegt die Startzeit in der Zukunft, wartet Runde 1 bis dahin („Runde jetzt starten“ zieht sie vor); liegt
+  sie in der Vergangenheit, laufen die fälligen Runden nacheinander ohne Wartefrage. Auch nach dem Start lässt sich die
+  Startzeit verschieben – noch nicht gestartete Runden bekommen neue Zeiten.
+- **Startgebühren überarbeitet:** Die Gebühr je Person ist die Summe ihrer Einzelklassen (Doppel ohne Gebühr) plus ggf.
+  Nachmeldegebühr. Wer als „bezahlt“ oder „erlassen“ markiert wird, ist automatisch angemeldet (angemeldet heißt aber
+  nicht bezahlt). Unter „Verfügbar“ in den Klassen stehen vor dem Turnierstart nur Bezahlte; „Alle anwesenden Gemeldeten
+  übernehmen“ nimmt nur Bezahlte. Nach dem Turnierstart erscheinen Angemeldete ohne Zahlung hellblau markiert (auch in
+  „Teilnehmende“, mit Hinweis und „Nur diese zeigen“) und lassen sich übernehmen – oder gleich mit „Bezahlt – bar und in
+  die Klasse“. Neu: „Gebühr erlassen“ mit optionalem Grund (erscheint in der Kassenübersicht). Menüpunkte jetzt
+  „Bezahlt – bar“, „Bezahlt – Überweisung“, „Gebühr erlassen“, „Zahlung rückgängig“ (angemeldet und Klassen bleiben).
+- **Bedienung auf Windows-Tablets:** Sobald HTS mit dem Finger bedient wird, werden Knöpfe, Tabellenzeilen, Menüs und
+  Bildlaufleisten größer; langes Antippen öffnet das Kontextmenü wie ein Rechtsklick, Wischen blättert.
+- **Ergebnisse per Handy (vorbereitet, noch ausgeblendet):** In den – weiterhin ausgeblendeten – Mobile Einstellungen
+  gibt es die Option „Ergebnisse per Handy eintragen“ mit einem QR-Code je Tisch; gemeldete Ergebnisse bestätigt die
+  Turnierleitung. Kommt mit dem Handy-Zugang später frei.
+- **Fehler behoben (Belastungstest mit 60 Klassen, 3600 Personen, ~10 000 Spielen):** KO-Endergebnis zeigt keine
+  Plätze mehr über der Teilnehmerzahl (65.–120. statt 65.–128.); click-TT-Export meldet am Turniertag zugeloste Doppel
+  nicht mehr als „von Hand nachgetragen“ (Grund „Doppel so nicht in click-TT gemeldet“); Seiten „Tische“ und „Spiele“
+  bei großen Turnieren in Bruchteilen einer Sekunde statt 6–11 s (Warteschlange zeigt die nächsten 100 Spiele).
+- **Fehler behoben – Texte:** Keine „…“-Kürzungen mehr auf „Tische“ (Anzahl, Zuordnen-Knopf, Spielzettel-Haken,
+  Klassenzeile, „an Tisch“), bei langen Vereins- und Tischnamen in der Gruppenübersicht und in der Spalte „Bezahlt“; bei
+  schmalen Fenstern rutschen die Knöpfe oben rechts in eine eigene Zeile, statt die Zeile „Gestartet …“ zu überdecken.
+
 ## Neu in 1.0.0
 
 - **Startgebühren:** Jede Klasse hat eine Startgebühr (aus click-TT vorbelegt, in „Klasse anlegen/bearbeiten“ änderbar),

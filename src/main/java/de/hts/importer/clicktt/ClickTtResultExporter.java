@@ -133,18 +133,31 @@ public final class ClickTtResultExporter {
                     String a = idByPersons.get(persons(t, m.getA())), b = idByPersons.get(persons(t, m.getB()));
                     if (a == null || b == null) {
                         warnings.add(name + ": Spiel " + m.getNumber() + " – Teilnehmende ohne click-TT-ID, nicht übertragen.");
+                        // 1.0.1: nur wer wirklich keine click-TT-Nummer hat, gilt als „von Hand nachgetragen“; Personen mit
+                        // Nummer fehlen hier, weil das Doppel so nicht gemeldet war oder sie für diese Konkurrenz nicht in click-TT stehen
                         List<String> names = new ArrayList<>();
+                        boolean pairMismatch = false, otherCompetition = false;
                         for (String side : new String[]{a == null ? m.getA() : null, b == null ? m.getB() : null}) {
                             if (side == null) continue;
                             for (String pid : persons(t, side)) {
                                 Player pl = t.getPlayers().stream().filter(x -> x.getId().equals(pid)).findFirst().orElse(null);
                                 if (pl == null) continue;
-                                withoutId.add(pl);
-                                names.add(((pl.getFirstname() == null ? "" : pl.getFirstname()) + " "
-                                        + (pl.getLastname() == null ? "" : pl.getLastname())).trim());
+                                if (!pl.hasClickTtNumber()) {
+                                    withoutId.add(pl);
+                                    names.add(fullName(pl));
+                                } else if (side.startsWith("pair:")) {
+                                    pairMismatch = true;
+                                } else {
+                                    otherCompetition = true;
+                                }
                             }
                         }
-                        notExported.add(notExported(t, c, m, String.join(", ", names) + " ohne click-TT-Nummer"));
+                        List<String> why = new ArrayList<>();
+                        if (!names.isEmpty()) why.add(String.join(", ", names) + " ohne click-TT-Nummer");
+                        else if (pairMismatch) why.add("Doppel so nicht in click-TT gemeldet");
+                        if (names.isEmpty() && otherCompetition) why.add("in click-TT nicht für diese Konkurrenz gemeldet");
+                        if (why.isEmpty()) why.add("ohne click-TT-Zuordnung");
+                        notExported.add(notExported(t, c, m, String.join("; ", why)));
                         continue;
                     }
                     Element me = doc.createElement("match");
@@ -187,6 +200,10 @@ public final class ClickTtResultExporter {
         String an = m.getA() == null ? "" : t.entrant(m, m.getA()).name(), bn = m.getB() == null ? "" : t.entrant(m, m.getB()).name();
         String res = m.getStatus() == MatchStatus.DONE ? m.getSetsA() + ":" + m.getSetsB() : "–";
         return new NotExported(root.getName(), m.getStage(), m.getNumber(), an, bn, res, reason);
+    }
+
+    private static String fullName(Player pl) {
+        return ((pl.getFirstname() == null ? "" : pl.getFirstname()) + " " + (pl.getLastname() == null ? "" : pl.getLastname())).trim();
     }
 
     /** Personen-IDs einer Partei (Einzel: eine, Doppel: beide). */

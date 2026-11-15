@@ -48,6 +48,7 @@ public final class ClassDialog extends Dialog<Boolean> {
     private final TextField feeField = euroField();                 // 1.0 (#82)
     private final javafx.scene.control.CheckBox scheduleBox = new javafx.scene.control.CheckBox("mit Zeitplan");   // 1.0 (#77)
     private final TextField scheduleField = yearField();
+    private final TextField scheduleStartField = new TextField();                                                    // 1.1 (#88)
     private final Label preview = new Label();
     private final Label error = new Label();
 
@@ -108,6 +109,7 @@ public final class ClassDialog extends Dialog<Boolean> {
             feeField.setText(existing.getFeeCents() == null ? "" : euroText(existing.getFeeCents()));
             scheduleBox.setSelected(existing.getScheduleMinutes() != null);
             if (existing.getScheduleMinutes() != null) scheduleField.setText(existing.getScheduleMinutes().toString());
+            if (existing.getScheduleStart() != null) scheduleStartField.setText(existing.getScheduleStart().format(HHMM));
         }
         typeLabel.getStyleClass().add("class-name");
 
@@ -145,6 +147,20 @@ public final class ClassDialog extends Dialog<Boolean> {
         HBox scheduleRow = new HBox(8, scheduleBox, scheduleField, perRound);
         scheduleRow.setAlignment(Pos.CENTER_LEFT);
         grid.addRow(r++, new Label("Zeitplan:"), scheduleRow);
+        // 1.1 (#88): Startzeit, von der aus die Runden gerechnet werden (bis 12 Stunden vor oder nach jetzt)
+        scheduleStartField.setPromptText("z. B. 14:30");
+        scheduleStartField.setPrefColumnCount(6);
+        scheduleStartField.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        scheduleStartField.disableProperty().bind(scheduleBox.selectedProperty().not());
+        Label startHint = new Label("Uhrzeit (bis 12 Stunden vor oder nach jetzt) – leer = ab dem Start der Klasse; "
+                + "später ändern verschiebt alle noch nicht gestarteten Runden");
+        startHint.getStyleClass().add("hint");
+        startHint.setWrapText(true);
+        startHint.setMaxWidth(470);
+        Label startLabel = new Label("Startzeit:");
+        HBox startRow = new HBox(8, scheduleStartField, startHint);
+        startRow.setAlignment(Pos.CENTER_LEFT);
+        grid.addRow(r++, startLabel, startRow);
         Label examples = new Label("Beispiele: Mädchen U15 → Jugend + nur weiblich, Jahrgang von 2012 · "
                 + "Senioren 40 → Erwachsene, Jahrgang bis 1986");
         examples.getStyleClass().add("hint");
@@ -183,17 +199,30 @@ public final class ClassDialog extends Dialog<Boolean> {
         if (locked) {
             // Nach dem ersten Ergebnis in Phase 1: Einstellungen nur noch lesbar
             setHeaderText("Spielklasse „" + existing.getName() + "“ – nur Ansicht");
+            boolean sched = existing.getScheduleMinutes() != null;
             for (javafx.scene.Node n : grid.getChildren()) {
-                if (n != preview && n != error && !(n instanceof Label)) n.setDisable(true);
+                if (n != preview && n != error && !(n instanceof Label) && !(sched && n == startRow)) n.setDisable(true);
             }
             error.setText("In Phase 1 sind bereits Ergebnisse eingetragen – die Einstellungen der Klasse lassen sich "
-                    + "nicht mehr ändern.");
+                    + "nicht mehr ändern." + (sched ? " Die Startzeit des Zeitplans lässt sich noch verschieben." : ""));
             error.getStyleClass().remove("error");
             error.getStyleClass().add("hint");
             error.setWrapText(true);
+            ButtonType saveStart = new ButtonType("Startzeit speichern", ButtonBar.ButtonData.OK_DONE);
+            if (sched) getDialogPane().getButtonTypes().add(saveStart);
             getDialogPane().getButtonTypes().add(new ButtonType("Schließen", ButtonBar.ButtonData.CANCEL_CLOSE));
+            if (sched) {
+                getDialogPane().lookupButton(saveStart).addEventFilter(javafx.event.ActionEvent.ACTION, e -> {
+                    String msg = applyStart(tournament, existing);
+                    if (msg != null) {
+                        error.setText(msg);
+                        error.getStyleClass().add("error");
+                        e.consume();
+                    }
+                });
+            }
             DialogSizing.fit(this);
-            setResultConverter(bt -> false);
+            setResultConverter(bt -> bt == saveStart);
             return;
         }
         ButtonType ok = new ButtonType(existing == null ? "Anlegen" : "Speichern", ButtonBar.ButtonData.OK_DONE);
@@ -203,6 +232,11 @@ public final class ClassDialog extends Dialog<Boolean> {
         getDialogPane().lookupButton(ok).addEventFilter(javafx.event.ActionEvent.ACTION, e -> {
             if (scheduleBox.isSelected() && (parseSchedule() == null || parseSchedule() < 1)) {
                 error.setText("Bitte angeben, wie viele Minuten eine Runde dauert (oder „mit Zeitplan“ abwählen).");
+                e.consume();
+                return;
+            }
+            if (scheduleBox.isSelected() && !scheduleStartField.getText().isBlank() && parseStart() == null) {
+                error.setText("Startzeit bitte als Uhrzeit angeben, z. B. 14:30 (oder leer lassen).");
                 e.consume();
                 return;
             }
@@ -254,6 +288,7 @@ public final class ClassDialog extends Dialog<Boolean> {
             created.setMaxParticipants(parseMax());
             created.setFeeCents(parseFee());
             created.setScheduleMinutes(parseSchedule());
+            created.setScheduleStart(scheduleBox.isSelected() ? parseStart() : null);
             created.setWomanRequired(selectedDiscipline().isTeam() && womanRequired.isSelected());
             return null;
         }
@@ -272,6 +307,7 @@ public final class ClassDialog extends Dialog<Boolean> {
         existing.setMaxParticipants(parseMax());
         existing.setFeeCents(parseFee());
         existing.setScheduleMinutes(parseSchedule());
+        t.setScheduleStart(existing, scheduleBox.isSelected() ? parseStart() : null);
         t.markModified();
         created = existing;
         return null;
@@ -307,6 +343,31 @@ public final class ClassDialog extends Dialog<Boolean> {
         if (!scheduleBox.isSelected()) return null;
         String v = scheduleField.getText();
         return v == null || v.isBlank() ? null : Integer.valueOf(v.trim());
+    }
+
+    private static final java.time.format.DateTimeFormatter HHMM = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
+
+    /** „14:30“, „14.30“, „1430“ oder „14“ → nächstgelegener Zeitpunkt (±12 Stunden); leer oder unlesbar → {@code null}. */
+    private java.time.LocalDateTime parseStart() {
+        String v = scheduleStartField.getText() == null ? "" : scheduleStartField.getText().trim().replace('.', ':');
+        if (v.isEmpty()) return null;
+        try {
+            if (v.matches("\\d{1,2}")) v = v + ":00";
+            else if (v.matches("\\d{3,4}")) v = v.substring(0, v.length() - 2) + ":" + v.substring(v.length() - 2);
+            String[] hm = v.split(":");
+            java.time.LocalTime time = java.time.LocalTime.of(Integer.parseInt(hm[0]), Integer.parseInt(hm[1]));
+            return Tournament.nearestTime(time, java.time.LocalDateTime.now());
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** Nur die Startzeit übernehmen (Klasse mit Ergebnissen). @return Fehlermeldung oder {@code null} */
+    private String applyStart(Tournament t, PlayingClass existing) {
+        if (!scheduleStartField.getText().isBlank() && parseStart() == null) return "Startzeit bitte als Uhrzeit angeben, z. B. 14:30 (oder leer lassen).";
+        t.setScheduleStart(existing, parseStart());
+        created = existing;
+        return null;
     }
 
     private Integer parseFee() {

@@ -301,7 +301,7 @@ public class Player {
 
     /** Zahlungsart der Startgebühr. */
     public enum Payment {
-        NONE(""), CASH("bar"), TRANSFER("Überweisung");
+        NONE(""), CASH("bar"), TRANSFER("Überweisung"), WAIVED("erlassen");                // 1.1 (#89): erlassen
 
         private final String label;
 
@@ -311,10 +311,10 @@ public class Player {
 
         public String getLabel() { return label; }
 
-        public String code() { return this == CASH ? "cash" : this == TRANSFER ? "transfer" : ""; }
+        public String code() { return this == CASH ? "cash" : this == TRANSFER ? "transfer" : this == WAIVED ? "waived" : ""; }
 
         public static Payment ofCode(String c) {
-            return "cash".equals(c) ? CASH : "transfer".equals(c) ? TRANSFER : NONE;
+            return "cash".equals(c) ? CASH : "transfer".equals(c) ? TRANSFER : "waived".equals(c) ? WAIVED : NONE;
         }
     }
 
@@ -323,7 +323,12 @@ public class Player {
     private java.time.LocalDateTime paidAt;
     private String paidByClub;
 
+    private String waivedReason;
+
     public Payment getPayment() { return payment; }
+    /** 1.1 (#89): Grund, wenn die Gebühr erlassen wurde (optional). */
+    public String getWaivedReason() { return waivedReason; }
+    public void setWaivedReason(String r) { waivedReason = payment == Payment.WAIVED && r != null && !r.isBlank() ? r.trim() : null; }
     public boolean isPaid() { return payment != Payment.NONE; }
     public int getPaidCents() { return paidCents; }
     public java.time.LocalDateTime getPaidAt() { return paidAt; }
@@ -337,6 +342,7 @@ public class Player {
         paidCents = none ? 0 : Math.max(0, cents);
         paidAt = none ? null : at;
         paidByClub = none || byClub == null || byClub.isBlank() ? null : byClub;
+        if (payment != Payment.WAIVED) waivedReason = null;
     }
 
     /** 1.0 (#78): hat eine click-TT-Nummer (interne Nummer oder Lizenz-Nr.) – sonst von Hand erfasst. */

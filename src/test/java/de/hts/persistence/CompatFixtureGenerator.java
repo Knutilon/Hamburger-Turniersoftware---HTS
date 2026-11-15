@@ -58,6 +58,11 @@ public class CompatFixtureGenerator {
     for (int i = 0; i < 8; i += 2) t.createPair(dd, hs.get(i), hs.get(i + 1));
     t.drawKnockout(dd, true, new Random(7)); t.startClass(dd); playAll(t, dd, 2);
     t.setTableExcluded(8, List.of("Herren Doppel"));
+    // ab 1.0/1.1: Startgebühren (bezahlt, erlassen), Zeitplan mit Startzeit, Ergebnisse per Handy
+    d.setFeeCents(800); t.setLateFeeCents(200); d.setScheduleMinutes(20);
+    d.setScheduleStart(java.time.LocalDateTime.of(2026, 11, 15, 14, 30));
+    t.markPaid(List.of(ds.get(0)), Player.Payment.CASH, null); t.waiveFee(List.of(ds.get(1)), "Helfer");
+    t.setPhoneResults(true);
     TournamentFile.save(Path.of(a[0]), t);
     StringBuilder sets = new StringBuilder();
     for (Match m : t.getMatches()) if (m.getStatus() == MatchStatus.DONE) sets.append(m.getNumber()).append(':').append(m.getSetsText()).append(';');
