@@ -2,6 +2,9 @@
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
+WUNSCH (15.11.2026): „wie bisher alles immer in das GitHub-Repository committen“ – auch Nachlieferungen zu einer
+Version (z. B. Pakete, Startdateien, Doku) gleich als eigenen Commit hochladen.
+
 Bei jedem „kompilieren“: Quellcode (src, pom.xml, README.md, ZWISCHENSTAND.md, CLAUDE.md, LICENSE, NOTICE, docs, samples, .gitignore,
 „HTS starten.bat“) als EIN Commit „HTS x.y.z“ auf main in https://github.com/Knutilon/Hamburger-Turniersoftware---HTS
 (Klon /home/claude/hamburger-turniersoftware---hts, push mit -c push.negotiate=false). Keine Releases/Tags, keine
@@ -50,8 +53,7 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Plattform) → hts.jar; Ordner $S/dist/hts-linux|hts-macos mit jre, „HTS starten.sh“ bzw. „HTS starten.command“
    (liegen jetzt in dist/ im Quellcode), Doku, Lizenzen (LIESMICH aktualisiert: AGPL, voller Name – Vorlage für
    Windows in dist/Lizenzen-Vorlage, Windows-ZIP 1.1.0 neu gepackt). Linux hier getestet (startet), macOS ungetestet. AB JETZT bei jedem
-   „kompilieren“ alle drei Pakete bauen; Release-Link: Download-Hinweis für alle drei. Issue #90 mit dem nächsten
-   Commit schließen.
+   „kompilieren“ alle drei Pakete bauen; Release-Link: Download-Hinweis für alle drei. Issue #90 geschlossen (Commit d314a25).
 3. HTS ALS ANDROID-APP (Nutzer 15.11.2026, Issue #92): „Als echte App anstreben, aber als GitHub-APK-Datei“ – Android
    zuerst, Bau über GitHub Actions (GluonFX/GraalVM + Android-SDK), APK als Datei im Release, kein Play Store; iPad
    zurückgestellt (Apple-Konto, Mac). Vor der Umsetzung klären: Umfang der App (ganzes HTS oder Teil), Bedienung auf
