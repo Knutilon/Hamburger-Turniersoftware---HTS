@@ -97,7 +97,7 @@ public final class TournamentFile {
 
     private static Map<String, String> readFolders(Element root) {
         Map<String, String> m = new java.util.LinkedHashMap<>();
-        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on", "handicap", "hc", "imported", "model", "checkin-locked", "checkin-token")) {
+        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on", "pres-next", "late-fee-cents", "handicap", "hc", "imported", "model", "checkin-locked", "checkin-token")) {
             String v = root.getAttribute(k);
             if (v != null && !v.isBlank()) m.put(k, v);
         }
@@ -177,6 +177,8 @@ public final class TournamentFile {
             }
             t.getTableNames().forEach((nr, name) -> m.put(TABLE_NAME_KEY + nr, name));
             if (t.getPresentationSeconds() != 20) m.put("pres-secs", String.valueOf(t.getPresentationSeconds()));
+            if (t.getPresentationNextCount() != 16) m.put("pres-next", String.valueOf(t.getPresentationNextCount()));   // 1.0 (#81)
+            if (t.getLateFeeCents() > 0) m.put("late-fee-cents", String.valueOf(t.getLateFeeCents()));               // 1.0 (#82)
             if (!t.getPresentationOff().isEmpty()) m.put("pres-off", String.join("|", t.getPresentationOff()));
             if (!t.getPresentationOn().isEmpty()) m.put("pres-on", String.join("|", t.getPresentationOn()));
             return m;
@@ -219,6 +221,8 @@ public final class TournamentFile {
                 });
                 try {
                     if (folders.get("pres-secs") != null) t.setPresentationSeconds(Integer.parseInt(folders.get("pres-secs").trim()));
+                    if (folders.get("pres-next") != null) t.setPresentationNextCount(Integer.parseInt(folders.get("pres-next").trim()));
+                    if (folders.get("late-fee-cents") != null) t.setLateFeeCents(Integer.parseInt(folders.get("late-fee-cents").trim()));
                 } catch (NumberFormatException ignored) {
                     // Standard 20 s
                 }
@@ -329,6 +333,7 @@ public final class TournamentFile {
                 set(el, "birthyear-from", c.getBirthyearFrom());
                 set(el, "birthyear-to", c.getBirthyearTo());
                 set(el, "max", c.getMaxParticipants());
+                set(el, "fee-cents", c.getFeeCents());                    // 1.0 (#82)
                 if (c.isReady()) el.setAttribute("ready", "true");
                 el.setAttribute("tiebreak", c.getTiebreak().name());
                 el.setAttribute("next-phase", c.getNextPhase().name());
@@ -341,6 +346,10 @@ public final class TournamentFile {
                 set(el, "started-at", c.getStartedAt());
                 if (c.isPaused()) el.setAttribute("paused", "true");
                 if (c.isAwaitingStart()) el.setAttribute("awaiting-start", "true");
+                set(el, "schedule-minutes", c.getScheduleMinutes());               // 1.0 (#77): Zeitplan
+                if (c.getScheduleAnchor() != null) el.setAttribute("schedule-anchor", c.getScheduleAnchor().withNano(0).toString());
+                if (!c.getReleasedRounds().isEmpty()) el.setAttribute("schedule-released", String.join(",", c.getReleasedRounds()));
+                if (!c.getAskedRounds().isEmpty()) el.setAttribute("schedule-asked", String.join(",", c.getAskedRounds()));
                 if (c.isEndedEarly()) el.setAttribute("ended-early", "true");
                 if (c.getQualDecision() != 0) el.setAttribute("qual-decision", String.valueOf(c.getQualDecision()));
                 if (!c.getWithdrawn().isEmpty()) el.setAttribute("withdrawn", String.join(",", c.getWithdrawn()));
@@ -496,6 +505,12 @@ public final class TournamentFile {
         set(el, "region", p.getRegion());
         if (p.getAttendance() != de.hts.player.Attendance.UNKNOWN) el.setAttribute("attendance", p.getAttendance().code());
         if (p.isWithdrawnByPhone()) el.setAttribute("withdrawn-by", "phone");
+        if (p.isPaid()) {                                                  // 1.0 (#82): Startgebühr bezahlt
+            el.setAttribute("paid", p.getPayment().code());
+            el.setAttribute("paid-cents", String.valueOf(p.getPaidCents()));
+            if (p.getPaidAt() != null) el.setAttribute("paid-at", p.getPaidAt().withNano(0).toString());
+            if (p.getPaidByClub() != null) el.setAttribute("paid-by-club", p.getPaidByClub());
+        }
         for (String c : p.getClassNames()) {
             Element entry = doc.createElement("entry");
             entry.setAttribute("competition", c);
@@ -567,6 +582,7 @@ public final class TournamentFile {
             PlayingClass pc = new PlayingClass(name, discipline, type, intAttr(el, "birthyear-from"), intAttr(el, "birthyear-to"));
             pc.setWomanRequired("true".equals(attr(el, "woman-required")));
             pc.setMaxParticipants(intAttr(el, "max"));
+            pc.setFeeCents(intAttr(el, "fee-cents"));
             pc.setReady("true".equals(attr(el, "ready")));
             try {
                 if (attr(el, "tiebreak") != null) pc.setTiebreak(de.hts.tournament.GroupStanding.Tiebreak.valueOf(attr(el, "tiebreak")));
@@ -584,6 +600,14 @@ public final class TournamentFile {
             pc.setStartedAt(dateTime(attr(el, "started-at")));
             pc.setPaused("true".equals(attr(el, "paused")));
             pc.setAwaitingStart("true".equals(attr(el, "awaiting-start")));
+            pc.setScheduleMinutes(intAttr(el, "schedule-minutes"));
+            try {
+                if (attr(el, "schedule-anchor") != null) pc.setScheduleAnchor(java.time.LocalDateTime.parse(attr(el, "schedule-anchor")));
+            } catch (RuntimeException ignored) {
+                // unlesbar: Zeitplan beginnt neu
+            }
+            if (attr(el, "schedule-released") != null) for (String k : attr(el, "schedule-released").split(",")) if (!k.isBlank()) pc.getReleasedRounds().add(k);
+            if (attr(el, "schedule-asked") != null) for (String k : attr(el, "schedule-asked").split(",")) if (!k.isBlank()) pc.getAskedRounds().add(k);
             pc.setEndedEarly("true".equals(attr(el, "ended-early")));
             if (attr(el, "qual-decision") != null) pc.setQualDecision(Integer.parseInt(attr(el, "qual-decision").trim()));
             if (attr(el, "withdrawn") != null) for (String w : attr(el, "withdrawn").split(",")) if (!w.isBlank()) pc.addWithdrawn(w);
@@ -796,6 +820,16 @@ public final class TournamentFile {
         p.setRegion(attr(el, "region"));
         p.setAttendance(de.hts.player.Attendance.ofCode(attr(el, "attendance")));
         p.restoreWithdrawnByPhone("phone".equals(attr(el, "withdrawn-by")));
+        if (attr(el, "paid") != null) {
+            Integer cents = intAttr(el, "paid-cents");
+            java.time.LocalDateTime at = null;
+            try {
+                if (attr(el, "paid-at") != null) at = java.time.LocalDateTime.parse(attr(el, "paid-at"));
+            } catch (RuntimeException ignored) {
+                // Zeitpunkt unlesbar
+            }
+            p.setPayment(de.hts.player.Player.Payment.ofCode(attr(el, "paid")), cents == null ? 0 : cents, at, attr(el, "paid-by-club"));
+        }
 
         for (Node n = el.getFirstChild(); n != null; n = n.getNextSibling()) {
             if (n instanceof Element e && e.hasAttribute("competition")) {

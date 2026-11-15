@@ -46,6 +46,28 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
         this(owner, name, date, isNew ? null : 1, isNew);
     }
 
+    private final javafx.scene.control.TextField lateFeeField = ClassDialog.euroField();
+
+    /** 1.0 (#82): Nachmeldegebühr vorbelegen (Cent). */
+    public TournamentDialog withLateFee(int cents) {
+        lateFeeField.setText(cents <= 0 ? "" : ClassDialog.euroText(cents));
+        return this;
+    }
+
+    /** 1.0 (#82): eingegebene Nachmeldegebühr in Cent (leer = 0). */
+    public int lateFeeCents() {
+        Integer c = de.hts.importer.clicktt.ClickTtXmlImporter.feeCents(lateFeeField.getText());
+        return c == null ? 0 : c;
+    }
+
+    private static Label hintLabel(String text) {
+        Label l = new Label(text);
+        l.getStyleClass().add("hint");
+        l.setWrapText(true);
+        l.setMaxWidth(360);
+        return l;
+    }
+
     public TournamentDialog(Window owner, String name, LocalDate date, Integer tables, boolean isNew) {
         this(owner, name, date, tables, isNew, null);
     }
@@ -188,7 +210,16 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
             grid.addRow(6, new Label("Kopie von:"), source);
             grid.addRow(7, new Label("Übernehmen:"), copyMode);
         }
-        grid.add(error, 0, 8, 2, 1);
+        // 1.0 (#82): Nachmeldegebühr (einmal je Person, die nicht in der click-TT-Datei stand)
+        Label lateLabel = new Label("Nachmeldegebühr (€):");
+        javafx.scene.layout.HBox lateBox = new javafx.scene.layout.HBox(8, lateFeeField, hintLabel(
+                "optional, einmal je Person, die nicht in der click-TT-Datei stand (nicht im Vorgabeturnier)"));
+        lateBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        lateFeeField.setPromptText("z. B. 2,00");
+        grid.addRow(8, lateLabel, lateBox);
+        lateLabel.visibleProperty().bind(handicapBox.selectedProperty().not());
+        lateBox.visibleProperty().bind(handicapBox.selectedProperty().not());
+        grid.add(error, 0, 9, 2, 1);
         getDialogPane().setContent(grid);
 
         ButtonType ok = new ButtonType(isNew ? "Anlegen" : "Übernehmen", ButtonBar.ButtonData.OK_DONE);

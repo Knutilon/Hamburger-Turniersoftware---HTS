@@ -217,7 +217,45 @@ public final class PlayerTableView {
         TableColumn<Player, String> licence = textColumn("Lizenz-Nr.", Player::getLicenceNr, 90, textCmp);
         licence.setSortable(false);
 
-        table.getColumns().addAll(List.of(registered, reserve, seedCol, lastname, firstname, birth, sex, club, ttr, entries, licence));
+        // 1.0 (#82): Startgebühr und Zahlung (nur sichtbar, wenn das Turnier Gebühren hat)
+        feeCol.setCellValueFactory(c -> {
+            int cents = feeSource.applyAsInt(c.getValue());
+            return new ReadOnlyObjectWrapper<>(cents > 0 ? de.hts.tournament.Tournament.euro(cents) : "");
+        });
+        feeCol.setSortable(false);
+        feeCol.setStyle("-fx-alignment: CENTER-RIGHT;");
+        feeCol.getStyleClass().add("col-right");
+        feeCol.setVisible(false);
+        paidCol.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue()));
+        paidCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Player p, boolean empty) {
+                super.updateItem(p, empty);
+                getStyleClass().removeAll("fee-open", "fee-paid");
+                setTooltip(null);
+                if (empty || p == null) {
+                    setText(null);
+                    return;
+                }
+                if (p.isPaid()) {
+                    setText(p.getPayment().getLabel() + (p.getPaidByClub() != null ? " (Verein)" : ""));
+                    getStyleClass().add("fee-paid");
+                    setTooltip(new Tooltip("Bezahlt: " + de.hts.tournament.Tournament.euro(p.getPaidCents()) + ", "
+                            + p.getPayment().getLabel() + (p.getPaidByClub() != null ? " über die Abrechnung von „" + p.getPaidByClub() + "“" : "")
+                            + (p.getPaidAt() != null ? ", " + p.getPaidAt().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM. HH:mm")) + " Uhr" : "")));
+                } else if (feeSource.applyAsInt(p) > 0) {
+                    setText("offen");
+                    getStyleClass().add("fee-open");
+                } else {
+                    setText("");
+                }
+            }
+        });
+        paidCol.setSortable(false);
+        paidCol.setVisible(false);
+
+        table.getColumns().addAll(List.of(registered, paidCol, feeCol, reserve, seedCol, lastname, firstname, birth, sex, club, ttr,
+                entries, licence));
         table.getSortOrder().addAll(List.of(lastname, firstname));
 
         // --- Suchleiste ---
@@ -284,6 +322,17 @@ public final class PlayerTableView {
     // --- Filter ------------------------------------------------------------
 
     private final TableColumn<Player, Integer> seedCol = new TableColumn<>("Setzplatz");
+    private final TableColumn<Player, String> feeCol = new TableColumn<>("Gebühr");
+    private final TableColumn<Player, Player> paidCol = new TableColumn<>("Bezahlt");
+    private java.util.function.ToIntFunction<Player> feeSource = p -> 0;
+    private java.util.function.BooleanSupplier feesActive = () -> false;
+
+    /** 1.0 (#82): Gebühr je Person (Cent) und ob das Turnier überhaupt Gebühren hat (sonst Spalten ausblenden). */
+    public void setFeeSource(java.util.function.ToIntFunction<Player> fee, java.util.function.BooleanSupplier active) {
+        feeSource = fee == null ? p -> 0 : fee;
+        feesActive = active == null ? () -> false : active;
+        refresh();
+    }
     private java.util.Map<Player, Integer> seeds = java.util.Map.of();
     private java.util.function.Function<String, java.util.Map<Player, Integer>> seedSource = n -> java.util.Map.of();
 
@@ -362,6 +411,9 @@ public final class PlayerTableView {
     }
 
     public void refresh() {
+        boolean fees = feesActive.getAsBoolean();
+        if (feeCol.isVisible() != fees) feeCol.setVisible(fees);
+        if (paidCol.isVisible() != fees) paidCol.setVisible(fees);
         setClassNames(classSource.get());
         updateClubs();
         table.refresh();

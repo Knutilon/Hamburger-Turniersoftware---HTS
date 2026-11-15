@@ -142,12 +142,16 @@ public final class OverviewView {
     // --- Aktionen ----------------------------------------------------------
 
     private void createTournament() {
-        new TournamentDialog(stage, null, null, null, true, null, false, new java.util.ArrayList<>(list.getItems()))
-                .showAndWait().ifPresent(r -> {
+        TournamentDialog dlg = new TournamentDialog(stage, null, null, null, true, null, false, new java.util.ArrayList<>(list.getItems()));
+        dlg.showAndWait().ifPresent(r -> {
             try {
                 Tournament t = r.copyFrom() != null
                         ? store.copy(r.copyFrom(), r.copyMode(), r.name(), r.date(), r.tables(), r.test(), r.fileDir())
                         : store.create(r.name(), r.date(), r.tables(), r.fileDir(), r.test(), r.handicap());
+                if (dlg.lateFeeCents() > 0) {
+                    t.setLateFeeCents(dlg.lateFeeCents());               // 1.0 (#82)
+                    store.save(t);
+                }
                 refresh();
                 onOpen.accept(t);
             } catch (IOException e) {
@@ -178,9 +182,19 @@ public final class OverviewView {
     }
 
     private void edit(TournamentStore.Summary s) {
-        new TournamentDialog(stage, s.name(), s.date(), s.tables(), false, s.file(), s.test(), List.of(), s.handicap()).showAndWait().ifPresent(r -> {
+        Tournament loaded;
+        try {
+            loaded = store.load(s);
+        } catch (IOException e) {
+            error("Turnier konnte nicht geöffnet werden", e.getMessage());
+            return;
+        }
+        TournamentDialog dlg = new TournamentDialog(stage, s.name(), s.date(), s.tables(), false, s.file(), s.test(), List.of(), s.handicap())
+                .withLateFee(loaded.getLateFeeCents());
+        dlg.showAndWait().ifPresent(r -> {
             try {
-                Tournament t = store.load(s);
+                Tournament t = loaded;
+                t.setLateFeeCents(dlg.lateFeeCents());                   // 1.0 (#82)
                 t.setTest(r.test());
                 t.setName(r.name());
                 t.setDate(r.date());

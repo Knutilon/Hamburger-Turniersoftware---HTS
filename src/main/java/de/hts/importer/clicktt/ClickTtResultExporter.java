@@ -54,8 +54,19 @@ public final class ClickTtResultExporter {
     public static final String DOCTYPE_SYSTEM = "https://liga.nu/dtd/TournamentPortal.dtd";
     private static final DateTimeFormatter SCHEDULED = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    /** Ergebnis des Exports. */
-    public record Report(int competitions, int matches, int placements, List<String> skipped, List<String> warnings) {
+    /**
+     * 1.0 (#79): ein abgeschlossenes (bzw. nicht gespieltes) Spiel einer exportierten Klasse, das NICHT in der Datei steht.
+     * @param reason z. B. „Paul Neu ohne click-TT-Nummer“, „bewusst ausgelassen“, „kampflos nach Aufgabe“
+     */
+    public record NotExported(String className, String stage, int number, String a, String b, String result, String reason) {
+    }
+
+    /** Ergebnis des Exports; {@code withoutId} = Personen, deren Spiele mangels click-TT-Nummer fehlen (1.0, #79). */
+    public record Report(int competitions, int matches, int placements, List<String> skipped, List<String> warnings,
+                         List<NotExported> notExported, List<Player> withoutId) {
+        public Report(int competitions, int matches, int placements, List<String> skipped, List<String> warnings) {
+            this(competitions, matches, placements, skipped, warnings, List.of(), List.of());
+        }
     }
 
     private ClickTtResultExporter() {
@@ -70,6 +81,8 @@ public final class ClickTtResultExporter {
     public static Report export(Tournament t, InputStream original, OutputStream out) throws IOException {
         Document doc = parse(original);
         List<String> skipped = new ArrayList<>(), warnings = new ArrayList<>();
+        List<NotExported> notExported = new ArrayList<>();
+        java.util.LinkedHashSet<Player> withoutId = new java.util.LinkedHashSet<>();
         int comps = 0, matchCount = 0, placements = 0;
         NodeList compEls = doc.getElementsByTagName("competition");
         for (int i = 0; i < compEls.getLength(); i++) {
@@ -110,10 +123,28 @@ public final class ClickTtResultExporter {
                 for (Match m : t.matchesOf(phase)) {
                     // nicht exportiert: offene, übernommene, „nicht relevant für Export“ markierte und die nach einer
                     // Aufgabe kampflos gewerteten Spiele; das Spiel mit der Aufgabe selbst wird mit 0:3 / 0:11 übertragen
-                    if (!m.isExported()) continue;
+                    if (!m.isExported()) {
+                        String why = m.getStatus() == MatchStatus.CANCELLED ? "nicht gespielt (Phase vorzeitig beendet)"
+                                : m.getStatus() != MatchStatus.DONE || m.isCarried() ? null
+                                : m.getRetirementOf() != null ? "kampflos nach Aufgabe" : "bewusst ausgelassen";
+                        if (why != null) notExported.add(notExported(t, c, m, why));
+                        continue;
+                    }
                     String a = idByPersons.get(persons(t, m.getA())), b = idByPersons.get(persons(t, m.getB()));
                     if (a == null || b == null) {
                         warnings.add(name + ": Spiel " + m.getNumber() + " – Teilnehmende ohne click-TT-ID, nicht übertragen.");
+                        List<String> names = new ArrayList<>();
+                        for (String side : new String[]{a == null ? m.getA() : null, b == null ? m.getB() : null}) {
+                            if (side == null) continue;
+                            for (String pid : persons(t, side)) {
+                                Player pl = t.getPlayers().stream().filter(x -> x.getId().equals(pid)).findFirst().orElse(null);
+                                if (pl == null) continue;
+                                withoutId.add(pl);
+                                names.add(((pl.getFirstname() == null ? "" : pl.getFirstname()) + " "
+                                        + (pl.getLastname() == null ? "" : pl.getLastname())).trim());
+                            }
+                        }
+                        notExported.add(notExported(t, c, m, String.join(", ", names) + " ohne click-TT-Nummer"));
                         continue;
                     }
                     Element me = doc.createElement("match");
@@ -149,11 +180,17 @@ public final class ClickTtResultExporter {
             }
         }
         write(doc, out);
-        return new Report(comps, matchCount, placements, skipped, warnings);
+        return new Report(comps, matchCount, placements, skipped, warnings, notExported, List.copyOf(withoutId));
+    }
+
+    private static NotExported notExported(Tournament t, PlayingClass root, Match m, String reason) {
+        String an = m.getA() == null ? "" : t.entrant(m, m.getA()).name(), bn = m.getB() == null ? "" : t.entrant(m, m.getB()).name();
+        String res = m.getStatus() == MatchStatus.DONE ? m.getSetsA() + ":" + m.getSetsB() : "–";
+        return new NotExported(root.getName(), m.getStage(), m.getNumber(), an, bn, res, reason);
     }
 
     /** Personen-IDs einer Partei (Einzel: eine, Doppel: beide). */
-    private static Set<String> persons(Tournament t, String entrantId) {
+    public static Set<String> persons(Tournament t, String entrantId) {
         Set<String> set = new TreeSet<>();
         if (entrantId == null) return set;
         if (entrantId.startsWith("pair:")) {

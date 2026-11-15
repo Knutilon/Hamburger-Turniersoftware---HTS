@@ -1,4 +1,4 @@
-# Zwischenstand HTS 0.42.0 (11.11.2026)
+# Zwischenstand HTS 1.0.0 (15.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -11,7 +11,8 @@ des ZIPs den Link zum aktuellen Release nennen. PROBLEM: Release anlegen ist aus
 permitted for this session type“), Tags-Push ebenfalls.
 ENTSCHIEDEN (Weg 2): Commit „HTS x.y.z“ hochladen; dem Nutzer das Windows-ZIP schicken plus vorausgefüllten Link
 https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/new?tag=vX.Y.Z&target=main&title=HTS%20X.Y.Z
-(+ Release-Text „Neu in X.Y.Z“ aus der README zum Einfügen). Nutzer zieht das ZIP hinein und veröffentlicht; danach
+(+ Release-Text „Neu in X.Y.Z“ aus der README; SEIT 11.11.2026 direkt im Link als &body=… vorausgefüllt, URL-kodiert,
+Punkte je eine Zeile, „hier oben“ → „in der README“, Schlusszeile Download-Hinweis). Nutzer zieht das ZIP hinein und veröffentlicht; danach
 Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/tag/vX.Y.Z
 
 ## Weg zu 1.0.0 (11.11.2026, mit dem Nutzer besprochen)
@@ -20,18 +21,22 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 - Kern ist vollständig. Handy-/Netzwerk-Funktionen (Handy-Zugang, Live-Anzeige, Anmeldung per QR-Code) gehören NICHT
   zum Kern und blockieren 1.0.0 nicht.
 - Turnierdateien bleiben ab 1.0 lesbar (Feature-Sammlung Punkt „Turnierdateien bleiben lesbar“).
-- Plan: 0.9.0 als Testversion (nur noch Fehlerbehebungen), nach erfolgreichem Praxiseinsatz 1.0.0; danach 1.0.x =
+- Plan (ÜBERHOLT 15.11.2026: 0.9.0 entfällt): 0.9.0 als Testversion, danach 1.0.0; danach 1.0.x =
   Fehlerbehebungen, 1.x.0 = neue Funktionen.
-- 0.42.0 umgesetzt (11.11.2026). Nächstes „kompilieren“ = 0.9.0 als Testversion (nur Fehlerbehebungen).
+- 0.42.0 umgesetzt (11.11.2026). 1.0.0 umgesetzt (15.11.2026) mit #77–#82; 0.9.0 entfiel. Ab jetzt 1.0.x =
+  Fehlerbehebungen, 1.x.0 = neue Funktionen.
+- Nutzer 15.11.2026: ALLE Punkte der Feature-Sammlung sind für 1.0.0: #34 WLAN-QR-Code, #77 Zeitplan, #78 doppelte
+  Person beim erneuten Import, #79 Spielerabgleich (Design freigegeben); #34 dagegen ersetzt durch „Reiter Mobile
+  Einstellungen ausblenden“ (Handy-Funktionen kommen später wieder).
 - click-TT-Upload der Ergebnisdatei wird beim Praxistest am Wochenende geprüft; klappt er, die Einschränkung unter
   „Bekannte Grenzen“ in Doku/README streichen.
 
-## Feature-Sammlung für 0.9.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 1.1.0 (NICHT kompilieren – bis „… kompilieren“)
 
-(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; 0.9.0 = Testversion, nur
-Fehlerbehebungen – neue Funktionen erst nach 1.0.0)
+(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.0.x)
 
-1. ZURÜCKGESTELLT (07.11.2026, auf Wunsch des Nutzers – beim Kompilieren NICHT umsetzen): WLAN-QR-CODE AUF DEM
+1. WIEDER ZURÜCKGESTELLT (15.11.2026: statt dessen Punkt 5 – Reiter „Mobile Einstellungen“ ausblenden; NICHT in
+   1.0.0 umsetzen, erst wenn die Handy-Funktionen später ausgebaut werden): WLAN-QR-CODE AUF DEM
    AUSHANG (Issue #34): In HTS einmal WLAN-Name und Passwort eintragen; der Aushang
    „QR-Codes drucken“ bekommt einen dritten QR-Code „1. WLAN verbinden“ (Format WIFI:T:WPA;S:…;P:…;;), darunter
    „2. Live-Anzeige“ und „3. Anmeldung am Turniertag“. So bleibt das WLAN geschützt, die Teilnehmenden tippen nichts
@@ -41,6 +46,94 @@ Fehlerbehebungen – neue Funktionen erst nach 1.0.0)
    (wie bisher Felder zum Ausfüllen).
 
 ## Umgesetzt
+
+1.0.0 (Issues #77–#82). README „Neu in 1.0.0“.
+#80 HtsApp.MOBILE_ENABLED = false (Menüpunkt weg, Code bleibt). #78 Tournament.adoptManualPersons in
+mergeImportedEntries (Player.hasClickTtNumber, samePerson: Vor-/Nachname, Verein/Jahrgang soweit bei beiden).
+#79 Export: zwei Knöpfe (startBox jetzt FlowPane), Trockenlauf → ClickTtExportDialogs.askMissing (Abbrechen / Ohne
+Abgleich speichern / Aktualisierte Teilnehmerliste einspielen), Tournament.matchManual + Zuordnungsfenster (Karten,
+erledigte klappen zu mit „Ändern“, gewählte Personen verschwinden aus den übrigen, „Zuordnung lösen“), adoptNumbers +
+neue Datei als Export-Grundlage; Bericht mit Tabelle der nicht exportierten Spiele (Report.notExported/withoutId),
+PDF PdfReports.notExported. #81 PresentationPlan.Kind.QUEUE („queue:<Klasse>“, standardmäßig aus),
+Tournament.presentationNextCount (pres-next, 4–48), PresentationShow: Gruppen je Seite + Warteschlange dieser Gruppen,
+sonst nach der Phase; Seiten zu 16 Spielen. #82 PlayingClass.feeCents (fee-cents, aus click-TT entry-fee),
+Tournament.lateFeeCents (late-fee-cents, TournamentDialog.withLateFee), Player.Payment/paidCents/paidAt/paidByClub,
+feeOf/markPaid/unpaidIn, Spalten „Bezahlt“/„Gebühr“, Menüs, ClubSettlementDialog, PdfReports.receipt/cashReport,
+Warnung beim Klassenstart. #77 PlayingClass.scheduleMinutes/Anchor/releasedRounds/askedRounds, Gating in queueReady
+(roundOpen), ScheduleQuestion + WorkspaceView-Timer (2 s Rückfragen, 20 s fällige Runden), DrawView-Hinweis
+„Runde jetzt starten“, Simulation ignoriert den Zeitplan, Neustart der Phase setzt ihn zurück. Beispieldatei
+turnierdatei-1.0.0.hts. Tests: 226 bestanden (Version100Test). Bildschirmfotos 1093×614 und 911×512.
+Feature-Sammlung 1.0.0 (zur Nachverfolgung):
+2. FÜR 1.0.0 (Nutzer, 15.11.2026) – KLASSE „MIT ZEITPLAN“ (15.11.2026, Issue #77): Beim Anlegen einer Klasse Option „mit Zeitplan“ und Angabe, wie lange eine
+   Runde dauert. Ist eine Runde (KO-Runde, Runde der Qualifikation, Runde der Platzierungsspiele/Top 4, Runde einer
+   Gruppe) beendet und man ist noch VOR dem Zeitplan, fragt HTS kurz, ob die nächste Runde trotzdem gestartet werden
+   soll; die Rückfrage nennt Klasse und betroffene Gruppe/KO-Runde/Qualifikationsrunde. ENTSCHIEDEN (Nutzer,
+   15.11.2026): Zeitplan ab Start der Phase, Runde n geplant ab Start + (n−1) × Rundendauer. „Warten“ hält die Spiele
+   der nächsten Runde zurück und reiht sie zur geplanten Uhrzeit automatisch ein (vorher per „Runde jetzt starten“
+   möglich). Bei Gruppen: Rückfrage je Gruppe einzeln (jede Gruppe sofort eine eigene Rückfrage). Hinter dem Zeitplan
+   keine Rückfrage. VERSION: 1.0.0.
+3. FÜR 1.0.0 (Nutzer, 15.11.2026) – BUG #78 (15.11.2026, Frage des Nutzers zu click-TT): VON HAND
+   NACHGETRAGENE PERSON WIRD BEIM ERNEUTEN IMPORT DOPPELT.
+   Nachgestellt: Person in HTS von Hand erfasst und gespielt, danach in click-TT nachgemeldet und die neue click-TT-Datei
+   in HTS importiert → die Person steht zweimal in HTS (Schlüssel „name:…“ gegen „id:NU…“), der Export ordnet die
+   click-TT-ID dem leeren Doppel zu, die Spiele fehlen weiter. Ohne erneuten Import, nur mit der neuen Datei als
+   Export-Grundlage, werden alle Spiele übertragen (Test: 6 statt 3 Spiele, 0 Warnungen).
+   Vorschlag (Rückfrage gestellt): beim Import Personen ohne click-TT-Nummer über Vorname + Nachname + Jahrgang
+   (Verein, falls bei beiden vorhanden) zuordnen und die Nummern übernehmen statt doppelt anzulegen; dazu im
+   Exportbericht je fehlender Person den Hinweis „in click-TT nachmelden, neue Datei importieren“.
+4. FÜR 1.0.0 (Nutzer, 15.11.2026) – SPIELERABGLEICH VOR DEM CLICK-TT-EXPORT (15.11.2026, Idee des
+   Nutzers, Issue #79, baut auf Punkt 3/#78 auf):
+   - Statt Dropdown „Ergebnisse exportieren ▾“ zwei Knöpfe im Standard-Design: „Gesamtergebnis als PDF“ und
+     „click-TT-Ergebnisdatei (XML)“ – immer sichtbar, deaktiviert, bis das Turnier gespielt ist.
+   - Klick auf „click-TT-Ergebnisdatei“: wie bisher Speicherort wählen – ODER, wenn Teilnehmende von Hand nachgetragen
+     wurden, vorher eine aktualisierte XML-Teilnehmerliste aus click-TT einspielen (Spielerabgleich).
+   - Matching: Nachgetragene ↔ Personen der neuen Datei über Vor-/Nachname und Verein. Nicht eindeutig zuordenbare
+     neue Personen der Datei: Zuordnung von Hand; passt nichts, Aktualisierung abbrechen.
+   - Für abgeschlossene Turniere alle nicht exportierten Spiele anzeigen (wegen Nachtragung oder bewusst ausgelassen).
+   - Designvorschlag (15.11.2026) als Design-Artefakt „HTS – Spielerabgleich vor dem click-TT-Export“
+     (https://claude.ai/artifact/E6VN38zGbxmgJGFXFTiZEA): 1 Export-Knöpfe (deaktiviert/aktiv), 2 Rückfrage beim Klick
+     (Abbrechen / Ohne Abgleich speichern / Aktualisierte Teilnehmerliste einspielen), 3 Zuordnungsfenster (Bitte
+     zuordnen mit Kandidaten und Grund, „keine Zuordnung“; Eindeutig zugeordnet mit „Zuordnung lösen“; Neu in der
+     Datei mit „zuordnen zu“; Fußzeile: links „Abbrechen – nichts ändern“, rechts „Übernehmen und Speichern“, OHNE
+     Text zur Spielezahl – so vom Nutzer gewünscht), 4 Nicht exportierte Spiele (Grund je Spiel). Vom Nutzer als guter
+     Vorschlag angenommen (15.11.2026). Ergänzt: KEINE Suche in der Datei. „Neue Personen“ = Personen der Datei, die
+     keinem bekannten Teilnehmenden zugeordnet werden konnten. Ähnlichkeit (Vor-/Nachname, Verein) NUR für das
+     automatische Matching; bei der Zuordnung von Hand stehen ALLE noch nicht zugeordneten neuen Personen zur Wahl
+     (ohne Ähnlichkeits-Begründung, mit gemeldeter Klasse) plus „keine Zuordnung“. Bereich 3 „Neu in der Datei, nicht
+     zugeordnet“. Entwurf 3b (mehrere offen): je nachgetragener Person eine Karte untereinander; erledigte Karten
+     klappen zu einer Zeile „✓ … ⟷ …“ mit „Ändern“; eine schon gewählte neue Person verschwindet aus den übrigen
+     Karten; Fortschritt „1 von 3 erledigt“; „Übernehmen und Speichern“ erst aktiv, wenn jede Karte eine Wahl hat
+     (Person oder „keine Zuordnung“), daneben „Noch n Zuordnungen offen“. DESIGN VOM NUTZER FREIGEGEBEN (15.11.2026,
+     „passt“) – so umsetzen (Entwürfe 1, 2, 3, 3b, 4 im Design-Artefakt). Version: 1.0.0.
+5. FÜR 1.0.0 (Nutzer, 15.11.2026) – REITER „MOBILE EINSTELLUNGEN“ AUSBLENDEN: Der Menüpunkt verschwindet; der Code
+   (Handy-Zugang, Live-Anzeige, Anmeldung per QR-Code, QR-Aushang) bleibt im Programm und wird später ausgebaut.
+   Vorschlag: ein Schalter im Code (z. B. HtsApp.MOBILE_ENABLED = false); ohne Reiter läuft kein Server, damit
+   verschwinden auch „Handyabmeldungen bearbeiten“ und Hinweise auf den Handy-Zugang. Eine in älteren Turnierdateien
+   gespeicherte Handyabmeldung bleibt bearbeitbar. Doku/README: Handy-Zugang als „derzeit ausgeblendet“ kennzeichnen.
+6. FÜR 1.0.0 – PRÄSENTATIONSANSICHT: WARTESCHLANGE JE KLASSE (15.11.2026): Auf der Seite „Präsentationsansicht“ je
+   laufender Klasse ein zusätzlicher Haken „Warteschlange dieser Klasse“ (zeigt nur deren eingereihte Spiele). „Die
+   nächsten 16 Spiele“ heißt künftig „Die nächsten Spiele (alle Klassen)“ mit einstellbarer Anzahl (gilt nur für die
+   klassenübergreifende Warteschlange). UI-Vorschlag VOM NUTZER FREIGEGEBEN (15.11.2026, „passt so“): Design-Artefakt „HTS – Präsentationsansicht:
+   Warteschlange je Klasse“ (https://claude.ai/artifact/DLWqnNadSL3fnWfvsxXEaw): Anzahl 4–48, Standard 16, mehr als 16 →
+   mehrere Seiten; Klassen-Warteschlange standardmäßig aus, alle eingereihten Spiele der Klasse, bei Bedarf mehrere
+   Seiten, nur bei laufender Klasse; Anzahl wird im Turnier gespeichert.
+   KORREKTUR (Nutzer, 15.11.2026) – Reihenfolge JE SEITE MIT GRUPPEN: Auf jede Beamer-Seite mit Gruppen folgt direkt die
+   Warteschlange genau dieser Gruppen (z. B. Seite Gruppen A–D → Warteschlange Gruppen A–D → Seite Gruppen E–H →
+   Warteschlange Gruppen E–H → nächste Klasse). Schweizer System: Warteschlange der Phase nach ihren Seiten (vom Nutzer
+   bestätigt). KO-System und Qualifikation ebenso: Warteschlange nach ALLEN Seiten der Phase (Nutzer, 15.11.2026). Haben mehrere Klassen den Haken, erscheinen ihre Warteschlangen so nacheinander.
+7. FÜR 1.0.0 – STARTGEBÜHREN ERFASSEN (15.11.2026, Ideenaustausch, Issue #82, Stufe 1 – offline): Betrag je Person aus den gemeldeten
+   Klassen (click-TT: competition entry-fee), Spalte „Bezahlt“ (bar / Überweisung) in „Teilnehmende“, passend zur
+   Anmeldung am Turniertag; Abrechnung je Verein (Summe, Quittung als PDF); Kassenübersicht als PDF (bezahlt, offen,
+   Summen bar / Überweisung); optional Nachmeldegebühr und Hinweis beim Klassenstart auf Unbezahlte. Keine Bankdaten der
+   Teilnehmenden. HINWEIS: mit Quittungen/Tagesabschluss ggf. Kassensicherungspflicht (TSE) – vom Verein/Steuerberater
+   klären lassen. Stufe 2 (Überweisungs-QR-Code) und 3 (Karte/PayPal) NICHT aufgenommen.
+   ENTSCHIEDEN (Nutzer, 15.11.2026): FÜR 1.0.0. Zahlung je Person UND je Verein/Betreuer. Alle Zusatzregeln: Nachmelde-
+   gebühr, Quittung als PDF (je Person bzw. Verein), Kassenübersicht als PDF, Hinweis beim Klassenstart auf Unbezahlte.
+   Details ENTSCHIEDEN: Nachmeldegebühr = ein Betrag je Turnier (Dialog „Bearbeiten“ des Turniers), einmal je Person, für
+   alle, die nicht in der click-TT-Datei standen. Startgebühr je Klasse als Feld in „Klasse anlegen/bearbeiten“, aus
+   click-TT vorbelegt und änderbar. Beim Klassenstart nur Warnung mit Namen der Unbezahlten (Start bleibt möglich).
+
+
 
 0.42.0 (Issues #71–#76). README „Neu in 0.42.0“.
 #71 Sex.fromClickTt: 0 und 2 = weiblich. #75 Player merkt die Herkunft einer Klassenzuordnung (classOrigins:

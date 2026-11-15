@@ -45,6 +45,9 @@ public final class ClassDialog extends Dialog<Boolean> {
     private final TextField yearTo = yearField();
     private final TextField maxField = yearField();
     private final Label maxLabel = new Label("Max. Teilnehmende:");
+    private final TextField feeField = euroField();                 // 1.0 (#82)
+    private final javafx.scene.control.CheckBox scheduleBox = new javafx.scene.control.CheckBox("mit Zeitplan");   // 1.0 (#77)
+    private final TextField scheduleField = yearField();
     private final Label preview = new Label();
     private final Label error = new Label();
 
@@ -102,6 +105,9 @@ public final class ClassDialog extends Dialog<Boolean> {
             yearFrom.setText(existing.getBirthyearFrom() == null ? "" : existing.getBirthyearFrom().toString());
             yearTo.setText(existing.getBirthyearTo() == null ? "" : existing.getBirthyearTo().toString());
             maxField.setText(existing.getMaxParticipants() == null ? "" : existing.getMaxParticipants().toString());
+            feeField.setText(existing.getFeeCents() == null ? "" : euroText(existing.getFeeCents()));
+            scheduleBox.setSelected(existing.getScheduleMinutes() != null);
+            if (existing.getScheduleMinutes() != null) scheduleField.setText(existing.getScheduleMinutes().toString());
         }
         typeLabel.getStyleClass().add("class-name");
 
@@ -127,6 +133,18 @@ public final class ClassDialog extends Dialog<Boolean> {
         grid.addRow(r++, new Label("Jahrgang bis:"), hint(yearTo, "optional, jüngster zulässiger Jahrgang"));
         maxField.setPromptText("leer = offen");
         grid.addRow(r++, maxLabel, hint(maxField, "optional, nur zur Kontrolle: wer darüber liegt, wird markiert"));
+        feeField.setPromptText("z. B. 8,00");
+        grid.addRow(r++, new Label("Startgebühr (€):"), hint(feeField, "je Person, optional – aus click-TT vorbelegt"));
+        // 1.0 (#77): Zeitplan – Runde n beginnt frühestens Start + (n − 1) × Rundendauer
+        scheduleField.setPromptText("z. B. 20");
+        scheduleField.disableProperty().bind(scheduleBox.selectedProperty().not());
+        Label perRound = new Label("Minuten je Runde – ist eine Runde vor dem Zeitplan fertig, fragt HTS, ob die nächste starten soll");
+        perRound.getStyleClass().add("hint");
+        perRound.setWrapText(true);
+        perRound.setMaxWidth(420);
+        HBox scheduleRow = new HBox(8, scheduleBox, scheduleField, perRound);
+        scheduleRow.setAlignment(Pos.CENTER_LEFT);
+        grid.addRow(r++, new Label("Zeitplan:"), scheduleRow);
         Label examples = new Label("Beispiele: Mädchen U15 → Jugend + nur weiblich, Jahrgang von 2012 · "
                 + "Senioren 40 → Erwachsene, Jahrgang bis 1986");
         examples.getStyleClass().add("hint");
@@ -183,6 +201,11 @@ public final class ClassDialog extends Dialog<Boolean> {
 
         // Prüfen und übernehmen, bevor der Dialog schließt
         getDialogPane().lookupButton(ok).addEventFilter(javafx.event.ActionEvent.ACTION, e -> {
+            if (scheduleBox.isSelected() && (parseSchedule() == null || parseSchedule() < 1)) {
+                error.setText("Bitte angeben, wie viele Minuten eine Runde dauert (oder „mit Zeitplan“ abwählen).");
+                e.consume();
+                return;
+            }
             String msg = validateAndApply(tournament, existing);
             if (msg != null) {
                 error.setText(msg);
@@ -229,6 +252,8 @@ public final class ClassDialog extends Dialog<Boolean> {
         if (existing == null) {
             created = t.addClass(new PlayingClass(n, selectedDiscipline(), selectedType(), from, to));
             created.setMaxParticipants(parseMax());
+            created.setFeeCents(parseFee());
+            created.setScheduleMinutes(parseSchedule());
             created.setWomanRequired(selectedDiscipline().isTeam() && womanRequired.isSelected());
             return null;
         }
@@ -245,6 +270,8 @@ public final class ClassDialog extends Dialog<Boolean> {
         existing.setBirthyearFrom(from);
         existing.setBirthyearTo(to);
         existing.setMaxParticipants(parseMax());
+        existing.setFeeCents(parseFee());
+        existing.setScheduleMinutes(parseSchedule());
         t.markModified();
         created = existing;
         return null;
@@ -274,6 +301,29 @@ public final class ClassDialog extends Dialog<Boolean> {
     private Integer parseMax() {
         String v = maxField.getText();
         return v == null || v.isBlank() ? null : Integer.valueOf(v.trim());
+    }
+
+    private Integer parseSchedule() {
+        if (!scheduleBox.isSelected()) return null;
+        String v = scheduleField.getText();
+        return v == null || v.isBlank() ? null : Integer.valueOf(v.trim());
+    }
+
+    private Integer parseFee() {
+        return de.hts.importer.clicktt.ClickTtXmlImporter.feeCents(feeField.getText());
+    }
+
+    /** 800 → „8,00“ */
+    static String euroText(int cents) {
+        return String.format(java.util.Locale.GERMAN, "%d,%02d", cents / 100, cents % 100);
+    }
+
+    /** Betrag in Euro: Ziffern, ein Komma bzw. Punkt, höchstens 2 Nachkommastellen. */
+    static TextField euroField() {
+        TextField tf = new TextField();
+        tf.setPrefColumnCount(6);
+        tf.setTextFormatter(new TextFormatter<String>(c -> c.getControlNewText().matches("\\d{0,4}([.,]\\d{0,2})?") ? c : null));
+        return tf;
     }
 
     private static TextField yearField() {

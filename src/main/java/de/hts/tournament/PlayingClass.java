@@ -152,6 +152,12 @@ public final class PlayingClass {
     private boolean drawSeeded;
 
     public Integer getMaxParticipants() { return maxParticipants; }
+
+    /** 1.0 (#82): Startgebühr je Person in Cent ({@code null} = keine), aus click-TT vorbelegt. */
+    private Integer feeCents;
+
+    public Integer getFeeCents() { return feeCents; }
+    public void setFeeCents(Integer cents) { this.feeCents = cents == null || cents <= 0 ? null : cents; }
     public void setMaxParticipants(Integer max) { this.maxParticipants = max == null || max <= 0 ? null : max; }
 
     public TournamentMode getMode() { return mode; }
@@ -297,6 +303,23 @@ public final class PlayingClass {
     private boolean awaitingStart;
     public boolean isAwaitingStart() { return awaitingStart; }
     public void setAwaitingStart(boolean b) { awaitingStart = b; }
+
+    // --- 1.0 (#77): Zeitplan ---------------------------------------------------------------------
+    /** Minuten je Runde (an der Hauptklasse; {@code null} = kein Zeitplan). */
+    private Integer scheduleMinutes;
+    /** Beginn des Zeitplans dieser Phase (erste Runde eingereiht). */
+    private java.time.LocalDateTime scheduleAnchor;
+    /** freigegebene Runden („g0:2“ = Gruppe A Runde 2, „3“ = Runde 3) */
+    private final java.util.Set<String> releasedRounds = new java.util.TreeSet<>();
+    /** schon gefragte Runden (Antwort „Warten“ oder Rückfrage offen) */
+    private final java.util.Set<String> askedRounds = new java.util.TreeSet<>();
+
+    public Integer getScheduleMinutes() { return scheduleMinutes; }
+    public void setScheduleMinutes(Integer m) { scheduleMinutes = m == null || m <= 0 ? null : Math.min(m, 600); }
+    public java.time.LocalDateTime getScheduleAnchor() { return scheduleAnchor; }
+    public void setScheduleAnchor(java.time.LocalDateTime t) { scheduleAnchor = t; }
+    public java.util.Set<String> getReleasedRounds() { return releasedRounds; }
+    public java.util.Set<String> getAskedRounds() { return askedRounds; }
 
     public void setQualification(int direct, int ko, int rounds) { qualDirect = Math.max(0, direct); qualKo = Math.max(0, ko); qualRounds = Math.max(0, rounds); }
     /** Qualifikation: Nachrücker je Gruppe direkt aus der Gruppenphase (ohne Spiel), z. B. Dritte + Vierte = 2. */

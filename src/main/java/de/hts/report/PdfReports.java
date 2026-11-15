@@ -943,6 +943,143 @@ public final class PdfReports {
         return doc;
     }
 
+    // --- 1.0 (#79, #82): einfache Listen ---------------------------------------------------------------
+
+    /** Kopf einer Liste: Turnier · Datum, Überschrift, Unterzeile, Linie. */
+    private static void listHead(PdfCanvas c, Tournament t, String title, String sub) {
+        c.y += c.text(c.left(), c.y, (t.getName() == null ? "" : t.getName()) + (t.getDate() != null ? " · " + t.getDate().format(DATE) : ""),
+                REGULAR, 9, c.width(), PdfCanvas.Align.LEFT, 0.3f);
+        c.y += c.text(c.left(), c.y, title, BOLD, 16, c.width()) + 1;
+        if (sub != null) c.y += c.text(c.left(), c.y, sub, REGULAR, 10, c.width());
+        c.y += 4;
+        c.line(c.left(), c.y, c.left() + c.width(), c.y, 0.8f);
+        c.y += 10;
+    }
+
+    /** Tabelle mit Kopfzeile; {@code rel} = relative Spaltenbreiten, {@code right} = rechtsbündige Spalten. */
+    private static void table(PdfCanvas c, String[] heads, float[] rel, List<String[]> rows, java.util.Set<Integer> right) {
+        float sum = 0;
+        for (float f : rel) sum += f;
+        float[] w = new float[rel.length];
+        for (int k = 0; k < rel.length; k++) w[k] = c.width() * rel[k] / sum;
+        Runnable head = () -> {
+            float x = c.left();
+            for (int k = 0; k < heads.length; k++) {
+                c.text(x, c.y, heads[k], BOLD, 8.5f, w[k] - 4, right.contains(k) ? PdfCanvas.Align.RIGHT : PdfCanvas.Align.LEFT, 0f);
+                x += w[k];
+            }
+            c.y += 12;
+            c.line(c.left(), c.y, c.left() + c.width(), c.y, 0.5f);
+            c.y += 4;
+        };
+        head.run();
+        for (String[] r : rows) {
+            if (!c.fits(ROW + 2)) {
+                c.newPage();
+                head.run();
+            }
+            float x = c.left();
+            for (int k = 0; k < r.length; k++) {
+                c.text(x, c.y, r[k] == null ? "" : r[k], k == 0 ? BOLD : REGULAR, 9.5f, w[k] - 4,
+                        right.contains(k) ? PdfCanvas.Align.RIGHT : PdfCanvas.Align.LEFT, 0f);
+                x += w[k];
+            }
+            c.y += ROW + 2;
+        }
+    }
+
+    private static java.util.Comparator<de.hts.player.Player> byName() {
+        java.text.Collator col = java.text.Collator.getInstance(java.util.Locale.GERMAN);
+        return java.util.Comparator.comparing((de.hts.player.Player p) -> p.getLastname() == null ? "" : p.getLastname(), col)
+                .thenComparing(p -> p.getFirstname() == null ? "" : p.getFirstname(), col);
+    }
+
+    private static String feeClasses(Tournament t, de.hts.player.Player p) {
+        String cs = String.join(", ", t.feeClassesOf(p).stream().map(PlayingClass::getName).toList());
+        if (t.isLateEntry(p) && t.getLateFeeCents() > 0) cs += (cs.isEmpty() ? "" : " + ") + "Nachmeldung";
+        return cs;
+    }
+
+    /**
+     * 1.0 (#82): Quittung über bezahlte Startgebühren – je Person oder als Sammelquittung eines Vereins.
+     * @param club Verein der Sammelabrechnung ({@code null} = einzelne Personen)
+     */
+    public static PDDocument receipt(Tournament t, List<de.hts.player.Player> paid, String club) {
+        PDDocument doc = newDoc("Quittung Startgebühr " + (t.getName() == null ? "" : t.getName()));
+        PdfCanvas c = new PdfCanvas(doc, PDRectangle.A4, 50);
+        List<de.hts.player.Player> ps = paid.stream().sorted(byName()).toList();
+        int sum = ps.stream().mapToInt(de.hts.player.Player::getPaidCents).sum();
+        c.newPage();
+        listHead(c, t, "Quittung – Startgebühr", null);
+        String from = club != null ? club + " (Sammelabrechnung)"
+                : ps.size() == 1 ? ps.get(0).getDisplayName() + (ps.get(0).getClubName() != null ? " (" + ps.get(0).getClubName() + ")" : "")
+                : ps.size() + " Personen";
+        c.y += c.text(c.left(), c.y, "Erhalten von: " + from, BOLD, 11, c.width()) + 6;
+        List<String[]> rows = new ArrayList<>();
+        for (de.hts.player.Player p : ps) {
+            rows.add(new String[]{p.getDisplayName(), p.getClubName() == null ? "" : p.getClubName(), feeClasses(t, p),
+                    p.getPayment().getLabel(), Tournament.euro(p.getPaidCents())});
+        }
+        table(c, new String[]{"Name", "Verein", "Klassen", "Zahlungsart", "Betrag"}, new float[]{3, 3, 4, 1.6f, 1.4f}, rows, java.util.Set.of(4));
+        c.y += 4;
+        c.line(c.left(), c.y, c.left() + c.width(), c.y, 0.8f);
+        c.y += 6;
+        c.text(c.left(), c.y, "Summe", BOLD, 11, c.width() * 0.8f);
+        c.y += c.text(c.left(), c.y, Tournament.euro(sum), BOLD, 11, c.width(), PdfCanvas.Align.RIGHT, 0f) + 30;
+        c.y += c.text(c.left(), c.y, "Datum: " + java.time.LocalDate.now().format(DATE), REGULAR, 10, c.width()) + 36;
+        c.line(c.left(), c.y, c.left() + 220, c.y, 0.5f);
+        c.y += 4;
+        c.text(c.left(), c.y, "Unterschrift Turnierleitung", REGULAR, 8.5f, 220, PdfCanvas.Align.LEFT, 0.3f);
+        c.finish();
+        return doc;
+    }
+
+    /** 1.0 (#82): Kassenübersicht – alle fälligen Startgebühren mit Stand, Summen bar / Überweisung / offen. */
+    public static PDDocument cashReport(Tournament t) {
+        PDDocument doc = newDoc("Kassenübersicht " + (t.getName() == null ? "" : t.getName()));
+        PdfCanvas c = new PdfCanvas(doc, PDRectangle.A4, 40);
+        List<de.hts.player.Player> ps = t.getPlayers().stream().filter(p -> p.isPaid() || t.feeOf(p) > 0).sorted(byName()).toList();
+        int cash = 0, transfer = 0, open = 0;
+        List<String[]> rows = new ArrayList<>();
+        for (de.hts.player.Player p : ps) {
+            int amount = p.isPaid() ? p.getPaidCents() : t.feeOf(p);
+            if (p.getPayment() == de.hts.player.Player.Payment.CASH) cash += amount;
+            else if (p.getPayment() == de.hts.player.Player.Payment.TRANSFER) transfer += amount;
+            else open += amount;
+            String state = p.isPaid() ? p.getPayment().getLabel() + (p.getPaidByClub() != null ? " (Verein)" : "") : "offen";
+            rows.add(new String[]{p.getDisplayName(), p.getClubName() == null ? "" : p.getClubName(), feeClasses(t, p),
+                    Tournament.euro(amount), state, p.getPaidAt() == null ? "" : p.getPaidAt().format(DateTimeFormatter.ofPattern("dd.MM. HH:mm"))});
+        }
+        c.newPage();
+        listHead(c, t, "Kassenübersicht Startgebühren", ps.size() + (ps.size() == 1 ? " Person" : " Personen") + " · Stand "
+                + java.time.LocalDateTime.now().format(STAND));
+        String[][] sums = {{"bezahlt bar", Tournament.euro(cash)}, {"bezahlt per Überweisung", Tournament.euro(transfer)},
+                {"noch offen", Tournament.euro(open)}, {"gesamt", Tournament.euro(cash + transfer + open)}};
+        for (String[] r : sums) {
+            c.text(c.left(), c.y, r[0], r[0].equals("gesamt") ? BOLD : REGULAR, 10.5f, 200);
+            c.y += c.text(c.left() + 200, c.y, r[1], BOLD, 10.5f, 90, PdfCanvas.Align.RIGHT, 0f) + 3;
+        }
+        c.y += 10;
+        table(c, new String[]{"Name", "Verein", "Klassen", "Betrag", "Stand", "bezahlt am"}, new float[]{3, 3, 4, 1.3f, 1.8f, 1.5f},
+                rows, java.util.Set.of(3));
+        c.finish();
+        return doc;
+    }
+
+    /** 1.0 (#79): Spiele beendeter Klassen, die nicht in der click-TT-Ergebnisdatei stehen, mit Grund. */
+    public static PDDocument notExported(Tournament t, List<de.hts.importer.clicktt.ClickTtResultExporter.NotExported> list) {
+        PDDocument doc = newDoc("Nicht exportierte Spiele " + (t.getName() == null ? "" : t.getName()));
+        PdfCanvas c = new PdfCanvas(doc, PDRectangle.A4, 40);
+        c.newPage();
+        listHead(c, t, "Nicht exportierte Spiele (" + list.size() + ")", "Stand " + java.time.LocalDateTime.now().format(STAND));
+        List<String[]> rows = new ArrayList<>();
+        for (var n : list) rows.add(new String[]{n.className(), n.stage(), String.valueOf(n.number()), n.a(), n.b(), n.result(), n.reason()});
+        table(c, new String[]{"Klasse", "Gruppe", "Spiel", "Teilnehmende A", "Teilnehmende B", "Ergebnis", "Grund"},
+                new float[]{2.6f, 1.6f, 0.8f, 2.6f, 2.6f, 1, 3}, rows, java.util.Set.of(2));
+        c.finish();
+        return doc;
+    }
+
     private static void writeFinal(PdfCanvas c, Tournament t, PlayingClass root) {
         Tournament.FinalResult r = t.finalResult(root);
         String title = "Endergebnis " + root.getName();

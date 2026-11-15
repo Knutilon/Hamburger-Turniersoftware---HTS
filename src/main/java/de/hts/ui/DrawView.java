@@ -410,7 +410,9 @@ public final class DrawView {
         settingsSummary.setMinHeight(Region.USE_PREF_SIZE);
         settingsSummary.maxWidthProperty().bind(actionRow.widthProperty().subtract(4));
         actionRow.getChildren().add(settingsSummary);              // Infozeile („3 Gruppen · 23 Spiele offen“) am Ende
-        topRow = new VBox(8, followRow, actionRow);
+        scheduleRow.managedProperty().bind(scheduleRow.visibleProperty());   // 1.0 (#77): wartende Runden (Zeitplan)
+        scheduleRow.setVisible(false);
+        topRow = new VBox(8, followRow, scheduleRow, actionRow);
         topRow.widthProperty().addListener((o, a, b) -> updateBannerWidth());
         controls = new VBox(10, modeRow, groupRow, swissRow, topRow);
 
@@ -877,7 +879,35 @@ public final class DrawView {
         onChanged.run();
     }
 
+    /** 1.0 (#77): Runden, die laut Zeitplan noch warten – mit „Runde jetzt starten“. */
+    private final VBox scheduleRow = new VBox(6);
+
+    private void updateScheduleRow(PlayingClass c) {
+        scheduleRow.getChildren().clear();
+        List<Tournament.ScheduleQuestion> waiting = c == null || c.isPaused() ? List.of() : tournament.waitingRounds(c);
+        for (Tournament.ScheduleQuestion q : waiting) {
+            Label l = new Label(q.label() + " wartet laut Zeitplan bis "
+                    + q.planned().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) + " Uhr.");
+            l.getStyleClass().add("criteria");
+            l.setWrapText(true);
+            Button now = new Button("Runde jetzt starten");
+            now.getStyleClass().add("navy-pill");
+            now.setMinWidth(Region.USE_PREF_SIZE);
+            now.setOnAction(e -> {
+                tournament.releaseRound(q.phase(), q.key());
+                status.accept(q.label() + " gestartet (vor dem Zeitplan).");
+                onChanged.run();
+            });
+            javafx.scene.layout.FlowPane row = new javafx.scene.layout.FlowPane(12, 6, l, now);
+            row.setAlignment(Pos.CENTER_LEFT);
+            row.getStyleClass().add("lock-banner");
+            scheduleRow.getChildren().add(row);
+        }
+        scheduleRow.setVisible(!waiting.isEmpty());
+    }
+
     private void updateFollowRow(PlayingClass c) {
+        updateScheduleRow(c);
         followBtn.setVisible(false);
         finishBtn.setVisible(false);
         nextPhaseBtn.setVisible(false);
@@ -2518,8 +2548,12 @@ public final class DrawView {
             showWarning(attendance + " Bitte unter „Teilnehmende“ an- bzw. endgültig abmelden.");
             return;
         }
+        // 1.0 (#82): nur Warnung – offene Startgebühren nennen, Start bleibt möglich
+        List<de.hts.player.Player> unpaid = c.isPhase() ? List.of() : tournament.unpaidIn(c);
+        String fees = unpaid.isEmpty() ? "" : "\n\nStartgebühr noch offen (" + unpaid.size() + "): "
+                + String.join(", ", unpaid.stream().map(de.hts.player.Player::getDisplayName).toList());
         if (!confirm("Klasse starten", "„" + c.getName() + "“ jetzt starten? Die Spiele werden eingereiht und freie Tische belegt.\n"
-                + "Danach lässt sich die Auslosung nicht mehr ändern.")) return;
+                + "Danach lässt sich die Auslosung nicht mehr ändern." + fees)) return;
         tournament.startClass(c);
         status.accept("„" + c.getName() + "“ gestartet – " + tournament.queue().size() + " Spiele in der Warteschlange.");
         onChanged.run();

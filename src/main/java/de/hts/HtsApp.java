@@ -25,12 +25,17 @@ public class HtsApp extends Application {
 
     public static final String NAME = "Hamburger Turniersoftware";
     public static final String SHORT_NAME = "HTS";
-    public static final String VERSION = "0.42.0";
+    public static final String VERSION = "1.0.0";
 
     /** Repository auf GitHub (Quellcode, Feature- und Bug-Sammlung) */
     public static final String REPO_URL = "https://github.com/Knutilon/Hamburger-Turniersoftware---HTS";
     /** 0.42 (#72/#73): Urheber (Copyright) – einheitlich in Info-Fenster, NOTICE, README und Datei-Köpfen. */
     public static final String AUTHOR = "Richard Johan Frederich Michaelis, Hamburg, Germany";
+    /**
+     * 1.0 (#80): Handy-Funktionen (Seite „Mobile Einstellungen“, Handy-Zugang, Live-Anzeige, Anmeldung per QR-Code) sind
+     * ausgeblendet; der Code bleibt für den späteren Ausbau. {@code true} blendet sie wieder ein.
+     */
+    public static final boolean MOBILE_ENABLED = false;
 
     private static javafx.application.HostServices hostServices;
 

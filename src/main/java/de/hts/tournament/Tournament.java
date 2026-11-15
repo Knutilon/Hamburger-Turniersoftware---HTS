@@ -1103,12 +1103,130 @@ public final class Tournament {
     /** Reiht alle geplanten Spiele der (laufenden) Klasse ein, deren Gegner feststehen. */
     private void queueReady(PlayingClass c) {
         if (c.isPaused()) return;
+        boolean sched = hasSchedule(c);
+        if (sched && c.getScheduleAnchor() == null) c.setScheduleAnchor(LocalDateTime.now().withNano(0));
         for (Match m : matchesOf(c)) {
-            if (m.getStatus() == MatchStatus.PLANNED && m.isReady()) {
+            if (m.getStatus() == MatchStatus.PLANNED && m.isReady() && (!sched || roundOpen(c, m))) {
                 m.setStatus(MatchStatus.QUEUED);
                 if (m.getQueueOrder() == 0) m.setQueueOrder(++queueCounter);   // nach Anhalten: alter Platz bleibt
             }
         }
+    }
+
+    // --- 1.0 (#77): Zeitplan ---------------------------------------------------------------------------
+
+    /**
+     * Rückfrage: Runde fertig, die nächste Runde liegt laut Zeitplan noch in der Zukunft.
+     * @param label z. B. „Jugend 13 Einzel · Gruppe A · Runde 3“
+     */
+    public record ScheduleQuestion(PlayingClass phase, String key, String label, LocalDateTime planned) {
+    }
+
+    private final List<ScheduleQuestion> scheduleQuestions = new java.util.ArrayList<>();
+
+    /** Zeitplan aktiv: Hauptklasse mit Minuten je Runde; die Qualifikation startet ihre Runden ohnehin einzeln. */
+    public boolean hasSchedule(PlayingClass phase) {
+        Integer min = rootOf(phase).getScheduleMinutes();
+        return min != null && min > 0 && phase.getMode() != TournamentMode.QUALIFICATION;
+    }
+
+    /** Schlüssel der Runde eines Spiels: Gruppen je Gruppe („g0:2“), sonst die Runde („3“). */
+    public static String roundKey(PlayingClass phase, Match m) {
+        return phase.getMode() == TournamentMode.GROUPS && m.getGroupIndex() >= 0 ? "g" + m.getGroupIndex() + ":" + m.getRound()
+                : String.valueOf(m.getRound());
+    }
+
+    private List<Match> roundMatches(PlayingClass phase, Match like, int round) {
+        boolean groups = phase.getMode() == TournamentMode.GROUPS && like.getGroupIndex() >= 0;
+        return matchesOf(phase).stream().filter(x -> x.getRound() == round && (!groups || x.getGroupIndex() == like.getGroupIndex())).toList();
+    }
+
+    /** Zeitfenster der Runde (1 = erstes): bei Gruppen mit Versatz für das gemeinsame Ende. */
+    private int slotOf(PlayingClass phase, Match m) {
+        if (phase.getMode() != TournamentMode.GROUPS || m.getGroupIndex() < 0) return Math.max(1, m.getRound());
+        int max = 0, mine = 0;
+        for (Match x : matchesOf(phase)) {
+            max = Math.max(max, x.getRound());
+            if (x.getGroupIndex() == m.getGroupIndex()) mine = Math.max(mine, x.getRound());
+        }
+        return m.getRound() + (max - mine);
+    }
+
+    /** Geplanter Beginn der Runde des Spiels laut Zeitplan. */
+    public LocalDateTime plannedStart(PlayingClass phase, Match m) {
+        LocalDateTime anchor = phase.getScheduleAnchor() == null ? LocalDateTime.now() : phase.getScheduleAnchor();
+        return anchor.plusMinutes((long) (slotOf(phase, m) - 1) * rootOf(phase).getScheduleMinutes());
+    }
+
+    private boolean previousRoundDone(PlayingClass phase, Match m) {
+        if (m.getRound() <= 1) return true;
+        List<Match> prev = roundMatches(phase, m, m.getRound() - 1);
+        return prev.stream().allMatch(x -> x.getStatus() == MatchStatus.DONE || x.getStatus() == MatchStatus.CANCELLED);
+    }
+
+    /** Darf die Runde des Spiels eingereiht werden? Gibt sie frei, wenn ihre Zeit gekommen ist, sonst ggf. Rückfrage. */
+    private boolean roundOpen(PlayingClass phase, Match m) {
+        String key = roundKey(phase, m);
+        if (phase.getReleasedRounds().contains(key)) return true;
+        if (!previousRoundDone(phase, m)) return false;
+        LocalDateTime planned = plannedStart(phase, m);
+        if (!LocalDateTime.now().isBefore(planned)) {
+            phase.getReleasedRounds().add(key);
+            return true;
+        }
+        // vor dem Zeitplan: nach einer beendeten Runde fragen (Runde 1 mit Versatz wartet still auf ihre Zeit)
+        if (m.getRound() > 1 && phase.getAskedRounds().add(key)) {
+            String what = phase.getMode() == TournamentMode.GROUPS && m.getGroupIndex() >= 0
+                    ? m.getStage() + " · Runde " + m.getRound() : m.getStage();
+            scheduleQuestions.add(new ScheduleQuestion(phase, key, rootOf(phase).getName() + " · " + what, planned));
+        }
+        return false;
+    }
+
+    /** Offene Rückfragen „vor dem Zeitplan“ abholen (die Oberfläche fragt nach). */
+    public List<ScheduleQuestion> takeScheduleQuestions() {
+        List<ScheduleQuestion> out = List.copyOf(scheduleQuestions);
+        scheduleQuestions.clear();
+        return out;
+    }
+
+    /** Runde jetzt starten (Antwort „Ja“ bzw. Knopf „Runde jetzt starten“). */
+    public void releaseRound(PlayingClass phase, String key) {
+        phase.getReleasedRounds().add(key);
+        queueReady(phase);
+        dispatch();
+        markModified();
+    }
+
+    /** Wartende Runden einer Phase (nach Rückfrage „Warten“): Schlüssel → Bezeichnung und geplanter Beginn. */
+    public List<ScheduleQuestion> waitingRounds(PlayingClass phase) {
+        if (!hasSchedule(phase) || !phase.isStarted() || phase.isFinished()) return List.of();
+        List<ScheduleQuestion> out = new java.util.ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (Match m : matchesOf(phase)) {
+            String key = roundKey(phase, m);
+            if (m.getStatus() != MatchStatus.PLANNED || phase.getReleasedRounds().contains(key) || !seen.add(key)) continue;
+            if (!previousRoundDone(phase, m)) continue;
+            String what = phase.getMode() == TournamentMode.GROUPS && m.getGroupIndex() >= 0 ? m.getStage() + " · Runde " + m.getRound() : m.getStage();
+            out.add(new ScheduleQuestion(phase, key, rootOf(phase).getName() + " · " + what, plannedStart(phase, m)));
+        }
+        return out;
+    }
+
+    /** Regelmäßig aufrufen: Runden, deren geplanter Beginn erreicht ist, einreihen. @return ob sich etwas geändert hat */
+    public boolean releaseDueRounds() {
+        boolean changed = false;
+        for (PlayingClass c : classes) {
+            if (!c.isStarted() || c.isPaused() || c.isFinished() || !hasSchedule(c)) continue;
+            int before = c.getReleasedRounds().size();
+            queueReady(c);
+            if (c.getReleasedRounds().size() != before) changed = true;
+        }
+        if (changed) {
+            dispatch();
+            markModified();
+        }
+        return changed;
     }
 
     /**
@@ -1134,6 +1252,9 @@ public final class Tournament {
     public void resumeClass(PlayingClass c) {
         if (!c.isPaused()) return;
         c.setPaused(false);
+        if (c.isAwaitingStart() && hasSchedule(c)) {          // 1.0 (#77): von Hand gestartet = die bereiten Runden jetzt
+            for (Match m : matchesOf(c)) if (m.getStatus() == MatchStatus.PLANNED && m.isReady()) c.getReleasedRounds().add(roundKey(c, m));
+        }
         c.setAwaitingStart(false);
         for (Match m : matchesOf(c)) if (m.getStatus() == MatchStatus.PAUSED) m.setStatus(MatchStatus.ACTIVE);
         queueReady(c);
@@ -1560,6 +1681,9 @@ public final class Tournament {
             if (phase.getQualDecision() == 1) phase.setQualification(phase.getQualDirect(), phase.getQualKo(), QUAL_WINS);
             phase.setQualDecision(0);
         }
+        phase.setScheduleAnchor(null);                         // 1.0 (#77): Zeitplan beginnt neu
+        phase.getReleasedRounds().clear();
+        phase.getAskedRounds().clear();
         for (Match m : matchesOf(phase)) {
             if (m.isCarried()) continue;
             m.clearScore();
@@ -2841,6 +2965,9 @@ public final class Tournament {
         if (m.isKnockout()) findClass(m.getClassName()).ifPresent(this::resolveKnockout);
         findClass(m.getClassName()).ifPresent(this::advanceSwiss);
         findClass(m.getClassName()).ifPresent(this::advanceQualification);
+        findClass(m.getClassName()).ifPresent(c -> {           // 1.0 (#77): nächste Runde nach Zeitplan freigeben/erfragen
+            if (c.isStarted() && hasSchedule(c)) queueReady(c);
+        });
         dispatch();
         markModified();
     }
@@ -3498,6 +3625,7 @@ public final class Tournament {
      */
     public MergeResult mergeImportedEntries(List<Player> imported, List<String[]> pairs) {
         for (Player p : imported) p.entriesToRegistrations();
+        adoptManualPersons(imported);
         Map<String, Player> importedByKey = new java.util.HashMap<>();
         for (Player p : imported) importedByKey.put(p.identityKey(), p);
         for (String[] pr : pairs) {          // {Klasse, Schlüssel 1, Schlüssel 2}
@@ -3508,6 +3636,88 @@ public final class Tournament {
             }
         }
         return merge(imported);
+    }
+
+    /**
+     * 1.0 (#78): Von Hand erfasste Personen (ohne click-TT-Nummer) werden beim Import nicht doppelt angelegt: Gibt es zu
+     * einer Person der Datei, die HTS noch nicht kennt, GENAU EINE von Hand erfasste Person mit gleichem Vor- und
+     * Nachnamen (Verein und Jahrgang gleich, soweit bei beiden angegeben), übernimmt diese die click-TT-Nummern – der
+     * anschließende Abgleich führt beide dann zusammen. Mehrdeutige Fälle bleiben getrennt (Zuordnung von Hand, #79).
+     * @return die so zugeordneten Personen (von Hand erfasst → Person der Datei)
+     */
+    public Map<Player, Player> adoptManualPersons(Collection<Player> imported) {
+        java.util.Set<String> known = new java.util.HashSet<>();
+        for (Player p : players) known.add(p.identityKey());
+        Map<Player, Player> adopted = new java.util.LinkedHashMap<>();
+        for (Player in : imported) {
+            if (known.contains(in.identityKey()) || !in.hasClickTtNumber()) continue;
+            List<Player> cand = players.stream().filter(m -> !m.hasClickTtNumber() && !adopted.containsKey(m)
+                    && samePerson(m, in)).toList();
+            List<Player> rivals = imported.stream().filter(o -> o != in && !known.contains(o.identityKey())
+                    && cand.stream().anyMatch(m -> samePerson(m, o))).toList();
+            if (cand.size() != 1 || !rivals.isEmpty()) continue;
+            Player m = cand.get(0);
+            adoptNumbers(m, in);
+            adopted.put(m, in);
+            known.add(m.identityKey());
+        }
+        if (!adopted.isEmpty()) markModified();
+        return adopted;
+    }
+
+    /**
+     * 1.0 (#79): Ergebnis des Spielerabgleichs vor dem click-TT-Export.
+     * @param auto       eindeutig zugeordnet (von Hand erfasste Person → Person der Datei)
+     * @param open       von Hand erfasste Personen ohne eindeutige Zuordnung
+     * @param newPersons alle neuen Personen der Datei (die keinem bekannten Teilnehmenden entsprechen)
+     */
+    public record Matching(Map<Player, Player> auto, List<Player> open, List<Player> newPersons) {
+    }
+
+    /**
+     * 1.0 (#79): Abgleich nachgetragener Personen mit einer aktualisierten click-TT-Teilnehmerliste. Neu = Personen der
+     * Datei, deren click-TT-Nummer (interne Nummer bzw. Lizenz-Nr.) HTS noch nicht kennt. Automatisch zugeordnet wird nur
+     * eindeutig über Vor-/Nachname und Verein (Jahrgang, soweit bei beiden angegeben, muss passen).
+     */
+    public Matching matchManual(List<Player> manual, List<Player> fromFile) {
+        java.util.Set<String> numbers = new java.util.HashSet<>();
+        for (Player p : players) {
+            if (p.getInternalNr() != null && !p.getInternalNr().isBlank()) numbers.add("i:" + p.getInternalNr().trim());
+            if (p.getLicenceNr() != null && !p.getLicenceNr().isBlank()) numbers.add("l:" + p.getLicenceNr().trim());
+        }
+        List<Player> fresh = fromFile.stream().filter(f -> !(f.getInternalNr() != null && numbers.contains("i:" + f.getInternalNr().trim()))
+                && !(f.getLicenceNr() != null && numbers.contains("l:" + f.getLicenceNr().trim()))).toList();
+        Map<Player, Player> auto = new java.util.LinkedHashMap<>();
+        List<Player> open = new java.util.ArrayList<>();
+        for (Player m : manual) {
+            List<Player> cand = fresh.stream().filter(f -> samePerson(m, f)).toList();
+            boolean unique = cand.size() == 1 && manual.stream().filter(o -> samePerson(o, cand.get(0))).count() == 1;
+            if (unique) auto.put(m, cand.get(0));
+            else open.add(m);
+        }
+        return new Matching(auto, open, fresh);
+    }
+
+    /** click-TT-Nummern (und fehlende Stammdaten) einer Person der Datei auf eine von Hand erfasste übertragen. */
+    public void adoptNumbers(Player manual, Player fromFile) {
+        if (fromFile.getInternalNr() != null && !fromFile.getInternalNr().isBlank()) manual.setInternalNr(fromFile.getInternalNr());
+        if (fromFile.getLicenceNr() != null && !fromFile.getLicenceNr().isBlank()) manual.setLicenceNr(fromFile.getLicenceNr());
+        markModified();
+    }
+
+    /** Gleicher Vor- und Nachname; Verein bzw. Jahrgang gleich, soweit bei beiden angegeben (Groß-/Kleinschreibung egal). */
+    public static boolean samePerson(Player a, Player b) {
+        if (!eqText(a.getFirstname(), b.getFirstname()) || !eqText(a.getLastname(), b.getLastname())) return false;
+        if (notBlankText(a.getClubName()) && notBlankText(b.getClubName()) && !eqText(a.getClubName(), b.getClubName())) return false;
+        return a.getBirthyear() == null || b.getBirthyear() == null || a.getBirthyear().equals(b.getBirthyear());
+    }
+
+    private static boolean eqText(String a, String b) {
+        return (a == null ? "" : a.trim()).equalsIgnoreCase(b == null ? "" : b.trim());
+    }
+
+    private static boolean notBlankText(String s) {
+        return s != null && !s.isBlank();
     }
 
     /**
@@ -3592,6 +3802,78 @@ public final class Tournament {
     private final java.util.Set<String> presentationOn = new java.util.TreeSet<>();
 
     public int getPresentationSeconds() { return presentationSeconds; }
+
+    // --- Startgebühren (1.0, #82) ---
+    private int lateFeeCents;
+
+    /** Nachmeldegebühr in Cent: einmal je Person für alle, die nicht in der click-TT-Datei standen. */
+    public int getLateFeeCents() { return lateFeeCents; }
+
+    public void setLateFeeCents(int cents) {
+        lateFeeCents = Math.max(0, cents);
+        markModified();
+    }
+
+    /** Wird in diesem Turnier überhaupt eine Gebühr erhoben (Klassen- oder Nachmeldegebühr)? */
+    public boolean hasFees() {
+        return lateFeeCents > 0 || classes.stream().anyMatch(c -> !c.isPhase() && c.getFeeCents() != null);
+    }
+
+    /** Hauptklassen mit Gebühr, für die die Person gemeldet bzw. in denen sie ist (ohne reine Wartelisten). */
+    public List<PlayingClass> feeClassesOf(Player p) {
+        return classes.stream().filter(c -> !c.isPhase() && c.getFeeCents() != null && p.isEnteredFor(c.getName())).toList();
+    }
+
+    /** Nachmeldung = Person ohne click-TT-Nummer (von Hand erfasst). */
+    public boolean isLateEntry(Player p) {
+        return !p.hasClickTtNumber() && !isHandicap();
+    }
+
+    /** Gebühr der Person in Cent: Summe ihrer Klassen plus ggf. Nachmeldegebühr; endgültig Abgemeldete zahlen nichts. */
+    public int feeOf(Player p) {
+        if (p.getAttendance() == Attendance.WITHDRAWN || p.isReserveOnly()) return 0;
+        List<PlayingClass> cs = feeClassesOf(p);
+        int sum = cs.stream().mapToInt(PlayingClass::getFeeCents).sum();
+        if (lateFeeCents > 0 && isLateEntry(p) && (!cs.isEmpty() || !p.getClassNames().isEmpty())) sum += lateFeeCents;
+        return sum;
+    }
+
+    /** Noch offen: Gebühr fällig, aber nicht bezahlt. */
+    public boolean isFeeOpen(Player p) {
+        return !p.isPaid() && feeOf(p) > 0;
+    }
+
+    /** Bezahlung der Personen vermerken (Betrag = ihre aktuelle Gebühr); {@code byClub}: Sammelabrechnung. */
+    public void markPaid(Collection<Player> ps, Player.Payment how, String byClub) {
+        LocalDateTime now = LocalDateTime.now();
+        for (Player p : ps) p.setPayment(how, feeOf(p), now, byClub);
+        markModified();
+    }
+
+    public void undoPayment(Collection<Player> ps) {
+        for (Player p : ps) p.setPayment(Player.Payment.NONE, 0, null, null);
+        markModified();
+    }
+
+    /** Teilnehmende einer Hauptklasse (in der Klasse), deren Gebühr noch offen ist – für die Warnung beim Start. */
+    public List<Player> unpaidIn(PlayingClass root) {
+        return playersIn(root).stream().filter(this::isFeeOpen).toList();
+    }
+
+    /** „8,00 €“ */
+    public static String euro(int cents) {
+        return String.format(Locale.GERMAN, "%d,%02d €", cents / 100, cents % 100);
+    }
+
+    /** 1.0 (#81): Anzahl der Spiele in „Die nächsten Spiele (alle Klassen)“, 4–48, Standard 16. */
+    private int presentationNextCount = 16;
+
+    public int getPresentationNextCount() { return presentationNextCount; }
+
+    public void setPresentationNextCount(int n) {
+        presentationNextCount = Math.max(4, Math.min(48, n));
+        markModified();
+    }
 
     public void setPresentationSeconds(int s) {
         presentationSeconds = Math.max(5, Math.min(600, s));
@@ -3980,6 +4262,21 @@ public final class Tournament {
                 break;
             }
             if (next == null) {
+                // 1.0 (#77): beim Simulieren gilt kein Zeitplan – wartende Runden sofort freigeben
+                boolean released = false;
+                for (PlayingClass c : classes) {
+                    if (!c.isStarted() || c.isPaused() || rootOf(c).isFinished() || !hasSchedule(c)) continue;
+                    for (Match m : matchesOf(c)) {
+                        if (m.getStatus() == MatchStatus.PLANNED && m.isReady() && previousRoundDone(c, m)
+                                && c.getReleasedRounds().add(roundKey(c, m))) released = true;
+                    }
+                    if (released) queueReady(c);
+                }
+                scheduleQuestions.clear();
+                if (released) {
+                    dispatch();
+                    continue;
+                }
                 // 0.38 (#60): offene Entscheidung nach Runde 1 der KO-Qualifikation – beim Simulieren: weitere Runde
                 PlayingClass pending = classes.stream().filter(c -> c.isStarted() && !c.isPaused() && qualificationDecisionPending(c))
                         .findFirst().orElse(null);

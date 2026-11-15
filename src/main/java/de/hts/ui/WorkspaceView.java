@@ -86,7 +86,7 @@ public final class WorkspaceView {
     private final StackPane participantsCard = new StackPane();
     private final Label statusLabel = new Label("Bereit.");
     private final Label saveState = new Label();
-    private final HBox startBox = new HBox(6);
+    private final javafx.scene.layout.FlowPane startBox = new javafx.scene.layout.FlowPane(6, 6);   // 1.0: bricht bei wenig Platz um
     /** Knöpfe der Seite rechts oben in der Titelzeile (alle Seiten außer „Teilnehmende“) */
     private final HBox topActions = new HBox(8);
     /** „· ● Gestartet 14:05 Uhr“ in der Unterzeile */
@@ -119,6 +119,7 @@ public final class WorkspaceView {
         participants.setOnEdit(this::editParticipant);
         participants.setClassSource(() -> tournament.rootClasses().stream().map(PlayingClass::getName).toList());
         participants.setSeedSource(name -> tournament.findClass(name).map(tournament::seedPositions).orElse(java.util.Map.of()));   // 0.39 (#62)
+        participants.setFeeSource(tournament::feeOf, tournament::hasFees);                                                         // 1.0 (#82)
         classes.setOnShowOpen(c -> {               // 0.37: „Offene Personen anzeigen“
             showPage(Page.PARTICIPANTS);
             participants.showClass(c.getName());
@@ -138,6 +139,11 @@ public final class WorkspaceView {
             if (isModified) scheduleAutosave();
         });
         updateSaveState();
+
+        // 1.0 (#77): Zeitplan – Rückfragen „vor dem Zeitplan“ stellen, fällige Runden einreihen
+        scheduleTimer = new javafx.animation.Timeline(new javafx.animation.KeyFrame(javafx.util.Duration.seconds(2), e -> scheduleTick()));
+        scheduleTimer.setCycleCount(javafx.animation.Animation.INDEFINITE);
+        scheduleTimer.play();
 
         root.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
             if (new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN).match(e)) {
@@ -161,6 +167,7 @@ public final class WorkspaceView {
     public boolean prepareLeave() {
         if (currentPage == Page.HANDICAP && !handicapView.confirmLeave()) return false;
         presentationView.stop();
+        scheduleTimer.stop();
         if (liveServer != null) {
             liveServer.stop();
             liveServer = null;
@@ -186,7 +193,9 @@ public final class WorkspaceView {
         matchesMenu = header.addMenuItem("matches", "Spiele", null, () -> showPage(Page.MATCHES));
         afterHandicapMenus.add(matchesMenu);
         afterHandicapMenus.add(header.addMenuItem("presentation", "Präsentationsansicht", null, () -> showPage(Page.PRESENTATION)));
-        afterHandicapMenus.add(header.addMenuItem("mobile", "Mobile Einstellungen", null, () -> showPage(Page.MOBILE)));
+        if (de.hts.HtsApp.MOBILE_ENABLED) {                // 1.0 (#80): ausgeblendet, Code bleibt
+            afterHandicapMenus.add(header.addMenuItem("mobile", "Mobile Einstellungen", null, () -> showPage(Page.MOBILE)));
+        }
         updateHandicapMenus();
         matchesMenu.setDisable(!tournament.isRunning());
         matchesMenu.setTooltip(new javafx.scene.control.Tooltip("Verfügbar, sobald das Turnier oder eine Klasse gestartet ist"));
@@ -242,17 +251,6 @@ public final class WorkspaceView {
             startedInfo.setGraphic(dot);
             startedInfo.setGraphicTextGap(6);
             startedInfo.setVisible(true);
-            if (tournament.isCompletelyFinished()) {
-                javafx.scene.control.MenuButton export = new javafx.scene.control.MenuButton("Ergebnisse exportieren", Icons.of(Icons.START, 14));
-                export.getStyleClass().add("navy-pill");
-                javafx.scene.control.MenuItem pdf = new javafx.scene.control.MenuItem("Gesamtergebnis als PDF");
-                pdf.setOnAction(e -> Reports.showTournamentResults(stage, tournament, this::setStatus));
-                javafx.scene.control.MenuItem ctt = new javafx.scene.control.MenuItem("click-TT-Ergebnisdatei (XML)");
-                ctt.setOnAction(e -> exportClickTt());
-                export.getItems().add(pdf);
-                if (!tournament.isHandicap()) export.getItems().add(ctt);      // Vorgabeturnier: kein click-TT-Export
-                startBox.getChildren().add(export);
-            }
             if (!tournament.previewStart().started().isEmpty()) {
                 Button more = new Button("Bereite Klassen starten", Icons.of(Icons.START, 14));
                 more.getStyleClass().add("navy-pill");
@@ -279,6 +277,39 @@ public final class WorkspaceView {
                 startBox.getChildren().add(start);
             }
         }
+        addExportButtons();
+    }
+
+    /**
+     * 1.0 (#79): „Gesamtergebnis als PDF“ und „click-TT-Ergebnisdatei (XML)“ als zwei Knöpfe – immer sichtbar, aber erst
+     * aktiv, wenn das Turnier gespielt ist (alle Klassen beendet). Vorgabeturnier: kein click-TT-Export.
+     */
+    private void addExportButtons() {
+        boolean done = tournament.isStarted() && tournament.isCompletelyFinished();
+        List<String> open = tournament.rootClasses().stream().filter(c -> !c.isFinished()).map(PlayingClass::getName).toList();
+        String why = done ? null : !tournament.isStarted() ? "Erst möglich, wenn das Turnier gespielt ist (noch nicht gestartet)"
+                : "Erst möglich, wenn alle Klassen beendet sind (noch offen: " + String.join(", ", open) + ")";
+        Button pdf = new Button("Gesamtergebnis als PDF");
+        pdf.getStyleClass().add("pill");
+        pdf.setMinWidth(Region.USE_PREF_SIZE);
+        pdf.setOnAction(e -> Reports.showTournamentResults(stage, tournament, this::setStatus));
+        startBox.getChildren().add(withDisabledHint(pdf, why));
+        if (!tournament.isHandicap()) {
+            Button ctt = new Button("click-TT-Ergebnisdatei (XML)");
+            ctt.getStyleClass().add("pill");
+            ctt.setMinWidth(Region.USE_PREF_SIZE);
+            ctt.setOnAction(e -> exportClickTt());
+            startBox.getChildren().add(withDisabledHint(ctt, why));
+        }
+    }
+
+    /** Deaktivierter Knopf mit Hinweis beim Darüberfahren (Tooltip über einen Rahmen, da deaktivierte Knöpfe keinen zeigen). */
+    private static Node withDisabledHint(Button b, String why) {
+        b.setDisable(why != null);
+        if (why == null) return b;
+        javafx.scene.layout.StackPane wrap = new javafx.scene.layout.StackPane(b);
+        Tooltip.install(wrap, new Tooltip(why));
+        return wrap;
     }
 
     // --- Inhalt ------------------------------------------------------------
@@ -303,6 +334,7 @@ public final class WorkspaceView {
         titles.setMinWidth(Region.USE_PREF_SIZE);
 
         startBox.setAlignment(Pos.CENTER_RIGHT);
+        Ui.oneLineWhenPossible(startBox);
         tournament.startedAtProperty().addListener((o, a, b) -> updateStartBox());
         tournament.getPlayers().addListener((javafx.collections.ListChangeListener<Player>) ch -> updateStartBox());
         tournament.getClasses().addListener((javafx.collections.ListChangeListener<PlayingClass>) ch -> updateStartBox());
@@ -453,6 +485,46 @@ public final class WorkspaceView {
         saveState.getStyleClass().add(dirty ? "dirty" : "clean");
     }
 
+    private final javafx.animation.Timeline scheduleTimer;
+    private boolean scheduleAsking;
+    private int scheduleTicks;
+
+    /** 1.0 (#77): alle 2 s Rückfragen abholen, alle 20 s fällige Runden einreihen. */
+    private void scheduleTick() {
+        if (scheduleAsking) return;
+        if (++scheduleTicks % 10 == 0 && tournament.releaseDueRounds()) onRunningChanged();
+        List<Tournament.ScheduleQuestion> qs = tournament.takeScheduleQuestions();
+        if (qs.isEmpty()) return;
+        scheduleAsking = true;
+        Platform.runLater(() -> {
+            try {
+                boolean changed = false;
+                for (Tournament.ScheduleQuestion q : qs) {
+                    Alert a = new Alert(Alert.AlertType.CONFIRMATION, "", ButtonType.YES, ButtonType.NO);
+                    ButtonType now = new ButtonType("Jetzt starten", javafx.scene.control.ButtonBar.ButtonData.YES);
+                    ButtonType wait = new ButtonType("Warten bis " + q.planned().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) + " Uhr",
+                            javafx.scene.control.ButtonBar.ButtonData.NO);
+                    a.getButtonTypes().setAll(wait, now);
+                    a.initOwner(stage);
+                    a.setTitle("Zeitplan");
+                    a.setHeaderText("Vor dem Zeitplan: " + q.label());
+                    a.setContentText("Die vorige Runde ist beendet. Laut Zeitplan beginnt diese Runde erst um "
+                            + q.planned().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) + " Uhr. "
+                            + "Trotzdem jetzt starten? Beim Warten werden die Spiele zur geplanten Zeit automatisch eingereiht.");
+                    a.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+                    if (a.showAndWait().orElse(wait) == now) {
+                        tournament.releaseRound(q.phase(), q.key());
+                        changed = true;
+                    }
+                }
+                if (changed) onRunningChanged();
+                else classes.refresh();
+            } finally {
+                scheduleAsking = false;
+            }
+        });
+    }
+
     private void scheduleAutosave() {
         if (autosaveScheduled) return;
         autosaveScheduled = true;
@@ -499,6 +571,14 @@ public final class WorkspaceView {
             }
             sb.append("\n");
         }
+        // 1.0 (#82): offene Startgebühren der zu startenden Klassen (nur Warnung)
+        StringBuilder fees = new StringBuilder();
+        for (PlayingClass c : r.started()) {
+            List<Player> unpaid = tournament.unpaidIn(c);
+            if (!unpaid.isEmpty()) fees.append("  • ").append(c.getName()).append(": ")
+                    .append(String.join(", ", unpaid.stream().map(Player::getDisplayName).toList())).append("\n");
+        }
+        if (!fees.isEmpty()) sb.append("Startgebühr noch offen (Start trotzdem möglich):\n").append(fees).append("\n");
         if (r.started().isEmpty()) {
             sb.append(tournament.isStarted() ? "Es ist keine weitere Klasse bereit." : "Es ist noch keine Klasse bereit – es wird nur die Startzeit festgehalten.");
         } else {
@@ -546,9 +626,26 @@ public final class WorkspaceView {
         undo.setOnAction(e -> setAttendance(de.hts.player.Attendance.UNKNOWN, "wieder offen"));
         MenuItem confirmReq = new MenuItem("Abmeldung bestätigen");
         confirmReq.setOnAction(e -> setAttendance(de.hts.player.Attendance.WITHDRAWN, "endgültig abgemeldet"));
-        ContextMenu menu = new ContextMenu(present, withdraw, undo, confirmReq, new SeparatorMenuItem(), edit, new SeparatorMenuItem(), delete);
+        // 1.0 (#82): Startgebühr per Rechtsklick
+        MenuItem payCash = new MenuItem("Startgebühr bezahlt (bar)");
+        payCash.setOnAction(e -> paySelected(de.hts.player.Player.Payment.CASH));
+        MenuItem payTransfer = new MenuItem("Startgebühr bezahlt (Überweisung)");
+        payTransfer.setOnAction(e -> paySelected(de.hts.player.Player.Payment.TRANSFER));
+        MenuItem payUndo = new MenuItem("Zahlung zurücknehmen");
+        payUndo.setOnAction(e -> undoPaymentSelected());
+        MenuItem receipt = new MenuItem("Quittung (PDF)");
+        receipt.setOnAction(e -> receiptSelected());
+        SeparatorMenuItem paySep = new SeparatorMenuItem();
+        ContextMenu menu = new ContextMenu(present, withdraw, undo, confirmReq, paySep, payCash, payTransfer, payUndo, receipt,
+                new SeparatorMenuItem(), edit, new SeparatorMenuItem(), delete);
         menu.setOnShowing(e -> {
             Player p = participants.getSelected();
+            boolean fees = tournament.hasFees() && p != null;
+            paySep.setVisible(fees);
+            payCash.setVisible(fees && !p.isPaid() && tournament.feeOf(p) > 0);
+            payTransfer.setVisible(fees && !p.isPaid() && tournament.feeOf(p) > 0);
+            payUndo.setVisible(fees && p.isPaid());
+            receipt.setVisible(fees && p.isPaid());
             de.hts.player.Attendance a = p == null ? null : p.getAttendance();
             undo.setVisible(a == de.hts.player.Attendance.WITHDRAWN);
             confirmReq.setVisible(a == de.hts.player.Attendance.WITHDRAW_REQUESTED);
@@ -648,6 +745,67 @@ public final class WorkspaceView {
             if (f == null) return;
             original = f.toPath();
         }
+        // 1.0 (#79): erst prüfen, wessen Spiele mangels click-TT-Nummer fehlen würden – dann Rückfrage / Abgleich
+        de.hts.importer.clicktt.ClickTtResultExporter.Report dry;
+        try (java.io.InputStream in = java.nio.file.Files.newInputStream(original)) {
+            dry = de.hts.importer.clicktt.ClickTtResultExporter.export(tournament, in, java.io.OutputStream.nullOutputStream());
+        } catch (java.io.IOException ex) {
+            error("Export fehlgeschlagen", ex.getMessage());
+            return;
+        }
+        if (!dry.withoutId().isEmpty()) {
+            ClickTtExportDialogs.Choice c = ClickTtExportDialogs.askMissing(stage, tournament, dry.withoutId());
+            if (c == ClickTtExportDialogs.Choice.ABORT) return;
+            if (c == ClickTtExportDialogs.Choice.MATCH) {
+                Path updated = matchWithUpdatedList(dry.withoutId());
+                if (updated == null) return;                      // abgebrochen: nichts geändert
+                original = updated;
+            }
+        }
+        saveClickTtResults(original);
+    }
+
+    /**
+     * 1.0 (#79): aktualisierte click-TT-Teilnehmerliste einspielen und nachgetragene Teilnehmende zuordnen. Übernimmt die
+     * click-TT-Nummern der zugeordneten Personen und hinterlegt die neue Datei als Grundlage des Exports.
+     * @return die neue Grundlage oder {@code null} (abgebrochen – nichts geändert)
+     */
+    private Path matchWithUpdatedList(List<Player> withoutId) {
+        FileChooser pick = new FileChooser();
+        pick.setTitle("Aktualisierte click-TT-Teilnehmerliste (XML) auswählen");
+        pick.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML-Dateien", "*.xml", "*.XML"));
+        File lastDir = new File(prefs.get(PREF_LAST_IMPORT_DIR, System.getProperty("user.home")));
+        if (lastDir.isDirectory()) pick.setInitialDirectory(lastDir);
+        File f = pick.showOpenDialog(stage);
+        if (f == null) return null;
+        if (f.getParentFile() != null) prefs.put(PREF_LAST_IMPORT_DIR, f.getParentFile().getAbsolutePath());
+        de.hts.importer.clicktt.ClickTtXmlImporter.ImportResult r;
+        try {
+            r = new de.hts.importer.clicktt.ClickTtXmlImporter().importFile(f.toPath());
+        } catch (de.hts.importer.clicktt.ClickTtImportException ex) {
+            error("Teilnehmerliste nicht lesbar", ex.getMessage());
+            return null;
+        }
+        Tournament.Matching m = tournament.matchManual(withoutId, r.players());
+        java.util.Optional<java.util.Map<Player, Player>> res = ClickTtExportDialogs.matchPlayers(stage, tournament, f.getName(), m);
+        if (res.isEmpty()) {
+            setStatus("Abgleich abgebrochen – nichts geändert.");
+            return null;
+        }
+        int n = 0;
+        for (var e : res.get().entrySet()) {
+            if (e.getValue() == null) continue;
+            tournament.adoptNumbers(e.getKey(), e.getValue());
+            n++;
+        }
+        rememberClickTtFile(f.toPath());
+        save();
+        setStatus("Teilnehmerliste abgeglichen: " + n + (n == 1 ? " Person zugeordnet." : " Personen zugeordnet."));
+        Path copy = clickTtCopy();
+        return java.nio.file.Files.isRegularFile(copy) ? copy : f.toPath();
+    }
+
+    private void saveClickTtResults(Path original) {
         FileChooser save = new FileChooser();
         save.setTitle("click-TT-Ergebnisdatei speichern");
         save.setInitialFileName(de.hts.persistence.StorageLocations.resultsFileName(tournament));
@@ -659,21 +817,11 @@ public final class WorkspaceView {
         de.hts.persistence.StorageLocations.rememberXmlDir(tournament, target.getParentFile().toPath());
         try {
             var rep = de.hts.importer.clicktt.ClickTtResultExporter.export(tournament, original, target.toPath());
-            StringBuilder sb = new StringBuilder(rep.competitions() + " Konkurrenz(en), " + rep.matches() + " Spiele, "
-                    + rep.placements() + " Platzierungen exportiert nach\n" + target.getAbsolutePath()
-                    + "\n\nDie Datei kann in click-TT beim Turnier hochgeladen werden.");
-            if (!rep.skipped().isEmpty()) sb.append("\n\nNicht exportiert:\n• ").append(String.join("\n• ", rep.skipped()));
-            if (!rep.warnings().isEmpty()) {
-                sb.append("\n\nHinweise:\n• ").append(String.join("\n• ", rep.warnings().subList(0, Math.min(15, rep.warnings().size()))));
-                if (rep.warnings().size() > 15) sb.append("\n• … (").append(rep.warnings().size() - 15).append(" weitere)");
-            }
-            javafx.scene.control.Alert a = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION, sb.toString(), ButtonType.OK);
-            a.initOwner(stage);
-            a.setTitle("click-TT-Export");
-            a.setHeaderText("Ergebnisdatei erstellt");
-            a.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
-            a.showAndWait();
             setStatus("click-TT-Ergebnisdatei gespeichert: " + target.getName());
+            ClickTtExportDialogs.showReport(stage, tournament, rep, target.toPath(), () -> {
+                Path updated = matchWithUpdatedList(rep.withoutId());
+                if (updated != null) saveClickTtResults(updated);
+            }, this::setStatus);
         } catch (java.io.IOException ex) {
             error("Export fehlgeschlagen", ex.getMessage());
         }
@@ -825,9 +973,11 @@ public final class WorkspaceView {
             if (existing.isEmpty()) {
                 PlayingClass nc = tournament.addClass(new PlayingClass(ci.name(), d, ClassType.guess(ci.name(), ci.sex()), null, null));
                 nc.setImportedFromXml(true);
+                nc.setFeeCents(ci.feeCents());                              // 1.0 (#82): Startgebühr aus click-TT
                 newClasses++;
-            } else if (ci.doubles() && !existing.get().isDoubles()) {
-                tournament.changeDiscipline(existing.get(), Discipline.DOUBLES);
+            } else {
+                if (ci.doubles() && !existing.get().isDoubles()) tournament.changeDiscipline(existing.get(), Discipline.DOUBLES);
+                if (existing.get().getFeeCents() == null) existing.get().setFeeCents(ci.feeCents());
             }
         }
         // 0.35: Gemeldete stehen nicht mehr direkt „In der Klasse“, sondern als Meldung unter „Verfügbar“ – übernommen
@@ -915,11 +1065,105 @@ public final class WorkspaceView {
         };
         updatePdf.run();
         participants.countTextProperty().addListener((o, a, b) -> updatePdf.run());
+        // 1.0 (#82): Startgebühren – Markierte als bezahlt, Verein abrechnen, Kassenübersicht
+        MenuItem mPayCash = new MenuItem("Startgebühr bezahlt (bar)");
+        mPayCash.setOnAction(e -> paySelected(de.hts.player.Player.Payment.CASH));
+        MenuItem mPayTransfer = new MenuItem("Startgebühr bezahlt (Überweisung)");
+        mPayTransfer.setOnAction(e -> paySelected(de.hts.player.Player.Payment.TRANSFER));
+        MenuItem mPayUndo = new MenuItem("Zahlung zurücknehmen");
+        mPayUndo.setOnAction(e -> undoPaymentSelected());
+        MenuItem mReceipt = new MenuItem("Quittung für Markierte (PDF)");
+        mReceipt.setOnAction(e -> receiptSelected());
+        SeparatorMenuItem feeSep = new SeparatorMenuItem();
+        marked.getItems().addAll(feeSep, mPayCash, mPayTransfer, mPayUndo, mReceipt);
+        marked.setOnShowing(e -> {
+            boolean fees = tournament.hasFees();
+            for (MenuItem mi : new MenuItem[]{feeSep, mPayCash, mPayTransfer, mPayUndo, mReceipt}) mi.setVisible(fees);
+        });
+        javafx.scene.control.MenuButton fees = new javafx.scene.control.MenuButton("Startgebühren");
+        fees.getStyleClass().add("action-menu");
+        fees.setMinWidth(Region.USE_PREF_SIZE);
+        fees.managedProperty().bind(fees.visibleProperty());
+        MenuItem club = new MenuItem("Verein abrechnen …");
+        club.setOnAction(e -> settleClub());
+        MenuItem cash = new MenuItem("Kassenübersicht (PDF)");
+        cash.setOnAction(e -> Reports.showCashReport(getRoot().getScene() == null ? null : getRoot().getScene().getWindow(), tournament, this::setStatus));
+        fees.getItems().addAll(club, cash);
+        fees.setTooltip(new Tooltip("Startgebühren je Verein abrechnen (mit Quittung) oder die Kassenübersicht drucken"));
+        fees.setVisible(tournament.hasFees());
+        participants.countTextProperty().addListener((o, a, b) -> fees.setVisible(tournament.hasFees()));
         // 0.39 (#64): in einer Zeile, PDF rechts neben den Menüs (Umbruch nur, wenn es wirklich eng wird)
-        javafx.scene.layout.FlowPane box = new javafx.scene.layout.FlowPane(8, 8, marked, phone, pdf);
+        javafx.scene.layout.FlowPane box = new javafx.scene.layout.FlowPane(8, 8, marked, phone, fees, pdf);
         Ui.oneLineWhenPossible(box);
         box.setAlignment(Pos.CENTER_LEFT);
         return box;
+    }
+
+    // --- Startgebühren (1.0, #82) ----------------------------------------------------
+
+    private List<Player> selectedPlayers() {
+        return new ArrayList<>(participants.getTable().getSelectionModel().getSelectedItems());
+    }
+
+    private void paySelected(de.hts.player.Player.Payment how) {
+        List<Player> sel = selectedPlayers().stream().filter(p -> !p.isPaid() && tournament.feeOf(p) > 0).toList();
+        if (sel.isEmpty()) {
+            setStatus(participants.getTable().getSelectionModel().isEmpty() ? "Bitte zuerst Teilnehmende markieren."
+                    : "Unter den Markierten ist keine offene Startgebühr.");
+            return;
+        }
+        tournament.markPaid(sel, how, null);
+        int sum = sel.stream().mapToInt(de.hts.player.Player::getPaidCents).sum();
+        setStatus(sel.size() + (sel.size() == 1 ? " Startgebühr" : " Startgebühren") + " bezahlt (" + how.getLabel() + "): "
+                + Tournament.euro(sum) + ".");
+        refreshAfterAttendance();
+    }
+
+    private void undoPaymentSelected() {
+        List<Player> sel = selectedPlayers().stream().filter(de.hts.player.Player::isPaid).toList();
+        if (sel.isEmpty()) {
+            setStatus("Unter den Markierten hat niemand bezahlt.");
+            return;
+        }
+        if (!confirm("Zahlung zurücknehmen", (sel.size() == 1 ? "Die Zahlung von " + sel.get(0).getDisplayName() : sel.size() + " Zahlungen")
+                + " zurücknehmen? Die Startgebühr ist danach wieder offen.")) return;
+        tournament.undoPayment(sel);
+        setStatus(sel.size() + " Zahlung(en) zurückgenommen.");
+        refreshAfterAttendance();
+    }
+
+    private void receiptSelected() {
+        List<Player> sel = selectedPlayers().stream().filter(de.hts.player.Player::isPaid).toList();
+        if (sel.isEmpty()) {
+            setStatus("Quittung: Unter den Markierten hat niemand bezahlt.");
+            return;
+        }
+        String who = sel.size() == 1 ? sel.get(0).getDisplayName() : sel.size() + " Personen";
+        Reports.showReceipt(getRoot().getScene() == null ? null : getRoot().getScene().getWindow(), tournament, sel, who, null, this::setStatus);
+    }
+
+    /** Sammelabrechnung eines Vereins: offene Gebühren seiner Mitglieder auf einmal bezahlen, mit Quittung. */
+    private void settleClub() {
+        java.text.Collator col = java.text.Collator.getInstance(java.util.Locale.GERMAN);
+        List<String> clubs = tournament.getPlayers().stream().filter(p -> tournament.feeOf(p) > 0)
+                .map(Player::getClubName).filter(c -> c != null && !c.isBlank()).distinct().sorted(col).toList();
+        if (clubs.isEmpty()) {
+            setStatus("Keine Startgebühren mit Verein vorhanden.");
+            return;
+        }
+        ClubSettlementDialog d = new ClubSettlementDialog(stage, tournament, clubs);
+        d.showAndWait().ifPresent(r -> {
+            if (!r.toPay().isEmpty()) {
+                tournament.markPaid(r.toPay(), r.how(), r.club());
+                setStatus("„" + r.club() + "“: " + r.toPay().size() + (r.toPay().size() == 1 ? " Startgebühr" : " Startgebühren")
+                        + " bezahlt (" + r.how().getLabel() + "), " + Tournament.euro(r.toPay().stream().mapToInt(Player::getPaidCents).sum()) + ".");
+                refreshAfterAttendance();
+            }
+            if (r.receipt()) {
+                List<Player> paid = tournament.getPlayers().stream().filter(p -> r.club().equals(p.getClubName()) && p.isPaid()).toList();
+                if (!paid.isEmpty()) Reports.showReceipt(stage, tournament, paid, r.club(), r.club(), this::setStatus);
+            }
+        });
     }
 
     private static List<Player> withAttendance(List<Player> list, de.hts.player.Attendance a) {

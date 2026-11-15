@@ -113,7 +113,7 @@ class ClickTtXmlImporterTest {
     void zaehltMeldungenJeKonkurrenzDoppelAlsEineMeldung() throws Exception {
         var r = importSample();
         assertEquals(3, r.competitions().size());
-        assertEquals(new ClickTtXmlImporter.CompetitionInfo("Herren Einzel", 4, 1, Sex.MALE, false), r.competitions().get(0));
+        assertEquals(new ClickTtXmlImporter.CompetitionInfo("Herren Einzel", 4, 1, Sex.MALE, false, 800), r.competitions().get(0));
         assertEquals(new ClickTtXmlImporter.CompetitionInfo("Damen Einzel (TTR bis 1500)", 3, 1, Sex.FEMALE, false), r.competitions().get(1));
         assertEquals(new ClickTtXmlImporter.CompetitionInfo("Herren Doppel", 2, 0, Sex.UNKNOWN, true), r.competitions().get(2));
     }

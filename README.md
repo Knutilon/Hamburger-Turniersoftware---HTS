@@ -25,6 +25,32 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.0.0
+
+- **Startgebühren:** Jede Klasse hat eine Startgebühr (aus click-TT vorbelegt, in „Klasse anlegen/bearbeiten“ änderbar),
+  dazu eine Nachmeldegebühr je Turnier für alle, die nicht in der click-TT-Datei standen („Bearbeiten“ in der
+  Turnierübersicht). „Teilnehmende“ zeigt Gebühr und „Bezahlt“ (bar / Überweisung); bezahlen über „Aktion für Markierte
+  wählen“ oder Rechtsklick, gesammelt je Verein über „Startgebühren ▾ → Verein abrechnen …“ (mit Quittung als PDF),
+  dazu eine Kassenübersicht als PDF. Beim Start einer Klasse warnt HTS vor offenen Gebühren (Start bleibt möglich).
+  Hinweis: Ob Quittungen und Kassenübersicht eine Kassensicherung (TSE) erfordern, bitte mit dem Kassenwart bzw.
+  Steuerberater klären.
+- **Zeitplan je Klasse:** In „Klasse anlegen/bearbeiten“ „mit Zeitplan“ und die Minuten je Runde wählen. Runde n
+  beginnt frühestens Start + (n − 1) × Rundendauer; Runden werden nacheinander eingereiht. Ist eine Runde vor dem
+  Zeitplan fertig, fragt HTS je Gruppe bzw. Runde „Jetzt starten“ oder „Warten bis hh:mm Uhr“ – wartende Runden stehen
+  im Phasen-Reiter mit „Runde jetzt starten“ und werden zur geplanten Zeit automatisch eingereiht.
+- **click-TT-Export:** Statt des Menüs stehen „Gesamtergebnis als PDF“ und „click-TT-Ergebnisdatei (XML)“ als zwei
+  Knöpfe oben rechts – immer sichtbar, aktiv, sobald das Turnier gespielt ist. Wurden Teilnehmende von Hand
+  nachgetragen, bietet HTS an, eine aktualisierte Teilnehmerliste aus click-TT einzuspielen: eindeutige Personen
+  (Vor-/Nachname, Verein) werden automatisch zugeordnet, die übrigen im Zuordnungsfenster von Hand. Nach dem Export
+  listet HTS alle nicht exportierten Spiele mit Grund (auch als PDF).
+- **Fehler behoben – erneuter Import:** Von Hand nachgetragene Personen werden beim erneuten Einlesen der
+  click-TT-Datei nicht mehr doppelt angelegt, sondern übernehmen die click-TT-Nummer.
+- **Präsentationsansicht:** „Die nächsten Spiele (alle Klassen)“ mit einstellbarer Anzahl (4–48, Standard 16, mehr als
+  16 auf mehreren Seiten). Neu je laufender Klasse: „Warteschlange dieser Klasse“ – bei Gruppen nach jeder Seite mit
+  Gruppen die Warteschlange genau dieser Gruppen, sonst nach den Seiten der Phase.
+- **Handy-Zugang ausgeblendet:** Die Seite „Mobile Einstellungen“ ist vorerst nicht sichtbar (die Funktionen bleiben im
+  Programm und kommen später wieder).
+
 ## Neu in 0.42.0
 
 - **Lizenz jetzt AGPL-3.0 oder später** (bisher GPL-3.0): Datei LICENSE mit dem AGPL-Text, Lizenzhinweis in NOTICE,

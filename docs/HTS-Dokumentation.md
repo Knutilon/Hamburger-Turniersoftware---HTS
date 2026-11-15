@@ -709,6 +709,8 @@ Die Export-Markierung gibt es nur auf der Seite „Spiele“ und nur für abgesc
 
 ## 11. Handy-Zugang (Mobile Einstellungen)
 
+> **Hinweis (ab 1.0.0):** Die Seite „Mobile Einstellungen“ und damit der Handy-Zugang sind derzeit ausgeblendet; die Funktionen bleiben im Programm und kommen später wieder.
+
 Über das lokale WLAN können Teilnehmende und Betreuende mit dem Handy die **Live-Anzeige** ansehen und sich **am Turniertag anmelden**. HTS stellt dafür auf dem Laptop eine kleine Webseite bereit (fester Port 8080); ein Internetanschluss ist nicht nötig.
 
 **Seite „Mobile Einstellungen“:**

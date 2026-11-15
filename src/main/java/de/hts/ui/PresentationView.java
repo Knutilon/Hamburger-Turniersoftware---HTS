@@ -81,11 +81,12 @@ public final class PresentationView {
 
         Label listHead = new Label("Ansichten in der Rotation");
         listHead.getStyleClass().add("card-heading");
-        Label listHint = new Label("Reihenfolge der Rotation: laufende Phasen, Tische und die nächsten 16 Spiele, beendete Phasen, "
+        Label listHint = new Label("Reihenfolge der Rotation: laufende Phasen (auf Wunsch mit ihrer Warteschlange), Tische und die nächsten Spiele, beendete Phasen, "
                 + "Endergebnisse, zuletzt ausgeloste, noch nicht gestartete Klassen – je Block in der Reihenfolge der Klassenliste. "
                 + "Häkchen entfernen nimmt eine Ansicht aus der Rotation; noch nicht gestartete Klassen sind zunächst ausgeschaltet.");
         listHint.getStyleClass().add("hint");
         listHint.setWrapText(true);
+        listHint.setMinHeight(Region.USE_PREF_SIZE);          // nie mit „…“ abkürzen
         ScrollPane sp = new ScrollPane(stations);
         sp.setFitToWidth(true);
         sp.getStyleClass().add("bracket-scroll");
@@ -111,7 +112,10 @@ public final class PresentationView {
 
         // eigener Block: Tische und Warteschlange
         stations.getChildren().add(blockTitle("Tische und Warteschlange", true));
-        for (Station s : all) if (s.kind() == PresentationPlan.Kind.TABLES || s.kind() == PresentationPlan.Kind.NEXT) stations.getChildren().add(check(s));
+        for (Station s : all) {
+            if (s.kind() == PresentationPlan.Kind.TABLES) stations.getChildren().add(check(s));
+            if (s.kind() == PresentationPlan.Kind.NEXT) stations.getChildren().add(nextRow(s));
+        }
 
         // je Klasse: Zustand, alle Phasen und (beendet) das Endergebnis
         List<PlayingClass> roots = tournament.getClasses().stream().filter(c -> !c.isPhase()).toList();
@@ -141,7 +145,7 @@ public final class PresentationView {
             }
             // Phasen in ihrer Reihenfolge, das Endergebnis zuletzt
             mine.sort(java.util.Comparator.comparingInt((Station s) -> s.kind() == PresentationPlan.Kind.RESULT ? 999
-                    : tournament.phaseNumber(s.phase())));
+                    : 2 * tournament.phaseNumber(s.phase()) + (s.kind() == PresentationPlan.Kind.QUEUE ? 1 : 0)));
             if (mine.isEmpty()) {
                 Label l = new Label("Erscheint hier, sobald die Klasse ausgelost ist.");
                 l.getStyleClass().add("hint");
@@ -153,8 +157,39 @@ public final class PresentationView {
                 cb.setPadding(new Insets(0, 0, 0, 22));
                 stations.getChildren().add(cb);
             }
+            if (!mine.isEmpty() && mine.stream().noneMatch(s -> s.kind() == PresentationPlan.Kind.QUEUE)) {
+                Label l = new Label("Warteschlange nur bei laufender Klasse");
+                l.getStyleClass().add("hint");
+                l.setPadding(new Insets(0, 0, 0, 22));
+                stations.getChildren().add(l);
+            }
         }
         updateButtons();
+    }
+
+    /** 1.0 (#81): „Die nächsten Spiele (alle Klassen)“ mit einstellbarer Anzahl. */
+    private Node nextRow(Station s) {
+        CheckBox cb = check(s);
+        Label lbl = new Label("Anzahl:");
+        lbl.getStyleClass().add("class-name");
+        Spinner<Integer> count = new Spinner<>(4, 48, tournament.getPresentationNextCount(), 1);
+        count.setEditable(true);
+        count.setPrefWidth(80);
+        count.valueProperty().addListener((o, a, b) -> {
+            if (b != null && b != tournament.getPresentationNextCount()) tournament.setPresentationNextCount(b);
+        });
+        Label unit = new Label("Spiele");
+        HBox pill = new HBox(8, lbl, count, unit);
+        pill.setAlignment(Pos.CENTER_LEFT);
+        pill.getStyleClass().add("count-pill");
+        pill.setMinWidth(Region.USE_PREF_SIZE);
+        Label hint = new Label("gilt für die klassenübergreifende Warteschlange · 4 bis 48, bei mehr als 16 auf mehreren Seiten");
+        hint.getStyleClass().add("hint");
+        hint.setWrapText(true);
+        javafx.scene.layout.FlowPane row = new javafx.scene.layout.FlowPane(10, 6, cb, pill, hint);
+        row.setAlignment(Pos.CENTER_LEFT);
+        Ui.oneLineWhenPossible(row);
+        return row;
     }
 
     private Label blockTitle(String text, boolean first) {
@@ -178,8 +213,10 @@ public final class PresentationView {
             case PHASE -> DrawView.phaseTabTitle(tournament.phaseNumber(s.phase()), s.phase())
                     + (s.upcoming() ? " (Auslosung)" : s.finished() ? " (abgeschlossen)" : s.phase().isPaused() ? " (angehalten)" : " (läuft)");
             case TABLES -> "Tische (laufende Partien, bei Bedarf mehrere Seiten)";
-            case NEXT -> "Die nächsten 16 Spiele";
+            case NEXT -> "Die nächsten Spiele (alle Klassen)";
             case RESULT -> "Endergebnis";
+            case QUEUE -> "Warteschlange dieser Klasse" + (s.phase().getMode() == de.hts.tournament.TournamentMode.GROUPS
+                    ? " (nach jeder Seite mit Gruppen)" : " (nach den Seiten der Phase)");
         };
     }
 

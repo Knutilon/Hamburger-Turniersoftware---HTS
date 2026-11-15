@@ -14,8 +14,8 @@ import java.util.List;
 /**
  * Stationen der Präsentationsansicht (zweiter Bildschirm) in der Reihenfolge der Rotation:
  * <ol>
- *   <li>laufende Klassen mit ihrer laufenden (bzw. angehaltenen) Phase,</li>
- *   <li>die Tischansicht und „Die nächsten 16 Spiele“,</li>
+ *   <li>laufende Klassen mit ihrer laufenden (bzw. angehaltenen) Phase, auf Wunsch mit ihrer Warteschlange (1.0, #81),</li>
+ *   <li>die Tischansicht und „Die nächsten Spiele“ (alle Klassen, Anzahl einstellbar),</li>
  *   <li>beendete Phasen (laufender wie beendeter Klassen),</li>
  *   <li>die Endergebnisse beendeter Klassen,</li>
  *   <li>ausgeloste, noch nicht gestartete Klassen (standardmäßig ausgeschaltet).</li>
@@ -24,7 +24,7 @@ import java.util.List;
  */
 public final class PresentationPlan {
 
-    public enum Kind { PHASE, TABLES, NEXT, RESULT }
+    public enum Kind { PHASE, TABLES, NEXT, RESULT, QUEUE }
 
     /** Zustand einer Klasse für die Auswahl der Ansichten. */
     public enum ClassState {
@@ -65,6 +65,23 @@ public final class PresentationPlan {
         return "result:" + root.getName();
     }
 
+    /** 1.0 (#81): Warteschlange einer Klasse (standardmäßig aus). */
+    public static String queueKey(PlayingClass root) {
+        return "queue:" + root.getName();
+    }
+
+    /**
+     * Station „Warteschlange dieser Klasse“ einer Hauptklasse (nur solange die Klasse läuft), sonst {@code null};
+     * {@code phase} ist die laufende Phase. Die Seiten zeigt die Präsentation direkt bei der Phase (Gruppen: nach jeder
+     * Seite mit Gruppen die Warteschlange genau dieser Gruppen; sonst nach allen Seiten der Phase).
+     */
+    public static Station queueStation(Tournament t, PlayingClass root) {
+        if (!root.isStarted() || root.isFinished()) return null;
+        List<PlayingClass> phases = t.phasesOf(root);
+        if (phases.isEmpty()) return null;
+        return new Station(queueKey(root), Kind.QUEUE, phases.get(phases.size() - 1), false, false);
+    }
+
     /** Zustand einer Hauptklasse. */
     public static ClassState stateOf(Tournament t, PlayingClass root) {
         if (root.isFinished()) return ClassState.FINISHED;
@@ -88,8 +105,12 @@ public final class PresentationPlan {
             boolean finished = root.isFinished();
             PlayingClass currentPhase = phases.get(phases.size() - 1);
             for (PlayingClass ph : phases) {
-                if (!finished && ph == currentPhase) running.add(new Station(phaseKey(ph), Kind.PHASE, ph, false, false));
-                else done.add(new Station(phaseKey(ph), Kind.PHASE, ph, true, false));
+                if (!finished && ph == currentPhase) {
+                    running.add(new Station(phaseKey(ph), Kind.PHASE, ph, false, false));
+                    running.add(new Station(queueKey(root), Kind.QUEUE, ph, false, false));
+                } else {
+                    done.add(new Station(phaseKey(ph), Kind.PHASE, ph, true, false));
+                }
             }
             if (finished) results.add(new Station(resultKey(root), Kind.RESULT, root, true, false));
         }
@@ -106,7 +127,7 @@ public final class PresentationPlan {
     public static boolean isOn(Tournament t, Station s) {
         if (t.getPresentationOn().contains(s.key())) return true;
         if (t.getPresentationOff().contains(s.key())) return false;
-        return !s.upcoming();
+        return !s.upcoming() && s.kind() != Kind.QUEUE;          // Warteschlange je Klasse: standardmäßig aus
     }
 
     /** Nur die eingeschalteten Stationen. */

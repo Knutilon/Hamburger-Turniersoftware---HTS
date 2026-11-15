@@ -76,6 +76,25 @@ final class Reports {
         PdfViewer.show(owner, t, name, PdfReports.withdrawnList(t), fileName(name), status);
     }
 
+    /** 1.0 (#82): Quittung über bezahlte Startgebühren ({@code club} = Sammelquittung eines Vereins). */
+    static void showReceipt(Window owner, Tournament t, java.util.List<de.hts.player.Player> paid, String who, String club, Consumer<String> status) {
+        String name = "Quittung " + who;
+        PdfViewer.show(owner, t, name, PdfReports.receipt(t, paid, club), fileName(name), status);
+    }
+
+    /** 1.0 (#82): Kassenübersicht der Startgebühren. */
+    static void showCashReport(Window owner, Tournament t, Consumer<String> status) {
+        String name = "Kassenübersicht " + (t.getName() == null ? "Turnier" : t.getName());
+        PdfViewer.show(owner, t, name, PdfReports.cashReport(t), fileName(name), status);
+    }
+
+    /** 1.0 (#79): nicht exportierte Spiele. */
+    static void showNotExported(Window owner, Tournament t, java.util.List<de.hts.importer.clicktt.ClickTtResultExporter.NotExported> list,
+                                Consumer<String> status) {
+        String name = "Nicht exportierte Spiele " + (t.getName() == null ? "Turnier" : t.getName());
+        PdfViewer.show(owner, t, name, PdfReports.notExported(t, list), fileName(name), status);
+    }
+
     static void showTournamentResults(Window owner, Tournament t, Consumer<String> status) {
         String name = "Ergebnisse " + (t.getName() == null ? "Turnier" : t.getName());
         PdfViewer.show(owner, t, name, PdfReports.tournamentResults(t), fileName(name), status);

@@ -297,6 +297,53 @@ public class Player {
         return Collections.unmodifiableSet(registrations);
     }
 
+    // --- Startgebühr (1.0, #82) -------------------------------------------------
+
+    /** Zahlungsart der Startgebühr. */
+    public enum Payment {
+        NONE(""), CASH("bar"), TRANSFER("Überweisung");
+
+        private final String label;
+
+        Payment(String label) {
+            this.label = label;
+        }
+
+        public String getLabel() { return label; }
+
+        public String code() { return this == CASH ? "cash" : this == TRANSFER ? "transfer" : ""; }
+
+        public static Payment ofCode(String c) {
+            return "cash".equals(c) ? CASH : "transfer".equals(c) ? TRANSFER : NONE;
+        }
+    }
+
+    private Payment payment = Payment.NONE;
+    private int paidCents;
+    private java.time.LocalDateTime paidAt;
+    private String paidByClub;
+
+    public Payment getPayment() { return payment; }
+    public boolean isPaid() { return payment != Payment.NONE; }
+    public int getPaidCents() { return paidCents; }
+    public java.time.LocalDateTime getPaidAt() { return paidAt; }
+    /** Verein, über dessen Sammelabrechnung bezahlt wurde ({@code null} = selbst bezahlt). */
+    public String getPaidByClub() { return paidByClub; }
+
+    /** Zahlung vermerken bzw. mit {@link Payment#NONE} zurücknehmen. */
+    public void setPayment(Payment p, int cents, java.time.LocalDateTime at, String byClub) {
+        payment = p == null ? Payment.NONE : p;
+        boolean none = payment == Payment.NONE;
+        paidCents = none ? 0 : Math.max(0, cents);
+        paidAt = none ? null : at;
+        paidByClub = none || byClub == null || byClub.isBlank() ? null : byClub;
+    }
+
+    /** 1.0 (#78): hat eine click-TT-Nummer (interne Nummer oder Lizenz-Nr.) – sonst von Hand erfasst. */
+    public boolean hasClickTtNumber() {
+        return notBlank(internalNr) || notBlank(licenceNr);
+    }
+
     /** Angemeldet = in mindestens einer Klasse. */
     public boolean isRegistered() {
         return !classes.isEmpty();

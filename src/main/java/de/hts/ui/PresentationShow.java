@@ -270,8 +270,12 @@ public final class PresentationShow {
                 PlayingClass root = tournament.rootOf(ph);
                 String title = root.getName() + " · " + DrawView.phaseTabTitle(tournament.phaseNumber(ph), ph);
                 TournamentMode m = ph.getMode();
+                // 1.0 (#81): Warteschlange dieser Klasse – bei Gruppen nach jeder Seite mit Gruppen, sonst nach der Phase
+                PresentationPlan.Station queue = s.finished() ? null : PresentationPlan.queueStation(tournament, root);
+                boolean withQueue = queue != null && queue.phase() == ph && PresentationPlan.isOn(tournament, queue);
                 if (m == TournamentMode.GROUPS && !ph.getGroups().isEmpty()) {
-                    groupParts(s, ph, title, out);
+                    groupParts(s, ph, title, out, withQueue);
+                    withQueue = false;
                 } else if (m == TournamentMode.KNOCKOUT && !ph.getDraw().isEmpty()) {
                     // höchstens 4 Runden nebeneinander (gut lesbar), ab der ersten Runde mit offenem Spiel; reicht die
                     // Höhe nicht, je Seite ein Block der ersten gezeigten Runde (z. B. 8 Spiele) samt Folgespielen –
@@ -293,9 +297,22 @@ public final class PresentationShow {
                 } else if (m == TournamentMode.PLACEMENT) {
                     out.add(new Part(s, title, s.finished(), () -> painter.presentPlacement(ph), Fit.PAGED, 0, 1));
                 }
+                if (withQueue) {
+                    java.util.Set<Match> mine = new java.util.HashSet<>(tournament.matchesOf(ph));
+                    queueParts(s, root.getName() + " · Warteschlange", tournament.queue().stream().filter(mine::contains).toList(), out);
+                }
+            }
+            case QUEUE -> {
+                // erscheint direkt bei ihrer Phase (siehe PHASE)
             }
             case TABLES -> tableParts(s, out);
-            case NEXT -> out.add(new Part(s, "Die nächsten 16 Spiele", false, this::nextPage, Fit.WHOLE, 0, 1));
+            case NEXT -> {
+                // 1.0 (#81): Anzahl einstellbar (4–48), je Seite höchstens 16 Spiele
+                List<Match> q = tournament.queue();
+                List<Match> next = q.subList(0, Math.min(q.size(), tournament.getPresentationNextCount()));
+                if (next.isEmpty()) out.add(new Part(s, "Die nächsten Spiele", false, () -> queuePage(List.of(), 0, true), Fit.WHOLE, 0, 1));
+                else queueParts(s, "Die nächsten Spiele", next, out, true);
+            }
             case RESULT -> {
                 PlayingClass root = s.phase();
                 int rows = tournament.finalResult(root).rows().size();
@@ -314,10 +331,12 @@ public final class PresentationShow {
      * Plätze links oben, rechts oben, links unten, rechts unten); passen nur 2, nebeneinander (bei ungerader Zahl die
      * letzte links); passt nur eine, ohne Raster. Nie kleiner als die normale Schrift – dann mehr Seiten.
      */
-    private void groupParts(Station s, PlayingClass ph, String title, List<Part> out) {
+    private void groupParts(Station s, PlayingClass ph, String title, List<Part> out, boolean withQueue) {
         int n = ph.getGroups().size();
+        String rootName = tournament.rootOf(ph).getName();
         if (n == 1) {
             out.add(new Part(s, title, s.finished(), () -> painter.presentGroupCard(ph, 0), Fit.WHOLE, 0, 1));
+            if (withQueue) groupQueue(s, ph, rootName, 0, 1, out);
             return;
         }
         double maxW = 1, maxH = 1;
@@ -354,6 +373,34 @@ public final class PresentationShow {
                     return new CellGrid(cards, c0, r0, rw, rh, 1.6);
                 }, Fit.GRID, k, pages));
             }
+            if (withQueue) groupQueue(s, ph, rootName, from, to, out);
+        }
+    }
+
+    /** 1.0 (#81): Warteschlange der Gruppen {@code from} bis {@code to - 1} (leer: keine Seite). */
+    private void groupQueue(Station s, PlayingClass ph, String rootName, int from, int to, List<Part> out) {
+        java.util.Set<Match> mine = new java.util.HashSet<>(tournament.matchesOf(ph));
+        List<Match> q = tournament.queue().stream()
+                .filter(m -> mine.contains(m) && m.getGroupIndex() >= from && m.getGroupIndex() < to).toList();
+        String groups = to - from == 1 ? "Gruppe " + de.hts.tournament.GroupDraw.groupName(from)
+                : "Gruppen " + de.hts.tournament.GroupDraw.groupName(from) + "–" + de.hts.tournament.GroupDraw.groupName(to - 1);
+        queueParts(s, rootName + " · Warteschlange " + groups, q, out);
+    }
+
+    private static final int QUEUE_ROWS_PER_PAGE = 16;
+
+    private void queueParts(Station s, String title, List<Match> q, List<Part> out) {
+        queueParts(s, title, q, out, false);
+    }
+
+    /** Warteschlange auf Seiten zu je höchstens 16 Spielen; ohne Spiele keine Seite. */
+    private void queueParts(Station s, String title, List<Match> q, List<Part> out, boolean withClass) {
+        if (q.isEmpty()) return;
+        int pages = (q.size() + QUEUE_ROWS_PER_PAGE - 1) / QUEUE_ROWS_PER_PAGE;
+        for (int k = 0; k < pages; k++) {
+            int from = k * QUEUE_ROWS_PER_PAGE;
+            List<Match> slice = List.copyOf(q.subList(from, Math.min(q.size(), from + QUEUE_ROWS_PER_PAGE)));
+            out.add(new Part(s, title, false, () -> queuePage(slice, from, withClass), Fit.WHOLE, k, pages));
         }
     }
 
@@ -464,8 +511,8 @@ public final class PresentationShow {
         return card;
     }
 
-    private Node nextPage() {
-        List<Match> q = tournament.queue();
+    /** Eine Seite Warteschlange; {@code offset} = Platz des ersten Spiels − 1, {@code withClass}: Spalte „Klasse“. */
+    private Node queuePage(List<Match> q, int offset, boolean withClass) {
         if (q.isEmpty()) {
             Label l = new Label("Zurzeit sind keine Spiele eingereiht.");
             l.getStyleClass().add("pres-empty");
@@ -474,15 +521,17 @@ public final class PresentationShow {
         GridPane g = new GridPane();
         g.setHgap(18);
         g.setVgap(6);
-        String[] heads = {"Nr.", "Klasse", "Phase / Runde", "Spiel", "Begegnung"};
-        for (int k = 0; k < heads.length; k++) {
-            Label h = new Label(heads[k]);
+        List<String> heads = new ArrayList<>(List.of("Platz"));
+        if (withClass) heads.add("Klasse");
+        heads.addAll(List.of("Phase / Runde", "Spiel", "Begegnung"));
+        for (int k = 0; k < heads.size(); k++) {
+            Label h = new Label(heads.get(k));
             h.getStyleClass().add("table-head");
             g.add(h, k, 0);
         }
-        for (int i = 0; i < Math.min(16, q.size()); i++) {
+        for (int i = 0; i < q.size(); i++) {
             Match m = q.get(i);
-            Label nr = new Label(String.valueOf(i + 1));
+            Label nr = new Label((offset + i + 1) + ".");
             nr.getStyleClass().add("pos");
             Label cls = new Label(m.getClassName());
             Label st = new Label(m.getStage());
@@ -491,7 +540,8 @@ public final class PresentationShow {
                     + tournament.partyFullName(m, m.getB()) + tournament.handicapSuffix(m, m.getB()));
             who.getStyleClass().add("match-name");
             for (Label l : new Label[]{cls, st, no}) l.getStyleClass().add("hint");
-            g.addRow(i + 1, nr, cls, st, no, who);
+            if (withClass) g.addRow(i + 1, nr, cls, st, no, who);
+            else g.addRow(i + 1, nr, st, no, who);
         }
         return g;
     }

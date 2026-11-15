@@ -64,7 +64,23 @@ public class ClickTtXmlImporter {
      * {@code entries} zählt alle Meldungen inkl. Warteliste, {@code waitingList} nur die Warteliste,
      * {@code sex} ist das in der Datei angegebene Geschlecht der Konkurrenz ({@link Sex#UNKNOWN} = offen/keine Angabe).
      */
-    public record CompetitionInfo(String name, int entries, int waitingList, Sex sex, boolean doubles) {
+    /** @param feeCents Startgebühr laut click-TT ({@code entry-fee}, z. B. „8.0“ → 800) oder {@code null} (1.0, #82) */
+    public record CompetitionInfo(String name, int entries, int waitingList, Sex sex, boolean doubles, Integer feeCents) {
+        public CompetitionInfo(String name, int entries, int waitingList, Sex sex, boolean doubles) {
+            this(name, entries, waitingList, sex, doubles, null);
+        }
+    }
+
+    /** „8.0“, „8,50“ → Cent; leer oder unlesbar → {@code null}. */
+    public static Integer feeCents(String s) {
+        if (s == null || s.isBlank()) return null;
+        try {
+            java.math.BigDecimal v = new java.math.BigDecimal(s.trim().replace(',', '.'));
+            if (v.signum() < 0) return null;
+            return v.movePointRight(2).setScale(0, java.math.RoundingMode.HALF_UP).intValueExact();
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     /** Eine Doppelmeldung aus der Datei: zwei Personen (über {@link Player#identityKey()}). */
@@ -153,7 +169,8 @@ public class ClickTtXmlImporter {
         for (int i = 0; i < competitionEls.getLength(); i++) {
             Element c = (Element) competitionEls.item(i);
             competitions.add(new CompetitionInfo(competitionName(c), entriesPerCompetition.getOrDefault(c, 0),
-                    waitingPerCompetition.getOrDefault(c, 0), competitionSex(attr(c, "sex")), isDoubles(c)));
+                    waitingPerCompetition.getOrDefault(c, 0), competitionSex(attr(c, "sex")), isDoubles(c),
+                    feeCents(attr(c, "entry-fee"))));
         }
 
         if (playersByKey.isEmpty()) {
