@@ -1,0 +1,11 @@
+HTS – Hamburger Turniersoftware
+Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+
+HTS ist freie Software unter der GNU Affero General Public License v3.0 oder später (siehe LICENSE.txt im Programmordner).
+Quellcode: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS
+
+Mitgelieferte Bestandteile und ihre Lizenzen:
+- Apache PDFBox 3.0.8 und Apache Commons Logging: Apache License 2.0 (PDFBox-LICENSE.txt, PDFBox-NOTICE.txt, commons-logging-NOTICE.txt)
+- JavaFX 21.0.8 (OpenJFX): GNU General Public License v2 mit Classpath Exception (JavaFX-und-Java-Laufzeit-LICENSE.txt)
+- Java-Laufzeit Eclipse Temurin 21.0.13 (Ordner jre): GNU General Public License v2 mit Classpath Exception;
+  alle Lizenztexte der Laufzeit im Ordner jre\legal

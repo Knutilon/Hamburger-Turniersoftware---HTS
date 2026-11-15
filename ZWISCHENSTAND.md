@@ -44,15 +44,18 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    als Programmeinstellung auf dem Laptop (gleicher Router für alle Turniere), nicht in der Turnierdatei; Name und
    Passwort zusätzlich als Text unter dem QR-Code; Verschlüsselung WPA/WPA2 (Standard); Feld leer = kein WLAN-QR-Code
    (wie bisher Felder zum Ausfüllen).
-2. LINUX- UND MACOS-PAKET (Nutzer 15.11.2026, Issue #90, für 1.1.0 gewünscht; NICHT umgesetzt, weil die Downloads gesperrt waren – kommt, sobald die Dateien da sind): je Release zusätzlich
-   hts-x.y.z-linux.tar.gz (x86_64, Temurin-21-JRE Linux + JavaFX 21 linux-Jars, „HTS starten.sh“) und ein
-   macOS-Paket (Apple Silicon/aarch64, „HTS starten.command“). Windows-ZIP bleibt. Prüfen: Schrift (Segoe UI →
-   Ersatz), Speicherort, PDF öffnen, Spielzettel-Druck. macOS nicht signiert → README-Hinweis (Rechtsklick „Öffnen“).
-   Neue Komponenten in docs/ABHAENGIGKEITEN.md. ACHTUNG: Download von JRE/JavaFX ist in dieser Umgebung derzeit
-   gesperrt (repo.maven.apache.org, api.adoptium.net abgelehnt) → Domains freigeben lassen oder Dateien vom Nutzer.
-3. HTS ALS APP AUF IPAD/ANDROID (Nutzer 15.11.2026, Issue #92, Wunsch: mit 1.1.0): Machbarkeit klären – JavaFX mobil
-   nur über Gluon/GraalVM; Android-SDK; iPad braucht Mac mit Xcode + Apple-Entwicklerkonto; App-Store; Dateien
-   .hts/XML/PDF auf dem Tablet. In dieser Umgebung nicht baubar (Rückmeldung an Nutzer 15.11.2026).
+2. LINUX- UND MACOS-PAKET (Issue #90): FÜR 1.1.0 NACHGELIEFERT (15.11.2026) als hts-1.1.0-linux.tar.gz und
+   hts-1.1.0-macos.tar.gz (Dateien vom Nutzer: Temurin 21.0.13+9 JRE Linux x64 / macOS aarch64, JavaFX 21.0.8 linux /
+   mac-aarch64; Ablage $S/jx und Anhänge). Bau: $S/fat-linux bzw. $S/fat-mac (= fat ohne *.dll + JavaFX-Jars der
+   Plattform) → hts.jar; Ordner $S/dist/hts-linux|hts-macos mit jre, „HTS starten.sh“ bzw. „HTS starten.command“
+   (liegen jetzt in dist/ im Quellcode), Doku, Lizenzen (LIESMICH aktualisiert: AGPL, voller Name – Vorlage für
+   Windows in dist/Lizenzen-Vorlage, Windows-ZIP 1.1.0 neu gepackt). Linux hier getestet (startet), macOS ungetestet. AB JETZT bei jedem
+   „kompilieren“ alle drei Pakete bauen; Release-Link: Download-Hinweis für alle drei. Issue #90 mit dem nächsten
+   Commit schließen.
+3. HTS ALS ANDROID-APP (Nutzer 15.11.2026, Issue #92): „Als echte App anstreben, aber als GitHub-APK-Datei“ – Android
+   zuerst, Bau über GitHub Actions (GluonFX/GraalVM + Android-SDK), APK als Datei im Release, kein Play Store; iPad
+   zurückgestellt (Apple-Konto, Mac). Vor der Umsetzung klären: Umfang der App (ganzes HTS oder Teil), Bedienung auf
+   Tablet/Handy, Dateien (.hts/XML/PDF) auf dem Gerät, Drucken. NICHT kompilieren bis „… kompilieren“.
 
 ## Umgesetzt
 

@@ -43,6 +43,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   „Teilnehmende“, mit Hinweis und „Nur diese zeigen“) und lassen sich übernehmen – oder gleich mit „Bezahlt – bar und in
   die Klasse“. Neu: „Gebühr erlassen“ mit optionalem Grund (erscheint in der Kassenübersicht). Menüpunkte jetzt
   „Bezahlt – bar“, „Bezahlt – Überweisung“, „Gebühr erlassen“, „Zahlung rückgängig“ (angemeldet und Klassen bleiben).
+- **Auch für Linux und macOS:** Neben `hts-1.1.0-windows.zip` gibt es `hts-1.1.0-linux.tar.gz` (normale PCs, x86_64)
+  und `hts-1.1.0-macos.tar.gz` (Apple-Rechner mit M-Chip), jeweils mit Java. Linux: entpacken, „HTS starten.sh“
+  ausführen. macOS: entpacken, beim ersten Mal Rechtsklick auf „HTS starten.command“ → „Öffnen“ (die App ist nicht
+  signiert), danach per Doppelklick.
 - **Bedienung auf Windows-Tablets:** Sobald HTS mit dem Finger bedient wird, werden Knöpfe, Tabellenzeilen, Menüs und
   Bildlaufleisten größer; langes Antippen öffnet das Kontextmenü wie ein Rechtsklick, Wischen blättert.
 - **Ergebnisse per Handy (vorbereitet, noch ausgeblendet):** In den – weiterhin ausgeblendeten – Mobile Einstellungen
