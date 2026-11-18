@@ -110,6 +110,8 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Endergebnis: Phase 3 vorne, übrige nach Platz in Phase 2, dann Phase 1; Reiter „Phase 3 – …“, PDF, Präsentation,
    click-TT-Export (Spiele aller Phasen; Ergebnis-Import liest weiter nur Phase 1) wie bei Phase 2; Turnierdateien
    kompatibel (Phasen-Kette über source/follow-up).
+   EINSCHRÄNKUNG (Nutzer 18.11.2026, 21:18): Phase 3 NUR nach Phase 2 = „Gruppen nach Leistungsstufen“ (nicht nach
+   einer normalen Gruppenphase).
    ERWEITERUNG (Nutzer 18.11.2026, Vorbild Top-48-Bundesranglistenturnier Jugend 19 Wiesbaden, Ergebnis-PDF
    https://hamburg-tischtennis.de/shared-files/5093/?Ergebnisse.pdf; 48 TN, Phase 1 = 8 Gruppen A–H zu 6):
    a) Phase 2 „GRUPPEN NACH LEISTUNGSSTUFEN“: einstellbar Stufen aus Vorrundenplätzen (1–2 → Gruppen 01–04, 3–4 →
