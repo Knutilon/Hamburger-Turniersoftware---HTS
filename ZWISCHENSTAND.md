@@ -88,6 +88,10 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      ungerade Siegegruppe → TTR-Schwächster rutscht in die nächstniedrigere Gruppe; Wiederholungen vermeiden
      (nächstmöglicher Gegner, nur wenn unvermeidbar wiederholen); Standard 5 Runden, änderbar, plus „Weitere Runde“
      als Platzierungsrunde; „Spieler pausieren lassen“ je Runde (nicht ausgelost, Stand bleibt).
+   - KEINE PHASE 2 (Nutzer 18.11.2026, 21:02): Badeni UND Schweizer System haben keine Folgephase – das Endergebnis
+     ist die Reihung nach der letzten Runde. Bisher bietet HTS nach dem Schweizer System eine Phase 2 an
+     (createNextPhase „Schweizer System: insgesamt“) → in 1.2.0 entfernen (Menü/Knöpfe ausblenden; alte Turnierdateien
+     mit vorhandener Phase 2 nach Schweizer System bleiben lesbar).
 
 6. PHASE 2 „MODIFIZIERTES KO-SYSTEM“ (Nutzer 18.11.2026, Issue #96, für 1.2.0): NUR als Phase 2 nach Gruppenphase.
    Wie einfaches KO, aber Verlierer bestimmter Runden spielen gegen die in derselben Runde Unterlegenen um die Plätze
