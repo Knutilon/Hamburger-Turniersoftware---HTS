@@ -139,7 +139,10 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    - Intern als Platzierungsplan aus Vorlage (je Spiel Herkunft „Gruppe B Platz 1“ / „Verlierer Spiel 4“, Plätze für
      Sieger/Verlierer) – später weitere Vorlagen; evtl. Basis für #96/#97.
    - Anzeige wie KO-Baum mit Platzierungsblöcken, Drucken, Präsentation; Endergebnis/click-TT lückenlos 1–24.
-   - ANNAHME: wählbar bei 4 Gruppen mit 5–6; fehlende Gruppenplätze = Freilos.
+   - WÄHLBAR (Nutzer 18.11.2026, 21:32): der Einfachheit halber IMMER nach einer Gruppenphase in Phase 1.
+     ANNAHME für abweichende Felder: der Plan nutzt Gruppen A–D und Plätze 1–6; fehlende Gruppenplätze = Freilos;
+     weitere Gruppen bzw. Plätze ab 7 spielen nicht mit und werden im Endergebnis nach Gruppenplatz dahinter
+     eingereiht (Hinweis beim Erstellen der Phase 2).
 9. DOPPELTES K.-O.-SYSTEM (WO 7.4) (Nutzer 18.11.2026, Issue #99, für 1.2.0): Ausscheiden erst nach der zweiten
    Niederlage, bis einschließlich Endspiel; Verlierer in die Trostrunde mit „Kreuzen“ (wiederholte Begegnungen
    weitgehend vermeiden, sonst trotzdem austragen); haben nach dem Endspiel beide Finalisten je eine Niederlage →
