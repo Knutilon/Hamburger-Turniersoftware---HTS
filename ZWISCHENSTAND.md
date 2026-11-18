@@ -59,6 +59,17 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    zurückgestellt (Apple-Konto, Mac). Vor der Umsetzung klären: Umfang der App (ganzes HTS oder Teil), Bedienung auf
    Tablet/Handy, Dateien (.hts/XML/PDF) auf dem Gerät, Drucken. NICHT kompilieren bis „… kompilieren“.
 
+4. PHASE 2 „HAUPT- UND TROSTRUNDE“ (Nutzer 18.11.2026, Issue #94, für 1.2.0): Nur nach Phase 1 = Gruppenphase.
+   Beim Erstellen von Phase 2 festlegen, welche Gruppenplätze in die Hauptrunde (KO) und welche in die Trostrunde
+   (KO) kommen (z. B. 1–2 Haupt, 3–4 Trost); je Runde Haken „Spiel um Platz 3“.
+   - KO-Bäume wie gewohnt: Freilose, Setzung/Auslosung (Gruppensieger gesetzt, Gruppengleiche getrennt), Drag & Drop,
+     Anzeige und Drucken (wie createNextPhase(KNOCKOUT)).
+   - ZWEI REITER „Phase 2 – Hauptrunde“ und „Phase 2 – Trostrunde“, je eigener Baum, Drucken, Starten; beide parallel
+     an den Tischen.
+   - Endergebnis: Hauptrunde 1., 2., …; Trostrunde ANSCHLIESSEND WEITERZÄHLEN (Trostsieger = nächster Platz); danach
+     übrige nach Gruppenplatz.
+   - click-TT-Export: Spiele beider Bäume, Platzierung wie im Endergebnis (fortlaufend).
+
 ## Umgesetzt
 
 1.1.0 (15.11.2026, Issues #83–#89, #91, #93). README „Neu in 1.1.0“.
