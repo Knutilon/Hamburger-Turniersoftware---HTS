@@ -38,21 +38,6 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.1.x)
 
-1. LIVE-SCORING ÜBER GEMIETETEN HETZNER-SERVER CX23 (Nutzer 18.11.2026, Issue #101, für 1.2.0; ersetzt #92 App und
-   #34 WLAN-QR-Code, beide geschlossen „not planned“): HTS bleibt führend, der Server hält eine Kopie.
-   - Server: Ubuntu, Einrichtungsskript (Java, Caddy mit automatischem HTTPS, Firewall, unattended-upgrades),
-     HTS-Live-Server ohne Bildschirm (LiveServer-Seiten wiederverwenden: Tische, Gruppen, KO, Ergebnisse, „Meine
-     Spiele“).
-   - HTS: Einstellungen Server-Adresse + Schlüssel (nur auf dem Laptop); sendet nach Änderungen den Stand (HTTPS,
-     gedrosselt auf einige Sekunden), Puffer bei Funkloch.
-   - Zuschauer: Aktualisierung nach Sekunden ohne Neuladen (SSE/WebSocket oder kurzes Polling); mehrere Turniere je
-     eigener Adresse.
-   - Ergebnisse per Handy über das Internet (#93): Tisch-QR → Server sammelt → HTS holt ab, „Übernehmen/Verwerfen“.
-   - Datenschutz: „Live-Daten löschen“ / „nur Endergebnis behalten“, optional Vornamen abkürzen; Hinweise Impressum/
-     Datenschutzerklärung, AV-Vertrag Hetzner.
-   - Kosten CX23 ca. 5,99 € netto/Monat inkl. IPv4 (≈ 7,13 € brutto); Verfügbarkeit vor Umsetzung prüfen (laut Artikel
-     10/2026 zeitweise nicht bestellbar → nächstgrößeres Modell). Domain optional.
-   - Schritt-für-Schritt-Anleitung, Update-Skript für neue HTS-Versionen.
 4. PHASE 2 „HAUPT- UND TROSTRUNDE“ (Nutzer 18.11.2026, Issue #94, für 1.2.0): Nur nach Phase 1 = Gruppenphase.
    Beim Erstellen von Phase 2 festlegen, welche Gruppenplätze in die Hauptrunde (KO) und welche in die Trostrunde
    (KO) kommen (z. B. 1–2 Haupt, 3–4 Trost); je Runde Haken „Spiel um Platz 3“.
@@ -158,6 +143,24 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    - Wählbar wie TOP24: immer nach einer Gruppenphase in Phase 1; Plan nutzt Gruppen A–D und Plätze 1–8; fehlende
      Gruppenplätze = Freilos; weitere Gruppen bzw. Plätze ab 9 spielen nicht mit und stehen im Endergebnis nach
      Gruppenplatz dahinter (Hinweis beim Erstellen). Intern dieselbe Platzierungsplan-Vorlage wie TOP24.
+
+## Backup – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
+
+- (#101) LIVE-SCORING ÜBER GEMIETETEN HETZNER-SERVER CX23 (Nutzer 18.11.2026, Issue #101, ZURÜCKGESTELLT; ersetzt #92 App und
+   #34 WLAN-QR-Code, beide geschlossen „not planned“): HTS bleibt führend, der Server hält eine Kopie.
+   - Server: Ubuntu, Einrichtungsskript (Java, Caddy mit automatischem HTTPS, Firewall, unattended-upgrades),
+     HTS-Live-Server ohne Bildschirm (LiveServer-Seiten wiederverwenden: Tische, Gruppen, KO, Ergebnisse, „Meine
+     Spiele“).
+   - HTS: Einstellungen Server-Adresse + Schlüssel (nur auf dem Laptop); sendet nach Änderungen den Stand (HTTPS,
+     gedrosselt auf einige Sekunden), Puffer bei Funkloch.
+   - Zuschauer: Aktualisierung nach Sekunden ohne Neuladen (SSE/WebSocket oder kurzes Polling); mehrere Turniere je
+     eigener Adresse.
+   - Ergebnisse per Handy über das Internet (#93): Tisch-QR → Server sammelt → HTS holt ab, „Übernehmen/Verwerfen“.
+   - Datenschutz: „Live-Daten löschen“ / „nur Endergebnis behalten“, optional Vornamen abkürzen; Hinweise Impressum/
+     Datenschutzerklärung, AV-Vertrag Hetzner.
+   - Kosten CX23 ca. 5,99 € netto/Monat inkl. IPv4 (≈ 7,13 € brutto); Verfügbarkeit vor Umsetzung prüfen (laut Artikel
+     10/2026 zeitweise nicht bestellbar → nächstgrößeres Modell). Domain optional.
+   - Schritt-für-Schritt-Anleitung, Update-Skript für neue HTS-Versionen.
 
 ## Entfallen (Nutzer 18.11.2026: Ansatz über gemieteten Hetzner-Server CX23 statt dessen)
 
