@@ -92,21 +92,22 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      ist die Reihung nach der letzten Runde. Für das Schweizer System sperrt HTS das schon heute
      (createNextPhase: „Nach dem Schweizer System gibt es keine weitere Phase.“) – für Badeni genauso umsetzen.
 
-6. PHASE 2 „MODIFIZIERTES KO-SYSTEM“ (Nutzer 18.11.2026, Issue #96, für 1.2.0): NUR als Phase 2 nach Gruppenphase.
+6. PHASE 2 „FORTGESETZTES K.-O.-SYSTEM“ (WO 7.3; vorher „modifiziertes KO-System“, umbenannt 18.11.2026; Issue #96,
+   für 1.2.0): NUR als Phase 2 nach Gruppenphase.
    Wie einfaches KO, aber Verlierer bestimmter Runden spielen gegen die in derselben Runde Unterlegenen um die Plätze
    des Gesamtfeldes (Halbfinal-Verlierer um 3–4, Viertelfinal-Verlierer um 5–8, Achtelfinale um 9–16 …).
    - Beim Erstellen wählbar: „Alle Plätze ausspielen“ oder „ab Achtelfinale / Viertelfinale / Halbfinale“; Verlierer
      früherer Runden teilen sich den Platz (z. B. 17.–32.).
    - Aufsteiger je Gruppe wie normales KO; Freilose, Setzung, Drag & Drop, Anzeige, Drucken wie gewohnt (auch in den
      Platzierungsbäumen, dort ggf. Freilose, wenn weniger Verlierer).
-   - EIN Reiter „Phase 2 – modifiziertes KO“: oben Hauptbaum, darunter Bäume „Platz 3–4“, „Platz 5–8“, „Platz 9–16“ …;
+   - EIN Reiter „Phase 2 – Fortgesetztes K.-o.-System“: oben Hauptbaum, darunter Bäume „Platz 3–4“, „Platz 5–8“, „Platz 9–16“ …;
      Drucken gemeinsam oder je Baum.
    - Endergebnis und click-TT-Export mit den ausgespielten Plätzen.
 
 7. PHASE 3 (Nutzer 18.11.2026, Issue #97, für 1.2.0): Eine Klasse kann eine 3. Phase haben, wenn Phase 2 ebenfalls
    eine Gruppenphase (GROUPS) ist. Bisher Tournament.MAX_PHASES = 2 (canHaveNextPhase: nur nach GROUPS).
    ANNAHMEN (dem Nutzer gesagt): Phase 3 bietet dieselben Arten wie Phase 2 nach Gruppen (KO, Gruppen,
-   Qualifikation, Haupt-/Trostrunde, modifiziertes KO); höchstens 3 Phasen (MAX_PHASES = 3, Phase 4 nicht);
+   Qualifikation, Haupt-/Trostrunde, fortgesetztes KO); höchstens 3 Phasen (MAX_PHASES = 3, Phase 4 nicht);
    Endergebnis: Phase 3 vorne, übrige nach Platz in Phase 2, dann Phase 1; Reiter „Phase 3 – …“, PDF, Präsentation,
    click-TT-Export (Spiele aller Phasen; Ergebnis-Import liest weiter nur Phase 1) wie bei Phase 2; Turnierdateien
    kompatibel (Phasen-Kette über source/follow-up).
@@ -123,6 +124,29 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
       1.–4. und 2.–3. (z. B. 01/1–04/1, 02/1–03/1), dann Spiel um Platz x und x+2; Platzbereiche automatisch: Stufe 1
       Erste 1–4, Zweite 5–8, Dritte 9–12, Vierte 13–16; Stufe 2 17–32; Stufe 3 33–48. 12 Blöcke × 4 Spiele = 48.
       Endergebnis lückenlos 1–48 (click-TT ebenso).
+
+8. PHASE 2 „TOP24-PLATZIERUNGSSPIELE“ (Nutzer 18.11.2026, Issue #98, für 1.2.0; Vorbild Top-24-Bundesranglisten-
+   turnier Jugend 19/15 Ettlingen 02/2024, PDF erg_jug-23-24-DTTB-TOP24-ergebnisse-1.pdf; alle 4 Konkurrenzen gleich):
+   Nach Phase 1 = 4 Gruppen A–D zu 6 spielen alle 24 in 44 Spielen die Plätze 1–24 aus. Kein reines 7.3 (Verlierer
+   der oberen Stufe treffen auf SIEGER der nächsten Stufe = gestaffelter Einstieg).
+   - Runde 1 (Sp. 1–12): 1–2 über Kreuz B1–A2, A1–B2, D1–C2, C1–D2; 3–4: D3–C4, C3–D4, B3–A4, A3–B4; 5–6: D5–C6,
+     A5–B6, B5–A6, C5–D6.
+   - HF (21, 22): W1–W3, W2–W4; Finale 33, Platz 3 34.
+   - Runde 2: 13 L4–W7, 14 L1–W5, 15 L2–W6, 16 L3–W8; 17 W10–L5, 18 W12–L7, 19 W11–L6, 20 W9–L8.
+   - Platz 5–8: 23 W13–W16, 24 W14–W15 → 35 (Pl. 5), 36 (Pl. 7); 9–12: 25 L13–L15, 26 L14–L16 → 37, 38;
+     13–16: 27 W17–W19, 28 W18–W20 → 39, 40; 17–20: 29 L17–L19, 30 L18–L20 → 41, 42; 21–24: 31 L9–L10,
+     32 L11–L12 → 43, 44.
+   - Intern als Platzierungsplan aus Vorlage (je Spiel Herkunft „Gruppe B Platz 1“ / „Verlierer Spiel 4“, Plätze für
+     Sieger/Verlierer) – später weitere Vorlagen; evtl. Basis für #96/#97.
+   - Anzeige wie KO-Baum mit Platzierungsblöcken, Drucken, Präsentation; Endergebnis/click-TT lückenlos 1–24.
+   - ANNAHME: wählbar bei 4 Gruppen mit 5–6; fehlende Gruppenplätze = Freilos.
+9. DOPPELTES K.-O.-SYSTEM (WO 7.4) (Nutzer 18.11.2026, Issue #99, für 1.2.0): Ausscheiden erst nach der zweiten
+   Niederlage, bis einschließlich Endspiel; Verlierer in die Trostrunde mit „Kreuzen“ (wiederholte Begegnungen
+   weitgehend vermeiden, sonst trotzdem austragen); haben nach dem Endspiel beide Finalisten je eine Niederlage →
+   Stichkampf. Turnierliste/Freilose wie WO D 7.2.
+   ANNAHMEN: wählbar wie einfaches KO (Phase 1 direkt oder Phase 2 nach Gruppen); Siegerrunde und Trostrunde als zwei
+   Bäume in einem Reiter; Endergebnis 1., 2., 3., weitere nach Ausscheiderunde in der Trostrunde (geteilt); click-TT
+   mit allen Spielen.
 
 ## Umgesetzt
 
