@@ -1,4 +1,10 @@
 #!/bin/sh
+# HTS – Hamburger Turniersoftware
+# Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Dieses Programm ist freie Software unter der GNU Affero General
+# Public License v3.0; Einzelheiten in der Datei LICENSE.
 # Hamburger Turniersoftware (HTS) starten – Linux
 cd "$(dirname "$0")" || exit 1
 if [ -x "jre/bin/java" ]; then exec "jre/bin/java" -jar hts.jar "$@"; fi

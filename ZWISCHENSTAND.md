@@ -2,6 +2,16 @@
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
+PFLICHT BEI JEDEM „KOMPILIEREN“ (Nutzer 18.11.2026):
+- IMMER alle drei Pakete bauen: hts-x.y.z-windows.zip, hts-x.y.z-linux.tar.gz, hts-x.y.z-macos.tar.gz (Bau siehe
+  „1.1.0-NACHTRAG: LINUX“ unter Umgesetzt: $S/fat-linux, $S/fat-mac, $S/dist, JREs in $S/jx bzw. Uploads), alle drei
+  per SendUserFile schicken, Release-Link mit Download-Hinweis für alle drei.
+- Datei-Header (Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany + SPDX AGPL-3.0-or-later) in
+  ALLEN Quelldateien prüfen bzw. ergänzen: .java (main und test), hts.css, Startdateien (HTS starten.bat,
+  dist/HTS starten.sh, dist/HTS starten.command). Prüfbefehl: für jede Datei „SPDX-License-Identifier“ in den ersten
+  Zeilen.
+- Was im Abschnitt „Backlog“ steht, NICHT einbauen.
+
 WUNSCH (15.11.2026): „wie bisher alles immer in das GitHub-Repository committen“ – auch Nachlieferungen zu einer
 Version (z. B. Pakete, Startdateien, Doku) gleich als eigenen Commit hochladen.
 

@@ -1,4 +1,10 @@
 @echo off
+rem HTS - Hamburger Turniersoftware
+rem Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+rem
+rem SPDX-License-Identifier: AGPL-3.0-or-later
+rem Dieses Programm ist freie Software unter der GNU Affero General
+rem Public License v3.0; Einzelheiten in der Datei LICENSE.
 rem Hamburger Turniersoftware (HTS) starten
 cd /d "%~dp0"
 
