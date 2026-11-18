@@ -73,6 +73,22 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      Endergebnis, Trostrunde fortlaufend dahinter – BESTÄTIGT (Nutzer 18.11.2026): Trostsieger = Anzahl der
      Hauptrunden-Teilnehmenden + 1 (16 in der Hauptrunde → 17., 32 → 33. usw.), weitere Trostplätze entsprechend.
 
+5. PHASE-1-TYP „BADENI (SCHWEIZER SYSTEM)“ (Nutzer 18.11.2026, Issue #95, für 1.2.0; Unterlage
+   docs/referenz/Badeni-Schweizer-System.pdf, BaTTV/Enichlmayr 2014): Option für Phase 1 (Einzel; wie Schweizer
+   System kein Doppel).
+   - Grundlage Schweizer System: alle in EINEM Feld; je Runde Siegegruppen (gleiche Anzahl Siege), in jeder Gruppe
+     wird ausgelost. Runde 1: alle nach TTR sortiert.
+   - REIHUNG: 1. Siege, 2. TTR, 3. Sätze (KEINE Buchholz/Feinbuchholz, Bälle nicht genannt).
+   - AUSLOSUNG „Skisprung“: in jeder Siegegruppe (nach Reihung) Erster gegen Letzten, Zweiter gegen Vorletzten …,
+     die Mitte gegeneinander (30 Spieler: 1–30, 2–29 … 15–16).
+   - FREILOS bei ungeradem Feld: der beste Spieler der unteren Hälfte der Reihung; niemand zweimal (sonst der
+     nächste); Freilos farbig markiert.
+   - Mindestens 5 Runden.
+   - ANNAHMEN (Nutzer hat nur die Regeln oben bestätigt, Rest offen gelassen – so umsetzen und dem Nutzer sagen):
+     ungerade Siegegruppe → TTR-Schwächster rutscht in die nächstniedrigere Gruppe; Wiederholungen vermeiden
+     (nächstmöglicher Gegner, nur wenn unvermeidbar wiederholen); Standard 5 Runden, änderbar, plus „Weitere Runde“
+     als Platzierungsrunde; „Spieler pausieren lassen“ je Runde (nicht ausgelost, Stand bleibt).
+
 ## Umgesetzt
 
 1.1.0 (15.11.2026, Issues #83–#89, #91, #93). README „Neu in 1.1.0“.
