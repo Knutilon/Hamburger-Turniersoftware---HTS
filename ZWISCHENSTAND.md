@@ -38,27 +38,21 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.1.x)
 
-1. WIEDER ZURÜCKGESTELLT (15.11.2026: statt dessen Punkt 5 – Reiter „Mobile Einstellungen“ ausblenden; NICHT in
-   1.0.0 umsetzen, erst wenn die Handy-Funktionen später ausgebaut werden): WLAN-QR-CODE AUF DEM
-   AUSHANG (Issue #34): In HTS einmal WLAN-Name und Passwort eintragen; der Aushang
-   „QR-Codes drucken“ bekommt einen dritten QR-Code „1. WLAN verbinden“ (Format WIFI:T:WPA;S:…;P:…;;), darunter
-   „2. Live-Anzeige“ und „3. Anmeldung am Turniertag“. So bleibt das WLAN geschützt, die Teilnehmenden tippen nichts
-   ab. Vorschlag (Rückfrage gestellt): Eingabe in einem kleinen Dialog beim Klick auf „QR-Codes drucken“, gespeichert
-   als Programmeinstellung auf dem Laptop (gleicher Router für alle Turniere), nicht in der Turnierdatei; Name und
-   Passwort zusätzlich als Text unter dem QR-Code; Verschlüsselung WPA/WPA2 (Standard); Feld leer = kein WLAN-QR-Code
-   (wie bisher Felder zum Ausfüllen).
-2. LINUX- UND MACOS-PAKET (Issue #90): FÜR 1.1.0 NACHGELIEFERT (15.11.2026) als hts-1.1.0-linux.tar.gz und
-   hts-1.1.0-macos.tar.gz (Dateien vom Nutzer: Temurin 21.0.13+9 JRE Linux x64 / macOS aarch64, JavaFX 21.0.8 linux /
-   mac-aarch64; Ablage $S/jx und Anhänge). Bau: $S/fat-linux bzw. $S/fat-mac (= fat ohne *.dll + JavaFX-Jars der
-   Plattform) → hts.jar; Ordner $S/dist/hts-linux|hts-macos mit jre, „HTS starten.sh“ bzw. „HTS starten.command“
-   (liegen jetzt in dist/ im Quellcode), Doku, Lizenzen (LIESMICH aktualisiert: AGPL, voller Name – Vorlage für
-   Windows in dist/Lizenzen-Vorlage, Windows-ZIP 1.1.0 neu gepackt). Linux hier getestet (startet), macOS ungetestet. AB JETZT bei jedem
-   „kompilieren“ alle drei Pakete bauen; Release-Link: Download-Hinweis für alle drei. Issue #90 geschlossen (Commit d314a25).
-3. HTS ALS ANDROID-APP (Nutzer 15.11.2026, Issue #92): „Als echte App anstreben, aber als GitHub-APK-Datei“ – Android
-   zuerst, Bau über GitHub Actions (GluonFX/GraalVM + Android-SDK), APK als Datei im Release, kein Play Store; iPad
-   zurückgestellt (Apple-Konto, Mac). Vor der Umsetzung klären: Umfang der App (ganzes HTS oder Teil), Bedienung auf
-   Tablet/Handy, Dateien (.hts/XML/PDF) auf dem Gerät, Drucken. NICHT kompilieren bis „… kompilieren“.
-
+1. LIVE-SCORING ÜBER GEMIETETEN HETZNER-SERVER CX23 (Nutzer 18.11.2026, Issue #101, für 1.2.0; ersetzt #92 App und
+   #34 WLAN-QR-Code, beide geschlossen „not planned“): HTS bleibt führend, der Server hält eine Kopie.
+   - Server: Ubuntu, Einrichtungsskript (Java, Caddy mit automatischem HTTPS, Firewall, unattended-upgrades),
+     HTS-Live-Server ohne Bildschirm (LiveServer-Seiten wiederverwenden: Tische, Gruppen, KO, Ergebnisse, „Meine
+     Spiele“).
+   - HTS: Einstellungen Server-Adresse + Schlüssel (nur auf dem Laptop); sendet nach Änderungen den Stand (HTTPS,
+     gedrosselt auf einige Sekunden), Puffer bei Funkloch.
+   - Zuschauer: Aktualisierung nach Sekunden ohne Neuladen (SSE/WebSocket oder kurzes Polling); mehrere Turniere je
+     eigener Adresse.
+   - Ergebnisse per Handy über das Internet (#93): Tisch-QR → Server sammelt → HTS holt ab, „Übernehmen/Verwerfen“.
+   - Datenschutz: „Live-Daten löschen“ / „nur Endergebnis behalten“, optional Vornamen abkürzen; Hinweise Impressum/
+     Datenschutzerklärung, AV-Vertrag Hetzner.
+   - Kosten CX23 ca. 5,99 € netto/Monat inkl. IPv4 (≈ 7,13 € brutto); Verfügbarkeit vor Umsetzung prüfen (laut Artikel
+     10/2026 zeitweise nicht bestellbar → nächstgrößeres Modell). Domain optional.
+   - Schritt-für-Schritt-Anleitung, Update-Skript für neue HTS-Versionen.
 4. PHASE 2 „HAUPT- UND TROSTRUNDE“ (Nutzer 18.11.2026, Issue #94, für 1.2.0): Nur nach Phase 1 = Gruppenphase.
    Beim Erstellen von Phase 2 festlegen, welche Gruppenplätze in die Hauptrunde (KO) und welche in die Trostrunde
    (KO) kommen (z. B. 1–2 Haupt, 3–4 Trost); je Runde Haken „Spiel um Platz 3“.
@@ -165,7 +159,32 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      Gruppenplätze = Freilos; weitere Gruppen bzw. Plätze ab 9 spielen nicht mit und stehen im Endergebnis nach
      Gruppenplatz dahinter (Hinweis beim Erstellen). Intern dieselbe Platzierungsplan-Vorlage wie TOP24.
 
+## Entfallen (Nutzer 18.11.2026: Ansatz über gemieteten Hetzner-Server CX23 statt dessen)
+
+1. WIEDER ZURÜCKGESTELLT (15.11.2026: statt dessen Punkt 5 – Reiter „Mobile Einstellungen“ ausblenden; NICHT in
+   1.0.0 umsetzen, erst wenn die Handy-Funktionen später ausgebaut werden): WLAN-QR-CODE AUF DEM
+   AUSHANG (Issue #34): In HTS einmal WLAN-Name und Passwort eintragen; der Aushang
+   „QR-Codes drucken“ bekommt einen dritten QR-Code „1. WLAN verbinden“ (Format WIFI:T:WPA;S:…;P:…;;), darunter
+   „2. Live-Anzeige“ und „3. Anmeldung am Turniertag“. So bleibt das WLAN geschützt, die Teilnehmenden tippen nichts
+   ab. Vorschlag (Rückfrage gestellt): Eingabe in einem kleinen Dialog beim Klick auf „QR-Codes drucken“, gespeichert
+   als Programmeinstellung auf dem Laptop (gleicher Router für alle Turniere), nicht in der Turnierdatei; Name und
+   Passwort zusätzlich als Text unter dem QR-Code; Verschlüsselung WPA/WPA2 (Standard); Feld leer = kein WLAN-QR-Code
+   (wie bisher Felder zum Ausfüllen).
+- (#92) HTS ALS ANDROID-APP (Nutzer 15.11.2026, Issue #92): „Als echte App anstreben, aber als GitHub-APK-Datei“ – Android
+   zuerst, Bau über GitHub Actions (GluonFX/GraalVM + Android-SDK), APK als Datei im Release, kein Play Store; iPad
+   zurückgestellt (Apple-Konto, Mac). Vor der Umsetzung klären: Umfang der App (ganzes HTS oder Teil), Bedienung auf
+   Tablet/Handy, Dateien (.hts/XML/PDF) auf dem Gerät, Drucken. NICHT kompilieren bis „… kompilieren“.
+
+
 ## Umgesetzt
+
+1.1.0-NACHTRAG: LINUX- UND MACOS-PAKET (Issue #90): FÜR 1.1.0 NACHGELIEFERT (15.11.2026) als hts-1.1.0-linux.tar.gz und
+   hts-1.1.0-macos.tar.gz (Dateien vom Nutzer: Temurin 21.0.13+9 JRE Linux x64 / macOS aarch64, JavaFX 21.0.8 linux /
+   mac-aarch64; Ablage $S/jx und Anhänge). Bau: $S/fat-linux bzw. $S/fat-mac (= fat ohne *.dll + JavaFX-Jars der
+   Plattform) → hts.jar; Ordner $S/dist/hts-linux|hts-macos mit jre, „HTS starten.sh“ bzw. „HTS starten.command“
+   (liegen jetzt in dist/ im Quellcode), Doku, Lizenzen (LIESMICH aktualisiert: AGPL, voller Name – Vorlage für
+   Windows in dist/Lizenzen-Vorlage, Windows-ZIP 1.1.0 neu gepackt). Linux hier getestet (startet), macOS ungetestet. AB JETZT bei jedem
+   „kompilieren“ alle drei Pakete bauen; Release-Link: Download-Hinweis für alle drei. Issue #90 geschlossen (Commit d314a25).
 
 1.1.0 (15.11.2026, Issues #83–#89, #91, #93). README „Neu in 1.1.0“.
 Fehlerbehebungen aus dem Belastungstest (vorher „1.0.1“): #83 Tournament.rankKnockout zählt Spiele je Runde; #84
