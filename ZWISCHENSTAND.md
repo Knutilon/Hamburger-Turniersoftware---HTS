@@ -110,6 +110,16 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Endergebnis: Phase 3 vorne, übrige nach Platz in Phase 2, dann Phase 1; Reiter „Phase 3 – …“, PDF, Präsentation,
    click-TT-Export (Spiele aller Phasen; Ergebnis-Import liest weiter nur Phase 1) wie bei Phase 2; Turnierdateien
    kompatibel (Phasen-Kette über source/follow-up).
+   ERWEITERUNG (Nutzer 18.11.2026, Vorbild Top-48-Bundesranglistenturnier Jugend 19 Wiesbaden, Ergebnis-PDF
+   https://hamburg-tischtennis.de/shared-files/5093/?Ergebnisse.pdf; 48 TN, Phase 1 = 8 Gruppen A–H zu 6):
+   a) Phase 2 „GRUPPEN NACH LEISTUNGSSTUFEN“: einstellbar Stufen aus Vorrundenplätzen (1–2 → Gruppen 01–04, 3–4 →
+      05–08, 5–6 → 09–12) und Gruppengröße (4); alle kommen weiter. Gruppenbildung gespiegelt (A+H, B+G, C+F, D+E:
+      Gruppe 01 = A1, A2, H1, H2) als Standard, wahlweise ausgelost (ANNAHME, Nutzer nicht festgelegt). KEINE Übernahme
+      von Ergebnissen (A1 spielt erneut gegen A2). Gruppennamen fortlaufend (01–12 bzw. nach A–H weiter I–T).
+   b) Phase 3 „ENDRUNDE JE GRUPPENPLATZ“: Gleichplatzierte der 4 Gruppen einer Stufe = 4er-Block; Halbfinale Gruppe
+      1.–4. und 2.–3. (z. B. 01/1–04/1, 02/1–03/1), dann Spiel um Platz x und x+2; Platzbereiche automatisch: Stufe 1
+      Erste 1–4, Zweite 5–8, Dritte 9–12, Vierte 13–16; Stufe 2 17–32; Stufe 3 33–48. 12 Blöcke × 4 Spiele = 48.
+      Endergebnis lückenlos 1–48 (click-TT ebenso).
 
 ## Umgesetzt
 
