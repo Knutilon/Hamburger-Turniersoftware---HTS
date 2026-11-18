@@ -66,9 +66,12 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      Anzeige und Drucken (wie createNextPhase(KNOCKOUT)).
    - ZWEI REITER „Phase 2 – Hauptrunde“ und „Phase 2 – Trostrunde“, je eigener Baum, Drucken, Starten; beide parallel
      an den Tischen.
-   - Endergebnis: Hauptrunde 1., 2., …; Trostrunde ANSCHLIESSEND WEITERZÄHLEN (Trostsieger = nächster Platz); danach
-     übrige nach Gruppenplatz.
-   - click-TT-Export: Spiele beider Bäume, Platzierung wie im Endergebnis (fortlaufend).
+   - ÄNDERUNG (Nutzer 18.11.2026, 20:26): GETRENNTE ENDERGEBNISSE in der Klasse – „Endergebnis Hauptrunde“ (1., 2., …)
+     und „Endergebnis Trostrunde“ (eigene Zählung 1., 2., …); eigene Reiter bzw. Abschnitte, auch im PDF
+     „Gesamtergebnis“ und in der Präsentationsansicht. (Ersetzt „Trostrunde zählt anschließend weiter“.)
+   - click-TT-Export: Spiele beider Bäume; Platzierung in click-TT (nur eine Zahl je Person): Hauptrunde wie ihr
+     Endergebnis, Trostrunde fortlaufend dahinter (Trostsieger = nächster Platz nach der Hauptrunde) – Annahme,
+     beim Nutzer nachgefragt.
 
 ## Umgesetzt
 
