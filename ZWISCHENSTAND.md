@@ -11,6 +11,11 @@ PFLICHT BEI JEDEM „KOMPILIEREN“ (Nutzer 18.11.2026):
   dist/HTS starten.sh, dist/HTS starten.command). Prüfbefehl: für jede Datei „SPDX-License-Identifier“ in den ersten
   Zeilen.
 - Was im Abschnitt „Backlog“ steht, NICHT einbauen.
+- HANDBUCH (Nutzer 18.11.2026, 21:53: „kompilieren inklusive Handbuch“): bei jedem „kompilieren“ das Handbuch
+  mitziehen – Claude-Dokument „HTS-Dokumentation“ (Docs-Artifact 5b0b78d4-…, volle Ids mit Präfix mc3yk00qn9b) UND
+  docs/HTS-Dokumentation.md (kommt in alle drei Pakete). Stand 18.11.2026: beide noch 0.41.0 → beim nächsten
+  „kompilieren“ 0.42.0, 1.0.0, 1.1.0 und die neue Version nachtragen (Versionsverlauf, Stand-Zeile, Kapitel).
+  Ersetzt die alte Regel „Dokumentation nur auf Zuruf“.
 
 WUNSCH (15.11.2026): „wie bisher alles immer in das GitHub-Repository committen“ – auch Nachlieferungen zu einer
 Version (z. B. Pakete, Startdateien, Doku) gleich als eigenen Commit hochladen.
