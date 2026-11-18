@@ -144,7 +144,7 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      Gruppenplätze = Freilos; weitere Gruppen bzw. Plätze ab 9 spielen nicht mit und stehen im Endergebnis nach
      Gruppenplatz dahinter (Hinweis beim Erstellen). Intern dieselbe Platzierungsplan-Vorlage wie TOP24.
 
-## Backup – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
+## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) LIVE-SCORING ÜBER GEMIETETEN HETZNER-SERVER CX23 (Nutzer 18.11.2026, Issue #101, ZURÜCKGESTELLT; ersetzt #92 App und
    #34 WLAN-QR-Code, beide geschlossen „not planned“): HTS bleibt führend, der Server hält eine Kopie.
