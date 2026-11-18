@@ -70,8 +70,8 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      und „Endergebnis Trostrunde“ (eigene Zählung 1., 2., …); eigene Reiter bzw. Abschnitte, auch im PDF
      „Gesamtergebnis“ und in der Präsentationsansicht. (Ersetzt „Trostrunde zählt anschließend weiter“.)
    - click-TT-Export: Spiele beider Bäume; Platzierung in click-TT (nur eine Zahl je Person): Hauptrunde wie ihr
-     Endergebnis, Trostrunde fortlaufend dahinter (Trostsieger = nächster Platz nach der Hauptrunde) – Annahme,
-     beim Nutzer nachgefragt.
+     Endergebnis, Trostrunde fortlaufend dahinter – BESTÄTIGT (Nutzer 18.11.2026): Trostsieger = Anzahl der
+     Hauptrunden-Teilnehmenden + 1 (16 in der Hauptrunde → 17., 32 → 33. usw.), weitere Trostplätze entsprechend.
 
 ## Umgesetzt
 
