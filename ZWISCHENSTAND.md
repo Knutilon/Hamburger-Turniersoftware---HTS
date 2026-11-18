@@ -125,7 +125,7 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
       Erste 1–4, Zweite 5–8, Dritte 9–12, Vierte 13–16; Stufe 2 17–32; Stufe 3 33–48. 12 Blöcke × 4 Spiele = 48.
       Endergebnis lückenlos 1–48 (click-TT ebenso).
 
-8. PHASE 2 „TOP24/TOP32-PLATZIERUNGSSPIELE“ (Nutzer 18.11.2026, Issue #98, für 1.2.0; Vorbild Top-24-Bundesranglisten-
+8. PHASE 2 „TOP24-PLATZIERUNGSSPIELE“ (Nutzer 18.11.2026, Issue #98, für 1.2.0; Vorbild Top-24-Bundesranglisten-
    turnier Jugend 19/15 Ettlingen 02/2024, PDF erg_jug-23-24-DTTB-TOP24-ergebnisse-1.pdf; alle 4 Konkurrenzen gleich):
    Nach Phase 1 = 4 Gruppen A–D zu 6 spielen alle 24 in 44 Spielen die Plätze 1–24 aus. Kein reines 7.3 (Verlierer
    der oberen Stufe treffen auf SIEGER der nächsten Stufe = gestaffelter Einstieg).
@@ -139,17 +139,9 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    - Intern als Platzierungsplan aus Vorlage (je Spiel Herkunft „Gruppe B Platz 1“ / „Verlierer Spiel 4“, Plätze für
      Sieger/Verlierer) – später weitere Vorlagen; evtl. Basis für #96/#97.
    - Anzeige wie KO-Baum mit Platzierungsblöcken, Drucken, Präsentation; Endergebnis/click-TT lückenlos 1–24.
-   - ERWEITERUNG TOP32 (Nutzer 18.11.2026, 21:36; Vorbild Top 32 Jugend 13 Bergisch Gladbach,
-     docs/referenz/TOP32-Ergebnisse-Jugend13.pdf): 4 Gruppen zu 8, 60 Spiele, Plätze 1–32; gleiches Muster plus
-     4. Stufe: Runde 1 Sp. 13–16 = Plätze 7–8 (D7–C8, A7–B8, B7–A8, C7–D8); HF 29, 30 (W1–W3, W2–W4), Finale 45,
-     Platz 3 46; Runde 2: 17 L4–W7, 18 L1–W5, 19 L2–W6, 20 L3–W8; 21 W10–L5, 22 W12–L7, 23 W11–L6, 24 W9–L8;
-     25 W13–L10, 26 W14–L11, 27 W15–L9, 28 W16–L12; Blöcke: 5–8 = 31 W17–W20, 32 W18–W19 → 47/48; 9–12 = 33
-     L17–L20, 34 L18–L19 → 49/50; 13–16 = 35 W21–W23, 36 W22–W24 → 51/52; 17–20 = 37 L21–L23, 38 L22–L24 → 53/54;
-     21–24 = 39 W25–W27, 40 W26–W28 → 55/56; 25–28 = 41 L25–L27, 42 L26–L28 → 57/58; 29–32 = 43 L13–L15,
-     44 L16–L14 → 59/60. Größe AUTOMATISCH nach Gruppengröße: bis 6 → TOP24, 7–8 → TOP32 (fehlende Plätze = Freilos).
    - WÄHLBAR (Nutzer 18.11.2026, 21:32): der Einfachheit halber IMMER nach einer Gruppenphase in Phase 1.
-     ANNAHME für abweichende Felder: der Plan nutzt Gruppen A–D und Plätze 1–6 (TOP32: 1–8); fehlende Gruppenplätze =
-     Freilos; weitere Gruppen bzw. Plätze ab 7 (TOP32: ab 9) spielen nicht mit und werden im Endergebnis nach Gruppenplatz dahinter
+     ANNAHME für abweichende Felder: der Plan nutzt Gruppen A–D und Plätze 1–6; fehlende Gruppenplätze =
+     Freilos; weitere Gruppen bzw. Plätze ab 7 spielen nicht mit und werden im Endergebnis nach Gruppenplatz dahinter
      eingereiht (Hinweis beim Erstellen der Phase 2).
 9. DOPPELTES K.-O.-SYSTEM (WO 7.4) (Nutzer 18.11.2026, Issue #99, für 1.2.0): Ausscheiden erst nach der zweiten
    Niederlage, bis einschließlich Endspiel; Verlierer in die Trostrunde mit „Kreuzen“ (wiederholte Begegnungen
@@ -158,6 +150,20 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    ANNAHMEN: wählbar wie einfaches KO (Phase 1 direkt oder Phase 2 nach Gruppen); Siegerrunde und Trostrunde als zwei
    Bäume in einem Reiter; Endergebnis 1., 2., 3., weitere nach Ausscheiderunde in der Trostrunde (geteilt); click-TT
    mit allen Spielen.
+
+10. PHASE 2 „TOP32-PLATZIERUNGSSPIELE“ (Nutzer 18.11.2026, Issue #100, für 1.2.0) – EIGENE, GETRENNT WÄHLBARE OPTION
+   neben TOP24 (Nutzer 21:38: keine automatische Wahl nach Gruppengröße).
+   Vorbild Top 32 Jugend 13 Bergisch Gladbach,
+     docs/referenz/TOP32-Ergebnisse-Jugend13.pdf: 4 Gruppen zu 8, 60 Spiele, Plätze 1–32; gleiches Muster plus
+     4. Stufe: Runde 1 Sp. 13–16 = Plätze 7–8 (D7–C8, A7–B8, B7–A8, C7–D8); HF 29, 30 (W1–W3, W2–W4), Finale 45,
+     Platz 3 46; Runde 2: 17 L4–W7, 18 L1–W5, 19 L2–W6, 20 L3–W8; 21 W10–L5, 22 W12–L7, 23 W11–L6, 24 W9–L8;
+     25 W13–L10, 26 W14–L11, 27 W15–L9, 28 W16–L12; Blöcke: 5–8 = 31 W17–W20, 32 W18–W19 → 47/48; 9–12 = 33
+     L17–L20, 34 L18–L19 → 49/50; 13–16 = 35 W21–W23, 36 W22–W24 → 51/52; 17–20 = 37 L21–L23, 38 L22–L24 → 53/54;
+     21–24 = 39 W25–W27, 40 W26–W28 → 55/56; 25–28 = 41 L25–L27, 42 L26–L28 → 57/58; 29–32 = 43 L13–L15,
+     44 L16–L14 → 59/60.
+   - Wählbar wie TOP24: immer nach einer Gruppenphase in Phase 1; Plan nutzt Gruppen A–D und Plätze 1–8; fehlende
+     Gruppenplätze = Freilos; weitere Gruppen bzw. Plätze ab 9 spielen nicht mit und stehen im Endergebnis nach
+     Gruppenplatz dahinter (Hinweis beim Erstellen). Intern dieselbe Platzierungsplan-Vorlage wie TOP24.
 
 ## Umgesetzt
 
