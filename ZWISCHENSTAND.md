@@ -89,6 +89,17 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      (nächstmöglicher Gegner, nur wenn unvermeidbar wiederholen); Standard 5 Runden, änderbar, plus „Weitere Runde“
      als Platzierungsrunde; „Spieler pausieren lassen“ je Runde (nicht ausgelost, Stand bleibt).
 
+6. PHASE 2 „MODIFIZIERTES KO-SYSTEM“ (Nutzer 18.11.2026, Issue #96, für 1.2.0): NUR als Phase 2 nach Gruppenphase.
+   Wie einfaches KO, aber Verlierer bestimmter Runden spielen gegen die in derselben Runde Unterlegenen um die Plätze
+   des Gesamtfeldes (Halbfinal-Verlierer um 3–4, Viertelfinal-Verlierer um 5–8, Achtelfinale um 9–16 …).
+   - Beim Erstellen wählbar: „Alle Plätze ausspielen“ oder „ab Achtelfinale / Viertelfinale / Halbfinale“; Verlierer
+     früherer Runden teilen sich den Platz (z. B. 17.–32.).
+   - Aufsteiger je Gruppe wie normales KO; Freilose, Setzung, Drag & Drop, Anzeige, Drucken wie gewohnt (auch in den
+     Platzierungsbäumen, dort ggf. Freilose, wenn weniger Verlierer).
+   - EIN Reiter „Phase 2 – modifiziertes KO“: oben Hauptbaum, darunter Bäume „Platz 3–4“, „Platz 5–8“, „Platz 9–16“ …;
+     Drucken gemeinsam oder je Baum.
+   - Endergebnis und click-TT-Export mit den ausgespielten Plätzen.
+
 ## Umgesetzt
 
 1.1.0 (15.11.2026, Issues #83–#89, #91, #93). README „Neu in 1.1.0“.
