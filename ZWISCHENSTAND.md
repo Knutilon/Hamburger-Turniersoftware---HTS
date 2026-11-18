@@ -103,6 +103,14 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      Drucken gemeinsam oder je Baum.
    - Endergebnis und click-TT-Export mit den ausgespielten Plätzen.
 
+7. PHASE 3 (Nutzer 18.11.2026, Issue #97, für 1.2.0): Eine Klasse kann eine 3. Phase haben, wenn Phase 2 ebenfalls
+   eine Gruppenphase (GROUPS) ist. Bisher Tournament.MAX_PHASES = 2 (canHaveNextPhase: nur nach GROUPS).
+   ANNAHMEN (dem Nutzer gesagt): Phase 3 bietet dieselben Arten wie Phase 2 nach Gruppen (KO, Gruppen,
+   Qualifikation, Haupt-/Trostrunde, modifiziertes KO); höchstens 3 Phasen (MAX_PHASES = 3, Phase 4 nicht);
+   Endergebnis: Phase 3 vorne, übrige nach Platz in Phase 2, dann Phase 1; Reiter „Phase 3 – …“, PDF, Präsentation,
+   click-TT-Export (Spiele aller Phasen; Ergebnis-Import liest weiter nur Phase 1) wie bei Phase 2; Turnierdateien
+   kompatibel (Phasen-Kette über source/follow-up).
+
 ## Umgesetzt
 
 1.1.0 (15.11.2026, Issues #83–#89, #91, #93). README „Neu in 1.1.0“.
