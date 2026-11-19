@@ -173,13 +173,14 @@ public final class PlayingClass {
     /** KO-Platzbelegung (leer, wenn nicht im KO-System ausgelost). */
     public java.util.List<String> getDraw() { return draw; }
     public java.util.List<java.util.List<String>> getGroups() { return groups; }
-    public boolean isDrawn() { return !draw.isEmpty() || !groups.isEmpty() || !qualField.isEmpty() || !qualifiedDirect.isEmpty(); }
+    public boolean isDrawn() { return !draw.isEmpty() || !groups.isEmpty() || !qualField.isEmpty() || !qualifiedDirect.isEmpty() || plan != null; }
     public boolean isDrawSeeded() { return drawSeeded; }
 
     /** Setzt das Ergebnis einer KO-Auslosung (eine evtl. Gruppenauslosung entfällt); leere Liste = löschen. */
     public void setDraw(java.util.List<String> slots, boolean seeded) {
         this.draw = slots == null ? java.util.List.of() : java.util.Collections.unmodifiableList(new java.util.ArrayList<>(slots));
         this.groups = java.util.List.of();
+        this.plan = null;
         this.drawSeeded = seeded;
     }
 
@@ -204,6 +205,7 @@ public final class PlayingClass {
         if (groups != null) for (java.util.List<String> g : groups) copy.add(java.util.List.copyOf(g));
         this.groups = java.util.Collections.unmodifiableList(copy);
         this.draw = java.util.List.of();
+        this.plan = null;
         this.drawSeeded = seeded;
     }
 
@@ -397,6 +399,36 @@ public final class PlayingClass {
     public boolean isTeam() { return discipline.isTeam(); }
     /** Personen je Paarung/Team (2 oder 3). */
     public int teamSize() { return Math.max(2, discipline.size()); }
+
+    // --- 1.2: Platzierungsplan, Leistungsstufen, Badeni ---------------------------------------------
+    /** Platzierungsplan (Modus PLAN), sonst {@code null}. */
+    private Plan plan;
+    public Plan getPlan() { return plan; }
+    public void setPlan(Plan p) { plan = p; }
+
+    /** „Gruppen nach Leistungsstufen“ (#97): Anzahl Gruppen je Stufe (leer = normale Gruppenphase). */
+    private java.util.List<Integer> tierSizes = new java.util.ArrayList<>();
+    public java.util.List<Integer> getTierSizes() { return java.util.Collections.unmodifiableList(tierSizes); }
+    public void setTierSizes(java.util.List<Integer> t) { tierSizes = new java.util.ArrayList<>(t == null ? java.util.List.of() : t); }
+    public boolean isTiered() { return !tierSizes.isEmpty(); }
+
+    /** Gruppennamen fortlaufend nach der Vorphase (z. B. 8 → Gruppen I, J, K …). */
+    private int groupNameOffset;
+    public int getGroupNameOffset() { return groupNameOffset; }
+    public void setGroupNameOffset(int o) { groupNameOffset = Math.max(0, o); }
+
+    /** Schweizer System nach Badeni-Art (#95). */
+    private boolean badeni;
+    public boolean isBadeni() { return badeni; }
+    public void setBadeni(boolean b) { badeni = b; }
+
+    /** Schweizer System/Badeni: Parteien, die bis auf Weiteres pausieren (werden nicht ausgelost). */
+    private final java.util.Set<String> swissPaused = new java.util.LinkedHashSet<>();
+    public java.util.Set<String> getSwissPaused() { return java.util.Collections.unmodifiableSet(swissPaused); }
+    public void setSwissPaused(java.util.Collection<String> ids) {
+        swissPaused.clear();
+        if (ids != null) swissPaused.addAll(ids);
+    }
 
     /** 2er/3er Turnier: mindestens eine Dame je Team. */
     private boolean womanRequired;

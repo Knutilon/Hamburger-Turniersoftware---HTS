@@ -364,6 +364,11 @@ public final class TournamentFile {
                 if (c.getMode() == TournamentMode.PLACEMENT) el.setAttribute("mode", "placement");
                 if (c.getMode() == TournamentMode.SWISS) el.setAttribute("mode", "swiss");
                 if (c.getMode() == TournamentMode.QUALIFICATION) el.setAttribute("mode", "qualification");
+                if (c.getMode() == TournamentMode.PLAN) el.setAttribute("mode", "plan");
+                if (c.isBadeni()) el.setAttribute("badeni", "true");
+                if (!c.getSwissPaused().isEmpty()) el.setAttribute("swiss-paused", String.join(",", c.getSwissPaused()));
+                if (c.isTiered()) el.setAttribute("tier-sizes", String.join(",", c.getTierSizes().stream().map(String::valueOf).toList()));
+                if (c.getGroupNameOffset() > 0) el.setAttribute("group-name-offset", String.valueOf(c.getGroupNameOffset()));
                 if (c.getQualDirect() > 0 || c.getQualKo() > 0 || c.getQualRounds() > 0 || c.getQualReserve() > 0) {
                     el.setAttribute("qual", c.getQualDirect() + "," + c.getQualKo() + "," + c.getQualRounds() + "," + c.getQualReserve());
                 }
@@ -426,6 +431,7 @@ public final class TournamentFile {
                     }
                     el.appendChild(drawEl);
                 }
+                if (c.getPlan() != null) el.appendChild(planElement(doc, c.getPlan()));
                 classesEl.appendChild(el);
             }
 
@@ -624,6 +630,15 @@ public final class TournamentFile {
             if ("placement".equals(attr(el, "mode"))) pc.setMode(TournamentMode.PLACEMENT);
             if ("swiss".equals(attr(el, "mode"))) pc.setMode(TournamentMode.SWISS);
             if ("qualification".equals(attr(el, "mode"))) pc.setMode(TournamentMode.QUALIFICATION);
+            if ("plan".equals(attr(el, "mode"))) pc.setMode(TournamentMode.PLAN);
+            pc.setBadeni("true".equals(attr(el, "badeni")));
+            if (attr(el, "swiss-paused") != null && !attr(el, "swiss-paused").isBlank()) pc.setSwissPaused(List.of(attr(el, "swiss-paused").split(",")));
+            if (attr(el, "tier-sizes") != null && !attr(el, "tier-sizes").isBlank()) {
+                List<Integer> ts = new ArrayList<>();
+                for (String t : attr(el, "tier-sizes").split(",")) ts.add(Integer.parseInt(t.trim()));
+                pc.setTierSizes(ts);
+            }
+            pc.setGroupNameOffset(intOr(el, "group-name-offset", 0));
             if (attr(el, "qual") != null) {
                 String[] q = attr(el, "qual").split(",");
                 if (q.length >= 3) pc.setQualification(Integer.parseInt(q[0].trim()), Integer.parseInt(q[1].trim()), Integer.parseInt(q[2].trim()));
@@ -713,6 +728,8 @@ public final class TournamentFile {
                 }
                 pc.setDraw(slots, "true".equals(drawEl.getAttribute("seeded")));
             }
+            NodeList plans = el.getElementsByTagName("plan");
+            if (plans.getLength() > 0) pc.setPlan(readPlan((Element) plans.item(0)));
             classes.add(pc);
         }
         classes = repairDuplicateClasses(classes);
@@ -951,6 +968,85 @@ public final class TournamentFile {
         if (pc.isImportedFromXml()) w += 2;
         if (pc.getBirthyearFrom() != null || pc.getBirthyearTo() != null || pc.getMaxParticipants() != null) w += 1;
         return w;
+    }
+
+    // --- 1.2: Platzierungsplan ------------------------------------------------------------------------
+
+    private static Element planElement(Document doc, de.hts.tournament.Plan p) {
+        Element pe = doc.createElement("plan");
+        pe.setAttribute("kind", p.getKind().name());
+        for (String t : p.getResultTitles()) {
+            Element r = doc.createElement("plan-result");
+            r.setAttribute("title", t);
+            pe.appendChild(r);
+        }
+        for (de.hts.tournament.Plan.Section sec : p.getSections()) {
+            Element se = doc.createElement("plan-section");
+            se.setAttribute("title", sec.title());
+            se.setAttribute("result", String.valueOf(sec.resultGroup()));
+            pe.appendChild(se);
+        }
+        for (int i = 0; i < p.getSeeds().size(); i++) {
+            Element se = doc.createElement("plan-seed");
+            if (p.getSeeds().get(i) != null) se.setAttribute("ref", p.getSeeds().get(i));
+            if (p.getSeedOrigins().get(i) != null) se.setAttribute("origin", p.getSeedOrigins().get(i));
+            se.setAttribute("result", String.valueOf(p.getSeedGroups().get(i)));
+            pe.appendChild(se);
+        }
+        for (de.hts.tournament.Plan.Node n : p.getNodes()) {
+            Element ne = doc.createElement("plan-node");
+            ne.setAttribute("key", n.key());
+            ne.setAttribute("no", String.valueOf(n.no()));
+            ne.setAttribute("section", String.valueOf(n.section()));
+            ne.setAttribute("stage", n.stage());
+            ne.setAttribute("depth", String.valueOf(n.depth()));
+            ne.setAttribute("a", n.a());
+            ne.setAttribute("b", n.b());
+            if (n.winFrom() > 0) ne.setAttribute("win", n.winFrom() + "-" + n.winTo());
+            if (n.loseFrom() > 0) ne.setAttribute("lose", n.loseFrom() + "-" + n.loseTo());
+            if (n.cond() != null) ne.setAttribute("cond", n.cond());
+            pe.appendChild(ne);
+        }
+        return pe;
+    }
+
+    private static int[] range(String v) {
+        if (v == null || v.isBlank()) return new int[]{0, 0};
+        String[] p = v.split("-");
+        return new int[]{Integer.parseInt(p[0].trim()), Integer.parseInt(p[p.length - 1].trim())};
+    }
+
+    private static de.hts.tournament.Plan readPlan(Element pe) {
+        de.hts.tournament.Plan.Kind kind = de.hts.tournament.Plan.Kind.valueOf(pe.getAttribute("kind"));
+        List<String> results = new ArrayList<>();
+        NodeList rs = pe.getElementsByTagName("plan-result");
+        for (int i = 0; i < rs.getLength(); i++) results.add(((Element) rs.item(i)).getAttribute("title"));
+        List<de.hts.tournament.Plan.Section> sections = new ArrayList<>();
+        NodeList ss = pe.getElementsByTagName("plan-section");
+        for (int i = 0; i < ss.getLength(); i++) {
+            Element e = (Element) ss.item(i);
+            sections.add(new de.hts.tournament.Plan.Section(e.getAttribute("title"), intOr(e, "result", 0)));
+        }
+        List<String> seeds = new ArrayList<>(), origins = new ArrayList<>();
+        List<Integer> groups = new ArrayList<>();
+        NodeList sd = pe.getElementsByTagName("plan-seed");
+        for (int i = 0; i < sd.getLength(); i++) {
+            Element e = (Element) sd.item(i);
+            seeds.add(attr(e, "ref"));
+            origins.add(attr(e, "origin"));
+            groups.add(intOr(e, "result", 0));
+        }
+        List<de.hts.tournament.Plan.Node> nodes = new ArrayList<>();
+        NodeList ns = pe.getElementsByTagName("plan-node");
+        for (int i = 0; i < ns.getLength(); i++) {
+            Element e = (Element) ns.item(i);
+            int[] w = range(attr(e, "win")), l = range(attr(e, "lose"));
+            nodes.add(new de.hts.tournament.Plan.Node(e.getAttribute("key"), intOr(e, "no", 0), intOr(e, "section", 0),
+                    e.getAttribute("stage"), intOr(e, "depth", 1), e.getAttribute("a"), e.getAttribute("b"),
+                    w[0], w[1], l[0], l[1], attr(e, "cond")));
+        }
+        if (results.isEmpty()) results.add("Endergebnis");
+        return new de.hts.tournament.Plan(kind, sections, nodes, seeds, origins, groups, results);
     }
 
     private static String attr(Element el, String name) {

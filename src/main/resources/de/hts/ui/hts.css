@@ -530,6 +530,14 @@
     -fx-background-color: white;
     -fx-background: white;
 }
+/* 1.2: Abschnitt eines Platzierungsplans (z. B. „Platz 5–8“) */
+.section-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -hts-navy;
+    -fx-padding: 6 0 0 0;
+}
+
 .round-title {
     -fx-text-fill: -hts-navy;
     -fx-font-weight: bold;

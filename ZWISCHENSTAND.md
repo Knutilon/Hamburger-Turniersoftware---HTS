@@ -1,4 +1,4 @@
-# Zwischenstand HTS 1.1.0 (15.11.2026)
+# Zwischenstand HTS 1.2.0 (19.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -13,8 +13,9 @@ PFLICHT BEI JEDEM „KOMPILIEREN“ (Nutzer 18.11.2026):
 - Was im Abschnitt „Backlog“ steht, NICHT einbauen.
 - HANDBUCH (Nutzer 18.11.2026, 21:53: „kompilieren inklusive Handbuch“): bei jedem „kompilieren“ das Handbuch
   mitziehen – Claude-Dokument „HTS-Dokumentation“ (Docs-Artifact 5b0b78d4-…, volle Ids mit Präfix mc3yk00qn9b) UND
-  docs/HTS-Dokumentation.md (kommt in alle drei Pakete). Stand 18.11.2026: beide noch 0.41.0 → beim nächsten
-  „kompilieren“ 0.42.0, 1.0.0, 1.1.0 und die neue Version nachtragen (Versionsverlauf, Stand-Zeile, Kapitel).
+  docs/HTS-Dokumentation.md (kommt in alle drei Pakete). Stand 19.11.2026: beide auf 1.2.0 (Docs-Dokument
+  https://claude.ai/artifact/CF57Uw5Z3LoTJc9kK3R972, Knoten dc7b8f6f-8478) → bei jedem „kompilieren“ die neue Version
+  nachtragen (Versionsverlauf, Stand-Zeile, Kapitel).
   Ersetzt die alte Regel „Dokumentation nur auf Zuruf“.
 
 WUNSCH (15.11.2026): „wie bisher alles immer in das GitHub-Repository committen“ – auch Nachlieferungen zu einer
@@ -49,115 +50,11 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 - click-TT-Upload der Ergebnisdatei: Praxistest erfolgreich (Nutzer 15.11.2026); Einschränkung unter „Bekannte
   Grenzen“ in der Doku gestrichen (mit 1.1.0 ausgeliefert).
 
-## Feature-Sammlung für 1.2.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 1.3.0 (NICHT kompilieren – bis „… kompilieren“)
 
-(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.1.x)
+(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.2.x)
 
-4. PHASE 2 „HAUPT- UND TROSTRUNDE“ (Nutzer 18.11.2026, Issue #94, für 1.2.0): Nur nach Phase 1 = Gruppenphase.
-   Beim Erstellen von Phase 2 festlegen, welche Gruppenplätze in die Hauptrunde (KO) und welche in die Trostrunde
-   (KO) kommen (z. B. 1–2 Haupt, 3–4 Trost); je Runde Haken „Spiel um Platz 3“.
-   - KO-Bäume wie gewohnt: Freilose, Setzung/Auslosung (Gruppensieger gesetzt, Gruppengleiche getrennt), Drag & Drop,
-     Anzeige und Drucken (wie createNextPhase(KNOCKOUT)).
-   - ZWEI REITER „Phase 2 – Hauptrunde“ und „Phase 2 – Trostrunde“, je eigener Baum, Drucken, Starten; beide parallel
-     an den Tischen.
-   - ÄNDERUNG (Nutzer 18.11.2026, 20:26): GETRENNTE ENDERGEBNISSE in der Klasse – „Endergebnis Hauptrunde“ (1., 2., …)
-     und „Endergebnis Trostrunde“ (eigene Zählung 1., 2., …); eigene Reiter bzw. Abschnitte, auch im PDF
-     „Gesamtergebnis“ und in der Präsentationsansicht. (Ersetzt „Trostrunde zählt anschließend weiter“.)
-   - click-TT-Export: Spiele beider Bäume; Platzierung in click-TT (nur eine Zahl je Person): Hauptrunde wie ihr
-     Endergebnis, Trostrunde fortlaufend dahinter – BESTÄTIGT (Nutzer 18.11.2026): Trostsieger = Anzahl der
-     Hauptrunden-Teilnehmenden + 1 (16 in der Hauptrunde → 17., 32 → 33. usw.), weitere Trostplätze entsprechend.
-
-5. PHASE-1-TYP „BADENI (SCHWEIZER SYSTEM)“ (Nutzer 18.11.2026, Issue #95, für 1.2.0; Unterlage
-   docs/referenz/Badeni-Schweizer-System.pdf, BaTTV/Enichlmayr 2014): Option für Phase 1 (Einzel; wie Schweizer
-   System kein Doppel).
-   - Grundlage Schweizer System: alle in EINEM Feld; je Runde Siegegruppen (gleiche Anzahl Siege), in jeder Gruppe
-     wird ausgelost. Runde 1: alle nach TTR sortiert.
-   - REIHUNG: 1. Siege, 2. TTR, 3. Sätze (KEINE Buchholz/Feinbuchholz, Bälle nicht genannt).
-   - AUSLOSUNG „Skisprung“: in jeder Siegegruppe (nach Reihung) Erster gegen Letzten, Zweiter gegen Vorletzten …,
-     die Mitte gegeneinander (30 Spieler: 1–30, 2–29 … 15–16).
-   - FREILOS bei ungeradem Feld: der beste Spieler der unteren Hälfte der Reihung; niemand zweimal (sonst der
-     nächste); Freilos farbig markiert.
-   - Mindestens 5 Runden.
-   - ANNAHMEN (Nutzer hat nur die Regeln oben bestätigt, Rest offen gelassen – so umsetzen und dem Nutzer sagen):
-     ungerade Siegegruppe → TTR-Schwächster rutscht in die nächstniedrigere Gruppe; Wiederholungen vermeiden
-     (nächstmöglicher Gegner, nur wenn unvermeidbar wiederholen); Standard 5 Runden, änderbar, plus „Weitere Runde“
-     als Platzierungsrunde; „Spieler pausieren lassen“ je Runde (nicht ausgelost, Stand bleibt).
-   - KEINE PHASE 2 (Nutzer 18.11.2026, 21:02): Badeni UND Schweizer System haben keine Folgephase – das Endergebnis
-     ist die Reihung nach der letzten Runde. Für das Schweizer System sperrt HTS das schon heute
-     (createNextPhase: „Nach dem Schweizer System gibt es keine weitere Phase.“) – für Badeni genauso umsetzen.
-
-6. PHASE 2 „FORTGESETZTES K.-O.-SYSTEM“ (WO 7.3; vorher „modifiziertes KO-System“, umbenannt 18.11.2026; Issue #96,
-   für 1.2.0): NUR als Phase 2 nach Gruppenphase.
-   Wie einfaches KO, aber Verlierer bestimmter Runden spielen gegen die in derselben Runde Unterlegenen um die Plätze
-   des Gesamtfeldes (Halbfinal-Verlierer um 3–4, Viertelfinal-Verlierer um 5–8, Achtelfinale um 9–16 …).
-   - Beim Erstellen wählbar: „Alle Plätze ausspielen“ oder „ab Achtelfinale / Viertelfinale / Halbfinale“; Verlierer
-     früherer Runden teilen sich den Platz (z. B. 17.–32.).
-   - Aufsteiger je Gruppe wie normales KO; Freilose, Setzung, Drag & Drop, Anzeige, Drucken wie gewohnt (auch in den
-     Platzierungsbäumen, dort ggf. Freilose, wenn weniger Verlierer).
-   - EIN Reiter „Phase 2 – Fortgesetztes K.-o.-System“: oben Hauptbaum, darunter Bäume „Platz 3–4“, „Platz 5–8“, „Platz 9–16“ …;
-     Drucken gemeinsam oder je Baum.
-   - Endergebnis und click-TT-Export mit den ausgespielten Plätzen.
-
-7. PHASE 3 (Nutzer 18.11.2026, Issue #97, für 1.2.0): Eine Klasse kann eine 3. Phase haben, wenn Phase 2 ebenfalls
-   eine Gruppenphase (GROUPS) ist. Bisher Tournament.MAX_PHASES = 2 (canHaveNextPhase: nur nach GROUPS).
-   ANNAHMEN (dem Nutzer gesagt): Phase 3 bietet dieselben Arten wie Phase 2 nach Gruppen (KO, Gruppen,
-   Qualifikation, Haupt-/Trostrunde, fortgesetztes KO); höchstens 3 Phasen (MAX_PHASES = 3, Phase 4 nicht);
-   Endergebnis: Phase 3 vorne, übrige nach Platz in Phase 2, dann Phase 1; Reiter „Phase 3 – …“, PDF, Präsentation,
-   click-TT-Export (Spiele aller Phasen; Ergebnis-Import liest weiter nur Phase 1) wie bei Phase 2; Turnierdateien
-   kompatibel (Phasen-Kette über source/follow-up).
-   EINSCHRÄNKUNG (Nutzer 18.11.2026, 21:18): Phase 3 NUR nach Phase 2 = „Gruppen nach Leistungsstufen“ (nicht nach
-   einer normalen Gruppenphase). Phase 3 bietet vorerst NUR die Art „Endrunde je Gruppenplatz“ (Nutzer 21:22) – die
-   Annahme „dieselben Arten wie Phase 2“ ist damit hinfällig.
-   ERWEITERUNG (Nutzer 18.11.2026, Vorbild Top-48-Bundesranglistenturnier Jugend 19 Wiesbaden, Ergebnis-PDF
-   https://hamburg-tischtennis.de/shared-files/5093/?Ergebnisse.pdf; 48 TN, Phase 1 = 8 Gruppen A–H zu 6):
-   a) Phase 2 „GRUPPEN NACH LEISTUNGSSTUFEN“: einstellbar Stufen aus Vorrundenplätzen (1–2 → Gruppen 01–04, 3–4 →
-      05–08, 5–6 → 09–12) und Gruppengröße (4); alle kommen weiter. Gruppenbildung gespiegelt (A+H, B+G, C+F, D+E:
-      Gruppe 01 = A1, A2, H1, H2) als Standard, wahlweise ausgelost (ANNAHME, Nutzer nicht festgelegt). KEINE Übernahme
-      von Ergebnissen (A1 spielt erneut gegen A2). Gruppennamen fortlaufend (01–12 bzw. nach A–H weiter I–T).
-   b) Phase 3 „ENDRUNDE JE GRUPPENPLATZ“: Gleichplatzierte der 4 Gruppen einer Stufe = 4er-Block; Halbfinale Gruppe
-      1.–4. und 2.–3. (z. B. 01/1–04/1, 02/1–03/1), dann Spiel um Platz x und x+2; Platzbereiche automatisch: Stufe 1
-      Erste 1–4, Zweite 5–8, Dritte 9–12, Vierte 13–16; Stufe 2 17–32; Stufe 3 33–48. 12 Blöcke × 4 Spiele = 48.
-      Endergebnis lückenlos 1–48 (click-TT ebenso).
-
-8. PHASE 2 „TOP24-PLATZIERUNGSSPIELE“ (Nutzer 18.11.2026, Issue #98, für 1.2.0; Vorbild Top-24-Bundesranglisten-
-   turnier Jugend 19/15 Ettlingen 02/2024, PDF erg_jug-23-24-DTTB-TOP24-ergebnisse-1.pdf; alle 4 Konkurrenzen gleich):
-   Nach Phase 1 = 4 Gruppen A–D zu 6 spielen alle 24 in 44 Spielen die Plätze 1–24 aus. Kein reines 7.3 (Verlierer
-   der oberen Stufe treffen auf SIEGER der nächsten Stufe = gestaffelter Einstieg).
-   - Runde 1 (Sp. 1–12): 1–2 über Kreuz B1–A2, A1–B2, D1–C2, C1–D2; 3–4: D3–C4, C3–D4, B3–A4, A3–B4; 5–6: D5–C6,
-     A5–B6, B5–A6, C5–D6.
-   - HF (21, 22): W1–W3, W2–W4; Finale 33, Platz 3 34.
-   - Runde 2: 13 L4–W7, 14 L1–W5, 15 L2–W6, 16 L3–W8; 17 W10–L5, 18 W12–L7, 19 W11–L6, 20 W9–L8.
-   - Platz 5–8: 23 W13–W16, 24 W14–W15 → 35 (Pl. 5), 36 (Pl. 7); 9–12: 25 L13–L15, 26 L14–L16 → 37, 38;
-     13–16: 27 W17–W19, 28 W18–W20 → 39, 40; 17–20: 29 L17–L19, 30 L18–L20 → 41, 42; 21–24: 31 L9–L10,
-     32 L11–L12 → 43, 44.
-   - Intern als Platzierungsplan aus Vorlage (je Spiel Herkunft „Gruppe B Platz 1“ / „Verlierer Spiel 4“, Plätze für
-     Sieger/Verlierer) – später weitere Vorlagen; evtl. Basis für #96/#97.
-   - Anzeige wie KO-Baum mit Platzierungsblöcken, Drucken, Präsentation; Endergebnis/click-TT lückenlos 1–24.
-   - WÄHLBAR (Nutzer 18.11.2026, 21:32): der Einfachheit halber IMMER nach einer Gruppenphase in Phase 1.
-     ANNAHME für abweichende Felder: der Plan nutzt Gruppen A–D und Plätze 1–6; fehlende Gruppenplätze =
-     Freilos; weitere Gruppen bzw. Plätze ab 7 spielen nicht mit und werden im Endergebnis nach Gruppenplatz dahinter
-     eingereiht (Hinweis beim Erstellen der Phase 2).
-9. DOPPELTES K.-O.-SYSTEM (WO 7.4) (Nutzer 18.11.2026, Issue #99, für 1.2.0): Ausscheiden erst nach der zweiten
-   Niederlage, bis einschließlich Endspiel; Verlierer in die Trostrunde mit „Kreuzen“ (wiederholte Begegnungen
-   weitgehend vermeiden, sonst trotzdem austragen); haben nach dem Endspiel beide Finalisten je eine Niederlage →
-   Stichkampf. Turnierliste/Freilose wie WO D 7.2.
-   ANNAHMEN: wählbar wie einfaches KO (Phase 1 direkt oder Phase 2 nach Gruppen); Siegerrunde und Trostrunde als zwei
-   Bäume in einem Reiter; Endergebnis 1., 2., 3., weitere nach Ausscheiderunde in der Trostrunde (geteilt); click-TT
-   mit allen Spielen.
-
-10. PHASE 2 „TOP32-PLATZIERUNGSSPIELE“ (Nutzer 18.11.2026, Issue #100, für 1.2.0) – EIGENE, GETRENNT WÄHLBARE OPTION
-   neben TOP24 (Nutzer 21:38: keine automatische Wahl nach Gruppengröße).
-   Vorbild Top 32 Jugend 13 Bergisch Gladbach,
-     docs/referenz/TOP32-Ergebnisse-Jugend13.pdf: 4 Gruppen zu 8, 60 Spiele, Plätze 1–32; gleiches Muster plus
-     4. Stufe: Runde 1 Sp. 13–16 = Plätze 7–8 (D7–C8, A7–B8, B7–A8, C7–D8); HF 29, 30 (W1–W3, W2–W4), Finale 45,
-     Platz 3 46; Runde 2: 17 L4–W7, 18 L1–W5, 19 L2–W6, 20 L3–W8; 21 W10–L5, 22 W12–L7, 23 W11–L6, 24 W9–L8;
-     25 W13–L10, 26 W14–L11, 27 W15–L9, 28 W16–L12; Blöcke: 5–8 = 31 W17–W20, 32 W18–W19 → 47/48; 9–12 = 33
-     L17–L20, 34 L18–L19 → 49/50; 13–16 = 35 W21–W23, 36 W22–W24 → 51/52; 17–20 = 37 L21–L23, 38 L22–L24 → 53/54;
-     21–24 = 39 W25–W27, 40 W26–W28 → 55/56; 25–28 = 41 L25–L27, 42 L26–L28 → 57/58; 29–32 = 43 L13–L15,
-     44 L16–L14 → 59/60.
-   - Wählbar wie TOP24: immer nach einer Gruppenphase in Phase 1; Plan nutzt Gruppen A–D und Plätze 1–8; fehlende
-     Gruppenplätze = Freilos; weitere Gruppen bzw. Plätze ab 9 spielen nicht mit und stehen im Endergebnis nach
-     Gruppenplatz dahinter (Hinweis beim Erstellen). Intern dieselbe Platzierungsplan-Vorlage wie TOP24.
+- (noch leer)
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
@@ -195,6 +92,122 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 
 ## Umgesetzt
+
+1.2.0 (19.11.2026, Commit „HTS 1.2.0“, Closes #94–#100): neue Plan-Engine Plan.java (Modus TournamentMode.PLAN,
+   Knoten mit Quellen S#/W:/L:/-, Bedingung IFB: für den Stichkampf, Speichern als <plan> mit plan-section/plan-node/
+   plan-seed/plan-result), Tournament.createPlanPhase/createTieredPhase/drawDoubleKo/drawBadeni, planState/resolvePlan/
+   rankPlan, finalResultSections (getrennte Wertungen), BadeniSystem.java, MAX_PHASES = 3 (Phase 3 nur nach
+   Leistungsstufen), Gruppennamen fortlaufend (groupLabel/groupNameOffset). UI: PhaseCloseDialog (enum K), ModeDialog
+   (Badeni, Doppel-KO), DrawView.buildPlan, Reiter je Wertung („Name#g“), Endergebnis-Auswahl, Präsentation, PDF,
+   Live-Seiten. Import fertiger Turniere lehnt Nicht-KO-Felder ab (doppeltes KO). Tests Version120Test (15), Fixture
+   turnierdatei-1.2.0.hts, Belastungstest mit allen neuen Typen. Umgesetzte Punkte (Wortlaut der Feature-Sammlung):
+
+   4. PHASE 2 „HAUPT- UND TROSTRUNDE“ (Nutzer 18.11.2026, Issue #94, für 1.2.0): Nur nach Phase 1 = Gruppenphase.
+      Beim Erstellen von Phase 2 festlegen, welche Gruppenplätze in die Hauptrunde (KO) und welche in die Trostrunde
+      (KO) kommen (z. B. 1–2 Haupt, 3–4 Trost); je Runde Haken „Spiel um Platz 3“.
+      - KO-Bäume wie gewohnt: Freilose, Setzung/Auslosung (Gruppensieger gesetzt, Gruppengleiche getrennt), Drag & Drop,
+        Anzeige und Drucken (wie createNextPhase(KNOCKOUT)).
+      - ZWEI REITER „Phase 2 – Hauptrunde“ und „Phase 2 – Trostrunde“, je eigener Baum, Drucken, Starten; beide parallel
+        an den Tischen.
+      - ÄNDERUNG (Nutzer 18.11.2026, 20:26): GETRENNTE ENDERGEBNISSE in der Klasse – „Endergebnis Hauptrunde“ (1., 2., …)
+        und „Endergebnis Trostrunde“ (eigene Zählung 1., 2., …); eigene Reiter bzw. Abschnitte, auch im PDF
+        „Gesamtergebnis“ und in der Präsentationsansicht. (Ersetzt „Trostrunde zählt anschließend weiter“.)
+      - click-TT-Export: Spiele beider Bäume; Platzierung in click-TT (nur eine Zahl je Person): Hauptrunde wie ihr
+        Endergebnis, Trostrunde fortlaufend dahinter – BESTÄTIGT (Nutzer 18.11.2026): Trostsieger = Anzahl der
+        Hauptrunden-Teilnehmenden + 1 (16 in der Hauptrunde → 17., 32 → 33. usw.), weitere Trostplätze entsprechend.
+
+   5. PHASE-1-TYP „BADENI (SCHWEIZER SYSTEM)“ (Nutzer 18.11.2026, Issue #95, für 1.2.0; Unterlage
+      docs/referenz/Badeni-Schweizer-System.pdf, BaTTV/Enichlmayr 2014): Option für Phase 1 (Einzel; wie Schweizer
+      System kein Doppel).
+      - Grundlage Schweizer System: alle in EINEM Feld; je Runde Siegegruppen (gleiche Anzahl Siege), in jeder Gruppe
+        wird ausgelost. Runde 1: alle nach TTR sortiert.
+      - REIHUNG: 1. Siege, 2. TTR, 3. Sätze (KEINE Buchholz/Feinbuchholz, Bälle nicht genannt).
+      - AUSLOSUNG „Skisprung“: in jeder Siegegruppe (nach Reihung) Erster gegen Letzten, Zweiter gegen Vorletzten …,
+        die Mitte gegeneinander (30 Spieler: 1–30, 2–29 … 15–16).
+      - FREILOS bei ungeradem Feld: der beste Spieler der unteren Hälfte der Reihung; niemand zweimal (sonst der
+        nächste); Freilos farbig markiert.
+      - Mindestens 5 Runden.
+      - ANNAHMEN (Nutzer hat nur die Regeln oben bestätigt, Rest offen gelassen – so umsetzen und dem Nutzer sagen):
+        ungerade Siegegruppe → TTR-Schwächster rutscht in die nächstniedrigere Gruppe; Wiederholungen vermeiden
+        (nächstmöglicher Gegner, nur wenn unvermeidbar wiederholen); Standard 5 Runden, änderbar, plus „Weitere Runde“
+        als Platzierungsrunde; „Spieler pausieren lassen“ je Runde (nicht ausgelost, Stand bleibt).
+      - KEINE PHASE 2 (Nutzer 18.11.2026, 21:02): Badeni UND Schweizer System haben keine Folgephase – das Endergebnis
+        ist die Reihung nach der letzten Runde. Für das Schweizer System sperrt HTS das schon heute
+        (createNextPhase: „Nach dem Schweizer System gibt es keine weitere Phase.“) – für Badeni genauso umsetzen.
+
+   6. PHASE 2 „FORTGESETZTES K.-O.-SYSTEM“ (WO 7.3; vorher „modifiziertes KO-System“, umbenannt 18.11.2026; Issue #96,
+      für 1.2.0): NUR als Phase 2 nach Gruppenphase.
+      Wie einfaches KO, aber Verlierer bestimmter Runden spielen gegen die in derselben Runde Unterlegenen um die Plätze
+      des Gesamtfeldes (Halbfinal-Verlierer um 3–4, Viertelfinal-Verlierer um 5–8, Achtelfinale um 9–16 …).
+      - Beim Erstellen wählbar: „Alle Plätze ausspielen“ oder „ab Achtelfinale / Viertelfinale / Halbfinale“; Verlierer
+        früherer Runden teilen sich den Platz (z. B. 17.–32.).
+      - Aufsteiger je Gruppe wie normales KO; Freilose, Setzung, Drag & Drop, Anzeige, Drucken wie gewohnt (auch in den
+        Platzierungsbäumen, dort ggf. Freilose, wenn weniger Verlierer).
+      - EIN Reiter „Phase 2 – Fortgesetztes K.-o.-System“: oben Hauptbaum, darunter Bäume „Platz 3–4“, „Platz 5–8“, „Platz 9–16“ …;
+        Drucken gemeinsam oder je Baum.
+      - Endergebnis und click-TT-Export mit den ausgespielten Plätzen.
+
+   7. PHASE 3 (Nutzer 18.11.2026, Issue #97, für 1.2.0): Eine Klasse kann eine 3. Phase haben, wenn Phase 2 ebenfalls
+      eine Gruppenphase (GROUPS) ist. Bisher Tournament.MAX_PHASES = 2 (canHaveNextPhase: nur nach GROUPS).
+      ANNAHMEN (dem Nutzer gesagt): Phase 3 bietet dieselben Arten wie Phase 2 nach Gruppen (KO, Gruppen,
+      Qualifikation, Haupt-/Trostrunde, fortgesetztes KO); höchstens 3 Phasen (MAX_PHASES = 3, Phase 4 nicht);
+      Endergebnis: Phase 3 vorne, übrige nach Platz in Phase 2, dann Phase 1; Reiter „Phase 3 – …“, PDF, Präsentation,
+      click-TT-Export (Spiele aller Phasen; Ergebnis-Import liest weiter nur Phase 1) wie bei Phase 2; Turnierdateien
+      kompatibel (Phasen-Kette über source/follow-up).
+      EINSCHRÄNKUNG (Nutzer 18.11.2026, 21:18): Phase 3 NUR nach Phase 2 = „Gruppen nach Leistungsstufen“ (nicht nach
+      einer normalen Gruppenphase). Phase 3 bietet vorerst NUR die Art „Endrunde je Gruppenplatz“ (Nutzer 21:22) – die
+      Annahme „dieselben Arten wie Phase 2“ ist damit hinfällig.
+      ERWEITERUNG (Nutzer 18.11.2026, Vorbild Top-48-Bundesranglistenturnier Jugend 19 Wiesbaden, Ergebnis-PDF
+      https://hamburg-tischtennis.de/shared-files/5093/?Ergebnisse.pdf; 48 TN, Phase 1 = 8 Gruppen A–H zu 6):
+      a) Phase 2 „GRUPPEN NACH LEISTUNGSSTUFEN“: einstellbar Stufen aus Vorrundenplätzen (1–2 → Gruppen 01–04, 3–4 →
+         05–08, 5–6 → 09–12) und Gruppengröße (4); alle kommen weiter. Gruppenbildung gespiegelt (A+H, B+G, C+F, D+E:
+         Gruppe 01 = A1, A2, H1, H2) als Standard, wahlweise ausgelost (ANNAHME, Nutzer nicht festgelegt). KEINE Übernahme
+         von Ergebnissen (A1 spielt erneut gegen A2). Gruppennamen fortlaufend (01–12 bzw. nach A–H weiter I–T).
+      b) Phase 3 „ENDRUNDE JE GRUPPENPLATZ“: Gleichplatzierte der 4 Gruppen einer Stufe = 4er-Block; Halbfinale Gruppe
+         1.–4. und 2.–3. (z. B. 01/1–04/1, 02/1–03/1), dann Spiel um Platz x und x+2; Platzbereiche automatisch: Stufe 1
+         Erste 1–4, Zweite 5–8, Dritte 9–12, Vierte 13–16; Stufe 2 17–32; Stufe 3 33–48. 12 Blöcke × 4 Spiele = 48.
+         Endergebnis lückenlos 1–48 (click-TT ebenso).
+
+   8. PHASE 2 „TOP24-PLATZIERUNGSSPIELE“ (Nutzer 18.11.2026, Issue #98, für 1.2.0; Vorbild Top-24-Bundesranglisten-
+      turnier Jugend 19/15 Ettlingen 02/2024, PDF erg_jug-23-24-DTTB-TOP24-ergebnisse-1.pdf; alle 4 Konkurrenzen gleich):
+      Nach Phase 1 = 4 Gruppen A–D zu 6 spielen alle 24 in 44 Spielen die Plätze 1–24 aus. Kein reines 7.3 (Verlierer
+      der oberen Stufe treffen auf SIEGER der nächsten Stufe = gestaffelter Einstieg).
+      - Runde 1 (Sp. 1–12): 1–2 über Kreuz B1–A2, A1–B2, D1–C2, C1–D2; 3–4: D3–C4, C3–D4, B3–A4, A3–B4; 5–6: D5–C6,
+        A5–B6, B5–A6, C5–D6.
+      - HF (21, 22): W1–W3, W2–W4; Finale 33, Platz 3 34.
+      - Runde 2: 13 L4–W7, 14 L1–W5, 15 L2–W6, 16 L3–W8; 17 W10–L5, 18 W12–L7, 19 W11–L6, 20 W9–L8.
+      - Platz 5–8: 23 W13–W16, 24 W14–W15 → 35 (Pl. 5), 36 (Pl. 7); 9–12: 25 L13–L15, 26 L14–L16 → 37, 38;
+        13–16: 27 W17–W19, 28 W18–W20 → 39, 40; 17–20: 29 L17–L19, 30 L18–L20 → 41, 42; 21–24: 31 L9–L10,
+        32 L11–L12 → 43, 44.
+      - Intern als Platzierungsplan aus Vorlage (je Spiel Herkunft „Gruppe B Platz 1“ / „Verlierer Spiel 4“, Plätze für
+        Sieger/Verlierer) – später weitere Vorlagen; evtl. Basis für #96/#97.
+      - Anzeige wie KO-Baum mit Platzierungsblöcken, Drucken, Präsentation; Endergebnis/click-TT lückenlos 1–24.
+      - WÄHLBAR (Nutzer 18.11.2026, 21:32): der Einfachheit halber IMMER nach einer Gruppenphase in Phase 1.
+        ANNAHME für abweichende Felder: der Plan nutzt Gruppen A–D und Plätze 1–6; fehlende Gruppenplätze =
+        Freilos; weitere Gruppen bzw. Plätze ab 7 spielen nicht mit und werden im Endergebnis nach Gruppenplatz dahinter
+        eingereiht (Hinweis beim Erstellen der Phase 2).
+   9. DOPPELTES K.-O.-SYSTEM (WO 7.4) (Nutzer 18.11.2026, Issue #99, für 1.2.0): Ausscheiden erst nach der zweiten
+      Niederlage, bis einschließlich Endspiel; Verlierer in die Trostrunde mit „Kreuzen“ (wiederholte Begegnungen
+      weitgehend vermeiden, sonst trotzdem austragen); haben nach dem Endspiel beide Finalisten je eine Niederlage →
+      Stichkampf. Turnierliste/Freilose wie WO D 7.2.
+      ANNAHMEN: wählbar wie einfaches KO (Phase 1 direkt oder Phase 2 nach Gruppen); Siegerrunde und Trostrunde als zwei
+      Bäume in einem Reiter; Endergebnis 1., 2., 3., weitere nach Ausscheiderunde in der Trostrunde (geteilt); click-TT
+      mit allen Spielen.
+
+   10. PHASE 2 „TOP32-PLATZIERUNGSSPIELE“ (Nutzer 18.11.2026, Issue #100, für 1.2.0) – EIGENE, GETRENNT WÄHLBARE OPTION
+      neben TOP24 (Nutzer 21:38: keine automatische Wahl nach Gruppengröße).
+      Vorbild Top 32 Jugend 13 Bergisch Gladbach,
+        docs/referenz/TOP32-Ergebnisse-Jugend13.pdf: 4 Gruppen zu 8, 60 Spiele, Plätze 1–32; gleiches Muster plus
+        4. Stufe: Runde 1 Sp. 13–16 = Plätze 7–8 (D7–C8, A7–B8, B7–A8, C7–D8); HF 29, 30 (W1–W3, W2–W4), Finale 45,
+        Platz 3 46; Runde 2: 17 L4–W7, 18 L1–W5, 19 L2–W6, 20 L3–W8; 21 W10–L5, 22 W12–L7, 23 W11–L6, 24 W9–L8;
+        25 W13–L10, 26 W14–L11, 27 W15–L9, 28 W16–L12; Blöcke: 5–8 = 31 W17–W20, 32 W18–W19 → 47/48; 9–12 = 33
+        L17–L20, 34 L18–L19 → 49/50; 13–16 = 35 W21–W23, 36 W22–W24 → 51/52; 17–20 = 37 L21–L23, 38 L22–L24 → 53/54;
+        21–24 = 39 W25–W27, 40 W26–W28 → 55/56; 25–28 = 41 L25–L27, 42 L26–L28 → 57/58; 29–32 = 43 L13–L15,
+        44 L16–L14 → 59/60.
+      - Wählbar wie TOP24: immer nach einer Gruppenphase in Phase 1; Plan nutzt Gruppen A–D und Plätze 1–8; fehlende
+        Gruppenplätze = Freilos; weitere Gruppen bzw. Plätze ab 9 spielen nicht mit und stehen im Endergebnis nach
+        Gruppenplatz dahinter (Hinweis beim Erstellen). Intern dieselbe Platzierungsplan-Vorlage wie TOP24.
+
 
 1.1.0-NACHTRAG: LINUX- UND MACOS-PAKET (Issue #90): FÜR 1.1.0 NACHGELIEFERT (15.11.2026) als hts-1.1.0-linux.tar.gz und
    hts-1.1.0-macos.tar.gz (Dateien vom Nutzer: Temurin 21.0.13+9 JRE Linux x64 / macOS aarch64, JavaFX 21.0.8 linux /

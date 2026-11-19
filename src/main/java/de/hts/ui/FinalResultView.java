@@ -22,6 +22,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -40,6 +41,9 @@ final class FinalResultView {
     private final javafx.scene.control.Button pdf = new javafx.scene.control.Button("Als PDF anzeigen / drucken");
     private final java.util.function.Consumer<String> status;
     private PlayingClass shown;
+    /** 1.2 (#94): Haupt- und Trostrunde – getrennte Wertungen; „gesamt“ = Reihenfolge für click-TT. */
+    private final javafx.scene.control.ComboBox<String> section = new javafx.scene.control.ComboBox<>();
+    private static final String COMBINED = "Gesamt (Reihenfolge im click-TT-Export)";
 
     FinalResultView(Tournament tournament, java.util.function.Consumer<String> status) {
         this.tournament = tournament;
@@ -86,7 +90,12 @@ final class FinalResultView {
         javafx.scene.layout.HBox.setHgrow(gap, Priority.ALWAYS);
         javafx.scene.layout.HBox top = new javafx.scene.layout.HBox(10, head, gap, pdf);
         top.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        root.getChildren().addAll(top, sub, table);
+        section.managedProperty().bind(section.visibleProperty());
+        section.setVisible(false);
+        section.valueProperty().addListener((o, a, b) -> {
+            if (b != null && shown != null && !updatingSection) fill(tournament.rootOf(shown));
+        });
+        root.getChildren().addAll(top, sub, section, table);
         root.setPadding(new Insets(10, 0, 0, 0));
     }
 
@@ -116,7 +125,35 @@ final class FinalResultView {
                     + "(KO: noch im Wettbewerb bzw. geteilter Platz; Gruppen: aktueller Tabellenplatz)."
                     : "Die Klasse ist noch nicht gestartet – die Tabelle füllt sich mit den Ergebnissen.");
         }
-        table.getItems().setAll(r.rows());
+        List<Tournament.ResultSection> secs = tournament.finalResultSections(first);
+        updatingSection = true;
+        try {
+            List<String> names = new java.util.ArrayList<>();
+            if (secs.size() > 1) {
+                for (Tournament.ResultSection x : secs) names.add(x.title());
+                names.add(COMBINED);
+            }
+            if (!section.getItems().equals(names)) {
+                String cur = section.getValue();
+                section.getItems().setAll(names);
+                section.setValue(names.contains(cur) ? cur : names.isEmpty() ? null : names.get(0));
+            }
+            section.setVisible(secs.size() > 1);
+        } finally {
+            updatingSection = false;
+        }
+        fill(first);
+    }
+
+    private boolean updatingSection;
+
+    private void fill(PlayingClass first) {
+        List<Tournament.ResultSection> secs = tournament.finalResultSections(first);
+        List<Tournament.Placing> rows = tournament.finalResult(first).rows();
+        if (secs.size() > 1 && section.getValue() != null && !COMBINED.equals(section.getValue())) {
+            for (Tournament.ResultSection x : secs) if (x.title().equals(section.getValue())) rows = x.rows();
+        }
+        table.getItems().setAll(rows);
         Ui.fitColumns(table);                      // 0.36: Spalten so breit wie ihr Inhalt
     }
 

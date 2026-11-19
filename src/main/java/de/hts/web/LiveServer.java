@@ -426,9 +426,10 @@ public final class LiveServer {
         return switch (c.getMode()) {
             case GROUPS -> "Gruppenphase";
             case KNOCKOUT -> "KO-System";
-            case SWISS -> "Schweizer System";
+            case SWISS -> c.isBadeni() ? "Schweizer System (Badeni)" : "Schweizer System";
             case PLACEMENT -> "Platzierungsspiele";
             case QUALIFICATION -> "Qualifikation";
+            case PLAN -> c.getPlan() == null ? "Platzierungsplan" : c.getPlan().getKind().getLabel();
             default -> "";
         };
     }
@@ -439,7 +440,7 @@ public final class LiveServer {
         if (phase.getMode() == TournamentMode.GROUPS || phase.getMode() == TournamentMode.PLACEMENT || phase.getMode() == TournamentMode.SWISS) {
             for (int g = 0; g < phase.getGroups().size(); g++) {
                 final int gi = g;
-                b.append("<h3>").append(phase.getMode() == TournamentMode.SWISS ? "Tabelle" : "Gruppe " + GroupDraw.groupName(g)).append("</h3>");
+                b.append("<h3>").append(phase.getMode() == TournamentMode.SWISS ? "Tabelle" : "Gruppe " + t.groupLabel(phase, g)).append("</h3>");
                 b.append("<div class=\"card\">").append(standingsTable(phase, g, person)).append("</div>");
                 for (Match m : ms) if (m.getGroupIndex() == gi || (phase.getMode() == TournamentMode.SWISS)) b.append(matchLine(m, person));
                 if (phase.getMode() == TournamentMode.SWISS) break;
@@ -462,13 +463,18 @@ public final class LiveServer {
         PlayingClass root = name == null ? null : t.findClass(name).map(t::rootOf).orElse(null);
         if (root == null) return "";
         Tournament.FinalResult r = t.finalResult(root);
-        StringBuilder b = new StringBuilder("<div class=\"card\"><table><tr><th>Platz</th><th>Name</th><th>Ermittelt durch</th></tr>");
-        for (Tournament.Placing p : r.rows()) {
-            b.append("<tr><td>").append(esc(p.placeText())).append("</td><td>").append(esc(p.entrant().name()))
-                    .append(p.entrant().detail() != null ? "<div class=\"muted\">" + esc(p.entrant().detail()) + "</div>" : "")
-                    .append("</td><td class=\"muted\">").append(esc(p.info())).append("</td></tr>");
+        StringBuilder b = new StringBuilder();
+        List<Tournament.ResultSection> secs = t.finalResultSections(root);
+        for (Tournament.ResultSection sec : secs.size() > 1 ? secs : List.of(new Tournament.ResultSection("", r.rows()))) {
+            if (!sec.title().isEmpty()) b.append("<h3>").append(esc(sec.title())).append("</h3>");
+            b.append("<div class=\"card\"><table><tr><th>Platz</th><th>Name</th><th>Ermittelt durch</th></tr>");
+            for (Tournament.Placing p : sec.rows()) {
+                b.append("<tr><td>").append(esc(p.placeText())).append("</td><td>").append(esc(p.entrant().name()))
+                        .append(p.entrant().detail() != null ? "<div class=\"muted\">" + esc(p.entrant().detail()) + "</div>" : "")
+                        .append("</td><td class=\"muted\">").append(esc(p.info())).append("</td></tr>");
+            }
+            b.append("</table></div>");
         }
-        b.append("</table></div>");
         if (r.rows().isEmpty()) b = new StringBuilder("<p class=\"muted\">Noch keine Platzierungen.</p>");
         return page((r.complete() ? "Endergebnis " : "Zwischenstand ") + root.getName(), b.toString(), true);
     }
@@ -538,7 +544,7 @@ public final class LiveServer {
             PlayingClass c = t.findClass(m.getClassName()).orElse(null);
             if (c == null || m.getGroupIndex() < 0 || !(c.getMode() == TournamentMode.GROUPS || c.getMode() == TournamentMode.PLACEMENT)) continue;
             if (!shown.add(c.getName() + "#" + m.getGroupIndex())) continue;
-            b.append("<h2>Meine Gruppe – ").append(esc(className(m))).append(", Gruppe ").append(GroupDraw.groupName(m.getGroupIndex())).append("</h2>");
+            b.append("<h2>Meine Gruppe – ").append(esc(className(m))).append(", Gruppe ").append(t.groupLabel(c, m.getGroupIndex())).append("</h2>");
             b.append("<div class=\"card\">").append(standingsTable(c, m.getGroupIndex(), id)).append("</div>");
         }
         if (!done.isEmpty()) {

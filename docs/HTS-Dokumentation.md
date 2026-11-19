@@ -3,17 +3,18 @@
   Diese Datei ist die fortschreibbare Fassung der Dokumentation. Für neue Versionen:
   einfach diese Datei (am besten zusammen mit dem Quellcode-ZIP) wieder an Claude geben
   und um die Änderungen der neuen Version erweitern lassen.
-  Stand: 11.11.2026 · Programmversion 0.41.0
+  Stand: 19.11.2026 · Programmversion 1.2.0
 -->
 
 # HTS – Hamburger Turniersoftware: Dokumentation
 
-Stand: 11.11.2026 · Programmversion **0.41.0**
+Stand: 19.11.2026 · Programmversion **1.2.0**
 
 ## Versionsverlauf der Dokumentation
 
 | Datum | Programmversion | Änderung |
 | --- | --- | --- |
+| 19.11.2026 | 1.2.0 | Nachtrag 0.42.0–1.2.0: Lizenz AGPL-3.0, Turnierdateien früherer Versionen bleiben lesbar (0.42.0); Startgebühren mit Kassenübersicht, Zeitplan je Klasse, Export-Knöpfe und aktualisierte Teilnehmerliste, Warteschlange je Klasse in der Präsentationsansicht, Handy-Zugang ausgeblendet (1.0.0); Startzeiten im Zeitplan, Startgebühren überarbeitet (bezahlt = angemeldet, „Gebühr erlassen“), Linux und macOS, Bedienung auf Windows-Tablets (1.1.0); neue Phasentypen: Haupt- und Trostrunde, fortgesetztes und doppeltes K.-o.-System, Gruppen nach Leistungsstufen mit Phase 3, TOP24-/TOP32-Platzierungsspiele sowie das Schweizer System nach Badeni (1.2.0) |
 | 11.11.2026 | 0.41.0 | Nachtrag der Versionen 0.31.0–0.41.0: Vorgabeturnier sowie 2er und 3er Turnier, Anwesenheit am Turniertag (Meldungen, „Angemeldet“, Startsperre für importierte Klassen), Handy-Zugang mit Live-Anzeige und Anmeldung per QR-Code (Seite „Mobile Einstellungen“), Setzplatz und durchsuchbarer Vereinsfilter, Qualifikationsmodus überarbeitet (KO-Qualifikation je Gruppe oder insgesamt, Runden einzeln starten, Entscheidung nach Runde 1, Herkunft „A2“), KO-Folgephase mit bestimmten Gruppenplätzen, Phase vorzeitig beenden bzw. neu starten, feste Spielreihenfolge in Gruppen, Vereinsgleichheit „Schwächster zu Stärkstem“, Tischzuordnung „Haken = darf spielen“, kompakter Klassenkopf, Texte nie abgekürzt, Satzeingabe ohne Vorzeichen |
 | 04.11.2026 | 0.30.0 | Nachtrag 0.29.0 und 0.30.0: Präsentationsansicht für den zweiten Bildschirm (Auswahl je Klasse mit Status, Seiten ohne zerschnittene Karten, Gruppen im 2×2-Raster, Tische nach Auflösung), Info-Knopf und Lizenz GPL 3.0, kompakter Kopfbereich, Klasse öffnet die aktuellste Phase, Setzung „Gruppenkopf gesetzt“, Import (Einzel direkt in die Klasse, Doppel ohne Partner/in unter „Verfügbar“), Vereinsfilter nur noch im Doppel, Suche und automatisches Blättern bei den Doppelpaarungen, Doppel-TTR bei fehlenden Werten, festes Los als letztes Kriterium in Tabellen |
 | 03.11.2026 | 0.28.0 | Nachtrag der Versionen 0.21.0–0.28.0: Testturnier und Simulation, Turnier kopieren, fertiges Turnier aus click-TT importieren, Suche über Vorname/Nachname/Verein (auch im KO-Baum, Enter springt zum nächsten Treffer), KO-Baum mit Pfaden, fixierten Rundentiteln und Statusfarben, Schalter „Spiel um Platz 3“, Doppelregeln und „Partner zulosen“, Qualifikationsmodus neu (HEM-Logik, Nachrücker je Gruppe, freie Auslosung, Zusatzrunde), Tische benennen und deaktivieren, neue PDFs (KO-Turnierbaum, Gruppen zweispaltig), Leistung und Hardware |
@@ -24,14 +25,15 @@ Stand: 11.11.2026 · Programmversion **0.41.0**
 
 ## 1. Überblick
 
-HTS (Hamburger Turniersoftware) organisiert Tischtennisturniere von der Meldeliste bis zur click-TT-Ergebnisdatei. Diese Dokumentation beschreibt Version 0.41.0. HTS ist freie Software unter der GNU Affero General Public License v3.0 oder später (AGPL-3.0-or-later, seit 0.42.0; bis 0.41.0 GPL 3.0); Wünsche und Fehler nimmt das GitHub-Projekt als Issue entgegen (Label „Feature“ bzw. „bug“).
+HTS (Hamburger Turniersoftware) organisiert Tischtennisturniere von der Meldeliste bis zur click-TT-Ergebnisdatei. Diese Dokumentation beschreibt Version 1.2.0. HTS ist freie Software unter der GNU Affero General Public License v3.0 oder später (AGPL-3.0-or-later, seit 0.42.0; bis 0.41.0 GPL 3.0); Wünsche und Fehler nimmt das GitHub-Projekt als Issue entgegen (Label „Feature“ bzw. „bug“).
 
 Das Programm deckt den ganzen Turniertag ab:
 
 - Teilnehmende aus click-TT importieren oder von Hand erfassen
 - Klassen (Konkurrenzen) anlegen und Teilnehmende zuordnen, auch Doppel
-- Modus festlegen und auslosen: KO-System, Gruppenphase oder Schweizer System
-- bis zu zwei Phasen je Klasse, z. B. Gruppen, dann KO-System
+- Modus festlegen und auslosen: KO-System, Gruppenphase, Schweizer System (auch nach Badeni) oder doppeltes K.-o.-System
+- bis zu drei Phasen je Klasse, z. B. Gruppen, dann KO-System, Haupt- und Trostrunde, TOP24/TOP32 oder Gruppen nach Leistungsstufen mit anschließender Endrunde
+- Startgebühren je Klasse mit Kassenübersicht und Quittungen, Zeitplan mit Startzeiten je Runde
 - Tische automatisch belegen, Spielzettel drucken, Ergebnisse Satz für Satz erfassen
 - Endergebnisse als PDF und die Ergebnisdatei für den click-TT-Upload erzeugen
 - Qualifikationen nach dem Muster der Hamburger Einzelmeisterschaften (HEM): Vor- und Hauptqualifikation mit Nachrückerrängen
@@ -44,7 +46,7 @@ Das Programm deckt den ganzen Turniertag ab:
 
 | Punkt | Mindestens | Empfohlen |
 | --- | --- | --- |
-| Betriebssystem | Windows 10 oder 11, 64 Bit (x64) | Windows 11 |
+| Betriebssystem | Windows 10 oder 11, 64 Bit (x64); seit 1.1.0 auch Linux (x86_64) und macOS auf Apple-Rechnern mit M-Chip | Windows 11 |
 | Java | nicht nötig, eine Java-Laufzeit (Temurin 21) liegt bei | – |
 | Prozessor | Zweikern-Prozessor der letzten rund 10 Jahre | Vierkern-Prozessor |
 | Arbeitsspeicher | 4 GB | 8 GB |
@@ -55,7 +57,7 @@ Das Programm deckt den ganzen Turniertag ab:
 | Internet | nicht nötig, HTS läuft vollständig offline | – |
 | WLAN-Router | nur für den Handy-Zugang (Abschnitt 11): Laptop und Handys im selben WLAN, ohne Internetanschluss | Haupt-WLAN eines Routers, kein Gäste-WLAN |
 
-Windows auf ARM-Prozessoren sollte über die x64-Emulation von Windows 11 funktionieren, ist aber nicht geprüft.
+Windows auf ARM-Prozessoren sollte über die x64-Emulation von Windows 11 funktionieren, ist aber nicht geprüft. Die macOS-Fassung ist noch nicht auf einem echten Mac geprüft. Auf **Windows-Tablets** lässt sich HTS mit dem Finger bedienen (seit 1.1.0): Sobald ein Finger den Bildschirm berührt, werden Knöpfe, Tabellenzeilen, Menüs und Bildlaufleisten größer; langes Antippen öffnet das Kontextmenü wie ein Rechtsklick, Wischen blättert.
 
 ### Leistung
 
@@ -79,6 +81,8 @@ Speicher: Die Turnierdaten selbst brauchen nur wenige MB. Den meisten Platz bele
 1. Die Datei `hts-<Version>-windows.zip` in einen beliebigen Ordner entpacken (Rechtsklick → „Alle extrahieren …“, nicht direkt aus dem ZIP starten).
 2. Im Ordner `hts-dist` auf **HTS starten.bat** doppelklicken.
 3. Es öffnet sich die Turnierübersicht. Eine Installation oder Administratorrechte sind nicht nötig.
+
+**Linux** (seit 1.1.0): `hts-<Version>-linux.tar.gz` entpacken (z. B. `tar xzf hts-1.2.0-linux.tar.gz`) und im Ordner `hts-linux` **HTS starten.sh** ausführen. **macOS** (Apple-Rechner mit M-Chip): `hts-<Version>-macos.tar.gz` entpacken; beim ersten Mal Rechtsklick auf **HTS starten.command** → „Öffnen“ (die App ist nicht signiert), danach genügt ein Doppelklick. Java ist in beiden Paketen enthalten; die Turniere liegen im Ordner `HTS Turniere` unter „Dokumente“ des Benutzers.
 
 Für ein Update wird die neue ZIP-Datei ebenso entpackt. Die Turniere liegen getrennt vom Programm und bleiben erhalten. Meldet die Startdatei „keine Java-Laufzeit gefunden“, fehlt neben `hts.jar` der Ordner `jre` – meist wurde aus dem ZIP heraus gestartet oder die Startdatei verschoben (für den Desktop nur eine Verknüpfung anlegen).
 
@@ -194,6 +198,16 @@ Die Spalte **„Angemeldet“** bedeutet: am Turniertag anwesend. Sie lässt sic
 
 **Nachrücker** (nur auf Wartelisten) zählen nicht zu den Angemeldeten: Sie haben kein Kästchen und keine Zeilenfarbe, zählen nicht in der Statuszeile, blockieren keinen Start und können sich nicht per Handy an- oder abmelden. Wird ein Nachrücker in eine Klasse übernommen, gilt er automatisch als angemeldet. Die Statuszeile unten zeigt z. B. „48 Teilnehmende · 36 angemeldet · 4 abgemeldet · 4 Abmeldung(en) zu bestätigen“.
 
+### Startgebühren
+
+Seit 1.0.0, überarbeitet in 1.1.0. Die Gebühr einer Person ist die Summe der Startgebühren ihrer Einzelklassen (Doppel ohne Gebühr) plus ggf. die Nachmeldegebühr. Die Seite „Teilnehmende“ zeigt die Spalten „Gebühr“ und „Bezahlt“.
+
+- **Bezahlen:** über **Aktion für Markierte wählen ▾** oder Rechtsklick – **Bezahlt – bar**, **Bezahlt – Überweisung**, **Gebühr erlassen** (mit optionalem Grund, erscheint in der Kassenübersicht) und **Zahlung rückgängig** (Anmeldung und Klassen bleiben). Gesammelt je Verein über **Startgebühren ▾ → Verein abrechnen …** mit Quittung als PDF; dazu eine **Kassenübersicht** als PDF.
+- **Bezahlt heißt angemeldet:** Wer als bezahlt oder erlassen markiert wird, gilt automatisch als angemeldet – angemeldet heißt aber nicht bezahlt.
+- **In die Klassen kommen nur Bezahlte:** Unter „Verfügbar“ stehen vor dem Turnierstart nur Bezahlte; „Alle anwesenden Gemeldeten übernehmen“ nimmt nur Bezahlte. Nach dem Turnierstart erscheinen Angemeldete ohne Zahlung hellblau markiert (auch in „Teilnehmende“ mit Hinweis und „Nur diese zeigen“) und lassen sich übernehmen – oder gleich mit **Bezahlt – bar und in die Klasse**.
+- Beim Start einer Klasse warnt HTS vor offenen Gebühren; der Start bleibt möglich.
+- Ob Quittungen und Kassenübersicht eine Kassensicherung (TSE) erfordern, bitte mit dem Kassenwart bzw. Steuerberater klären.
+
 ## 4. Klassen
 
 Eine Klasse ist eine Konkurrenz, z. B. „Mädchen U15 Einzel“. Links steht die Liste der Klassen, rechts die gewählte Klasse mit ihren Reitern.
@@ -211,6 +225,13 @@ Eine Klasse ist eine Konkurrenz, z. B. „Mädchen U15 Einzel“. Links steht di
 
 Jugendliche dürfen sich zusätzlich bei Erwachsenen bzw. Damen melden. Jahrgangsgrenzen sind optional (z. B. „Jg. 2012 und jünger“). Die Höchstzahl ist nur eine Kontrolle: Wer über der Grenze gemeldet ist, wird hervorgehoben.
 
+**Startgebühr** (seit 1.0.0): Jede Klasse hat eine Startgebühr – aus click-TT vorbelegt, im Dialog änderbar. Gebühren zählen nur für Einzelklassen; Doppel sind gebührenfrei. Die Nachmeldegebühr gilt je Turnier für alle, die nicht in der click-TT-Datei standen (Turnierübersicht → **Bearbeiten**). Zahlung und Kasse: Abschnitt 3, „Startgebühren“.
+
+**Zeitplan** (seit 1.0.0): Mit „mit Zeitplan“ und den Minuten je Runde beginnt Runde n frühestens Start + (n − 1) × Rundendauer; die Runden werden nacheinander eingereiht. Ist eine Runde vor dem Zeitplan fertig, fragt HTS je Gruppe bzw. Runde „Jetzt starten“ oder „Warten bis hh:mm Uhr“; wartende Runden stehen im Phasen-Reiter mit **Runde jetzt starten** und werden zur geplanten Zeit automatisch eingereiht. Seit 1.1.0:
+
+- **Startzeit:** Optional eine Uhrzeit (höchstens 12 Stunden vor oder nach jetzt); leer = ab dem Start der Klasse. Liegt die Startzeit in der Zukunft, wartet Runde 1 bis dahin („Runde jetzt starten“ zieht sie vor); liegt sie in der Vergangenheit, laufen die fälligen Runden ohne Wartefrage nacheinander. Auch nach dem Start lässt sie sich verschieben – noch nicht gestartete Runden bekommen neue Zeiten.
+- **Anzeige:** Hinter jeder Runde steht die geplante Zeit, z. B. „R2 · ab 14:25“ – in der Phasenübersicht, im PDF der Phase, auf den Gruppenaushängen, in der Präsentationsansicht und bei den Platzierungsplänen. Vor dem Start erscheint keine Zeit (außer es ist eine Startzeit eingestellt).
+
 **Klasse bearbeiten** ist möglich, bis in Phase 1 das erste Ergebnis eingetragen ist; danach zeigt der Dialog die Einstellungen nur noch zum Lesen. Im Vorgabeturnier gibt es nur „Erwachsene“ und „Damen“.
 
 **Klasse löschen** (Knopf „Löschen“ oder Taste **Entf** in der Klassenliste) fragt nach und nennt, was verloren geht – nur, was es in der Klasse wirklich gibt: Zuordnungen, Meldungen, Auslosung, Phasen, eingetragene Ergebnisse. Vorausgewählt ist „Abbrechen“. Gibt es Ergebnisse, folgt eine zweite Rückfrage.
@@ -220,7 +241,7 @@ Jugendliche dürfen sich zusätzlich bei Erwachsenen bzw. Damen melden. Jahrgang
 ### Reiter einer Klasse
 
 - **Teilnehmende der Klasse** – Zuordnung und Doppelpaarungen
-- **Phase 1, Phase 2** – erscheinen erst nach „Modus festlegen“, z. B. „Phase 1 – Gruppenübersicht“, „Phase 2 – KO-System“
+- **Phase 1, Phase 2, Phase 3** – erscheinen erst nach „Modus festlegen“, z. B. „Phase 1 – Gruppenübersicht“, „Phase 2 – KO-System“; bei Haupt- und Trostrunde zwei Reiter „Phase 2 – Hauptrunde“ und „Phase 2 – Trostrunde“ (seit 1.2.0)
 - **Endergebnis** – erscheint erst, wenn die Klasse beendet ist
 
 Wer eine Klasse in der Liste wählt, landet direkt in der **aktuellsten Phase**; bei einer beendeten Klasse im „Endergebnis“, bei einer noch nicht ausgelosten Klasse unter „Teilnehmende der Klasse“.
@@ -254,12 +275,12 @@ Stehen die Teilnehmenden fest, öffnet **Teilnehmende fertig – Modus festlegen
 
 | Einstellung | Gilt für | Auswahl |
 | --- | --- | --- |
-| Modus | alle | KO-System, Gruppenphase (jeder gegen jeden), Schweizer System |
+| Modus | alle | KO-System, Gruppenphase (jeder gegen jeden), Schweizer System, Schweizer System nach Badeni, Doppeltes K.-o.-System (die beiden letzten seit 1.2.0) |
 | Setzung | KO, Schweizer System | nach Setzung (TTR) oder zufällig |
 | Setzung | Gruppen | TTR Setzung (Schlange), TTR Setzung (Stärkegruppen), Gruppenkopf gesetzt oder zufällig |
 | Gruppen | Gruppen | Gruppengröße oder Anzahl Gruppen |
 | Bei gleichem Spielverhältnis | Gruppen | Satz- und Ballverhältnis oder direkter Vergleich |
-| Anzahl Runden | Schweizer System | Vorschlag: Runden eines KO-Systems + 1 |
+| Anzahl Runden | Schweizer System | Vorschlag: Runden eines KO-Systems + 1; nach Badeni 5 |
 | Gewinnsätze | alle | 3 (Best of 5, Standard) oder 4 (Best of 7) – gilt für alle Phasen der Klasse |
 | Vereinsgleichheit beachten | KO, Gruppen | eigene Zeile mit Checkbox: an (Standard) oder aus |
 
@@ -270,7 +291,7 @@ Doppel werden nach dem Doppel-TTR gesetzt (Abschnitt 4). Die Auswahllisten im Di
 - **Neu auslosen** lost mit denselben Einstellungen neu. Bei TTR-Setzung kommt dieselbe Einteilung heraus, außer wo der Zufall mitentscheidet: bei gleichem TTR, bei Personen ohne TTR und – selten – bei der Auflösung von Vereinsgleichheiten. Außerdem wird das feste Los neu bestimmt; Tauschaktionen per Drag & Drop gehen verloren.
 - **Auslosung verwerfen** (Phase 1) bzw. **Zurück zu Phase 1** (Phase 2 wird gelöscht, Phase 1 ist wieder offen) geht, solange in der letzten Phase noch kein Ergebnis eingetragen ist – auch nach dem Start. Mit Sicherheitsabfrage; Spiele an Tischen werden zurückgezogen, die Tische sind sofort frei.
 
-**Doppelklassen:** Bei mehr als 5 Doppeln ist Phase 1 immer ein KO-System. Bis 5 Doppel stehen KO-System oder „Gruppenphase“ (eine Gruppe, jeder gegen jeden) zur Wahl. Das Schweizer System gibt es für Doppel nicht, und Vereinsgleichheit spielt bei Doppeln keine Rolle.
+**Doppelklassen:** Bei mehr als 5 Doppeln ist Phase 1 immer ein KO-System. Bis 5 Doppel stehen KO-System oder „Gruppenphase“ (eine Gruppe, jeder gegen jeden) zur Wahl. Das Schweizer System (auch nach Badeni) gibt es für Doppel nicht, und Vereinsgleichheit spielt bei Doppeln keine Rolle. Das doppelte K.-o.-System ist auch für Doppel wählbar.
 
 ### KO-System
 
@@ -318,6 +339,29 @@ So treffen sich Nr. 1 und 2 frühestens im Finale, Nr. 1/4 und 2/3 frühestens i
 - Niemand spielt zweimal gegen denselben Gegner.
 - Bei ungerader Zahl gibt es je Runde ein Freilos, bevorzugt für Tabellenletzte und höchstens eines je Person. Es zählt als Sieg.
 - Das Schweizer System gibt es nur in Phase 1, und es folgt keine weitere Phase: Nach der letzten Runde gibt es nur das Endergebnis.
+
+### Schweizer System nach Badeni
+
+Seit 1.2.0, nach der Unterlage des BaTTV (A. Enichlmayr). Alle spielen in einem Feld; je Runde bilden die Spieler mit gleich vielen Siegen eine **Siegegruppe**.
+
+- **Paarung:** Innerhalb der Siegegruppe (nach Reihung) spielt – wie beim Skispringen – der Erste gegen den Letzten, der Zweite gegen den Vorletzten …, die Mitte gegeneinander. Runde 1 ist nach TTR gereiht (bei gleichem TTR gelost).
+- **Ungerade Siegegruppe:** Der Schwächste der Gruppe spielt in der nächstniedrigeren Gruppe mit.
+- **Freilos** (ungerades Feld): der Beste der unteren Hälfte der Reihung, niemand zweimal. Es zählt als Sieg.
+- **Keine Wiederholungen:** Wäre eine Paarung schon gespielt, kommt der nächstmögliche Gegner; geht es in einer Gruppe gar nicht, spielt sie mit der nächsten zusammen. Nur wenn es überhaupt nicht anders geht, wird wiederholt.
+- **Reihung:** 1. Siege (Freilos zählt als Sieg), 2. TTR, 3. Satzdifferenz, dann Balldifferenz und festes Los – ohne Buchholz.
+- **Runden:** Vorschlag 5 (mindestens 5 empfohlen). Im Phasen-Reiter hängt **Weitere Runde** eine Runde an (z. B. als Platzierungsrunde); sie wird gepaart, sobald die laufende Runde komplett gespielt ist.
+- **Spieler pausieren:** wählt Personen, die ab der nächsten Runde nicht gepaart werden (kein Freilos); ihr Stand bleibt erhalten, das Häkchen lässt sich wieder entfernen.
+- Wie beim Schweizer System gibt es keine Phase 2 – das Endergebnis ist die Tabelle.
+
+### Doppeltes K.-o.-System
+
+Seit 1.2.0 (WO 7.4), als Modus für Phase 1 oder als Phase 2 nach einer Gruppenphase (Abschnitt 8). Auslosung wie beim KO-System (Setzliste, Freilose an die Besten, Vereinsgleichheit in Runde 1).
+
+- **Siegerrunde:** ein normales KO-System. Wer verliert, scheidet nicht aus, sondern spielt in der **Trostrunde** weiter.
+- **Trostrunde:** Die Verlierer der ersten Runde spielen gegeneinander; die Verlierer späterer Runden der Siegerrunde kommen jeweils dazu – „gekreuzt“, damit sich Begegnungen möglichst nicht wiederholen. Wer in der Trostrunde verliert, ist ausgeschieden (zweite Niederlage).
+- **Finale:** Sieger der Siegerrunde gegen Sieger der Trostrunde. Gewinnt die Siegerin/der Sieger der Trostrunde, haben beide eine Niederlage – dann folgt automatisch ein **Stichkampf**; sonst entfällt er.
+- **Plätze:** Sieger des Finales bzw. Stichkampfs 1., Verlierer 2., Verlierer im Finale der Trostrunde 3., davor 4., dann je Trostrunden-Runde ein geteilter Bereich.
+- Wird das Finale so korrigiert, dass der Stichkampf entfällt (oder nötig wird), passt HTS ihn an – nach Rückfrage, wenn er schon gespielt ist.
 
 ### Vereinsgleichheit
 
@@ -460,6 +504,8 @@ Die Seiten richten sich nach der **Auflösung des zweiten Bildschirms**. Nie wir
 
 Gruppen und Tische werden nie kleiner als die normale HTS-Schrift dargestellt – dann gibt es lieber mehr Seiten.
 
+Seit 1.0.0: **Die nächsten Spiele (alle Klassen)** mit einstellbarer Anzahl (4–48, Standard 16; mehr als 16 auf mehreren Seiten) und je laufender Klasse **Warteschlange dieser Klasse** – bei Gruppen nach jeder Seite mit Gruppen die Warteschlange genau dieser Gruppen, sonst nach den Seiten der Phase. Seit 1.1.0 stehen bei Klassen mit Zeitplan die Startzeiten der Runden dabei; seit 1.2.0 zeigt ein Platzierungsplan je Wertung (z. B. Haupt- und Trostrunde) eine eigene Seite.
+
 ## 7. Ergebnisse erfassen und korrigieren
 
 Ergebnisse werden Satz für Satz eingetragen („1. Satz“, „2. Satz“ …, Spalte „Punkte“); das Satzverhältnis rechnet HTS selbst. Die erste Zahl gehört immer zur erstgenannten Partei. Gespielt wird auf 3 oder 4 Gewinnsätze – je nach Einstellung der Klasse („Modus festlegen“). Die Einstellung lässt sich ändern, solange in der Klasse noch kein Ergebnis eingetragen ist; Ergebnisdialog und Spielzettel (bis zu 7 Sätze) passen sich an.
@@ -506,27 +552,38 @@ Die Seite listet alle Spiele aller Klassen. Gefiltert wird nach Status (standard
 
 ## 8. Wertung, Phasen und Endergebnis
 
-Eine Klasse hat höchstens zwei Phasen (eine Phase 3 gibt es nicht). Nach jeder Phase entscheidet die Turnierleitung: Endergebnis oder neue Phase. Das Bild zeigt, welche Phase worauf folgen kann.
+Eine Klasse hat höchstens drei Phasen; eine Phase 3 gibt es nur nach „Gruppen nach Leistungsstufen“ (seit 1.2.0). Nach jeder Phase entscheidet die Turnierleitung: Endergebnis oder neue Phase. Das Bild zeigt, welche Phase worauf folgen kann.
 
 ```mermaid
 flowchart LR
     subgraph P1[Phase 1]
         P1KO[KO-System]
         P1G[Gruppenphase]
-        P1S[Schweizer System]
+        P1S[Schweizer System / Badeni]
+        P1D[Doppeltes KO]
     end
     subgraph P2[Phase 2]
         P2G[Gruppenphase]
         P2KO[KO-System]
         P2P[Platzierungsspiele*]
-        P2Q[Qualifikationsmodus**]
+        P2Q[Qualifikationsmodus]
+        P2HT[Haupt- und Trostrunde]
+        P2F[Fortgesetztes KO]
+        P2D[Doppeltes KO]
+        P2T[TOP24 / TOP32]
+        P2L[Gruppen nach Leistungsstufen]
+    end
+    subgraph P3[Phase 3]
+        P3E[Endrunde je Gruppenplatz]
     end
     P1G -- neue Phase --> P2
+    P2L -- neue Phase --> P3
     P1 -- Phase abschließen --> E[Endergebnis: Klasse beendet]
     P2 -- Phase abschließen --> E
+    P3 -- Phase abschließen --> E
 ```
 
-*\* nur nach genau 2 Gruppen. \*\* nur nach Gruppen in Phase 1. Nach KO-System oder Schweizer System in Phase 1 und nach Phase 2 geht es immer zum Endergebnis.*
+*\* nur nach genau 2 Gruppen. Alle Phase-2-Typen nur nach einer Gruppenphase in Phase 1. Nach KO-System, Schweizer System, Badeni oder doppeltem KO in Phase 1 und nach Phase 2 (außer Leistungsstufen) geht es immer zum Endergebnis.*
 
 ### Gruppentabellen
 
@@ -545,11 +602,11 @@ Die Tabelle zeigt zusätzlich Punkte (Siege + Freilos), **BHZ** (Buchholz: Summe
 Wie viele Spiele noch offen sind, steht im Phasen-Reiter rechts in der Infozeile („3 Spiele offen“ bzw. „keine Spiele offen“). Sind alle gespielt, erscheint oben rechts bei den Knöpfen **Phase abschließen** mit zwei Möglichkeiten:
 
 1. **Endergebnis:** Die Klasse ist beendet, der Reiter „Endergebnis“ erscheint.
-2. **Neue Phase** (nur nach einer Gruppenphase in Phase 1): Gruppenphase, KO-System, Gruppenphase mit Platzierungsspielen oder Qualifikationsmodus, dazu die Aufsteiger und ggf. die Gruppengröße. Die neue Phase startet sofort – nur der Qualifikationsmodus wartet auf „Qualifikation Runde 1 starten“.
+2. **Neue Phase** (nach einer Gruppenphase in Phase 1): Gruppenphase, KO-System, Gruppenphase mit Platzierungsspielen, Qualifikationsmodus, Gruppen nach Leistungsstufen, Haupt- und Trostrunde, Fortgesetztes K.-o.-System (WO 7.3), Doppeltes K.-o.-System (WO 7.4), TOP24- oder TOP32-Platzierungsspiele – dazu die passenden Einstellungen. Nach „Gruppen nach Leistungsstufen“ (Phase 2) gibt es als Phase 3 die „Endrunde je Gruppenplatz“. Die neue Phase startet sofort – nur der Qualifikationsmodus wartet auf „Qualifikation Runde 1 starten“. Ungültige Einstellungen (z. B. ein Gruppenplatz in Haupt- und Trostrunde) markiert HTS mit dem Grund; „Phase abschließen“ ist dann gesperrt.
 
 **Aufsteiger in ein KO-System:** entweder **„Die Besten je Gruppe: [n]“** (wie bisher, z. B. 2 = Erste und Zweite) **oder „Bestimmte Gruppenplätze: [2,3,4]“** (durch Komma getrennt, z. B. für eine Trostrunde). Ungültige Plätze (doppelt, größer als die größte Gruppe, weniger als 2 Aufsteiger) markiert HTS rot am Feld mit dem Grund.
 
-Nach einem KO-System oder Schweizer System in Phase 1 und nach jeder Phase 2 gibt es nur das Endergebnis. Ist Phase 2 angelegt, führt der Knopf **Zu Phase 2** oben rechts dorthin.
+Nach einem KO-System, Schweizer System (auch Badeni) oder doppelten KO in Phase 1 und nach jeder Phase 2 außer „Gruppen nach Leistungsstufen“ gibt es nur das Endergebnis. Ist die Folgephase angelegt, führt der Knopf **Zu Phase 2** (bzw. 3) oben rechts dorthin. Phasen aus den neuen Typen von 1.2.0 lassen sich nicht „neu auslosen“ – stattdessen „Zurück zu Phase n“ und die Phase neu anlegen; vor dem ersten Spiel lassen sich Teilnehmende per Drag & Drop tauschen.
 
 ### KO-System ab Phase 2
 
@@ -562,6 +619,33 @@ Ab Phase 2 entscheidet die Gruppenplatzierung, nicht der TTR:
 - Im KO-Baum steht vor jedem Namen statt der Setznummer die Herkunft: Gruppenbuchstabe und Gruppenplatz, z. B. **A1** (Erster Gruppe A) oder **D3** (Dritter Gruppe D). Im KO-System der Phase 1 bleiben es die Setznummern.
 - Ein Spiel um Platz 3 lässt sich wie in Phase 1 zuschalten.
 - **Mit bestimmten Gruppenplätzen:** Die Rangliste gilt in der Reihenfolge Gruppenplatz, Spiel-, Satz- und Ballverhältnis, direkter Vergleich (nur bei gleicher Gruppe), Los; daraus ergeben sich die üblichen KO-Positionen. Im Endergebnis stehen zuerst die Gruppenplätze vor dem ersten KO-Platz (z. B. alle Gruppenersten), dann die KO-Phase, dann die übrigen Gruppenplätze; Nicht-Aufsteiger behalten ihren Gruppenplatz.
+
+### Platzierungspläne (seit 1.2.0)
+
+Haupt- und Trostrunde, fortgesetztes und doppeltes KO, TOP24/TOP32 und die Endrunde je Gruppenplatz sind **Platzierungspläne**: feste Folgen von Spielen, bei denen Sieger und Verlierer jeweils in ein bestimmtes nächstes Spiel oder auf einen bestimmten Platz gehen.
+
+- **Darstellung:** Je Abschnitt (z. B. „Hauptrunde“, „Platz 5–8“, „Trostrunde“) die Spiele in Spalten nach Spielrunde. Jede Karte zeigt beide Parteien (mit Herkunft „A1“, „D3“), Tisch, Status und Sätze, darunter, wohin es geht – z. B. „Sieger/in → Spiel 21 · Verlierer/in: Platz 7“. Offene Plätze heißen „Sieger/in Spiel n“ bzw. „Verlierer/in Spiel n“; Freilose und entfallene Spiele (z. B. ein nicht nötiger Stichkampf) sind blass.
+- **Auslosung:** aus der Rangliste der gewählten Gruppenplätze wie beim KO-System ab Phase 2 (Freilose an die Besten, Spieler derselben Gruppe möglichst in verschiedenen Hälften). Vor dem ersten Spiel lassen sich zwei Teilnehmende per Drag & Drop tauschen.
+- **Spiele** entstehen, sobald beide Gegner feststehen, und werden sofort eingereiht. Korrekturen mit anderem Sieger setzen betroffene Folgespiele nach Rückfrage zurück.
+- **PDF der Phase:** je Abschnitt die Spiele mit Paarung, Ergebnis und Weg von Sieger und Verlierer. Die Präsentationsansicht zeigt je Wertung eine Seite.
+
+### Haupt- und Trostrunde
+
+Gruppenplätze für die **Hauptrunde** (z. B. 1,2) und die **Trostrunde** (z. B. 3,4) frei wählbar; beide Runden sind KO-Systeme, jede mit zuschaltbarem Spiel um Platz 3. Es gibt zwei Reiter und zwei **getrennte Endergebnisse**: Die Trostrunde zählt eigens ab Platz 1. Im Reiter „Endergebnis“ wählt eine Auswahl zwischen Hauptrunde, Trostrunde und „Gesamt (Reihenfolge im click-TT-Export)“; das Endergebnis-PDF enthält beide. Wer in keiner der beiden Runden spielt, steht in der Hauptwertung nach Gruppenplatz dahinter. Im **click-TT-Export** zählt die Trostrunde hinter der Hauptrunde weiter – spielen 16 in der Hauptrunde, ist der Sieger der Trostrunde 17., bei 32 der 33.
+
+### Fortgesetztes K.-o.-System (WO 7.3)
+
+KO-System aus den gewählten Gruppenplätzen, in dem auch die Verlierer ihre Plätze ausspielen: Die Halbfinalverlierer spielen um Platz 3, die Verlierer des Viertelfinales in einem eigenen Baum um die Plätze 5–8, die des Achtelfinales um 9–16 usw. – jeder Baum als eigener Abschnitt untereinander im selben Reiter. **Weiterspielen** stellt ein, ab welcher Runde die Verlierer weiterspielen („alle Plätze ausspielen“ oder z. B. „ab Viertelfinale“; Verlierer früherer Runden teilen sich ihren Platz, z. B. 9.–16.).
+
+### TOP24- und TOP32-Platzierungsspiele
+
+Zwei eigene Typen nach dem Muster der DTTB-Ranglistenturniere: TOP24 für 4 Gruppen à 6, TOP32 für 4 Gruppen à 8. Gruppenerste und -zweite spielen über Kreuz (B1–A2, A1–B2, D1–C2, C1–D2) um den Einzug ins Halbfinale um Platz 1–4; die Verlierer und die Sieger der Spiele der Dritten bis Sechsten (bzw. Achten) spielen eine zweite Runde, danach werden in Halbfinals und Platzierungsspielen alle 24 bzw. 32 Plätze ausgespielt. Wählbar nach jeder Gruppenphase in Phase 1: Fehlt ein Gruppenplatz, ist er ein Freilos (die Plätze werden lückenlos durchgezählt); Teilnehmende aus weiteren Gruppen bzw. hinteren Gruppenplätzen folgen im Endergebnis nach Gruppenplatz dahinter.
+
+### Gruppen nach Leistungsstufen und Phase 3
+
+**Phase 2 „Gruppen nach Leistungsstufen“:** Die Gruppenplätze der Vorrunde werden zu Stufen zusammengefasst – **Gruppenplätze je Stufe** = 2 ergibt Stufe 1 aus allen Ersten und Zweiten, Stufe 2 aus den Dritten und Vierten usw. Je Stufe entstehen neue Gruppen mit der gewählten **Gruppengröße**, entweder **gespiegelt** (A mit der letzten Gruppe, B mit der vorletzten …; bei 8 Gruppen also A+H, B+G, C+F, D+E) oder **ausgelost**. Ergebnisse aus Phase 1 werden nicht übernommen; die Gruppennamen laufen weiter (nach A–H heißen die neuen Gruppen I, J, K …). Im Endergebnis steht eine Stufe vollständig vor der nächsten, innerhalb der Stufe nach Gruppenplatz.
+
+**Phase 3 „Endrunde je Gruppenplatz“** (nur nach Leistungsstufen): Je Stufe spielen die Gleichplatzierten der Gruppen ihre Plätze aus – bei vier Gruppen der Stufe Halbfinale (erste gegen vierte, zweite gegen dritte Gruppe), danach Finale und Spiel um Platz 3; bei zwei Gruppen ein Spiel. So bekommt jede Person einen eigenen Platz.
 
 ### Phase vorzeitig beenden
 
@@ -635,6 +719,11 @@ Der Reiter „Endergebnis“ listet alle Platzierungen über alle Phasen. Wer in
 | mehrere Gruppen | alle Gruppenersten teilen sich Platz 1 bis n, alle Zweiten die nächsten Plätze usw. |
 | Platzierungsspiele | Endgruppe 1.–4., dann je Spiel Sieger x., Verlierer x+1. |
 | Qualifikationsmodus | direkt Qualifizierte (geteilter Bereich), über die KO-Runde Qualifizierte (geteilter Bereich), dann Nachrücker Rang 1, 2, … (Einzelplätze), dann die übrigen nach Gruppenplatz (gleicher Gruppenplatz = gleicher Platz) |
+| Haupt- und Trostrunde | zwei getrennte Wertungen wie im KO-System; für click-TT die Trostrunde hinter der Hauptrunde |
+| fortgesetztes KO, TOP24/TOP32, Endrunde je Gruppenplatz | jeder Platz ausgespielt (bzw. geteilter Bereich vor der eingestellten Runde); Freilose werden übersprungen |
+| doppeltes KO | Finale bzw. Stichkampf 1./2., Finale der Trostrunde 3./4., dann je Trostrunden-Runde ein Bereich |
+| Gruppen nach Leistungsstufen | Stufe für Stufe, in der Stufe nach Gruppenplatz |
+| Schweizer System nach Badeni | Tabelle: Siege, TTR, Sätze |
 | vorzeitig beendete Phase | Stand bei Abbruch; im KO teilen sich alle mit offener Runde ihre Plätze |
 
 ## 9. Drucken und PDF
@@ -645,8 +734,10 @@ Alle Ausdrucke entstehen als PDF und öffnen sich im eingebauten PDF-Viewer. Nur
 | --- | --- | --- | --- |
 | Spielzettel | automatisch beim Aufruf an einen Tisch; Tische → Drucken | A6 hoch | Tisch (bzw. Tischname), Zeit, Spiel-Nr., Konkurrenz, Namen mit Verein (Doppel je Person eine Zeile), Satztabelle, Wahl, Gewinner/in, Unterschrift |
 | Phase (Gruppen) | Phasen-Reiter → PDF / Drucken ▾ → Alle Gruppen bzw. eine Gruppe; einzelne Gruppe auch über „Drucken“ auf der Gruppenkarte | A4 quer | je Gruppe eine Seite: Tabelle mit Zwischenstand, darunter der Spielplan zweispaltig je Runde („Runde k“) mit Ergebnissen und Sätzen sowie kommenden Spielen |
+| Phase (Platzierungsplan) | Phasen-Reiter → PDF / Drucken | A4 quer | je Abschnitt die Spiele mit Paarung (Herkunft „A1“), Ergebnis bzw. Tisch und dem Weg von Sieger und Verlierer (seit 1.2.0) |
+| Kassenübersicht, Quittung | Teilnehmende → Startgebühren ▾ | A4 | Einnahmen nach bar, Überweisung, erlassen (mit Grund) und offen; Quittung je Verein (seit 1.0.0) |
 | Phase (KO-System) | Phasen-Reiter → PDF / Drucken | A4 quer | Turnierbaum: Kästen „Spiel n“ mit Namen und Verein, Sätze unter dem Kasten, Freilose mit Kasten, Spiel um Platz 3 unter dem Finale, offene Plätze „Sieger/in bzw. Verlierer/in Spiel n“; große Felder auf mehreren Seiten. Danach der Spielplan je Runde als Karten |
-| Endergebnis | Reiter Endergebnis → Als PDF anzeigen / drucken | A4 hoch | alle Platzierungen der Klasse |
+| Endergebnis | Reiter Endergebnis → Als PDF anzeigen / drucken | A4 hoch | alle Platzierungen der Klasse; bei Haupt- und Trostrunde beide Wertungen nacheinander |
 | Gesamtergebnis | Kopfzeile → Ergebnisse exportieren | A4 hoch | Endergebnis aller Klassen, jede Klasse auf neuer Seite |
 | Qualifikation | Phasen-Reiter → PDF / Drucken ▾ | A4 | Listen der Qualifizierten und Nachrücker mit Herkunft („A2 Name (Verein)“), Spielplan der Runden |
 | Abgemeldete | Teilnehmende → Abgemeldete als PDF | A4 hoch | endgültig Abgemeldete je Klasse: Name, Vorname, Verein, TTR, abgemeldet durch Handy oder Turnierleitung; sortiert nach Klasse, dann Name |
@@ -668,7 +759,11 @@ Im Phasen-PDF bricht ein langer Spielplan auf Fortsetzungsseiten um. Die Spalte 
 
 ## 10. Ergebnisse exportieren (click-TT)
 
-Sind alle ausgelosten Klassen beendet, erscheint in der Kopfzeile **Ergebnisse exportieren** mit zwei Einträgen: **Gesamtergebnis als PDF** und **click-TT-Ergebnisdatei (XML)**.
+Seit 1.0.0 stehen auf der Seite „Klassen“ oben rechts zwei Knöpfe: **Gesamtergebnis als PDF** und **click-TT-Ergebnisdatei (XML)** – immer sichtbar, aktiv, sobald alle ausgelosten Klassen beendet sind.
+
+- **Von Hand Nachgetragene:** Wurden Teilnehmende von Hand erfasst, bietet HTS an, eine aktualisierte Teilnehmerliste aus click-TT einzuspielen: eindeutige Personen (Vor-/Nachname, Verein) werden automatisch zugeordnet, die übrigen im Zuordnungsfenster von Hand. Beim erneuten Einlesen werden sie nicht doppelt angelegt, sondern übernehmen die click-TT-Nummer.
+- **Bericht:** Nach dem Export listet HTS alle nicht exportierten Spiele mit Grund (auch als PDF), z. B. „Doppel so nicht in click-TT gemeldet“ für am Turniertag zugeloste Doppel.
+- **Haupt- und Trostrunde:** Die Platzierungen der Trostrunde zählen hinter der Hauptrunde weiter (Abschnitt 8).
 
 ### So entsteht die Datei
 
@@ -709,7 +804,7 @@ Die Export-Markierung gibt es nur auf der Seite „Spiele“ und nur für abgesc
 
 ## 11. Handy-Zugang (Mobile Einstellungen)
 
-> **Hinweis (ab 1.0.0):** Die Seite „Mobile Einstellungen“ und damit der Handy-Zugang sind derzeit ausgeblendet; die Funktionen bleiben im Programm und kommen später wieder.
+> **Hinweis (ab 1.0.0):** Die Seite „Mobile Einstellungen“ und damit der Handy-Zugang sind derzeit ausgeblendet; die Funktionen bleiben im Programm und kommen später wieder. Vorbereitet (seit 1.1.0, ebenfalls ausgeblendet): **Ergebnisse per Handy eintragen** mit einem QR-Code je Tisch; gemeldete Ergebnisse bestätigt die Turnierleitung. Für eine Live-Anzeige im Internet ist ein gemieteter Server geplant (Backlog).
 
 Über das lokale WLAN können Teilnehmende und Betreuende mit dem Handy die **Live-Anzeige** ansehen und sich **am Turniertag anmelden**. HTS stellt dafür auf dem Laptop eine kleine Webseite bereit (fester Port 8080); ein Internetanschluss ist nicht nötig.
 
@@ -766,7 +861,7 @@ Neuere Versionen öffnen ältere Turnierdateien (Zusage seit 0.42.0; jede Datei 
 
 ### Technik
 
-- Java 21 und JavaFX 21.0.8, ausgeliefert mit eigener Java-Laufzeit (Eclipse Temurin 21.0.13)
+- Java 21 und JavaFX 21.0.8, ausgeliefert mit eigener Java-Laufzeit (Eclipse Temurin 21.0.13) – je ein Paket für Windows (x64), Linux (x86_64) und macOS (Apple M)
 - PDF: Apache PDFBox 3.0.8 (Apache-Lizenz 2.0, Hinweise im Ordner `Lizenzen`)
 - Handy-Zugang: eingebauter Web-Server von Java, nur im lokalen Netz, Port 8080; die Live-Anzeige ist nur lesend, die Anmeldung braucht den Schlüssel aus dem QR-Code
 - Abhängigkeiten und Sicherheitslücken werden alle 6 Monate geprüft (Datei `docs/ABHAENGIGKEITEN.md` im Quellcode)
@@ -787,7 +882,11 @@ Neuere Versionen öffnen ältere Turnierdateien (Zusage seit 0.42.0; jede Datei 
 | Begriff | Bedeutung |
 | --- | --- |
 | Klasse | eine Konkurrenz, z. B. „Jungen U19 Einzel“ |
-| Phase | ein Abschnitt einer Klasse (Gruppen, KO-System, Schweizer System, Platzierungsspiele, Qualifikationsmodus); höchstens 2 |
+| Phase | ein Abschnitt einer Klasse (Gruppen, KO-System, Schweizer System, Platzierungsspiele, Qualifikationsmodus, Platzierungsplan); höchstens 3 – Phase 3 nur nach Leistungsstufen |
+| Platzierungsplan | feste Folge von Spielen, in der Sieger und Verlierer jeweils in ein bestimmtes Spiel oder auf einen Platz gehen: Haupt- und Trostrunde, fortgesetztes/doppeltes KO, TOP24/TOP32, Endrunde je Gruppenplatz |
+| Stichkampf | im doppelten KO: zweites Finale, wenn die Siegerin/der Sieger der Trostrunde das Finale gewinnt |
+| Siegegruppe | im Schweizer System nach Badeni: alle mit gleich vielen Siegen; gepaart Erster gegen Letzten |
+| Leistungsstufe | Phase 2: Gruppen aus Gleichplatzierten der Vorrunde (z. B. alle Ersten und Zweiten) |
 | Qualifikationsmodus | Phase 2 nach Gruppen: Beste je Gruppe direkt qualifiziert, Folgende spielen eine KO-Qualifikation mit 1 oder 2 Runden (Entscheidung nach Runde 1), weitere Gruppenplätze werden ohne Spiel Nachrücker |
 | Nachrücker Rang x | Stufe im Qualifikationsmodus: rückt nach, wenn Qualifizierte absagen |
 | Nachrücker (Warteliste) | in click-TT auf der Warteliste gemeldet; zählt nicht zu den Angemeldeten |

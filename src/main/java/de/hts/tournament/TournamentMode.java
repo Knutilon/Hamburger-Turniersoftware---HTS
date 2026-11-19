@@ -18,7 +18,9 @@ public enum TournamentMode {
     /** Nur für Phase 1: feste Rundenzahl, Paarung nach Tabelle, Buchholz-Wertung. */
     SWISS("Schweizer System"),
     /** Nur als Phase 2 nach Gruppen in Phase 1: Beste je Gruppe direkt qualifiziert, Folgende spielen eine KO-Qualifikation. */
-    QUALIFICATION("Qualifikationsmodus");
+    QUALIFICATION("Qualifikationsmodus"),
+    /** 1.2: Platzierungsplan (Haupt-/Trostrunde, fortgesetztes/doppeltes KO, Endrunde je Gruppenplatz, TOP24/TOP32). */
+    PLAN("Platzierungsplan");
 
     private final String label;
 

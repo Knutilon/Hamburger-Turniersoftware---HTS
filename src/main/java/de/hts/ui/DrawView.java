@@ -61,6 +61,13 @@ public final class DrawView {
     private static final double MATCH_WIDTH = 330;
     /** 0.36: Kartenbreite der aktuellen Ansicht – mindestens {@link #MATCH_WIDTH}, sonst so breit wie der längste Name. */
     private double matchWidth = MATCH_WIDTH;
+    /** 1.2: bei Haupt- und Trostrunde zeigt jeder Reiter eine Wertung (-1 = alle Abschnitte). */
+    private int planResultGroup = -1;
+
+    /** Welche Wertung des Plans dieser Reiter zeigt (0 = Hauptrunde, 1 = Trostrunde, -1 = alles). */
+    public void setPlanResultGroup(int g) {
+        planResultGroup = g;
+    }
     private static final double COLUMN_GAP = 48;
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm 'Uhr'");
 
@@ -502,6 +509,13 @@ public final class DrawView {
         };
     }
 
+    /** Modus als Text (1.2: Platzierungspläne und Badeni mit eigenem Namen). */
+    public static String modeText(PlayingClass c) {
+        if (c.getMode() == TournamentMode.PLAN && c.getPlan() != null) return c.getPlan().getKind().getLabel();
+        if (c.getMode() == TournamentMode.SWISS && c.isBadeni()) return "Schweizer System nach Badeni";
+        return c.getMode().getLabel();
+    }
+
     /** Name des Unterreiters je nach Modus. */
     public static String tabTitle(PlayingClass c) {
         if (c == null) return "Auslosung";
@@ -509,8 +523,9 @@ public final class DrawView {
             case GROUPS -> "Gruppenübersicht";
             case KNOCKOUT -> "KO-System";
             case PLACEMENT -> "Platzierungsspiele";
-            case SWISS -> "Schweizer System";
+            case SWISS -> c.isBadeni() ? "Schweizer System (Badeni)" : "Schweizer System";
             case QUALIFICATION -> "Qualifikation";
+            case PLAN -> c.getPlan() == null ? "Platzierungsplan" : c.getPlan().getKind().getLabel();
             case NONE -> "Auslosung";
         };
     }
@@ -551,6 +566,7 @@ public final class DrawView {
             settingsBtn.setVisible(false);
             // Folgephase: angehalten + vorherige Phase abgeschlossen -> neu auslosen möglich
             boolean redrawPhase = phase && c.isPaused() && c.getFollowUpClass() == null && !first.isFinished()
+                    && c.getMode() != TournamentMode.PLAN && !c.isTiered()
                     && tournament.findClass(c.getSourceClass()).map(tournament::isPhaseComplete).orElse(false);
             drawBtn.setVisible(editable || redrawPhase);
 
@@ -653,7 +669,9 @@ public final class DrawView {
                 showWarning("Die Teilnehmenden der Klasse haben sich seit der Auslosung geändert – bitte neu auslosen.");
             }
 
-            if (m == TournamentMode.PLACEMENT) {
+            if (m == TournamentMode.PLAN && c.getPlan() != null) {
+                overviewBox.getChildren().add(buildPlan(c, planResultGroup));
+            } else if (m == TournamentMode.PLACEMENT) {
                 overviewBox.getChildren().add(buildPlacement(c));
             } else if (m == TournamentMode.QUALIFICATION) {
                 overviewBox.getChildren().add(buildQualification(c));
@@ -705,7 +723,7 @@ public final class DrawView {
         int cols = n <= 2 ? Math.max(1, n) : n <= 4 ? 2 : 3;
         for (int g = from; g < Math.min(to, groups.size()); g++) {
             int gi = g, k = g - from;
-            Node card = groupCard("Gruppe " + GroupDraw.groupName(g), g, groups.get(g),
+            Node card = groupCard("Gruppe " + tournament.groupLabel(c, g), g, groups.get(g),
                     all.stream().filter(m -> m.getGroupIndex() == gi).toList());
             if (card instanceof Region r) r.setMaxHeight(Double.MAX_VALUE);
             f.add(card, k % cols, k / cols);
@@ -744,7 +762,7 @@ public final class DrawView {
         prepare(c);
         List<List<Entrant>> groups = tournament.groupsOf(c);
         int gi = g;
-        Node card = groupCard("Gruppe " + GroupDraw.groupName(g), g, groups.get(g),
+        Node card = groupCard("Gruppe " + tournament.groupLabel(c, g), g, groups.get(g),
                 tournament.matchesOf(c).stream().filter(m -> m.getGroupIndex() == gi).toList());
         return card;
     }
@@ -752,6 +770,12 @@ public final class DrawView {
     public Node presentQualification(PlayingClass c) {
         prepare(c);
         return buildQualification(c);
+    }
+
+    /** 1.2: Platzierungsplan für die Präsentation. */
+    public Node presentPlan(PlayingClass c, int resultGroup) {
+        prepare(c);
+        return buildPlan(c, resultGroup);
     }
 
     public Node presentSwiss(PlayingClass c) {
@@ -973,7 +997,10 @@ public final class DrawView {
                 onChanged.run();
                 onOpenClass.accept(RESULT_TAB);
             } else {
-                PlayingClass next = choice.kind() == TournamentMode.QUALIFICATION
+                PlayingClass next = choice.tiers()
+                        ? tournament.createTieredPhase(c, choice.tierWidth(), choice.groupSize(), choice.tierMirrored(), random)
+                        : choice.plan() != null ? tournament.createPlanPhase(c, choice.plan(), choice.planOptions(), random)
+                        : choice.kind() == TournamentMode.QUALIFICATION
                         ? tournament.createQualificationPhase(c, choice.qualifiers(), choice.koPerGroup(), choice.koTotal(), choice.reserve(), random)
                         : choice.places() != null ? tournament.createNextPhase(c, choice.places(), random)
                         : tournament.createNextPhase(c, choice.kind(), choice.qualifiers(), choice.groupSize(), random);
@@ -999,7 +1026,7 @@ public final class DrawView {
             printBtn.getItems().add(new javafx.scene.control.SeparatorMenuItem());
             for (int g = 0; g < c.getGroups().size(); g++) {
                 int gi = g;
-                javafx.scene.control.MenuItem mi = new javafx.scene.control.MenuItem("Gruppe " + GroupDraw.groupName(g));
+                javafx.scene.control.MenuItem mi = new javafx.scene.control.MenuItem("Gruppe " + tournament.groupLabel(c, g));
                 mi.setOnAction(e -> Reports.showGroup(root.getScene() == null ? w : root.getScene().getWindow(), tournament, c, gi, status));
                 printBtn.getItems().add(mi);
             }
@@ -1165,7 +1192,7 @@ public final class DrawView {
             }
             entry.names = new java.util.ArrayList<>();
             nameSink = entry.names;
-            HBox row = new HBox(14, groupCard("Gruppe " + GroupDraw.groupName(g), g, members, allOfGroup), matchesNode);
+            HBox row = new HBox(14, groupCard("Gruppe " + tournament.groupLabel(c, g), g, members, allOfGroup), matchesNode);
             nameSink = null;
             row.setAlignment(Pos.TOP_LEFT);
             entry.row = row;
@@ -1251,9 +1278,36 @@ public final class DrawView {
         Label summary = new Label("Runde " + round + " von " + tournament.swissRounds(c) + " · " + all.size() + " Spiele · ausgelost "
                 + (c.isDrawSeeded() ? "nach Setzung (1. Runde: obere gegen untere Hälfte)" : "zufällig")
                 + " · Wertung: Punkte (Siege + Freilos), Buchholz, Feinbuchholz, Satz- und Balldifferenz");
+        if (c.isBadeni()) {
+            summary.setText("Badeni · Runde " + round + " von " + tournament.swissRounds(c) + " · " + all.size() + " Spiele · Paarung je "
+                    + "Siegegruppe: Erster gegen Letzten · Wertung: Siege (Freilos zählt als Sieg), TTR, Satz- und Balldifferenz"
+                    + (c.getSwissPaused().isEmpty() ? "" : " · pausiert: " + c.getSwissPaused().size()));
+        }
         summary.getStyleClass().add("hint");
         summary.setWrapText(true);
-        VBox box = new VBox(12, summary, row);
+        summary.setMaxWidth(760);
+        VBox box = new VBox(12, summary);
+        if (!presentation && !tournament.rootOf(c).isFinished()) {
+            // 1.2 (#95): weitere Runde (z. B. Platzierungsrunde) und Pausieren
+            javafx.scene.control.Button more = new javafx.scene.control.Button("Weitere Runde");
+            more.setTooltip(new Tooltip("Eine Runde mehr ansetzen – sie wird gepaart, sobald die laufende Runde komplett gespielt ist"));
+            more.setDisable(round >= de.hts.tournament.SwissSystem.maxRounds(members.size()));
+            more.setOnAction(e -> {
+                try {
+                    tournament.addSwissRound(c);
+                    status.accept("Eine weitere Runde angesetzt (jetzt " + tournament.swissRounds(c) + " Runden).");
+                    onChanged.run();
+                } catch (IllegalStateException ex) {
+                    showWarning(ex.getMessage());
+                }
+            });
+            javafx.scene.control.Button pause = new javafx.scene.control.Button("Spieler pausieren");
+            pause.setTooltip(new Tooltip("Wer pausiert, wird ab der nächsten Runde nicht gepaart; der Stand bleibt erhalten"));
+            pause.setOnAction(e -> pauseSwissPlayers(c, members));
+            javafx.scene.layout.FlowPane actions = new javafx.scene.layout.FlowPane(8, 6, more, pause);
+            box.getChildren().add(actions);
+        }
+        box.getChildren().add(row);
         List<String> byes = c.getSwissByes();
         for (int i = 0; i < byes.size(); i++) {
             if (byes.get(i) == null) continue;
@@ -1264,6 +1318,167 @@ public final class DrawView {
             box.getChildren().add(l);
         }
         return box;
+    }
+
+    /** 1.2 (#95): Pausierende im Schweizer System/Badeni auswählen. */
+    private void pauseSwissPlayers(PlayingClass c, List<Entrant> members) {
+        javafx.scene.control.Dialog<java.util.Set<String>> d = new javafx.scene.control.Dialog<>();
+        d.initOwner(window());
+        d.setTitle("Spieler pausieren");
+        d.setHeaderText("Wer pausiert, wird ab der nächsten Runde nicht gepaart (kein Freilos); der Stand bleibt erhalten.");
+        VBox list = new VBox(6);
+        List<javafx.scene.control.CheckBox> boxes = new java.util.ArrayList<>();
+        for (Entrant e : members) {
+            javafx.scene.control.CheckBox cb = new javafx.scene.control.CheckBox(withClub(e));
+            cb.setWrapText(true);
+            cb.setUserData(e.id());
+            cb.setSelected(c.getSwissPaused().contains(e.id()));
+            boxes.add(cb);
+            list.getChildren().add(cb);
+        }
+        javafx.scene.control.ScrollPane sp = new javafx.scene.control.ScrollPane(list);
+        sp.setFitToWidth(true);
+        sp.setPrefViewportHeight(Math.min(420, members.size() * 26 + 10));
+        d.getDialogPane().setContent(sp);
+        d.getDialogPane().getButtonTypes().addAll(javafx.scene.control.ButtonType.OK, javafx.scene.control.ButtonType.CANCEL);
+        d.setResultConverter(bt -> {
+            if (bt != javafx.scene.control.ButtonType.OK) return null;
+            java.util.Set<String> ids = new java.util.LinkedHashSet<>();
+            for (javafx.scene.control.CheckBox cb : boxes) if (cb.isSelected()) ids.add((String) cb.getUserData());
+            return ids;
+        });
+        DialogSizing.fit(d);
+        d.showAndWait().ifPresent(ids -> {
+            tournament.setSwissPaused(c, ids);
+            status.accept(ids.isEmpty() ? "Niemand pausiert." : ids.size() + " pausiert – ab der nächsten Runde nicht gepaart.");
+            onChanged.run();
+        });
+    }
+
+    /**
+     * 1.2: Platzierungsplan (Haupt-/Trostrunde, fortgesetztes/doppeltes KO, TOP24/32, Endrunde je Gruppenplatz): je
+     * Abschnitt die Spiele in Spalten nach Spielrunde; vor dem Start lassen sich Setzplätze per Drag &amp; Drop tauschen.
+     *
+     * @param resultGroup nur Abschnitte dieser Wertung (-1 = alle)
+     */
+    Node buildPlan(PlayingClass c, int resultGroup) {
+        de.hts.tournament.Plan p = c.getPlan();
+        VBox box = new VBox(16);
+        if (p == null) return box;
+        Tournament.PlanState st = tournament.planState(c);
+        Map<String, String> seedOf = new HashMap<>(c.getSeedLabels());
+        matchWidth = MATCH_WIDTH;
+        for (String id : p.getSeeds()) {
+            if (id == null) continue;
+            Entrant e = tournament.entrantIndex(c).get(id);
+            if (e != null) matchWidth = Math.max(matchWidth, Ui.textWidth(withClub(e), true, 13) + 125);
+        }
+        for (de.hts.tournament.Plan.Node n : p.getNodes()) {
+            matchWidth = Math.max(matchWidth, Ui.textWidth(p.placeholder(n.a()), false, 13) + 90);
+        }
+        boolean dbl = p.getSeeds().stream().anyMatch(x -> x != null && x.startsWith("pair:"));
+        cardH = dbl ? 136 : 96;
+        boolean seedsEditable = !presentation && tournament.matchesOf(c).stream()
+                .allMatch(m -> m.getStatus() == MatchStatus.PLANNED || m.getStatus() == MatchStatus.QUEUED) && !tournament.rootOf(c).isFinished();
+        Label hint = new Label(switch (p.getKind()) {
+            case MAIN_CONSOLATION -> "Hauptrunde und Trostrunde mit getrennten Endergebnissen.";
+            case CONTINUED -> "Fortgesetztes K.-o.-System: auch die Verlierer spielen ihre Plätze in eigenen Bäumen aus.";
+            case DOUBLE -> "Doppeltes K.-o.-System: erst die zweite Niederlage scheidet aus. Gewinnt im Finale die Siegerin/der Sieger "
+                    + "der Trostrunde, folgt ein Stichkampf.";
+            case TOP24, TOP32 -> p.getKind().getLabel() + ": alle Plätze werden ausgespielt; fehlende Gruppenplätze sind Freilose.";
+            case FINAL_BY_PLACE -> "Endrunde je Gruppenplatz: je Stufe spielen die Gleichplatzierten ihre Plätze aus.";
+        } + (seedsEditable ? " Vor dem ersten Spiel lassen sich Teilnehmende per Drag & Drop tauschen." : ""));
+        hint.getStyleClass().add("hint");
+        hint.setWrapText(true);
+        hint.setMaxWidth(760);
+        box.getChildren().add(hint);
+        for (int si = 0; si < p.getSections().size(); si++) {
+            if (resultGroup >= 0 && p.getSections().get(si).resultGroup() != resultGroup) continue;
+            int sec = si;
+            List<de.hts.tournament.Plan.Node> nodes = p.getNodes().stream().filter(n -> n.section() == sec)
+                    .sorted(java.util.Comparator.comparingInt(de.hts.tournament.Plan.Node::no)).toList();
+            if (nodes.isEmpty()) continue;
+            Label title = new Label(p.getSections().get(si).title());
+            title.getStyleClass().add("section-title");
+            title.setWrapText(true);
+            java.util.TreeMap<Integer, List<de.hts.tournament.Plan.Node>> byDepth = new java.util.TreeMap<>();
+            for (de.hts.tournament.Plan.Node n : nodes) byDepth.computeIfAbsent(n.depth(), k -> new java.util.ArrayList<>()).add(n);
+            HBox columns = new HBox(COLUMN_GAP / 2);
+            columns.setAlignment(Pos.TOP_LEFT);
+            for (List<de.hts.tournament.Plan.Node> col : byDepth.values()) {
+                VBox column = new VBox(MATCH_GAP);
+                String lastStage = null;
+                for (de.hts.tournament.Plan.Node n : col) {
+                    if (!n.stage().equals(lastStage)) {
+                        Match any = tournament.planMatch(c, n);
+                        String at = any == null ? "" : tournament.startText(any);
+                        Label rt = new Label(n.stage() + (at.isEmpty() ? "" : " · " + at));
+                        rt.getStyleClass().add("round-title");
+                        rt.setWrapText(true);
+                        rt.setMaxWidth(matchWidth);
+                        column.getChildren().add(rt);
+                        lastStage = n.stage();
+                    }
+                    column.getChildren().add(planCard(c, st, n, seedOf, seedsEditable));
+                }
+                columns.getChildren().add(column);
+            }
+            box.getChildren().addAll(title, columns);
+        }
+        return box;
+    }
+
+    private Node planCard(PlayingClass c, Tournament.PlanState st, de.hts.tournament.Plan.Node n, Map<String, String> seedOf, boolean seedsEditable) {
+        de.hts.tournament.Plan p = c.getPlan();
+        Match m = tournament.planMatch(c, n);
+        String[] sd = st.sides().get(n.key());
+        KnockoutBracket.Side a = planSide(c, n.a(), sd == null ? null : sd[0]), b = planSide(c, n.b(), sd == null ? null : sd[1]);
+        boolean skipped = st.skipped().contains(n.key());
+        KnockoutBracket.Match bm = new KnockoutBracket.Match(n.no(), a, b);
+        VBox card = (VBox) matchCard(bm, m, seedOf, 1, 0);
+        if (bm.isBye() || skipped) {
+            card.getStyleClass().add("match-bye");
+            ((Label) ((HBox) card.getChildren().get(0)).getChildren().get(0)).setText("Spiel " + n.no() + (skipped ? " – entfällt" : " – Freilos"));
+        }
+        String out = tournament.planOutcomeText(c, n);
+        if (!out.isEmpty()) {
+            Label o = new Label(out);
+            o.getStyleClass().add("card-club");
+            o.setWrapText(true);
+            card.getChildren().add(o);
+            card.setMaxHeight(Region.USE_PREF_SIZE);
+            card.setPrefHeight(Region.USE_COMPUTED_SIZE);
+        }
+        if (seedsEditable) {
+            int ia = de.hts.tournament.Plan.seedIndex(n.a()), ib = de.hts.tournament.Plan.seedIndex(n.b());
+            if (ia >= 0) installPlanSeedDnD(card.getChildren().get(1), c, ia);
+            if (ib >= 0) installPlanSeedDnD(card.getChildren().get(2), c, ib);
+        }
+        return card;
+    }
+
+    private KnockoutBracket.Side planSide(PlayingClass c, String src, String id) {
+        if ("-".equals(id)) return new KnockoutBracket.Side(null, true, null);
+        if (id != null) {
+            Entrant e = tournament.entrantIndex(c).get(id);
+            if (e != null) return new KnockoutBracket.Side(e, false, null);
+        }
+        return new KnockoutBracket.Side(null, false, c.getPlan().placeholder(src));
+    }
+
+    private static final String DND_PLAN = "hts-plan:";
+
+    private void installPlanSeedDnD(Node row, PlayingClass c, int seedIndex) {
+        startDrag(row, DND_PLAN + seedIndex);
+        dropTarget(row, DND_PLAN, DND_PLAN + seedIndex, other -> {
+            try {
+                tournament.swapPlanSeeds(c, Integer.parseInt(other), seedIndex);
+                status.accept("Getauscht.");
+                onChanged.run();
+            } catch (IllegalStateException | NumberFormatException ex) {
+                showWarning(ex.getMessage());
+            }
+        });
     }
 
     /** Platzierungsspiele: Endgruppe (Platz 1–4) mit ihren Spielen, darunter die Spiele um Platz 5, 7, … */
@@ -2328,7 +2543,7 @@ public final class DrawView {
     private void installGroupDrop(Node card, int g) {
         dropTarget(card, DND_MEMBER, null, id -> {
             tournament.moveGroupMember(current, id, g);
-            status.accept("In Gruppe " + GroupDraw.groupName(g) + " verschoben – Spiele neu angelegt.");
+            status.accept("In Gruppe " + tournament.groupLabel(current, g) + " verschoben – Spiele neu angelegt.");
         });
     }
 
@@ -2416,7 +2631,9 @@ public final class DrawView {
         try {
             boolean sd = !c.isDrawn() || c.isDrawSeeded();
             if (c.getMode() == TournamentMode.GROUPS) tournament.drawGroups(c, sd, random);
+            else if (c.getMode() == TournamentMode.SWISS && c.isBadeni()) tournament.drawBadeni(c, random);
             else if (c.getMode() == TournamentMode.SWISS) tournament.drawSwiss(c, sd, random);
+            else if (c.getMode() == TournamentMode.PLAN) tournament.drawDoubleKo(c, sd, random);
             else tournament.drawKnockout(c, sd, random);
             status.accept("„" + c.getName() + "“ " + (again ? "neu " : "") + "ausgelost (" + summary(c) + ").");
             onChanged.run();
@@ -2441,7 +2658,9 @@ public final class DrawView {
         StringBuilder sb = new StringBuilder(switch (c.getMode()) {
             case GROUPS -> "Gruppenphase · " + c.getGroups().size() + " Gruppen";
             case KNOCKOUT -> "KO-System · " + c.getDraw().size() + "er-Feld" + koCounts(c);
-            case SWISS -> "Schweizer System · " + tournament.swissRounds(c) + " Runden";
+            case SWISS -> (c.isBadeni() ? "Schweizer System nach Badeni · " : "Schweizer System · ") + tournament.swissRounds(c) + " Runden";
+            case PLAN -> (c.getPlan() == null ? "Platzierungsplan" : c.getPlan().getKind().getLabel()) + " · "
+                    + c.getPlan().getSeeds().stream().filter(java.util.Objects::nonNull).count() + " Teilnehmende";
             case PLACEMENT -> "Platzierungsspiele";
             case QUALIFICATION -> "Qualifikationsmodus · " + c.getQualDirect() + " direkt je Gruppe, "
                     + ((c.getQualKo() > 0 || c.getQualKoTotal() > 0) && !c.getQualField().isEmpty()

@@ -61,7 +61,7 @@ final class Reports {
     }
 
     static void showGroup(Window owner, Tournament t, PlayingClass phase, int g, Consumer<String> status) {
-        String name = t.rootOf(phase).getName() + " – Phase " + t.phaseNumber(phase) + " – Gruppe " + de.hts.tournament.GroupDraw.groupName(g);
+        String name = t.rootOf(phase).getName() + " – Phase " + t.phaseNumber(phase) + " – Gruppe " + t.groupLabel(phase, g);
         PdfViewer.show(owner, t, name, PdfReports.group(t, phase, g), fileName(name), status);
     }
 

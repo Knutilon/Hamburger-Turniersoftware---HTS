@@ -250,6 +250,17 @@ public final class ClickTtResultImporter {
             return 0;
         }
         int depth = rounds.size();
+        Set<String> people = new LinkedHashSet<>();
+        for (List<XmlMatch> r : rounds) for (XmlMatch xm : r) {
+            people.add(xm.a());
+            people.add(xm.b());
+        }
+        if (depth > 12 || (1 << depth) >= 2 * Math.max(2, people.size())) {
+            // 1.2: z. B. doppeltes KO oder Platzierungsplan – kein einfaches KO-Feld
+            notes.add("„" + cname + "“: Die Spiele ergeben kein einfaches KO-Feld (z. B. doppeltes K.-o.-System oder "
+                    + "Platzierungsspiele) – Spiele nicht übernommen.");
+            return 0;
+        }
         int size = 1 << depth;
         String[] slots = new String[size];
         // vom Finale aus: Gewinner oben, jeweils aus dem Spiel der Vorrunde, in dem er gespielt hat (sonst Freilos)

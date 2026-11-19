@@ -347,11 +347,11 @@ public final class PdfReports {
     /** Eine einzelne Gruppe (Tabelle + Spielplan) – dieselbe Seite wie im Phasen-PDF. */
     public static PDDocument group(Tournament t, PlayingClass phase, int g) {
         PlayingClass root = t.rootOf(phase);
-        String title = root.getName() + " · Phase " + t.phaseNumber(phase) + " – " + modeTitle(phase.getMode());
-        PDDocument doc = newDoc(title + " · Gruppe " + GroupDraw.groupName(g));
+        String title = root.getName() + " · Phase " + t.phaseNumber(phase) + " – " + modeTitle(phase);
+        PDDocument doc = newDoc(title + " · Gruppe " + t.groupLabel(phase, g));
         PdfCanvas c = new PdfCanvas(doc, new PDRectangle(PDRectangle.A4.getHeight(), PDRectangle.A4.getWidth()), 40);   // A4 quer
         List<Match> ms = t.matchesOf(phase).stream().filter(m -> m.getGroupIndex() == g).toList();
-        section(c, t, phase, title, "Gruppe " + GroupDraw.groupName(g), g, ms, List.of());
+        section(c, t, phase, title, "Gruppe " + t.groupLabel(phase, g), g, ms, List.of());
         if (doc.getNumberOfPages() == 0) c.newPage();
         c.finish();
         return doc;
@@ -359,7 +359,7 @@ public final class PdfReports {
 
     public static PDDocument phase(Tournament t, PlayingClass phase) {
         PlayingClass root = t.rootOf(phase);
-        String title = root.getName() + " · Phase " + t.phaseNumber(phase) + " – " + modeTitle(phase.getMode());
+        String title = root.getName() + " · Phase " + t.phaseNumber(phase) + " – " + modeTitle(phase);
         PDDocument doc = newDoc(title);
         PdfCanvas c = new PdfCanvas(doc, new PDRectangle(PDRectangle.A4.getHeight(), PDRectangle.A4.getWidth()), 40);   // A4 quer
         List<Match> all = t.matchesOf(phase);
@@ -367,12 +367,14 @@ public final class PdfReports {
             case GROUPS -> {
                 for (int g = 0; g < phase.getGroups().size(); g++) {
                     int gi = g;
-                    section(c, t, phase, title, "Gruppe " + GroupDraw.groupName(g), g,
+                    section(c, t, phase, title, "Gruppe " + t.groupLabel(phase, g), g,
                             all.stream().filter(m -> m.getGroupIndex() == gi).toList(), List.of());
                 }
             }
             case SWISS -> section(c, t, phase, title, "Runde " + t.swissRound(phase) + " von " + t.swissRounds(phase), 0, all,
-                    List.of("Wertung: Punkte (Siege + Freilos), Buchholz (BHZ), Feinbuchholz (FBHZ), Satz- und Balldifferenz."));
+                    List.of(phase.isBadeni() ? "Wertung nach Badeni: Siege (Freilos zählt als Sieg), TTR, Satz- und Balldifferenz."
+                            : "Wertung: Punkte (Siege + Freilos), Buchholz (BHZ), Feinbuchholz (FBHZ), Satz- und Balldifferenz."));
+            case PLAN -> planPages(c, t, phase, title, all);
             case PLACEMENT -> {
                 section(c, t, phase, title, "Endgruppe – Platz 1 bis 4", 0, all.stream().filter(m -> m.getGroupIndex() == 0).toList(),
                         List.of("Wertung: Spielverhältnis, direkter Vergleich, Satz- und Ballverhältnis. Das Spiel aus der Vorrunde ist übernommen."));
@@ -420,13 +422,14 @@ public final class PdfReports {
         return doc;
     }
 
-    private static String modeTitle(TournamentMode m) {
-        return switch (m) {
+    private static String modeTitle(PlayingClass phase) {
+        return switch (phase.getMode()) {
             case GROUPS -> "Gruppenübersicht";
             case KNOCKOUT -> "KO-System";
             case PLACEMENT -> "Platzierungsspiele";
-            case SWISS -> "Schweizer System";
+            case SWISS -> phase.isBadeni() ? "Schweizer System (Badeni)" : "Schweizer System";
             case QUALIFICATION -> "Qualifikation";
+            case PLAN -> phase.getPlan() == null ? "Platzierungsplan" : phase.getPlan().getKind().getLabel();
             case NONE -> "Auslosung";
         };
     }
@@ -572,6 +575,50 @@ public final class PdfReports {
     }
 
     /** Spielplan je Runde mit Titel (Achtelfinale … Finale), ohne Nr./Runde-Spalten: Karten mit ausgeschriebenen Namen. */
+    /** 1.2: Platzierungsplan – je Abschnitt die Spiele mit Paarung, Ergebnis und was Sieger/Verlierer erwartet. */
+    private static void planPages(PdfCanvas c, Tournament t, PlayingClass phase, String title, List<Match> all) {
+        de.hts.tournament.Plan p = phase.getPlan();
+        if (p == null) {
+            c.newPage();
+            return;
+        }
+        Tournament.PlanState st = t.planState(phase);
+        for (int si = 0; si < p.getSections().size(); si++) {
+            int sec = si;
+            List<de.hts.tournament.Plan.Node> nodes = p.getNodes().stream().filter(n -> n.section() == sec)
+                    .sorted(java.util.Comparator.comparingInt(de.hts.tournament.Plan.Node::no)).toList();
+            if (nodes.isEmpty()) continue;
+            c.newPage();
+            header(c, t, title, p.getSections().get(si).title());
+            String lastStage = null;
+            for (de.hts.tournament.Plan.Node n : nodes) {
+                if (!c.fits(40)) {
+                    c.newPage();
+                    header(c, t, title, p.getSections().get(si).title() + " (Fortsetzung)");
+                    lastStage = null;
+                }
+                if (!n.stage().equals(lastStage)) {
+                    c.y += 4;
+                    c.y += c.text(c.left(), c.y, n.stage(), BOLD, 10.5f, c.width()) + 1;
+                    c.line(c.left(), c.y, c.left() + c.width(), c.y, 0.5f);
+                    c.y += 4;
+                    lastStage = n.stage();
+                }
+                Match m = t.planMatch(phase, n);
+                String res = "";
+                if (st.skipped().contains(n.key())) res = "entfällt";
+                else if (m != null && m.getStatus() == de.hts.tournament.MatchStatus.DONE) res = m.getResultText();
+                else if (m != null && m.getTable() != null) res = "an Tisch " + m.getTable();
+                String line = "Spiel " + n.no() + ":  " + t.planSideText(phase, st, n, true) + "  –  " + t.planSideText(phase, st, n, false)
+                        + (res.isEmpty() ? "" : "   " + res);
+                c.paragraph(line, REGULAR, 9.5f, c.width());
+                String out = t.planOutcomeText(phase, n);
+                if (!out.isEmpty()) c.paragraph(out, REGULAR, 7.5f, c.width());
+                c.y += 3;
+            }
+        }
+    }
+
     private static void knockoutPlan(PdfCanvas c, Tournament t, PlayingClass phase, String title, List<Match> all) {
         if (all.isEmpty()) return;
         c.newPage();
@@ -1120,14 +1167,22 @@ public final class PdfReports {
     }
 
     private static void writeFinal(PdfCanvas c, Tournament t, PlayingClass root) {
+        List<Tournament.ResultSection> secs = t.finalResultSections(root);
+        if (secs.size() <= 1) {
+            writeFinal(c, t, root, "Endergebnis " + root.getName(), t.finalResult(root).rows());
+            return;
+        }
+        for (Tournament.ResultSection x : secs) writeFinal(c, t, root, "Endergebnis " + root.getName() + " – " + x.title(), x.rows());
+    }
+
+    private static void writeFinal(PdfCanvas c, Tournament t, PlayingClass root, String title, List<Tournament.Placing> rows) {
         Tournament.FinalResult r = t.finalResult(root);
-        String title = "Endergebnis " + root.getName();
         float[] cols = {48, 170, 150, 40, 0};
         cols[4] = c.width() - 48 - 170 - 150 - 40;
         String sub = (r.complete() && root.getFinishedAt() != null ? "beendet am " + root.getFinishedAt().format(STAND) : "Zwischenstand")
-                + " · " + r.rows().size() + " Platzierungen";
+                + " · " + rows.size() + " Platzierungen";
         boolean first = true;
-        for (int i = 0; i < r.rows().size() || first; i++) {
+        for (int i = 0; i < rows.size() || first; i++) {
             if (first || !c.fits(2 * ROW + 6)) {
                 c.newPage();
                 c.y += c.text(c.left(), c.y, (t.getName() == null ? "" : t.getName()) + (t.getDate() != null ? " · " + t.getDate().format(DATE) : ""),
@@ -1148,8 +1203,8 @@ public final class PdfReports {
                 c.y += 4;
                 first = false;
             }
-            if (i >= r.rows().size()) break;
-            Tournament.Placing p = r.rows().get(i);
+            if (i >= rows.size()) break;
+            Tournament.Placing p = rows.get(i);
             List<String[]> persons = t.personLines(p.entrant().id());
             String[] v = {p.placeText(), p.entrant().name(), p.entrant().detail() == null ? "" : p.entrant().detail(),
                     persons != null || p.entrant().ttr() == null ? "" : String.valueOf(p.entrant().ttr()), p.info()};

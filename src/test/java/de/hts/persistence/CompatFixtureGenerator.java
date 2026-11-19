@@ -63,6 +63,20 @@ public class CompatFixtureGenerator {
     d.setScheduleStart(java.time.LocalDateTime.of(2026, 11, 15, 14, 30));
     t.markPaid(List.of(ds.get(0)), Player.Payment.CASH, null); t.waiveFee(List.of(ds.get(1)), "Helfer");
     t.setPhoneResults(true);
+    // ab 1.2: Haupt- und Trostrunde, Leistungsstufen + Phase 3, Badeni mit Pausierenden, doppeltes KO
+    PlayingClass mc = groups(t, "Senioren HT", 16, 4, 14); t.startClass(mc); playAll(t, mc, 9999);
+    PlayingClass mc2 = t.createPlanPhase(mc, de.hts.tournament.Plan.Kind.MAIN_CONSOLATION,
+        new Tournament.PlanOptions(List.of(1, 2), List.of(3, 4), true, false, 0), new Random(8)); playAll(t, mc2, 5);
+    PlayingClass ls = groups(t, "Mädchen LS", 16, 4, 15); t.startClass(ls); playAll(t, ls, 9999);
+    PlayingClass ls2 = t.createTieredPhase(ls, 2, 4, true, new Random(9)); playAll(t, ls2, 9999);
+    PlayingClass ls3 = t.createPlanPhase(ls2, de.hts.tournament.Plan.Kind.FINAL_BY_PLACE, null, new Random(10)); playAll(t, ls3, 3);
+    PlayingClass ba = t.addClass(new PlayingClass("Jugend Badeni"));
+    for (Player p : players(t, "Badeni", 9, 16, false)) { t.setAttendance(p, Attendance.PRESENT); t.assign(p, ba); }
+    t.drawBadeni(ba, new Random(11)); t.startClass(ba); playAll(t, ba, 6);
+    t.setSwissPaused(ba, List.of(t.standings(ba, 0).get(8).entrant().id()));
+    PlayingClass dk = t.addClass(new PlayingClass("Damen DKO"));
+    for (Player p : players(t, "DKO", 6, 17, true)) { t.setAttendance(p, Attendance.PRESENT); t.assign(p, dk); }
+    t.drawDoubleKo(dk, true, new Random(12)); t.startClass(dk); playAll(t, dk, 4);
     TournamentFile.save(Path.of(a[0]), t);
     StringBuilder sets = new StringBuilder();
     for (Match m : t.getMatches()) if (m.getStatus() == MatchStatus.DONE) sets.append(m.getNumber()).append(':').append(m.getSetsText()).append(';');

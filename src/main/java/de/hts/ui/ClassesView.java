@@ -484,7 +484,7 @@ public final class ClassesView {
             PlayingClass first = tournament.rootOf(pc);
             if (selectedClass() != first) select(first);
             else refresh();
-            phaseTabs.stream().filter(t -> name.equals(t.getUserData())).findFirst()
+            phaseTabs.stream().filter(t -> name.equals(t.getUserData()) || String.valueOf(t.getUserData()).startsWith(name + "#")).findFirst()
                     .ifPresent(t -> classTabs.getSelectionModel().select(t));
         });
     }
@@ -496,7 +496,22 @@ public final class ClassesView {
     private void syncTabs(PlayingClass c) {
         // „Phase 1“ erst, wenn die Teilnehmenden feststehen und der Modus festgelegt (= ausgelost) ist
         List<PlayingClass> phases = c == null || !c.isDrawn() ? List.of() : tournament.phasesOf(c);
-        List<String> keys = phases.stream().map(PlayingClass::getName).toList();
+        // 1.2 (#94): Haupt- und Trostrunde bekommen je einen Reiter („Name#0“, „Name#1“)
+        List<String> keys = new ArrayList<>();
+        List<String> titles = new ArrayList<>();
+        for (int i = 0; i < phases.size(); i++) {
+            PlayingClass ph = phases.get(i);
+            int results = ph.getMode() == de.hts.tournament.TournamentMode.PLAN && ph.getPlan() != null ? ph.getPlan().getResultTitles().size() : 1;
+            if (results > 1) {
+                for (int g = 0; g < results; g++) {
+                    keys.add(ph.getName() + "#" + g);
+                    titles.add("Phase " + (i + 1) + " – " + ph.getPlan().getResultTitles().get(g));
+                }
+            } else {
+                keys.add(ph.getName());
+                titles.add(DrawView.phaseTabTitle(i + 1, ph));
+            }
+        }
         List<Object> old = phaseTabs.stream().map(Tab::getUserData).toList();
         if (phases.isEmpty() || !keys.equals(old)) {
             Tab selected = classTabs.getSelectionModel().getSelectedItem();
@@ -506,9 +521,9 @@ public final class ClassesView {
             try {
                 phaseTabs.forEach(t -> t.setContent(null));
                 phaseTabs.clear();
-                for (PlayingClass ph : phases) {
+                for (String k : keys) {
                     Tab t = new Tab();
-                    t.setUserData(ph.getName());
+                    t.setUserData(k);
                     phaseTabs.add(t);
                 }
                 List<Tab> all = new ArrayList<>();
@@ -525,7 +540,7 @@ public final class ClassesView {
                 syncingTabs = false;
             }
         }
-        for (int i = 0; i < phases.size(); i++) phaseTabs.get(i).setText(DrawView.phaseTabTitle(i + 1, phases.get(i)));
+        for (int i = 0; i < keys.size(); i++) phaseTabs.get(i).setText(titles.get(i));
         // „Endergebnis“ erst, wenn die Klasse beendet ist (nach dem letzten Spiel bzw. „Klasse beenden“)
         boolean finished = c != null && c.isFinished();
         if (finished && !classTabs.getTabs().contains(resultTab)) {
@@ -550,6 +565,13 @@ public final class ClassesView {
         if (t != null && phaseTabs.contains(t)) {
             if (t.getContent() == null) t.setContent(drawView.getRoot());
             String key = (String) t.getUserData();
+            int hash = key.lastIndexOf('#');
+            int group = -1;
+            if (hash > 0 && key.substring(hash + 1).matches("\\d+")) {
+                group = Integer.parseInt(key.substring(hash + 1));
+                key = key.substring(0, hash);
+            }
+            drawView.setPlanResultGroup(group);
             drawView.show(key.isEmpty() ? selectedClass() : tournament.findClass(key).orElse(selectedClass()));
         } else if (t == resultTab) {
             resultView.show(selectedClass());
@@ -611,7 +633,7 @@ public final class ClassesView {
         boolean locked = has && c.isDrawn();
         lockBanner.setVisible(locked);
         if (locked) {
-            lockText.setText("„" + c.getName() + "“ ist ausgelost (" + c.getMode().getLabel() + "). "
+            lockText.setText("„" + c.getName() + "“ ist ausgelost (" + DrawView.modeText(c) + "). "
                     + "Die Teilnehmenden sind festgelegt – zum Ändern die Auslosung verwerfen.");
         }
         middle.setDisable(locked);
@@ -635,7 +657,7 @@ public final class ClassesView {
             long n = c.isDoubles() ? tournament.pairsIn(c).stream().filter(DoublesPair::isComplete).count() : tournament.countIn(c);
             classCriteria.setText(c.getDiscipline().getLabel() + " · " + n + (c.isTeam() ? " Teams" : c.isDoubles() ? " Doppel" : " Teilnehmende")
                     + " in der Klasse · " + c.getType().getLabel()
-                    + (c.getMode() != de.hts.tournament.TournamentMode.NONE ? " · " + c.getMode().getLabel() : ""));
+                    + (c.getMode() != de.hts.tournament.TournamentMode.NONE ? " · " + DrawView.modeText(c) : ""));
             classCriteria.setTooltip(new Tooltip(tournament.criteriaText(c)));
             // 0.37: Startsperre – Marke im Kopf, Hinweis neben „Teilnehmende fertig – Modus festlegen“
             classCriteria.getStyleClass().remove("handicap-problem");

@@ -25,6 +25,42 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.2.0
+
+- **Haupt- und Trostrunde:** Als Phase 2 nach einer Gruppenphase wählbar („Phase abschließen“ → „Neue Phase“). Welche
+  Gruppenplätze in die Hauptrunde und welche in die Trostrunde kommen, ist frei (z. B. 1,2 und 3,4); beide Runden
+  sind KO-Systeme, je mit zuschaltbarem Spiel um Platz 3. Zwei Reiter („Phase 2 – Hauptrunde“, „Phase 2 –
+  Trostrunde“) und zwei getrennte Endergebnisse (Trostrunde zählt eigens ab Platz 1). Im click-TT-Export zählt die
+  Trostrunde hinter der Hauptrunde weiter – spielen 16 in der Hauptrunde, ist der Sieger der Trostrunde 17.
+- **Schweizer System nach Badeni:** Neuer Modus für Phase 1 (BaTTV-Unterlage). Je Runde bilden die Spieler mit gleich
+  vielen Siegen eine Gruppe; darin spielt der Erste gegen den Letzten, der Zweite gegen den Vorletzten … (Runde 1 nach
+  TTR). Ein Freilos bekommt der Beste der unteren Hälfte (niemand zweimal); bei ungerader Siegegruppe rutscht der
+  Schwächste eine Gruppe tiefer; Wiederholungen werden vermieden. Reihung: Siege (Freilos zählt als Sieg), TTR, Sätze –
+  ohne Buchholz. Vorschlag 5 Runden, „Weitere Runde“ hängt eine Runde an, „Spieler pausieren“ nimmt Personen ab der
+  nächsten Runde aus der Paarung. Keine Phase 2 (wie beim Schweizer System).
+- **Fortgesetztes K.-o.-System (WO 7.3):** Als Phase 2 nach einer Gruppenphase: KO-System, in dem auch die Verlierer
+  ihre Plätze ausspielen – Verlierer des Halbfinales um Platz 3, des Viertelfinales in einem eigenen Baum um Platz 5–8
+  usw. Einstellbar, ab welcher Runde weitergespielt wird (z. B. erst ab dem Viertelfinale; Verlierer früherer Runden
+  teilen sich ihren Platz). Alle Bäume untereinander in einem Reiter.
+- **Doppeltes K.-o.-System (WO 7.4):** Als Modus für Phase 1 oder als Phase 2 nach einer Gruppenphase. Wer in der
+  Siegerrunde verliert, spielt in der Trostrunde weiter (gekreuzt, damit sich Begegnungen möglichst nicht wiederholen);
+  erst die zweite Niederlage scheidet aus. Gewinnt im Finale die Siegerin/der Sieger der Trostrunde, folgt automatisch
+  ein Stichkampf – sonst entfällt er.
+- **Gruppen nach Leistungsstufen und Phase 3:** Als Phase 2 nach einer Gruppenphase: Stufen aus je n Gruppenplätzen
+  (z. B. 2 → Plätze 1–2, 3–4 …), je Stufe neue Gruppen – gespiegelt aus den Vorrundengruppen (A mit der letzten, B mit
+  der vorletzten Gruppe …) oder ausgelost. Ergebnisse werden nicht übernommen, die Gruppennamen laufen weiter (z. B.
+  E, F, G …); eine Stufe steht im Endergebnis vor der nächsten. Danach ist erstmals eine **Phase 3** möglich:
+  „Endrunde je Gruppenplatz“ – je Stufe spielen die Gleichplatzierten ihre Plätze aus (Halbfinale, Finale, Spiel um
+  Platz 3), so bekommt jede Person einen eigenen Platz. Phase 3 gibt es nur nach „Gruppen nach Leistungsstufen“.
+- **TOP24- und TOP32-Platzierungsspiele:** Zwei eigene Phase-2-Typen nach einer Gruppenphase, nach dem Muster der
+  DTTB-Ranglistenturniere (4 Gruppen à 6 bzw. à 8): Gruppenerste und -zweite spielen über Kreuz um Platz 1–4 bzw. in
+  eine zweite Runde, alle 24 bzw. 32 Plätze werden ausgespielt. Fehlende Gruppenplätze sind Freilose, weitere Gruppen
+  bzw. Plätze folgen im Endergebnis dahinter.
+- **Darstellung der Pläne:** Je Abschnitt (z. B. „Platz 5–8“, „Trostrunde“) die Spiele in Spalten nach Spielrunde; jede
+  Karte zeigt, wohin Sieger und Verlierer gehen („Sieger/in → Spiel 21 · Verlierer/in: Platz 7“). Vor dem ersten Spiel
+  lassen sich Teilnehmende per Drag & Drop tauschen. PDF der Phase, Präsentationsansicht (je Wertung eine Seite)
+  und Endergebnis-PDF kennen die neuen Typen.
+
 ## Neu in 1.1.0
 
 - **Zeitplan – Startzeiten sichtbar:** Bei Klassen „mit Zeitplan“ steht hinter jeder Runde die geplante Startzeit,

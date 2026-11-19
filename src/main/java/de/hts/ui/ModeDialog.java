@@ -49,6 +49,26 @@ final class ModeDialog extends Dialog<Boolean> {
         }
     }
 
+    /** 1.2: Modi der Phase 1 – dazu Badeni (#95) und doppeltes KO (#99). */
+    private enum Opt {
+        KO("KO-System"), GROUPS("Gruppenphase (jeder gegen jeden)"), SWISS("Schweizer System"),
+        BADENI("Schweizer System nach Badeni"), DOUBLE_KO("Doppeltes K.-o.-System");
+        final String label;
+
+        Opt(String l) {
+            label = l;
+        }
+
+        TournamentMode mode() {
+            return switch (this) {
+                case KO -> TournamentMode.KNOCKOUT;
+                case GROUPS -> TournamentMode.GROUPS;
+                case SWISS, BADENI -> TournamentMode.SWISS;
+                case DOUBLE_KO -> TournamentMode.PLAN;
+            };
+        }
+    }
+
     ModeDialog(Window owner, Tournament t, PlayingClass c, Random random) {
         initOwner(owner);
         int n = t.entrantsOf(c).size();
@@ -56,17 +76,20 @@ final class ModeDialog extends Dialog<Boolean> {
         setHeaderText(c.getName() + ": " + n + (c.isTeam() ? " Teams" : c.isDoubles() ? " Doppel" : " Teilnehmende")
                 + ". Modus und Optionen für Phase 1 wählen – „Auslosen“ erstellt Phase 1.");
 
-        ComboBox<TournamentMode> mode = new ComboBox<>();
+        ComboBox<Opt> mode = new ComboBox<>();
         boolean dbl = c.isDoubles();
         boolean koOnly = c.isPureDoubles() && n > Tournament.MAX_DOUBLES_GROUP;
-        if (koOnly) mode.getItems().setAll(TournamentMode.KNOCKOUT);                     // Doppel > 5: nur KO-System
-        else if (dbl) mode.getItems().setAll(TournamentMode.GROUPS, TournamentMode.KNOCKOUT); // kein Schweizer System
-        else mode.getItems().setAll(TournamentMode.KNOCKOUT, TournamentMode.GROUPS, TournamentMode.SWISS);
-        mode.setConverter(conv(m -> m == TournamentMode.GROUPS ? (c.isPureDoubles() ? "Gruppenphase (eine Gruppe, jeder gegen jeden)"
-                : "Gruppenphase (jeder gegen jeden)") : m.getLabel()));
-        TournamentMode initial = c.getMode() == TournamentMode.NONE || c.getMode() == TournamentMode.PLACEMENT ? TournamentMode.GROUPS : c.getMode();
+        if (koOnly) mode.getItems().setAll(Opt.KO, Opt.DOUBLE_KO);                      // Doppel > 5: nur KO-Systeme
+        else if (dbl) mode.getItems().setAll(Opt.GROUPS, Opt.KO, Opt.DOUBLE_KO);        // kein Schweizer System
+        else mode.getItems().setAll(Opt.KO, Opt.GROUPS, Opt.SWISS, Opt.BADENI, Opt.DOUBLE_KO);
+        mode.setConverter(conv(m -> m == Opt.GROUPS && c.isPureDoubles() ? "Gruppenphase (eine Gruppe, jeder gegen jeden)" : m.label));
+        Opt initial = switch (c.getMode()) {
+            case KNOCKOUT -> Opt.KO;
+            case SWISS -> c.isBadeni() ? Opt.BADENI : Opt.SWISS;
+            case PLAN -> Opt.DOUBLE_KO;
+            default -> Opt.GROUPS;
+        };
         mode.setValue(mode.getItems().contains(initial) ? initial : mode.getItems().get(0));
-        mode.setDisable(koOnly);
 
         ComboBox<Seed> seed = new ComboBox<>();
         seed.setConverter(conv(s -> s.label));
@@ -154,9 +177,10 @@ final class ModeDialog extends Dialog<Boolean> {
         Runnable update = () -> {
             if (busy[0]) return;
             busy[0] = true;
-            TournamentMode m = mode.getValue();
-            boolean groups = m == TournamentMode.GROUPS, swiss = m == TournamentMode.SWISS;
-            List<Seed> options = groups ? List.of(Seed.SNAKE, Seed.POTS, Seed.HEADS, Seed.RANDOM) : List.of(Seed.TTR, Seed.RANDOM);
+            Opt o = mode.getValue();
+            TournamentMode m = o.mode();
+            boolean groups = m == TournamentMode.GROUPS, swiss = m == TournamentMode.SWISS, badeni = o == Opt.BADENI;
+            List<Seed> options = badeni ? List.of(Seed.TTR) : groups ? List.of(Seed.SNAKE, Seed.POTS, Seed.HEADS, Seed.RANDOM) : List.of(Seed.TTR, Seed.RANDOM);
             Seed cur = seed.getValue();
             if (!seed.getItems().equals(options)) {
                 seed.getItems().setAll(options);
@@ -208,7 +232,12 @@ final class ModeDialog extends Dialog<Boolean> {
                 }
             }
             Seed s = seed.getValue();
-            clubsHint.setText(swiss ? "Im Schweizer System wird nach der Tabelle gepaart – Vereine spielen dabei keine Rolle."
+            clubsHint.setText(badeni ? "Badeni: Runde 1 nach TTR (Erster gegen Letzten), danach je Siegegruppe Erster gegen Letzten der "
+                    + "Gruppe; ein Freilos bekommt der Beste der unteren Hälfte (niemand zweimal). Reihung: Siege, TTR, Sätze – ohne "
+                    + "Buchholz. Vereine spielen keine Rolle."
+                    : o == Opt.DOUBLE_KO ? "Doppeltes K.-o.-System: erst die zweite Niederlage scheidet aus. Vereinskameraden treffen "
+                    + "nicht schon in der 1. Runde aufeinander (soweit möglich)."
+                    : swiss ? "Im Schweizer System wird nach der Tabelle gepaart – Vereine spielen dabei keine Rolle."
                     : m == TournamentMode.KNOCKOUT ? "KO-System: Vereinskameraden treffen nicht schon in der 1. Runde aufeinander – "
                     + "der schwächer Gesetzte tauscht mit dem Nächstplatzierten, solange das möglich ist."
                     : s == Seed.HEADS ? "Gruppenkopf gesetzt: TTR-Nr. 1 in Gruppe A, Nr. 2 in B usw.; danach wie Stärkegruppen – möglichst "
@@ -241,6 +270,14 @@ final class ModeDialog extends Dialog<Boolean> {
                         text += sb;
                     }
                 }
+            } else if (badeni) {
+                text = "→ " + rounds.getValue() + " Runden à " + (n / 2) + " Spiele" + (n % 2 == 1 ? " + 1 Freilos" : "")
+                        + " · mindestens " + de.hts.tournament.BadeniSystem.MIN_ROUNDS + " Runden empfohlen; weitere Runden lassen "
+                        + "sich später anhängen. Keine Phase 2 – das Endergebnis ist die Tabelle.";
+            } else if (o == Opt.DOUBLE_KO) {
+                int fieldSize = de.hts.tournament.KnockoutDraw.bracketSize(n);
+                text = "→ " + fieldSize + "er-Feld · Siegerrunde, Trostrunde, Finale (ggf. Stichkampf) · etwa " + (2 * n - 2) + " Spiele"
+                        + (fieldSize > n ? " · " + (fieldSize - n) + " Freilose (an die Besten)" : "");
             } else if (swiss) {
                 text = "→ " + rounds.getValue() + " Runden à " + (n / 2) + " Spiele" + (n % 2 == 1 ? " + 1 Freilos" : "")
                         + " · Vorschlag " + SwissSystem.defaultRounds(n) + " Runden";
@@ -252,7 +289,12 @@ final class ModeDialog extends Dialog<Boolean> {
             preview.setText(koOnly ? text + "\nBei mehr als " + Tournament.MAX_DOUBLES_GROUP + " Doppeln ist Phase 1 immer ein KO-System." : text);
             busy[0] = false;
         };
-        mode.valueProperty().addListener((o, a, b) -> update.run());
+        mode.valueProperty().addListener((o, a, b) -> {
+            if (b == Opt.BADENI && rounds.getValue() < de.hts.tournament.BadeniSystem.defaultRounds(n)) {
+                rounds.getValueFactory().setValue(de.hts.tournament.BadeniSystem.defaultRounds(n));
+            }
+            update.run();
+        });
         seed.valueProperty().addListener((o, a, b) -> update.run());
         by.selectedToggleProperty().addListener((o, a, b) -> update.run());
         size.valueProperty().addListener((o, a, b) -> update.run());
@@ -263,9 +305,10 @@ final class ModeDialog extends Dialog<Boolean> {
         ButtonType ok = new ButtonType("Auslosen", ButtonBar.ButtonData.OK_DONE);
         getDialogPane().getButtonTypes().addAll(ok, ButtonType.CANCEL);
         getDialogPane().lookupButton(ok).addEventFilter(javafx.event.ActionEvent.ACTION, e -> {
-            TournamentMode m = mode.getValue();
+            Opt o = mode.getValue();
+            TournamentMode m = o.mode();
             Seed s = seed.getValue();
-            c.setMode(m);
+            if (m != TournamentMode.PLAN) c.setMode(m);
             c.setGroupsBySize(bySize.isSelected());
             c.setGroupSize(size.getValue());
             c.setGroupCount(count.getValue());
@@ -282,8 +325,10 @@ final class ModeDialog extends Dialog<Boolean> {
             c.setSwissRounds(rounds.getValue());
             boolean seeded = s != Seed.RANDOM;
             try {
-                if (m == TournamentMode.GROUPS) t.drawGroups(c, seeded, random);
-                else if (m == TournamentMode.SWISS) t.drawSwiss(c, seeded, random);
+                if (o == Opt.GROUPS) t.drawGroups(c, seeded, random);
+                else if (o == Opt.BADENI) t.drawBadeni(c, random);
+                else if (o == Opt.SWISS) t.drawSwiss(c, seeded, random);
+                else if (o == Opt.DOUBLE_KO) t.drawDoubleKo(c, seeded, random);
                 else t.drawKnockout(c, seeded, random);
                 t.markModified();
             } catch (IllegalArgumentException | IllegalStateException ex) {

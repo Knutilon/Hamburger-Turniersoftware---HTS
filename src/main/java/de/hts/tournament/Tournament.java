@@ -570,7 +570,7 @@ public final class Tournament {
     /** Rundenzahl im Schweizer System (Einstellung oder Vorschlag), höchstens so viele wie ohne Wiederholung möglich. */
     public int swissRounds(PlayingClass c) {
         int n = c.getMode() == TournamentMode.SWISS && !c.getGroups().isEmpty() ? c.getGroups().get(0).size() : entrantsOf(c).size();
-        int r = c.getSwissRounds() > 0 ? c.getSwissRounds() : SwissSystem.defaultRounds(n);
+        int r = c.getSwissRounds() > 0 ? c.getSwissRounds() : c.isBadeni() ? BadeniSystem.defaultRounds(n) : SwissSystem.defaultRounds(n);
         return Math.min(r, SwissSystem.maxRounds(n));
     }
 
@@ -594,6 +594,31 @@ public final class Tournament {
         c.setReady(false);
         matches.removeIf(m -> m.getClassName().equals(c.getName()));
         addSwissRound(c, 1, SwissSystem.firstRound(entrants, seeded, random));
+        c.setBadeni(false);
+        markModified();
+    }
+
+    /**
+     * 1.2 (#95): Schweizer System nach Badeni-Art. Runde 1 nach TTR gereiht (bei gleichem TTR ausgelost) und wie alle
+     * Runden „Erster gegen Letzten“ gepaart; ein Freilos bekommt der Beste der unteren Hälfte.
+     */
+    public void drawBadeni(PlayingClass c, java.util.Random random) {
+        requireNotStarted(c);
+        if (c.isDoubles()) throw new IllegalStateException("Das Schweizer System nach Badeni gibt es für Doppel und 2er/3er Turniere nicht.");
+        List<Entrant> entrants = new java.util.ArrayList<>(entrantsOf(c));
+        if (entrants.size() < 2) throw new IllegalArgumentException("Dafür braucht es mindestens 2 Teilnehmende.");
+        java.util.Collections.shuffle(entrants, random);
+        entrants.sort(java.util.Comparator.comparing((Entrant e) -> e.ttr() == null ? Integer.MIN_VALUE : e.ttr()).reversed());
+        c.setMode(TournamentMode.SWISS);
+        c.setBadeni(true);
+        c.setSwissPaused(List.of());
+        c.setGroups(List.of(entrants.stream().map(Entrant::id).toList()), true);
+        c.setLotSeed(random.nextLong() | 1L);
+        c.setSwissByes(List.of());
+        c.setReady(false);
+        matches.removeIf(m -> m.getClassName().equals(c.getName()));
+        List<String> ids = entrants.stream().map(Entrant::id).toList();
+        addSwissRound(c, 1, BadeniSystem.nextRound(ids, java.util.Map.of(), java.util.Set.of(), java.util.Set.of()));
         markModified();
     }
 
@@ -613,11 +638,19 @@ public final class Tournament {
         int round = swissRound(c);
         if (round >= swissRounds(c)) return;
         if (!matchesOf(c).stream().allMatch(m -> m.getStatus() == MatchStatus.DONE)) return;
-        List<String> ranked = standings(c, 0).stream().map(r -> r.entrant().id())
-                .filter(id -> !c.getWithdrawn().contains(id)).toList();
+        List<GroupStanding.Row> table = standings(c, 0);
+        List<String> ranked = table.stream().map(r -> r.entrant().id())
+                .filter(id -> !c.getWithdrawn().contains(id) && !c.getSwissPaused().contains(id)).toList();
         java.util.Set<String> hadBye = new java.util.HashSet<>();
         for (String b : c.getSwissByes()) if (b != null) hadBye.add(b);
-        addSwissRound(c, round + 1, SwissSystem.nextRound(ranked, SwissSystem.playedPairs(matchesOf(c)), hadBye));
+        if (ranked.size() < 2) return;
+        if (c.isBadeni()) {
+            java.util.Map<String, Integer> wins = new java.util.HashMap<>();
+            for (GroupStanding.Row r : table) wins.put(r.entrant().id(), r.won() + r.byes());
+            addSwissRound(c, round + 1, BadeniSystem.nextRound(ranked, wins, SwissSystem.playedPairs(matchesOf(c)), hadBye));
+        } else {
+            addSwissRound(c, round + 1, SwissSystem.nextRound(ranked, SwissSystem.playedPairs(matchesOf(c)), hadBye));
+        }
         if (c.isStarted()) queueReady(c);
     }
 
@@ -634,7 +667,7 @@ public final class Tournament {
         if (from < 0) throw new IllegalArgumentException("Nicht in dieser Auslosung.");
         if (from == targetGroup) return;
         if (groups.get(from).size() <= 2) {
-            throw new IllegalStateException("Gruppe " + GroupDraw.groupName(from) + " braucht mindestens 2 Mitglieder – "
+            throw new IllegalStateException("Gruppe " + groupLabel(c, from) + " braucht mindestens 2 Mitglieder – "
                     + "stattdessen auf ein Mitglied der anderen Gruppe ziehen (Tausch).");
         }
         groups.get(from).remove(entrantId);
@@ -848,7 +881,7 @@ public final class Tournament {
                 if (r < 1) continue;
                 for (GroupDraw.Pairing p : perGroup.get(gi)) {
                     if (p.round() == r) {
-                        created.add(new Match(null, c.getName(), "Gruppe " + GroupDraw.groupName(gi), r, ++no,
+                        created.add(new Match(null, c.getName(), "Gruppe " + groupLabel(c, gi), r, ++no,
                                 -1, -1, gi, p.a().id(), p.b().id()));
                     }
                 }
@@ -1057,6 +1090,7 @@ public final class Tournament {
         c.setReady(true);
         if (!isStarted()) startedAt.set(now);
         if (c.getMode() == TournamentMode.KNOCKOUT) resolveKnockout(c);
+        else if (c.getMode() == TournamentMode.PLAN) resolvePlan(c);
         else queueReady(c);
         dispatch();
         markModified();
@@ -1108,13 +1142,22 @@ public final class Tournament {
         if (c.isPaused()) return;
         boolean sched = hasSchedule(c);
         if (sched && c.getScheduleAnchor() == null) c.setScheduleAnchor(LocalDateTime.now().withNano(0));
-        for (Match m : matchesOf(c)) {
-            if (m.getStatus() == MatchStatus.PLANNED && m.isReady() && (!sched || roundOpen(c, m))) {
-                m.setStatus(MatchStatus.QUEUED);
-                if (m.getQueueOrder() == 0) m.setQueueOrder(++queueCounter);   // nach Anhalten: alter Platz bleibt
+        List<Match> ms = matchesOf(c);
+        roundCache = sched ? ms : null;                 // 1.2: Runden nicht je Spiel neu aus allen Spielen suchen
+        try {
+            for (Match m : ms) {
+                if (m.getStatus() == MatchStatus.PLANNED && m.isReady() && (!sched || roundOpen(c, m))) {
+                    m.setStatus(MatchStatus.QUEUED);
+                    if (m.getQueueOrder() == 0) m.setQueueOrder(++queueCounter);   // nach Anhalten: alter Platz bleibt
+                }
             }
+        } finally {
+            roundCache = null;
         }
     }
+
+    /** Spiele der Klasse während {@link #queueReady} (sonst {@code null}). */
+    private List<Match> roundCache;
 
     // --- 1.0 (#77): Zeitplan ---------------------------------------------------------------------------
 
@@ -1141,14 +1184,17 @@ public final class Tournament {
 
     private List<Match> roundMatches(PlayingClass phase, Match like, int round) {
         boolean groups = phase.getMode() == TournamentMode.GROUPS && like.getGroupIndex() >= 0;
-        return matchesOf(phase).stream().filter(x -> x.getRound() == round && (!groups || x.getGroupIndex() == like.getGroupIndex())).toList();
+        List<Match> base = roundCache != null && !roundCache.isEmpty() && roundCache.get(0).getClassName().equals(phase.getName())
+                ? roundCache : matchesOf(phase);
+        return base.stream().filter(x -> x.getRound() == round && (!groups || x.getGroupIndex() == like.getGroupIndex())).toList();
     }
 
     /** Zeitfenster der Runde (1 = erstes): bei Gruppen mit Versatz für das gemeinsame Ende. */
     private int slotOf(PlayingClass phase, Match m) {
         if (phase.getMode() != TournamentMode.GROUPS || m.getGroupIndex() < 0) return Math.max(1, m.getRound());
         int max = 0, mine = 0;
-        for (Match x : matchesOf(phase)) {
+        for (Match x : roundCache != null && !roundCache.isEmpty() && roundCache.get(0).getClassName().equals(phase.getName())
+                ? roundCache : matchesOf(phase)) {
             max = Math.max(max, x.getRound());
             if (x.getGroupIndex() == m.getGroupIndex()) mine = Math.max(mine, x.getRound());
         }
@@ -1564,7 +1610,10 @@ public final class Tournament {
         // Spiel beendet ist, bleibt die Reihenfolge der Auslosung stehen
         boolean anyDone = gm.stream().anyMatch(m -> m.getStatus() == MatchStatus.DONE);
         java.util.function.ToIntFunction<String> lot = anyDone ? c::lotOf : null;
-        if (c.getMode() == TournamentMode.SWISS) return SwissSystem.standings(groups.get(groupIndex), gm, c.getSwissByes(), lot);
+        if (c.getMode() == TournamentMode.SWISS) {
+            List<GroupStanding.Row> rows = SwissSystem.standings(groups.get(groupIndex), gm, c.getSwissByes(), lot);
+            return c.isBadeni() ? BadeniSystem.standings(rows) : rows;
+        }
         return GroupStanding.compute(groups.get(groupIndex), gm, c.getTiebreak(), lot);
     }
 
@@ -1577,7 +1626,7 @@ public final class Tournament {
     }
 
     /** Höchstzahl der Phasen je Klasse. */
-    public static final int MAX_PHASES = 2;
+    public static final int MAX_PHASES = 3;
 
     /** Sind alle (ausgelosten) Klassen beendet? Dann können die Gesamtergebnisse exportiert werden. */
     public boolean isCompletelyFinished() {
@@ -1621,6 +1670,9 @@ public final class Tournament {
     public boolean isPhaseComplete(PlayingClass c) {
         if (c.isEndedEarly()) return true;                      // 0.38 (#51)
         if (c.getMode() == TournamentMode.QUALIFICATION) return isQualificationComplete(c);
+        if (c.getMode() == TournamentMode.PLAN) {
+            return c.getPlan() != null && isPlanComplete(c) && matchesOf(c).stream().allMatch(m -> m.getStatus() == MatchStatus.DONE);
+        }
         if (c.getMode() == TournamentMode.SWISS && swissRound(c) < swissRounds(c)) return false;
         List<Match> ms = matchesOf(c);
         return c.isDrawn() && ms.stream().allMatch(m -> m.getStatus() == MatchStatus.DONE)
@@ -1630,19 +1682,23 @@ public final class Tournament {
     /** „Gruppenphase mit Platzierungsspielen“ geht nur nach genau 2 Gruppen mit je mindestens 2 Teilnehmenden. */
     public boolean canChoosePlacement(PlayingClass c) {
         return c.getMode() == TournamentMode.GROUPS && c.getGroups().size() == 2
-                && c.getGroups().stream().allMatch(g -> g.size() >= 2) && phaseNumber(c) < MAX_PHASES;
+                && c.getGroups().stream().allMatch(g -> g.size() >= 2) && phaseNumber(c) == 1;
     }
 
     /** Darf nach dieser Phase noch eine weitere folgen (höchstens 3 Phasen, nur nach einer Gruppenphase)? */
     public boolean canHaveNextPhase(PlayingClass c) {
         // Schweizer System: nur Phase 1 und danach keine weitere Phase – nur das Endergebnis
-        return c.getMode() == TournamentMode.GROUPS && phaseNumber(c) < MAX_PHASES;
+        // 1.2: Phase 3 nur nach „Gruppen nach Leistungsstufen“ (#97)
+        if (c.getMode() != TournamentMode.GROUPS) return false;
+        int n = phaseNumber(c);
+        return n == 1 || (n == 2 && c.isTiered());
     }
 
     /** Kann aus dieser Gruppenphase die Folgephase erstellt werden? */
     public boolean canCreateNextPhase(PlayingClass c) {
         if (c.getNextPhase() == TournamentMode.NONE || c.getFollowUpClass() != null || !isGroupPhaseComplete(c)) return false;
         if (!canHaveNextPhase(c) || rootOf(c).isFinished()) return false;
+        if (phaseNumber(c) > 1 && c.getNextPhase() != TournamentMode.PLAN) return false;
         if (c.getNextPhase() == TournamentMode.QUALIFICATION) return c.getMode() == TournamentMode.GROUPS && phaseNumber(c) == 1;
         return c.getNextPhase() != TournamentMode.PLACEMENT || canChoosePlacement(c);
     }
@@ -1700,6 +1756,7 @@ public final class Tournament {
         phase.setEndedEarly(false);
         rootOf(phase).setFinishedAt(null);
         if (phase.getMode() == TournamentMode.KNOCKOUT) resolveKnockout(phase);
+        else if (phase.getMode() == TournamentMode.PLAN) resolvePlan(phase);
         else if (phase.isStarted()) queueReady(phase);
         dispatch();
         markModified();
@@ -1748,6 +1805,7 @@ public final class Tournament {
         PlayingClass root = rootOf(phase);
         root.setFinishedAt(null);
         if (phase.getMode() == TournamentMode.KNOCKOUT) resolveKnockout(phase);
+        else if (phase.getMode() == TournamentMode.PLAN) resolvePlan(phase);
         else queueReady(phase);
         dispatch();
         markModified();
@@ -1863,6 +1921,10 @@ public final class Tournament {
      */
     public PlayingClass redrawPhase(PlayingClass phase, java.util.Random random) {
         if (!phase.isPhase()) throw new IllegalStateException("Nur Folgephasen (Phase 2/3) können hier neu ausgelost werden.");
+        if (phase.getMode() == TournamentMode.PLAN || phase.isTiered()) {
+            throw new IllegalStateException("Diese Phase lässt sich nicht neu auslosen – stattdessen „Zurück zu Phase "
+                    + (phaseNumber(phase) - 1) + "“ und die Phase neu anlegen.");
+        }
         if (!phase.isPaused()) throw new IllegalStateException("Bitte die Phase zuerst anhalten.");
         if (phase.getFollowUpClass() != null) throw new IllegalStateException("Es gibt schon eine weitere Phase.");
         if (matchesOf(phase).stream().anyMatch(m -> m.getStatus() == MatchStatus.ACTIVE)) {   // pausierte werden mit gelöscht
@@ -2609,7 +2671,7 @@ public final class Tournament {
         if (src != null) {
             for (int g = 0; g < src.getGroups().size(); g++) {
                 List<GroupStanding.Row> rows = standings(src, g);
-                for (int p = 0; p < rows.size(); p++) out.putIfAbsent(rows.get(p).entrant().id(), GroupDraw.groupName(g) + (p + 1));
+                for (int p = 0; p < rows.size(); p++) out.putIfAbsent(rows.get(p).entrant().id(), groupLabel(src, g) + (p + 1));
             }
         }
         return out;
@@ -2753,6 +2815,718 @@ public final class Tournament {
         return now;
     }
 
+    // =====================================================================================================
+    // 1.2: Platzierungspläne (#94, #96–#100), Leistungsstufen (#97), Phase 3
+    // =====================================================================================================
+
+    /** Gruppenname einer Phase, fortlaufend nach der Vorphase (Leistungsstufen: I, J, K …). */
+    public String groupLabel(PlayingClass c, int groupIndex) {
+        return GroupDraw.groupName(groupIndex + (c == null ? 0 : c.getGroupNameOffset()));
+    }
+
+    /**
+     * Einstellungen für eine Plan-Phase.
+     *
+     * @param mainPlaces Gruppenplätze der Hauptrunde bzw. des KO-Feldes (fortgesetztes/doppeltes KO)
+     * @param consPlaces Gruppenplätze der Trostrunde (nur Haupt- und Trostrunde)
+     * @param cutoffSize fortgesetztes KO: ab welcher Rundengröße die Verlierer weiterspielen ({@link Plan#CUTOFF_ALL} = alle)
+     */
+    public record PlanOptions(List<Integer> mainPlaces, List<Integer> consPlaces, boolean thirdMain, boolean thirdCons, int cutoffSize) {
+        public static PlanOptions of(List<Integer> places) {
+            return new PlanOptions(places, List.of(), false, false, Plan.CUTOFF_ALL);
+        }
+    }
+
+    /** Welche Plan-Arten nach dieser Phase wählbar sind. */
+    public List<Plan.Kind> planKindsAfter(PlayingClass c) {
+        if (c.getMode() != TournamentMode.GROUPS || !canHaveNextPhase(c)) return List.of();
+        if (phaseNumber(c) == 2) return c.isTiered() ? List.of(Plan.Kind.FINAL_BY_PLACE) : List.of();
+        return List.of(Plan.Kind.MAIN_CONSOLATION, Plan.Kind.CONTINUED, Plan.Kind.DOUBLE, Plan.Kind.TOP24, Plan.Kind.TOP32);
+    }
+
+    /** „Gruppen nach Leistungsstufen“ ist nur als Phase 2 nach einer Gruppenphase wählbar. */
+    public boolean canChooseTiers(PlayingClass c) {
+        return c.getMode() == TournamentMode.GROUPS && phaseNumber(c) == 1 && canHaveNextPhase(c);
+    }
+
+    private void requireNextPhase(PlayingClass c) {
+        if (c.getFollowUpClass() != null) throw new IllegalStateException("Es gibt schon eine weitere Phase.");
+        if (rootOf(c).isFinished()) throw new IllegalStateException("Die Klasse ist schon beendet.");
+        if (!canHaveNextPhase(c)) {
+            throw new IllegalStateException(c.getMode() == TournamentMode.SWISS ? "Nach dem Schweizer System gibt es keine weitere Phase."
+                    : "Eine weitere Phase ist hier nicht möglich.");
+        }
+        if (!isGroupPhaseComplete(c)) throw new IllegalStateException("Die Folgephase kann erst erstellt werden, wenn alle Gruppenspiele abgeschlossen sind.");
+    }
+
+    /** Legt die Klasse der Folgephase an (Name „… – Phase n“, Einstellungen der Vorphase). */
+    private PlayingClass newPhaseClass(PlayingClass c, java.util.Random random) {
+        PlayingClass root = rootOf(c);
+        int number = phaseNumber(c) + 1;
+        String base = root.getName() + " – Phase " + number;
+        String name = base;
+        for (int k = 2; findClass(name).isPresent(); k++) name = base + " (" + k + ")";
+        PlayingClass next = new PlayingClass(name, c.getDiscipline(), c.getType(), null, null);
+        next.setWomanRequired(c.isWomanRequired());
+        next.setSourceClass(c.getName());
+        addClass(next);
+        next.setLotSeed(random.nextLong() | 1L);
+        next.setTiebreak(c.getTiebreak());
+        next.setGroupsBySize(true);
+        next.setGroupSize(c.getGroupSize());
+        return next;
+    }
+
+    /** Verknüpft die neue Phase und startet sie (wie {@code createNextPhase}). */
+    private void finishNewPhase(PlayingClass c, PlayingClass next) {
+        c.setFollowUpClass(next.getName());
+        if (c.isStarted()) {
+            next.setStartedAt(LocalDateTime.now().withNano(0));
+            next.setReady(true);
+        }
+        if (next.getMode() == TournamentMode.PLAN) resolvePlan(next);
+        else if (next.isStarted()) queueReady(next);
+        if (next.isStarted()) dispatch();
+        markModified();
+    }
+
+    /**
+     * Rangliste der angegebenen Gruppenplätze (alle Gruppen-x-ten, die besten zuerst – Spiel-, Satz-, Ballverhältnis,
+     * Los), übernommen in die neue Phase.
+     */
+    private List<Entrant> rankedFromPlaces(List<List<GroupStanding.Row>> tables, List<Integer> places, PlayingClass next,
+                                           java.util.Map<String, String> idMap, java.util.Map<String, Integer> groupOf,
+                                           java.util.Map<String, String> labels, PlayingClass source, java.util.Random random) {
+        List<Entrant> ranked = new java.util.ArrayList<>();
+        for (int placeNo : places) {
+            int place = placeNo - 1;
+            for (int g : tierOrder(tables, place, random, false)) {
+                Entrant now = carryOver(next, tables.get(g).get(place).entrant(), idMap);
+                if (now != null) {
+                    ranked.add(now);
+                    groupOf.put(now.id(), g);
+                    labels.put(now.id(), groupLabel(source, g) + (place + 1));
+                }
+            }
+        }
+        return ranked;
+    }
+
+    /** Herkunfts-ID (Vorphase) zu einer ID der neuen Phase. */
+    private static String originOf(java.util.Map<String, String> idMap, String newId) {
+        if (newId == null) return null;
+        for (var e : idMap.entrySet()) if (e.getValue().equals(newId)) return e.getKey();
+        return newId;
+    }
+
+    private List<String> slotIds(List<Entrant> slots) {
+        return slots.stream().map(e -> e == null ? null : e.id()).collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+    }
+
+    /** Warum diese Plan-Einstellungen nicht gehen – sonst {@code null}. */
+    public String planProblem(PlayingClass c, Plan.Kind kind, PlanOptions o) {
+        int maxGroup = c.getGroups().stream().mapToInt(List::size).max().orElse(0);
+        switch (kind) {
+            case MAIN_CONSOLATION -> {
+                if (o.mainPlaces() == null || o.mainPlaces().isEmpty()) return "Bitte die Gruppenplätze der Hauptrunde angeben, z. B. 1,2.";
+                if (o.consPlaces() == null || o.consPlaces().isEmpty()) return "Bitte die Gruppenplätze der Trostrunde angeben, z. B. 3,4.";
+                java.util.Set<Integer> all = new java.util.HashSet<>(o.mainPlaces());
+                for (int p : o.consPlaces()) if (!all.add(p)) return "Platz " + p + " ist in Haupt- und Trostrunde angegeben.";
+                for (int p : all) if (p < 1 || p > maxGroup) return "Platz " + p + " gibt es nicht – die größte Gruppe hat " + maxGroup + " Plätze.";
+                if (countPlaces(c, o.mainPlaces()) < 2) return "In der Hauptrunde müssen mindestens 2 spielen.";
+            }
+            case CONTINUED, DOUBLE -> {
+                String p = placesProblem(c, o.mainPlaces());
+                if (p != null) return p;
+                if (kind == Plan.Kind.DOUBLE && countPlaces(c, o.mainPlaces()) < 3) return "Das doppelte K.-o.-System braucht mindestens 3 Teilnehmende.";
+            }
+            case FINAL_BY_PLACE -> {
+                if (!c.isTiered()) return "Die Endrunde je Gruppenplatz geht nur nach „Gruppen nach Leistungsstufen“.";
+            }
+            case TOP24, TOP32 -> {
+                if (c.getGroups().size() < 2) return "Dafür braucht es mindestens 2 Gruppen.";
+            }
+        }
+        return null;
+    }
+
+    private static int countPlaces(PlayingClass c, List<Integer> places) {
+        int n = 0;
+        for (List<String> g : c.getGroups()) for (int p : places) if (p >= 1 && p <= g.size()) n++;
+        return n;
+    }
+
+    /** Folgephase als Platzierungsplan anlegen und (wenn die Klasse läuft) starten. */
+    public PlayingClass createPlanPhase(PlayingClass c, Plan.Kind kind, PlanOptions o, java.util.Random random) {
+        requireNextPhase(c);
+        if (!planKindsAfter(c).contains(kind)) throw new IllegalStateException(kind.getLabel() + " ist nach dieser Phase nicht wählbar.");
+        String problem = planProblem(c, kind, o == null ? PlanOptions.of(List.of(1, 2)) : o);
+        if (problem != null) throw new IllegalArgumentException(problem);
+        PlayingClass next = newPhaseClass(c, random);
+        try {
+            int groupCount = c.getGroups().size();
+            List<List<GroupStanding.Row>> tables = new java.util.ArrayList<>();
+            for (int g = 0; g < groupCount; g++) tables.add(standings(c, g));
+            java.util.Map<String, String> idMap = new java.util.HashMap<>();
+            java.util.Map<String, String> labels = new java.util.LinkedHashMap<>();
+            Plan plan;
+            switch (kind) {
+                case MAIN_CONSOLATION -> {
+                    java.util.Map<String, Integer> gm = new java.util.HashMap<>(), gc = new java.util.HashMap<>();
+                    List<Entrant> main = rankedFromPlaces(tables, o.mainPlaces(), next, idMap, gm, labels, c, random);
+                    List<Entrant> cons = rankedFromPlaces(tables, o.consPlaces(), next, idMap, gc, labels, c, random);
+                    List<String> ms = main.size() >= 2 ? slotIds(KnockoutDraw.drawFromRanking(main, gm, groupCount, random)) : slotIds(main);
+                    List<String> cs = cons.size() >= 2 ? slotIds(KnockoutDraw.drawFromRanking(cons, gc, groupCount, random)) : slotIds(cons);
+                    plan = Plan.mainConsolation(ms, ms.stream().map(x -> originOf(idMap, x)).toList(),
+                            cs, cs.stream().map(x -> originOf(idMap, x)).toList(), o.thirdMain(), o.thirdCons());
+                }
+                case CONTINUED, DOUBLE -> {
+                    java.util.Map<String, Integer> gm = new java.util.HashMap<>();
+                    List<Entrant> field = rankedFromPlaces(tables, o.mainPlaces(), next, idMap, gm, labels, c, random);
+                    List<String> slots = slotIds(KnockoutDraw.drawFromRanking(field, gm, groupCount, random));
+                    List<String> origins = slots.stream().map(x -> originOf(idMap, x)).toList();
+                    plan = kind == Plan.Kind.CONTINUED ? Plan.continued(slots, origins, o.cutoffSize()) : Plan.doubleKo(slots, origins);
+                }
+                case TOP24, TOP32 -> plan = Plan.fromTemplate(kind, kind == Plan.Kind.TOP24 ? Plan.TOP24 : Plan.TOP32, token -> {
+                    int g = token.charAt(0) - 'A', place = Integer.parseInt(token.substring(1)) - 1;
+                    if (g >= tables.size() || place >= tables.get(g).size()) return null;
+                    Entrant src = tables.get(g).get(place).entrant();
+                    Entrant now = carryOver(next, src, idMap);
+                    if (now == null) return null;
+                    labels.put(now.id(), groupLabel(c, g) + (place + 1));
+                    return new String[]{now.id(), src.id()};
+                });
+                case FINAL_BY_PLACE -> {
+                    List<Plan.Block> blocks = new java.util.ArrayList<>();
+                    int g0 = 0, offset = 0;
+                    for (int tierGroups : c.getTierSizes()) {
+                        int maxSize = 0, count = 0;
+                        for (int g = g0; g < g0 + tierGroups && g < groupCount; g++) {
+                            maxSize = Math.max(maxSize, tables.get(g).size());
+                            count += tables.get(g).size();
+                        }
+                        for (int place = 0; place < maxSize; place++) {
+                            List<String> ids = new java.util.ArrayList<>(), origins = new java.util.ArrayList<>();
+                            for (int g = g0; g < g0 + tierGroups && g < groupCount; g++) {
+                                if (place >= tables.get(g).size()) {
+                                    ids.add(null);
+                                    origins.add(null);
+                                    continue;
+                                }
+                                Entrant src = tables.get(g).get(place).entrant();
+                                Entrant now = carryOver(next, src, idMap);
+                                ids.add(now == null ? null : now.id());
+                                origins.add(src.id());
+                                if (now != null) labels.put(now.id(), groupLabel(c, g) + (place + 1));
+                            }
+                            blocks.add(new Plan.Block(ids, origins, offset + place * tierGroups + 1));
+                        }
+                        offset += Math.max(count, maxSize * tierGroups);
+                        g0 += tierGroups;
+                    }
+                    plan = Plan.finalByPlace(blocks);
+                }
+                default -> throw new IllegalArgumentException(kind.toString());
+            }
+            next.setMode(TournamentMode.PLAN);
+            next.setPlan(plan);
+            next.setSeedLabels(labels);
+            c.setNextPhase(TournamentMode.PLAN);
+        } catch (RuntimeException e) {
+            removeClass(next);
+            throw e;
+        }
+        finishNewPhase(c, next);
+        return next;
+    }
+
+    /**
+     * Phase 2 „Gruppen nach Leistungsstufen“ (#97): Stufen aus je {@code tierWidth} Vorrundenplätzen (z. B. 2 → 1–2, 3–4,
+     * 5–6); je Stufe Gruppen der Größe {@code groupSize} – gespiegelt aus den Vorrundengruppen (A+H, B+G …) oder ausgelost.
+     * Ergebnisse werden nicht übernommen.
+     */
+    public PlayingClass createTieredPhase(PlayingClass c, int tierWidth, int groupSize, boolean mirrored, java.util.Random random) {
+        requireNextPhase(c);
+        if (!canChooseTiers(c)) throw new IllegalStateException("„Gruppen nach Leistungsstufen“ gibt es nur als Phase 2 nach einer Gruppenphase.");
+        if (tierWidth < 1) throw new IllegalArgumentException("Eine Stufe umfasst mindestens einen Gruppenplatz.");
+        if (groupSize < 2) throw new IllegalArgumentException("Eine Gruppe braucht mindestens 2 Teilnehmende.");
+        int groupCount = c.getGroups().size();
+        List<List<GroupStanding.Row>> tables = new java.util.ArrayList<>();
+        for (int g = 0; g < groupCount; g++) tables.add(standings(c, g));
+        int maxSize = tables.stream().mapToInt(List::size).max().orElse(0);
+        PlayingClass next = newPhaseClass(c, random);
+        java.util.Map<String, String> idMap = new java.util.HashMap<>();
+        java.util.Map<String, String> labels = new java.util.LinkedHashMap<>();
+        List<List<String>> groups = new java.util.ArrayList<>();
+        List<Integer> tierSizes = new java.util.ArrayList<>();
+        List<Integer> mirror = new java.util.ArrayList<>();
+        for (int i = 0, j = groupCount - 1; i <= j; i++, j--) {
+            mirror.add(i);
+            if (j != i) mirror.add(j);
+        }
+        int perGroup = Math.max(1, groupSize / tierWidth);
+        for (int from = 0; from < maxSize; from += tierWidth) {
+            int before = groups.size();
+            if (mirrored) {
+                for (int k = 0; k < mirror.size(); k += perGroup) {
+                    List<String> members = new java.util.ArrayList<>();
+                    for (int place = from; place < Math.min(maxSize, from + tierWidth); place++) {
+                        for (int m = k; m < Math.min(mirror.size(), k + perGroup); m++) {
+                            int g = mirror.get(m);
+                            if (place >= tables.get(g).size()) continue;
+                            Entrant now = carryOver(next, tables.get(g).get(place).entrant(), idMap);
+                            if (now == null) continue;
+                            members.add(now.id());
+                            labels.put(now.id(), groupLabel(c, g) + (place + 1));
+                        }
+                    }
+                    if (!members.isEmpty()) groups.add(members);
+                }
+            } else {
+                List<String> pool = new java.util.ArrayList<>();
+                for (int place = from; place < Math.min(maxSize, from + tierWidth); place++) {
+                    for (int g = 0; g < groupCount; g++) {
+                        if (place >= tables.get(g).size()) continue;
+                        Entrant now = carryOver(next, tables.get(g).get(place).entrant(), idMap);
+                        if (now == null) continue;
+                        pool.add(now.id());
+                        labels.put(now.id(), groupLabel(c, g) + (place + 1));
+                    }
+                }
+                java.util.Collections.shuffle(pool, random);
+                int n = Math.max(1, (int) Math.round(pool.size() / (double) groupSize));
+                List<List<String>> tier = new java.util.ArrayList<>();
+                for (int k = 0; k < n; k++) tier.add(new java.util.ArrayList<>());
+                for (int k = 0; k < pool.size(); k++) tier.get(k % n).add(pool.get(k));
+                for (List<String> t : tier) if (!t.isEmpty()) groups.add(t);
+            }
+            if (groups.size() > before) tierSizes.add(groups.size() - before);
+        }
+        if (groups.stream().mapToInt(List::size).sum() < 2) {
+            removeClass(next);
+            throw new IllegalStateException("Für die Folgephase qualifizieren sich weniger als 2.");
+        }
+        next.setMode(TournamentMode.GROUPS);
+        next.setGroups(groups, true);
+        next.setTierSizes(tierSizes);
+        next.setGroupNameOffset(c.getGroupNameOffset() + groupCount);
+        next.setSeedLabels(labels);
+        createGroupMatches(next);
+        c.setNextPhase(TournamentMode.GROUPS);
+        c.setQualifiers(maxSize);                       // alle kommen weiter – keine Restwertung aus Phase 1
+        c.setQualifierPlaces(List.of());
+        finishNewPhase(c, next);
+        return next;
+    }
+
+    /** Phase 1 im doppelten K.-o.-System (#99): Auslosung wie beim einfachen KO. */
+    public void drawDoubleKo(PlayingClass c, boolean seeded, java.util.Random random) {
+        requireNotStarted(c);
+        List<Entrant> entrants = entrantsOf(c);
+        if (entrants.size() < 3) throw new IllegalArgumentException("Das doppelte K.-o.-System braucht mindestens 3 Teilnehmende.");
+        List<Entrant> slots = KnockoutDraw.draw(entrants, seeded, c.isAvoidSameClub() && !c.isDoubles(), random);
+        List<String> ids = slotIds(slots);
+        c.setMode(TournamentMode.PLAN);
+        c.setSwissByes(List.of());
+        c.setGroups(List.of(), seeded);
+        c.setDraw(List.of(), seeded);
+        c.setPlan(Plan.doubleKo(ids, ids));
+        c.setReady(false);
+        matches.removeIf(m -> m.getClassName().equals(c.getName()));
+        resolvePlan(c);
+        markModified();
+    }
+
+    // --- Auflösen ----------------------------------------------------------------------------------------
+
+    /**
+     * Stand eines Plans: je Knoten die beiden Seiten und Sieger/Verlierer ({@code null} = offen, „-“ = Freilos);
+     * {@code real} = echtes Spiel, {@code skipped} = entfällt (Stichkampf nicht nötig).
+     */
+    public record PlanState(java.util.Map<String, String[]> sides, java.util.Map<String, String[]> out,
+                            java.util.Set<String> real, java.util.Set<String> skipped) {
+    }
+
+    private static String planSrc(Plan p, String src, java.util.Map<String, String[]> out) {
+        if (src == null) return null;
+        if ("-".equals(src)) return "-";
+        int si = Plan.seedIndex(src);
+        if (si >= 0) {
+            String id = si < p.getSeeds().size() ? p.getSeeds().get(si) : null;
+            return id == null ? "-" : id;
+        }
+        String k = Plan.refKey(src);
+        String[] o = k == null ? null : out.get(k);
+        if (o == null) return null;
+        return src.startsWith("W:") ? o[0] : o[1];
+    }
+
+    public PlanState planState(PlayingClass c) {
+        Plan p = c.getPlan();
+        java.util.Map<String, String[]> sides = new java.util.HashMap<>(), out = new java.util.HashMap<>();
+        java.util.Set<String> real = new java.util.HashSet<>(), skipped = new java.util.HashSet<>();
+        if (p == null) return new PlanState(sides, out, real, skipped);
+        java.util.Map<Integer, Match> byNo = new java.util.HashMap<>();
+        for (Match m : matchesOf(c)) byNo.put(m.getNumber(), m);
+        List<Plan.Node> nodes = new java.util.ArrayList<>(p.getNodes());
+        nodes.sort(java.util.Comparator.comparingInt(Plan.Node::no));
+        for (Plan.Node n : nodes) {
+            String a = planSrc(p, n.a(), out), b = planSrc(p, n.b(), out);
+            sides.put(n.key(), new String[]{a, b});
+            if (n.cond() != null && n.cond().startsWith("IFB:")) {
+                String ck = n.cond().substring(4);
+                String[] o = out.get(ck), sd = sides.get(ck);
+                if (o == null || o[0] == null || sd == null) {
+                    out.put(n.key(), new String[]{null, null});
+                    continue;
+                }
+                if (!real.contains(ck) || !o[0].equals(sd[1])) {
+                    skipped.add(n.key());
+                    out.put(n.key(), new String[]{"-", "-"});
+                    continue;
+                }
+            }
+            if (a == null || b == null) {
+                out.put(n.key(), new String[]{null, null});
+            } else if ("-".equals(a) && "-".equals(b)) {
+                out.put(n.key(), new String[]{"-", "-"});
+            } else if ("-".equals(a) || "-".equals(b)) {
+                out.put(n.key(), new String[]{"-".equals(a) ? b : a, "-"});
+            } else {
+                real.add(n.key());
+                Match m = byNo.get(n.no());
+                if (m != null && a.equals(m.getA()) && b.equals(m.getB())) out.put(n.key(), new String[]{m.winner(), m.loser()});
+                else out.put(n.key(), new String[]{null, null});
+            }
+        }
+        return new PlanState(sides, out, real, skipped);
+    }
+
+    /** Spiele des Plans anlegen bzw. anpassen, sobald ihre Gegner feststehen; läuft die Phase, einreihen. */
+    void resolvePlan(PlayingClass c) {
+        Plan p = c.getPlan();
+        if (p == null) return;
+        for (int pass = 0; pass < 6; pass++) {
+            boolean changed = false;
+            PlanState st = planState(c);
+            java.util.Map<Integer, Match> byNo = new java.util.HashMap<>();
+            for (Match m : matchesOf(c)) byNo.put(m.getNumber(), m);
+            for (Plan.Node n : p.getNodes()) {
+                Match m = byNo.get(n.no());
+                String[] sd = st.sides().get(n.key());
+                if (st.real().contains(n.key())) {
+                    if (m == null) {
+                        matches.add(new Match(null, c.getName(), n.stage(), n.depth(), n.no(), -1, -1, -1, sd[0], sd[1]));
+                        changed = true;
+                    } else if (!sd[0].equals(m.getA()) || !sd[1].equals(m.getB())) {
+                        if (m.getStatus() != MatchStatus.PLANNED) m.clearScore();
+                        m.setA(sd[0]);
+                        m.setB(sd[1]);
+                        changed = true;
+                    }
+                } else if (m != null) {
+                    if (m.getStatus() == MatchStatus.DONE || m.getStatus().atTable()) m.clearScore();
+                    matches.remove(m);
+                    changed = true;
+                }
+            }
+            if (!changed) break;
+        }
+        if (c.isStarted() && !c.isPaused()) queueReady(c);
+    }
+
+    /** Sind alle Spiele des Plans entschieden? */
+    private boolean isPlanComplete(PlayingClass c) {
+        PlanState st = planState(c);
+        for (Plan.Node n : c.getPlan().getNodes()) {
+            String[] o = st.out().get(n.key());
+            if (o == null || o[0] == null) return false;
+        }
+        return true;
+    }
+
+    /** Setzplätze tauschen (Drag &amp; Drop vor dem Start der Phase). */
+    public void swapPlanSeeds(PlayingClass c, int i, int j) {
+        if (c.getPlan() == null) return;
+        if (c.isStarted() && matchesOf(c).stream().anyMatch(m -> m.getStatus() != MatchStatus.PLANNED && m.getStatus() != MatchStatus.QUEUED)) {
+            throw new IllegalStateException("Die Phase läuft schon – die Auslosung lässt sich nicht mehr ändern.");
+        }
+        c.getPlan().swapSeeds(i, j);
+        for (Match m : matchesOf(c)) if (m.getStatus() == MatchStatus.QUEUED) m.setStatus(MatchStatus.PLANNED);
+        resolvePlan(c);
+        dispatch();
+        markModified();
+    }
+
+    /** Korrektur in einem Plan: betroffene Folgespiele melden bzw. (mit {@code reset}) zurücksetzen. */
+    private void planConflicts(PlayingClass c, Match m, String newWinner, boolean reset) {
+        if (c == null || c.getMode() != TournamentMode.PLAN || c.getPlan() == null) return;
+        List<Match> affected = planAffected(c, m, newWinner);
+        if (affected.isEmpty()) return;
+        if (!reset) throw new FollowUpConflict(affected);
+        for (Match x : affected) x.clearScore();
+        PlayingClass root = rootOf(c);
+        if (root.isFinished()) root.setFinishedAt(null);
+    }
+
+    /** Folgespiele, die eine Korrektur in einem Plan zurücksetzen würde (gespielt oder am Tisch). */
+    private List<Match> planAffected(PlayingClass c, Match m, String newWinner) {
+        List<Match> out = new java.util.ArrayList<>();
+        Plan p = c.getPlan();
+        Plan.Node n = p.nodeByNumber(m.getNumber());
+        if (n == null || newWinner.equals(m.winner())) return out;
+        java.util.Set<String> dirty = new java.util.HashSet<>(List.of(n.key()));
+        java.util.Map<Integer, Match> byNo = new java.util.HashMap<>();
+        for (Match x : matchesOf(c)) byNo.put(x.getNumber(), x);
+        List<Plan.Node> nodes = new java.util.ArrayList<>(p.getNodes());
+        nodes.sort(java.util.Comparator.comparingInt(Plan.Node::no));
+        for (Plan.Node x : nodes) {
+            String ka = Plan.refKey(x.a()), kb = Plan.refKey(x.b());
+            String kc = x.cond() == null ? null : x.cond().substring(4);
+            if ((ka != null && dirty.contains(ka)) || (kb != null && dirty.contains(kb)) || (kc != null && dirty.contains(kc))) {
+                dirty.add(x.key());
+                Match mm = byNo.get(x.no());
+                if (mm != null && (mm.getStatus() == MatchStatus.DONE || mm.getStatus().atTable())) out.add(mm);
+            }
+        }
+        return out;
+    }
+
+    /** Text einer Seite eines Plan-Spiels: Name, „Freilos“ oder z. B. „Sieger/in Spiel 12“. */
+    public String planSideText(PlayingClass c, PlanState st, Plan.Node n, boolean sideA) {
+        String[] sd = st.sides().get(n.key());
+        String id = sd == null ? null : sd[sideA ? 0 : 1];
+        if ("-".equals(id)) return "Freilos";
+        if (id != null) {
+            Entrant e = entrantIndex(c).get(id);
+            String label = c.getSeedLabels().get(id);
+            return (label == null || Plan.seedIndex(sideA ? n.a() : n.b()) < 0 ? "" : label + " ") + (e == null ? "(entfernt)" : e.name());
+        }
+        return c.getPlan().placeholder(sideA ? n.a() : n.b());
+    }
+
+    /** Spiel eines Plan-Knotens (falls schon angelegt). */
+    public Match planMatch(PlayingClass c, Plan.Node n) {
+        for (Match m : matchesOf(c)) if (m.getNumber() == n.no()) return m;
+        return null;
+    }
+
+    /** Was Sieger und Verlierer eines Plan-Spiels erwartet, z. B. „Sieger/in → Platz 3“, „Verlierer/in → Spiel 14“. */
+    public String planOutcomeText(PlayingClass c, Plan.Node n) {
+        Plan p = c.getPlan();
+        List<String> parts = new java.util.ArrayList<>();
+        String winNext = null, loseNext = null;
+        for (Plan.Node x : p.getNodes()) {
+            String w = "W:" + n.key(), l = "L:" + n.key();
+            if (w.equals(x.a()) || w.equals(x.b())) winNext = "Spiel " + x.no();
+            if (l.equals(x.a()) || l.equals(x.b())) loseNext = "Spiel " + x.no();
+        }
+        if (n.hasWinPlace()) parts.add("Sieger/in: " + placeText(n.winFrom(), n.winTo()));
+        else if (winNext != null) parts.add("Sieger/in → " + winNext);
+        if (n.hasLosePlace()) parts.add("Verlierer/in: " + placeText(n.loseFrom(), n.loseTo()));
+        else if (loseNext != null) parts.add("Verlierer/in → " + loseNext);
+        if (n.cond() != null) parts.add("nur nötig, wenn die Siegerin/der Sieger der Verliererrunde das Finale gewinnt");
+        return String.join(" · ", parts);
+    }
+
+    private static String placeText(int from, int to) {
+        return from == to ? "Platz " + from : "Platz " + from + "–" + to;
+    }
+
+    // --- Wertung -----------------------------------------------------------------------------------------
+
+    /** Plätze einer Wertung des Plans (0 = Haupt-, 1 = Trostrunde), lückenlos durchnummeriert, sobald alles feststeht. */
+    private List<Placing> rankPlan(PlayingClass c, int group) {
+        Plan p = c.getPlan();
+        PlanState st = planState(c);
+        java.util.Map<String, Placing> placed = new java.util.LinkedHashMap<>();
+        java.util.Map<Integer, Match> byNo = new java.util.HashMap<>();
+        for (Match m : matchesOf(c)) byNo.put(m.getNumber(), m);
+        java.util.Set<String> members = new java.util.LinkedHashSet<>();
+        for (int i = 0; i < p.getSeeds().size(); i++) {
+            if (p.getSeeds().get(i) != null && p.getSeedGroups().get(i) == group) members.add(p.getSeeds().get(i));
+        }
+        List<Plan.Node> nodes = new java.util.ArrayList<>(p.getNodes());
+        nodes.sort(java.util.Comparator.comparingInt(Plan.Node::no));
+        for (Plan.Node n : nodes) {
+            if (p.getSections().get(n.section()).resultGroup() != group) continue;
+            String[] o = st.out().get(n.key());
+            if (o == null || o[0] == null || st.skipped().contains(n.key())) continue;
+            if (pendingDecider(p, st, n)) continue;           // Stichkampf steht noch aus
+            if (n.hasWinPlace() && !"-".equals(o[0])) placed.put(o[0], placing(c, o[0], n.winFrom(), n.winTo(), n.stage(), true, n));
+            if (n.hasLosePlace() && o[1] != null && !"-".equals(o[1])) placed.put(o[1], placing(c, o[1], n.loseFrom(), n.loseTo(), n.stage(), false, n));
+        }
+        List<Placing> list = new java.util.ArrayList<>();
+        placed.values().forEach(x -> {
+            if (x.entrant() != null) list.add(x);
+        });
+        boolean complete = placed.keySet().containsAll(members);
+        list.sort(java.util.Comparator.comparingInt(Placing::from).thenComparingInt(Placing::to));
+        List<Placing> out = new java.util.ArrayList<>();
+        if (complete || c.isEndedEarly()) {
+            // lückenlos: gleiche Bereiche bleiben zusammen, Lücken (Freilose) entfallen
+            int next = 1;
+            for (int i = 0; i < list.size(); ) {
+                int j = i;
+                while (j < list.size() && list.get(j).from() == list.get(i).from() && list.get(j).to() == list.get(i).to()) j++;
+                int count = j - i;
+                for (int k = i; k < j; k++) {
+                    Placing x = list.get(k);
+                    out.add(new Placing(next, next + count - 1, x.entrant(), x.info()));
+                }
+                next += count;
+                i = j;
+            }
+        } else {
+            out.addAll(list);
+        }
+        int total = members.size();
+        for (String id : members) {
+            if (placed.containsKey(id)) continue;
+            Entrant e = entrantIndex(c).get(id);
+            if (e != null) out.add(new Placing(1, Math.max(1, total), e, c.isEndedEarly() ? "Phase vorzeitig beendet" : "noch im Wettbewerb"));
+        }
+        out.sort(java.util.Comparator.comparingInt(Placing::from).thenComparingInt(Placing::to));
+        return out;
+    }
+
+    private static boolean pendingDecider(Plan p, PlanState st, Plan.Node n) {
+        for (Plan.Node x : p.getNodes()) {
+            if (x.cond() == null || !x.cond().equals("IFB:" + n.key())) continue;
+            String[] o = st.out().get(x.key());
+            if (!st.skipped().contains(x.key()) && (o == null || o[0] == null)) return true;
+        }
+        return false;
+    }
+
+    private Placing placing(PlayingClass c, String id, int from, int to, String stage, boolean won, Plan.Node n) {
+        Entrant e = entrantIndex(c).get(id);
+        String info = from == to ? stage + (won ? " (Sieg)" : " verloren") : "ausgeschieden: " + stage;
+        if (won && from == 1 && to == 1) info = "Sieger/in";
+        return new Placing(from, to, e, info);
+    }
+
+    /** Alle Wertungen eines Plans hintereinander (Trostrunde zählt hinter der Hauptrunde weiter – für click-TT). */
+    private List<Placing> rankPlanAll(PlayingClass c) {
+        List<Placing> out = new java.util.ArrayList<>();
+        int groups = c.getPlan().getResultTitles().size();
+        for (int g = 0; g < groups; g++) {
+            int offset = out.size();
+            for (Placing x : rankPlan(c, g)) out.add(new Placing(x.from() + offset, x.to() + offset, x.entrant(), x.info()));
+        }
+        return out;
+    }
+
+    /** Ein Abschnitt des Endergebnisses (z. B. „Hauptrunde“, „Trostrunde“). */
+    public record ResultSection(String title, List<Placing> rows) {
+    }
+
+    /**
+     * Endergebnis zur Anzeige: bei Haupt- und Trostrunde zwei getrennte Wertungen (die Trostrunde zählt ab 1), sonst
+     * eine. Wer nicht im Plan spielt, steht in der Hauptwertung dahinter.
+     */
+    public List<ResultSection> finalResultSections(PlayingClass c) {
+        PlayingClass root = rootOf(c);
+        FinalResult all = finalResult(root);
+        PlayingClass last = lastPhase(root);
+        if (last.getMode() != TournamentMode.PLAN || last.getPlan() == null || last.getPlan().getResultTitles().size() < 2) {
+            return List.of(new ResultSection("Endergebnis", all.rows()));
+        }
+        List<ResultSection> out = new java.util.ArrayList<>();
+        List<Placing> main = new java.util.ArrayList<>(rankPlan(last, 0));
+        java.util.Set<String> inPlan = new java.util.HashSet<>();
+        for (int i = 0; i < last.getPlan().getSeeds().size(); i++) {
+            if (last.getPlan().getSeeds().get(i) != null) inPlan.add(last.getPlan().getSeeds().get(i));
+            if (last.getPlan().getSeedOrigins().get(i) != null) inPlan.add(last.getPlan().getSeedOrigins().get(i));
+        }
+        int combined = rankPlanAll(last).size(), mainCount = main.size();
+        for (Placing x : all.rows()) {
+            if (x.entrant() == null || inPlan.contains(x.entrant().id())) continue;
+            main.add(new Placing(x.from() - combined + mainCount, x.to() - combined + mainCount, x.entrant(), x.info()));
+        }
+        out.add(new ResultSection(last.getPlan().getResultTitles().get(0), main));
+        for (int g = 1; g < last.getPlan().getResultTitles().size(); g++) {
+            out.add(new ResultSection(last.getPlan().getResultTitles().get(g), rankPlan(last, g)));
+        }
+        return out;
+    }
+
+    /** Gruppenwertung ohne die angegebenen Parteien (z. B. die im Plan Spielenden), ab {@code offset}. */
+    private List<Placing> rankGroupsExcept(PlayingClass c, java.util.Set<String> except, int offset) {
+        int groupCount = c.getGroups().size();
+        List<List<GroupStanding.Row>> tables = new java.util.ArrayList<>();
+        int maxSize = 0;
+        for (int g = 0; g < groupCount; g++) {
+            tables.add(standings(c, g));
+            maxSize = Math.max(maxSize, tables.get(g).size());
+        }
+        List<Placing> list = new java.util.ArrayList<>();
+        int next = offset + 1;
+        for (int place = 1; place <= maxSize; place++) {
+            List<GroupStanding.Row> same = new java.util.ArrayList<>();
+            List<Integer> gi = new java.util.ArrayList<>();
+            for (int g = 0; g < groupCount; g++) {
+                if (place > tables.get(g).size()) continue;
+                GroupStanding.Row r = tables.get(g).get(place - 1);
+                if (except.contains(r.entrant().id())) continue;
+                same.add(r);
+                gi.add(g);
+            }
+            if (same.isEmpty()) continue;
+            for (int k = 0; k < same.size(); k++) {
+                list.add(new Placing(next, next + same.size() - 1, same.get(k).entrant(),
+                        "Gruppe " + groupLabel(c, gi.get(k)) + ", Platz " + place));
+            }
+            next += same.size();
+        }
+        return list;
+    }
+
+    /** Leistungsstufen ohne Folgephase: Stufe für Stufe, in der Stufe nach Gruppenplatz. */
+    private List<Placing> rankTiers(PlayingClass c) {
+        List<Placing> out = new java.util.ArrayList<>();
+        List<List<GroupStanding.Row>> tables = new java.util.ArrayList<>();
+        for (int g = 0; g < c.getGroups().size(); g++) tables.add(standings(c, g));
+        boolean done = isGroupPhaseComplete(c) || c.isEndedEarly();
+        int g0 = 0, next = 1;
+        for (int tier : c.getTierSizes()) {
+            int maxSize = 0;
+            for (int g = g0; g < g0 + tier && g < tables.size(); g++) maxSize = Math.max(maxSize, tables.get(g).size());
+            for (int place = 1; place <= maxSize; place++) {
+                List<Integer> gs = new java.util.ArrayList<>();
+                for (int g = g0; g < g0 + tier && g < tables.size(); g++) if (place <= tables.get(g).size()) gs.add(g);
+                for (int g : gs) {
+                    out.add(new Placing(next, next + gs.size() - 1, tables.get(g).get(place - 1).entrant(),
+                            "Gruppe " + groupLabel(c, g) + ", Platz " + place + (done ? "" : " (Zwischenstand)")));
+                }
+                next += gs.size();
+            }
+            g0 += tier;
+        }
+        return out;
+    }
+
+    // --- Badeni (#95) ------------------------------------------------------------------------------------
+
+    /** Weitere Runde im Schweizer System/Badeni (z. B. als Platzierungsrunde), solange die Klasse nicht beendet ist. */
+    public void addSwissRound(PlayingClass c) {
+        if (c.getMode() != TournamentMode.SWISS) throw new IllegalStateException("Nur im Schweizer System bzw. Badeni.");
+        if (rootOf(c).isFinished()) throw new IllegalStateException("Die Klasse ist schon beendet.");
+        int n = c.getGroups().isEmpty() ? 0 : c.getGroups().get(0).size();
+        int rounds = swissRounds(c);
+        if (rounds >= SwissSystem.maxRounds(n)) throw new IllegalStateException("Mehr Runden gehen nicht ohne Wiederholungen.");
+        c.setSwissRounds(rounds + 1);
+        advanceSwiss(c);
+        dispatch();
+        markModified();
+    }
+
+    /** Pausierende festlegen (werden ab der nächsten Runde nicht ausgelost; ihr Stand bleibt). */
+    public void setSwissPaused(PlayingClass c, java.util.Collection<String> ids) {
+        c.setSwissPaused(ids);
+        markModified();
+    }
+
     // --- Endergebnis -------------------------------------------------------------
 
     /**
@@ -2782,10 +3556,16 @@ public final class Tournament {
             case KNOCKOUT -> rankKnockout(c);
             case PLACEMENT -> rankPlacement(c);
             case QUALIFICATION -> rankQualification(c);
+            case PLAN -> c.getPlan() == null ? List.of() : rankPlanAll(c);
             case GROUPS, SWISS -> {
-                if (follow == null) yield rankGroups(c, 0, 0);
+                if (follow == null) yield c.isTiered() ? rankTiers(c) : rankGroups(c, 0, 0);
                 List<Placing> top = new java.util.ArrayList<>(rank(follow, depth + 1));
-                if (follow.getMode() == TournamentMode.QUALIFICATION) {
+                if (follow.getMode() == TournamentMode.PLAN && follow.getPlan() != null) {
+                    // 1.2: wer nicht im Plan spielt, steht dahinter (nach Gruppenplatz)
+                    java.util.Set<String> inPlan = new java.util.HashSet<>();
+                    for (String id : follow.getPlan().getSeedOrigins()) if (id != null) inPlan.add(id);
+                    top.addAll(rankGroupsExcept(c, inPlan, top.size()));
+                } else if (follow.getMode() == TournamentMode.QUALIFICATION) {
                     int[] skips = new int[c.getGroups().size()];
                     for (int g = 0; g < skips.length; g++) skips[g] = qualSkip(follow, g, c.getGroups().get(g).size(), true);
                     top.addAll(rankGroups(c, skips, top.size(), true));
@@ -2888,7 +3668,7 @@ public final class Tournament {
             int from = next, to = samePlace ? next : next + same.size() - 1;
             for (int k = 0; k < same.size(); k++) {
                 String info = (c.getMode() == TournamentMode.SWISS ? "Schweizer System, "
-                        : groupCount > 1 ? "Gruppe " + GroupDraw.groupName(groupIdx.get(k)) + ", " : "Gruppe, ")
+                        : groupCount > 1 ? "Gruppe " + groupLabel(c, groupIdx.get(k)) + ", " : "Gruppe, ")
                         + "Platz " + place + (done ? "" : " (Zwischenstand)");
                 list.add(new Placing(from, to, same.get(k).entrant(), info));
             }
@@ -2922,7 +3702,7 @@ public final class Tournament {
             if (same.isEmpty()) continue;
             int from = next, to = next + same.size() - 1;
             for (int k = 0; k < same.size(); k++) {
-                String info = (groupCount > 1 ? "Gruppe " + GroupDraw.groupName(groupIdx.get(k)) + ", " : "Gruppe, ")
+                String info = (groupCount > 1 ? "Gruppe " + groupLabel(c, groupIdx.get(k)) + ", " : "Gruppe, ")
                         + "Platz " + place + (done ? "" : " (Zwischenstand)");
                 list.add(new Placing(from, to, same.get(k).entrant(), info));
             }
@@ -3020,6 +3800,9 @@ public final class Tournament {
         m.setFinishedAt(LocalDateTime.now().withNano(0));
         if (retired != 0) applyRetirement(m);
         if (m.isKnockout()) findClass(m.getClassName()).ifPresent(this::resolveKnockout);
+        findClass(m.getClassName()).ifPresent(c -> {
+            if (c.getMode() == TournamentMode.PLAN) resolvePlan(c);
+        });
         findClass(m.getClassName()).ifPresent(this::advanceSwiss);
         findClass(m.getClassName()).ifPresent(this::advanceQualification);
         findClass(m.getClassName()).ifPresent(c -> {           // 1.0 (#77): nächste Runde nach Zeitplan freigeben/erfragen
@@ -3075,7 +3858,7 @@ public final class Tournament {
                     new Rubber("Einzel", new int[]{0}, new int[]{0}),
                     new Rubber("Einzel", new int[]{1}, new int[]{1}),
                     new Rubber("Doppel", new int[]{0, 1}, new int[]{0, 1})));
-            if (c.getMode() == TournamentMode.KNOCKOUT || m.isKnockout()) {
+            if (c.getMode() == TournamentMode.KNOCKOUT || c.getMode() == TournamentMode.PLAN || m.isKnockout()) {
                 list.add(new Rubber("Einzel", new int[]{0}, new int[]{1}));
                 list.add(new Rubber("Einzel", new int[]{1}, new int[]{0}));
             }
@@ -3172,6 +3955,7 @@ public final class Tournament {
         PlayingClass c = findClass(m.getClassName()).orElse(null);
         if (correction) {
             String newWinner = wa > wb ? m.getA() : m.getB();
+            planConflicts(c, m, newWinner, resetFollowing);
             if (m.isKnockout() && !newWinner.equals(m.winner()) && c != null) {
                 List<Match> affected = new java.util.ArrayList<>();
                 for (int r = m.getKoRound() + 1, idx = m.getKoIndex() / 2; ; r++, idx /= 2) {
@@ -3197,6 +3981,7 @@ public final class Tournament {
             m.setFinishedAt(LocalDateTime.now().withNano(0));
         }
         if (m.isKnockout() && c != null) resolveKnockout(c);
+        if (c != null && c.getMode() == TournamentMode.PLAN) resolvePlan(c);
         dispatch();
         markModified();
     }
@@ -3253,6 +4038,7 @@ public final class Tournament {
         Scoring.Evaluation ev = evaluateScore(m, sets, retired);
         String newWinner = ev.winner() == 1 ? m.getA() : m.getB();
         PlayingClass c = findClass(m.getClassName()).orElse(null);
+        planConflicts(c, m, newWinner, resetFollowing);
         if (m.isKnockout() && !newWinner.equals(m.winner()) && c != null) {
             List<Match> affected = new java.util.ArrayList<>();
             for (int r = m.getKoRound() + 1, idx = m.getKoIndex() / 2; ; r++, idx /= 2) {
@@ -3277,6 +4063,7 @@ public final class Tournament {
         if (newQuitter != null && !newQuitter.equals(oldQuitter)) applyRetirement(m);
         syncCarriedCopies(m);
         if (m.isKnockout() && c != null) resolveKnockout(c);
+        if (c != null && c.getMode() == TournamentMode.PLAN) resolvePlan(c);
         dispatch();
         markModified();
     }
@@ -4155,6 +4942,7 @@ public final class Tournament {
         m.setFinishedAt(when);
         findClass(m.getClassName()).ifPresent(c -> {
             if (c.getMode() == TournamentMode.KNOCKOUT) resolveKnockout(c);
+            if (c.getMode() == TournamentMode.PLAN) resolvePlan(c);
         });
         markModified();
     }

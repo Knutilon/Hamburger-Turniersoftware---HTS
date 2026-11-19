@@ -296,6 +296,14 @@ public final class PresentationShow {
                     out.add(new Part(s, title, s.finished(), () -> painter.presentSwiss(ph), Fit.PAGED, 0, 1));
                 } else if (m == TournamentMode.PLACEMENT) {
                     out.add(new Part(s, title, s.finished(), () -> painter.presentPlacement(ph), Fit.PAGED, 0, 1));
+                } else if (m == TournamentMode.PLAN && ph.getPlan() != null) {
+                    // 1.2: je Wertung (Haupt-/Trostrunde) eine Seite, sonst der ganze Plan (seitenweise)
+                    int groups = ph.getPlan().getResultTitles().size();
+                    for (int g = 0; g < groups; g++) {
+                        int gg = groups > 1 ? g : -1;
+                        String t2 = groups > 1 ? root.getName() + " · Phase " + tournament.phaseNumber(ph) + " – " + ph.getPlan().getResultTitles().get(g) : title;
+                        out.add(new Part(s, t2, s.finished(), () -> painter.presentPlan(ph, gg), Fit.PAGED, g, groups));
+                    }
                 }
                 if (withQueue) {
                     java.util.Set<Match> mine = new java.util.HashSet<>(tournament.matchesOf(ph));
@@ -382,8 +390,8 @@ public final class PresentationShow {
         java.util.Set<Match> mine = new java.util.HashSet<>(tournament.matchesOf(ph));
         List<Match> q = tournament.queue().stream()
                 .filter(m -> mine.contains(m) && m.getGroupIndex() >= from && m.getGroupIndex() < to).toList();
-        String groups = to - from == 1 ? "Gruppe " + de.hts.tournament.GroupDraw.groupName(from)
-                : "Gruppen " + de.hts.tournament.GroupDraw.groupName(from) + "–" + de.hts.tournament.GroupDraw.groupName(to - 1);
+        String groups = to - from == 1 ? "Gruppe " + tournament.groupLabel(ph, from)
+                : "Gruppen " + tournament.groupLabel(ph, from) + "–" + tournament.groupLabel(ph, to - 1);
         queueParts(s, rootName + " · Warteschlange " + groups, q, out);
     }
 
