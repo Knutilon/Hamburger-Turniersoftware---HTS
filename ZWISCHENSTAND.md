@@ -84,7 +84,7 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 5. PHASE 1 „GRUPPENPHASE MIT FREISTELLUNG“ (Nutzer 20.11.2026, Issue #106): Setzplätze 1–4 freigestellt (keine Gruppenspiele),
    Auswahl im Modus-Dialog (Vorschlag TTR 1–4, Auswahlliste je Platz, Drag & Drop, Auslosen erst mit 4). Gruppenanzahl/
    -größe frei; „Weiter je Gruppe“ Plätze 1–2 oder 1–3. Phase 2 fest: KO ab Achtelfinale OHNE Freilose – Freigestellte +
-   Gruppen × Weiterkommende muss 2/4/8/16/32/64/128 ergeben, sonst Hinweis mit Rechnung und Vorschlag, Auslosen gesperrt.
+   Gruppen × Weiterkommende muss 2/4/8/16/32/64/128 ergeben, sonst schon bei der Phasenanlage (Modus-Dialog) Hinweis mit Rechnung und Vorschlag, Anlage der Phase gesperrt (bestätigt).
    Beispiele: weibl. Jugend 15/19 4 + 4 Gruppen × 3 = 16; männl. Jugend 15/19 28 Spieler: 4 + 6 Vierergruppen × 2 = 16.
    Feste Paarungen bei 4 × 3 (bestätigt): S1–D3, B1–D2, A1–C2, S4–C3, S3–A3, C1–B2, D1–A2, S2–B3; sonst Freigestellte auf
    Setzplatz 1–4 gegen die schlechtesten Gruppenzweiten (nach Spiel-, Satz-, Punkteverhältnis; S1 gegen den schlechtesten),
