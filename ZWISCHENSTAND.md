@@ -70,7 +70,7 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Phase 2 angelegt ist, liegt der Gruppenplatz der Weiterkommenden in einem runden Chip OHNE Beschriftung (Nutzer
    20.11.2026, bei allen Phasentypen): dunkelblau = in Phase 2 / Hauptrunde / direkt qualifiziert; hellblau = Trostrunde
    bzw. KO-Qualifikation; grau = Nachrücker (Qualifikationsmodus); Leistungsstufen (alle kommen weiter): keine Markierung
-   (Vorschlag, Rückfrage gestellt). Wer nicht weiterkommt: ohne Chip. Design: gleicher Canvas, Bilder 1, 3 und 4.
+   (bestätigt 20.11.2026). Wer nicht weiterkommt: ohne Chip. Design: gleicher Canvas, Bilder 1, 3 und 4.
 4. QUALIFIKATION: OPTIONALES ZUSATZSPIEL FÜR DIE VERLIERER DER RUNDE 2 (Nutzer 20.11.2026, Issue #105; Anlass: HEM-Quali
    12 Gruppen à 6–7, direkter Vergleich, Gruppenerste direkt, Zweite/Dritte KO, 2 Siege = qualifiziert – Simulation:
    alles abbildbar außer diesem Spiel; die Zusatzrunde wurde in 0.38.0 entfernt). Nach Runde 2 Knopf „Zusatzspiel für die
@@ -102,7 +102,8 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    aber mehrere „deaktiviert“-Reiter möglich; Reiterleiste mit höchstens 6 Reitern je Seite und Pfeilen (Seite 2 = Reiter
    7–12 usw.). Auswirkung NUR auf die direkt folgende Phase: Korrektur in Phase 1 bei laufender Phase 3 ändert nur das
    Ergebnis (kein Einfluss auf den Verlauf); Korrektur in Phase 2 → Prüfung + Korrektur-Reiter für Phase 3.
-   Design: https://claude.ai/artifact/NQBy8vHntVYCjfKsGmP5LT
+   Reiterleiste: alle Reiter der Klasse zählen zu den 6 je Seite. Design (bestätigt 20.11.2026):
+   https://claude.ai/artifact/NQBy8vHntVYCjfKsGmP5LT
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
