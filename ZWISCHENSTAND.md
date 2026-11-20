@@ -91,6 +91,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    die schlechtesten Gruppenersten gegeneinander, die besten Gruppenersten gegen die übrigen Gruppenzweiten (BESTÄTIGT
    20.11.2026). Beispiel 6 × 2: S1–Z6, S2–Z5, S3–Z4, S4–Z3, E1–Z2, E2–Z1, E3–E6, E4–E5; gleiche Gruppe in Runde 1 möglichst
    vermeiden (Tausch mit dem Nächstplatzierten). Design: https://claude.ai/artifact/VvCMhT5WsVpLhJvbfFb1zn
+6. KORREKTUR IN PHASE 1 BEI LAUFENDER FOLGEPHASE (Nutzer 20.11.2026, Issue #107): Ändert eine Korrektur in Phase 1 die
+   Folgephase, entsteht ein weiterer Reiter „Phase 2 – Korrektur“ (kein Dialog); Hin- und Herschalten möglich, Unterschiede
+   zur laufenden Phase markiert. Laufende Phase bleibt ausschlaggebend, aus der Korrektur wird nichts eingereiht, bis sie
+   aktiv ist. Knopf „Unveränderte Ergebnisse übernehmen“ (gespielte Spiele mit gleicher Paarung). Knopf „Phase 2
+   weiterführen“ mit Warn-Dialog (Weiter rechts, Abbrechen links): alte Phase → Reiter „Phase 2 – deaktiviert“, ihre Spiele
+   in der Spielübersicht markiert und aus der Ergebnis-XML entfernt, laufende Spiele zurückgerufen. Rückfragen offen
+   (verwerfen, Phase 3, mehrere Korrekturen).
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
