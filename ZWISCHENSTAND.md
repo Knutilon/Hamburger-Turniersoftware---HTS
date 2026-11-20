@@ -77,7 +77,7 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    alles abbildbar außer diesem Spiel; die Zusatzrunde wurde in 0.38.0 entfernt). Nach Runde 2 Knopf „Zusatzspiel für die
    Verlierer der Runde 2“ im Phasen-Reiter (nur bei Bedarf, zurücknehmbar ohne Ergebnis); frei gelost, möglichst ohne
    Wiederholung. KORREKTUR Nutzer 20.11.2026: für die Gewinner des Zusatzspiels wird entschieden, ob sie qualifiziert
-   oder Nachrücker sind (Vorschlag, Rückfrage gestellt: Frage nach dem letzten Zusatzspiel wie nach Runde 1, nachträglich
+   oder Nachrücker sind (Vorschlag BESTÄTIGT 20.11.2026: Frage nach dem letzten Zusatzspiel wie nach Runde 1, nachträglich
    änderbar bis zum Klassenende). Qualifiziert: Verlierer Zusatzspiel = Nachrücker 1. Ranges, Verlierer Runde 1 = 2.;
    Nachrücker: Gewinner Zusatzspiel = 1., Verlierer Zusatzspiel = 2., Verlierer Runde 1 = 3. Ranges; innerhalb eines
    Ranges nach TTR. Ohne Zusatzspiel wie bisher. Dazu veralteten Hinweis „Zusatzrunde im Phasen-Reiter“ im Dialog „Phase abschließen“ korrigieren.
