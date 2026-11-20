@@ -72,6 +72,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Gruppenphase, Platzierungsspiele „Phase 2“ (dunkelblau); Leistungsstufen „Stufe 1“, „Stufe 2“ …; Phase 3 nach den
    Leistungsstufen „Phase 3“; Qualifikationsmodus „qualifiziert“ (dunkelblau), „KO-Qualifikation“ (hellblau),
    „Nachrücker“ (grau). Wer nicht weiterkommt: ohne Chip. Design: gleicher Canvas, Bilder 1, 3 und 4.
+4. QUALIFIKATION: OPTIONALES ZUSATZSPIEL FÜR DIE VERLIERER DER RUNDE 2 (Nutzer 20.11.2026, Issue #105; Anlass: HEM-Quali
+   12 Gruppen à 6–7, direkter Vergleich, Gruppenerste direkt, Zweite/Dritte KO, 2 Siege = qualifiziert – Simulation:
+   alles abbildbar außer diesem Spiel; die Zusatzrunde wurde in 0.38.0 entfernt). Nach Runde 2 Knopf „Zusatzspiel für die
+   Verlierer der Runde 2“ im Phasen-Reiter (nur bei Bedarf, zurücknehmbar ohne Ergebnis); frei gelost, möglichst ohne
+   Wiederholung. Wertung: Gewinner des Zusatzspiels = Nachrücker 1. Ranges, Verlierer des Zusatzspiels = 2. Ranges
+   (Annahme, Rückfrage gestellt), Verlierer Runde 1 = 3. Ranges; innerhalb eines Ranges nach TTR. Ohne Zusatzspiel wie
+   bisher. Dazu veralteten Hinweis „Zusatzrunde im Phasen-Reiter“ im Dialog „Phase abschließen“ korrigieren.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
