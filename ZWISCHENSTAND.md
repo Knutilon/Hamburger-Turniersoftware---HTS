@@ -54,7 +54,10 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.2.x)
 
-- (noch leer)
+1. BADENI: SPALTEN BHZ UND FBHZ AUSBLENDEN (Nutzer 20.11.2026, Issue #102): Beim Schweizer System nach Badeni zählen
+   Buchholz und Feinbuchholz nicht (Reihung Siege, TTR, Sätze); in der Tabelle stehen dort derzeit nur „null“.
+   Vorschlag (Rückfrage gestellt): Spalten auch im PDF der Phase, in der Präsentationsansicht und auf den Live-Seiten
+   entfernen; normales Schweizer System unverändert; als Fehlerbehebung 1.2.1.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
