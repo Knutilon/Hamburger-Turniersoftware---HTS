@@ -87,8 +87,10 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Gruppen × Weiterkommende muss 2/4/8/16/32/64/128 ergeben, sonst Hinweis mit Rechnung und Vorschlag, Auslosen gesperrt.
    Beispiele: weibl. Jugend 15/19 4 + 4 Gruppen × 3 = 16; männl. Jugend 15/19 28 Spieler: 4 + 6 Vierergruppen × 2 = 16.
    Feste Paarungen bei 4 × 3 (bestätigt): S1–D3, B1–D2, A1–C2, S4–C3, S3–A3, C1–B2, D1–A2, S2–B3; sonst Freigestellte auf
-   Setzplatz 1–4 gegen die Schwächsten der Rangliste, übrige nach der Rangliste ab Phase 2 (gleiche Gruppe getrennt) –
-   Vorschlag, Rückfrage gestellt. Design: https://claude.ai/artifact/VvCMhT5WsVpLhJvbfFb1zn
+   Setzplatz 1–4 gegen die schlechtesten Gruppenzweiten (nach Spiel-, Satz-, Punkteverhältnis; S1 gegen den schlechtesten),
+   die schlechtesten Gruppenersten gegeneinander, die besten Gruppenersten gegen die übrigen Gruppenzweiten (BESTÄTIGT
+   20.11.2026). Beispiel 6 × 2: S1–Z6, S2–Z5, S3–Z4, S4–Z3, E1–Z2, E2–Z1, E3–E6, E4–E5; gleiche Gruppe in Runde 1 möglichst
+   vermeiden (Tausch mit dem Nächstplatzierten). Design: https://claude.ai/artifact/VvCMhT5WsVpLhJvbfFb1zn
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
