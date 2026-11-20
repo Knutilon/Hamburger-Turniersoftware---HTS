@@ -82,7 +82,8 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Nachrücker: Gewinner Zusatzspiel = 1., Verlierer Zusatzspiel = 2., Verlierer Runde 1 = 3. Ranges; innerhalb eines
    Ranges nach TTR. Ohne Zusatzspiel wie bisher. Dazu veralteten Hinweis „Zusatzrunde im Phasen-Reiter“ im Dialog „Phase abschließen“ korrigieren.
 5. PHASE 1 „GRUPPENPHASE MIT FREISTELLUNG“ (Nutzer 20.11.2026, Issue #106): Setzplätze 1–4 freigestellt (keine Gruppenspiele),
-   Auswahl im Modus-Dialog (Vorschlag TTR 1–4, Auswahlliste je Platz, Drag & Drop, Auslosen erst mit 4). Gruppenanzahl/
+   Auswahl im Modus-Dialog: STANDARD vorausgewählt die 4 mit dem höchsten TTR (gleicher TTR: Los; Nutzer 20.11.2026),
+   änderbar per Auswahlliste je Platz oder Drag & Drop, „Auf TTR-Vorschlag zurücksetzen“; Phase anlegen erst mit 4. Gruppenanzahl/
    -größe frei; „Weiter je Gruppe“ Plätze 1–2 oder 1–3. Phase 2 fest: KO ab Achtelfinale OHNE Freilose – Freigestellte +
    Gruppen × Weiterkommende muss 2/4/8/16/32/64/128 ergeben, sonst schon bei der Phasenanlage (Modus-Dialog) Hinweis mit Rechnung und Vorschlag, Anlage der Phase gesperrt (bestätigt).
    Beispiele: weibl. Jugend 15/19 4 + 4 Gruppen × 3 = 16; männl. Jugend 15/19 28 Spieler: 4 + 6 Vierergruppen × 2 = 16.
