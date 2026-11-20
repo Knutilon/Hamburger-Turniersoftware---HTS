@@ -67,11 +67,10 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    https://claude.ai/artifact/6fv4ofe1C21Qqqfhm7R8Aj, Bilder 1–3.
 3. TABELLEN-MARKIERUNG (Nutzer 20.11.2026, Issue #104): Schweizer System und Badeni – Plätze 1–3 als runde Chips
    in Gold (#e9c44a), Silber (#cfd4dc), Bronze (#d79a62). Gruppenphase – keine Platz-Markierung; erst wenn Phase 2 als
-   Phase 2 angelegt ist, je Zeile ein Chip, wohin die Person geht – BEI ALLEN PHASENTYPEN (Nutzer 20.11.2026):
-   Haupt-/Trostrunde „Hauptrunde“ (dunkelblau) / „Trostrunde“ (hellblau); KO, fortgesetztes/doppeltes KO, TOP24/32,
-   Gruppenphase, Platzierungsspiele „Phase 2“ (dunkelblau); Leistungsstufen „Stufe 1“, „Stufe 2“ …; Phase 3 nach den
-   Leistungsstufen „Phase 3“; Qualifikationsmodus „qualifiziert“ (dunkelblau), „KO-Qualifikation“ (hellblau),
-   „Nachrücker“ (grau). Wer nicht weiterkommt: ohne Chip. Design: gleicher Canvas, Bilder 1, 3 und 4.
+   Phase 2 angelegt ist, liegt der Gruppenplatz der Weiterkommenden in einem runden Chip OHNE Beschriftung (Nutzer
+   20.11.2026, bei allen Phasentypen): dunkelblau = in Phase 2 / Hauptrunde / direkt qualifiziert; hellblau = Trostrunde
+   bzw. KO-Qualifikation; grau = Nachrücker (Qualifikationsmodus); Leistungsstufen (alle kommen weiter): keine Markierung
+   (Vorschlag, Rückfrage gestellt). Wer nicht weiterkommt: ohne Chip. Design: gleicher Canvas, Bilder 1, 3 und 4.
 4. QUALIFIKATION: OPTIONALES ZUSATZSPIEL FÜR DIE VERLIERER DER RUNDE 2 (Nutzer 20.11.2026, Issue #105; Anlass: HEM-Quali
    12 Gruppen à 6–7, direkter Vergleich, Gruppenerste direkt, Zweite/Dritte KO, 2 Siege = qualifiziert – Simulation:
    alles abbildbar außer diesem Spiel; die Zusatzrunde wurde in 0.38.0 entfernt). Nach Runde 2 Knopf „Zusatzspiel für die
