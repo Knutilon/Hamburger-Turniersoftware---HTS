@@ -81,12 +81,14 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    änderbar bis zum Klassenende). Qualifiziert: Verlierer Zusatzspiel = Nachrücker 1. Ranges, Verlierer Runde 1 = 2.;
    Nachrücker: Gewinner Zusatzspiel = 1., Verlierer Zusatzspiel = 2., Verlierer Runde 1 = 3. Ranges; innerhalb eines
    Ranges nach TTR. Ohne Zusatzspiel wie bisher. Dazu veralteten Hinweis „Zusatzrunde im Phasen-Reiter“ im Dialog „Phase abschließen“ korrigieren.
-5. PHASE 1 „GRUPPENPHASE MIT FREISTELLUNG“ (Nutzer 20.11.2026, Issue #106, RÜCKFRAGEN OFFEN): Setzplätze 1–4 freigestellt
-   (keine Gruppenspiele), Auswahl im Modus-Dialog (Vorschlag TTR 1–4, Auswahlliste je Platz, Drag & Drop); Phase 2 fest
-   KO ab Achtelfinale: Gruppenerste gegen Gruppenzweite über Kreuz; Option Gruppendritte (weibliche Jugend 15/19) gegen die
-   Freigestellten, sonst Freilos. Baumschema Nutzer: S1–D3, B1–D2, A1–C2, S4–D3, S1–A3, C1–B2, D1–A2, S2–B3 (S1/D3
-   doppelt, S3/C3 fehlen – Annahme S4–C3 und S3–A3). Offen: Gruppenanzahl fest 4? Satz „es kann zwar noch festgestellt
-   werden … aber die“ unvollständig. Design: https://claude.ai/artifact/VvCMhT5WsVpLhJvbfFb1zn
+5. PHASE 1 „GRUPPENPHASE MIT FREISTELLUNG“ (Nutzer 20.11.2026, Issue #106): Setzplätze 1–4 freigestellt (keine Gruppenspiele),
+   Auswahl im Modus-Dialog (Vorschlag TTR 1–4, Auswahlliste je Platz, Drag & Drop, Auslosen erst mit 4). Gruppenanzahl/
+   -größe frei; „Weiter je Gruppe“ Plätze 1–2 oder 1–3. Phase 2 fest: KO ab Achtelfinale OHNE Freilose – Freigestellte +
+   Gruppen × Weiterkommende muss 2/4/8/16/32/64/128 ergeben, sonst Hinweis mit Rechnung und Vorschlag, Auslosen gesperrt.
+   Beispiele: weibl. Jugend 15/19 4 + 4 Gruppen × 3 = 16; männl. Jugend 15/19 28 Spieler: 4 + 6 Vierergruppen × 2 = 16.
+   Feste Paarungen bei 4 × 3 (bestätigt): S1–D3, B1–D2, A1–C2, S4–C3, S3–A3, C1–B2, D1–A2, S2–B3; sonst Freigestellte auf
+   Setzplatz 1–4 gegen die Schwächsten der Rangliste, übrige nach der Rangliste ab Phase 2 (gleiche Gruppe getrennt) –
+   Vorschlag, Rückfrage gestellt. Design: https://claude.ai/artifact/VvCMhT5WsVpLhJvbfFb1zn
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
