@@ -77,6 +77,27 @@ public class CompatFixtureGenerator {
     PlayingClass dk = t.addClass(new PlayingClass("Damen DKO"));
     for (Player p : players(t, "DKO", 6, 17, true)) { t.setAttendance(p, Attendance.PRESENT); t.assign(p, dk); }
     t.drawDoubleKo(dk, true, new Random(12)); t.startClass(dk); playAll(t, dk, 4);
+    // ab 1.3: Gruppenphase mit Freistellung, Zusatzspiel der Qualifikation, Korrektur-Reiter und deaktivierte Phase
+    PlayingClass fr = t.addClass(new PlayingClass("Jungen 15 Frei"));
+    for (Player p : players(t, "Frei", 20, 18, false)) { t.setAttendance(p, Attendance.PRESENT); t.assign(p, fr); }
+    fr.setGroupsBySize(false); fr.setGroupCount(4);
+    t.drawGroupsWithExemption(fr, t.exemptSuggestion(fr, new Random(13)), 3, true, new Random(13)); t.startClass(fr); playAll(t, fr, 9999);
+    PlayingClass fr2 = t.createNextPhase(fr, TournamentMode.KNOCKOUT, 3, 0, new Random(14)); playAll(t, fr2, 2);
+    if (t.canAddQualificationExtra(q2)) { t.addQualificationExtra(q2); playAll(t, q2, 9999); t.decideQualificationExtra(q2, false); }
+    PlayingClass kc = groups(t, "Herren K", 16, 4, 19); t.startClass(kc); playAll(t, kc, 9999);
+    PlayingClass kko = t.createNextPhase(kc, TournamentMode.KNOCKOUT, 2, 0, new Random(15)); playAll(t, kko, 2);
+    for (int round = 0; round < 2; round++) {
+      List<de.hts.tournament.GroupStanding.Row> tb = t.standings(kc, round);
+      String f1 = tb.get(0).entrant().id(), s2 = tb.get(1).entrant().id(), th = tb.get(2).entrant().id();
+      for (String other : List.of(s2, f1)) {
+        Match m = t.matchesOf(kc).stream().filter(x -> (th.equals(x.getA()) && other.equals(x.getB())) || (th.equals(x.getB()) && other.equals(x.getA()))).findFirst().orElseThrow();
+        List<int[]> w = List.of(new int[]{11, 2}, new int[]{11, 2}, new int[]{11, 2}), l = List.of(new int[]{2, 11}, new int[]{2, 11}, new int[]{2, 11});
+        t.correctResult(m, th.equals(m.getA()) ? w : l, 0, true);
+      }
+      PlayingClass follow = t.findClass(kc.getFollowUpClass()).orElseThrow();
+      PlayingClass corr = t.correctionOf(follow);
+      if (corr != null && round == 0) { t.takeOverUnchanged(corr); t.adoptCorrection(corr); }
+    }
     TournamentFile.save(Path.of(a[0]), t);
     StringBuilder sets = new StringBuilder();
     for (Match m : t.getMatches()) if (m.getStatus() == MatchStatus.DONE) sets.append(m.getNumber()).append(':').append(m.getSetsText()).append(';');

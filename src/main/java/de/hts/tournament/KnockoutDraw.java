@@ -158,19 +158,26 @@ public final class KnockoutDraw {
         List<Entrant[]> units = new ArrayList<>();
         for (int k = 0; k < byes; k++) units.add(new Entrant[]{ranked.get(k), null});
         List<Entrant> rest = new ArrayList<>(ranked.subList(byes, n));
-        while (!rest.isEmpty()) {
-            Entrant top = rest.remove(0);
-            Integer g = groupOf.get(top.id());
-            int pick = -1;
-            for (int k = rest.size() - 1; k >= 0; k--) {
-                if (g == null || !g.equals(groupOf.get(rest.get(k).id()))) {
-                    pick = k;
-                    break;
+        // 1.3: der Beste gegen den Niedrigstplatzierten aus einer anderen Gruppe – mit Vorausschau, damit am Ende nicht
+        // zwei aus derselben Gruppe übrig bleiben (geht es gar nicht ohne, wie bisher: der Niedrigstplatzierte)
+        List<Entrant[]> pairs = pairUp(rest, groupOf, new int[]{0});
+        if (pairs == null) {
+            pairs = new ArrayList<>();
+            while (!rest.isEmpty()) {
+                Entrant top = rest.remove(0);
+                Integer g = groupOf.get(top.id());
+                int pick = -1;
+                for (int k = rest.size() - 1; k >= 0; k--) {
+                    if (g == null || !g.equals(groupOf.get(rest.get(k).id()))) {
+                        pick = k;
+                        break;
+                    }
                 }
+                if (pick < 0) pick = rest.size() - 1;
+                pairs.add(new Entrant[]{top, rest.remove(pick)});
             }
-            if (pick < 0) pick = rest.size() - 1;
-            units.add(new Entrant[]{top, rest.remove(pick)});
         }
+        units.addAll(pairs);
         List<Entrant[]> arranged = arrange(units, groupOf);
         List<Entrant> slots = new ArrayList<>(size);
         for (Entrant[] u : arranged) {
@@ -178,6 +185,28 @@ public final class KnockoutDraw {
             slots.add(u[1]);
         }
         return slots;
+    }
+
+    /** Paarungen ohne Gruppengleiche (Bester gegen Niedrigstmöglichen), {@code null} wenn es keine gibt. */
+    private static List<Entrant[]> pairUp(List<Entrant> rest, Map<String, Integer> groupOf, int[] budget) {
+        if (rest.isEmpty()) return new ArrayList<>();
+        if (++budget[0] > 20000) return null;
+        Entrant top = rest.get(0);
+        Integer g = groupOf.get(top.id());
+        for (int k = rest.size() - 1; k >= 1; k--) {
+            Entrant other = rest.get(k);
+            if (g != null && g.equals(groupOf.get(other.id()))) continue;
+            List<Entrant> remaining = new ArrayList<>(rest);
+            remaining.remove(k);
+            remaining.remove(0);
+            List<Entrant[]> tail = pairUp(remaining, groupOf, budget);
+            if (tail != null) {
+                tail.add(0, new Entrant[]{top, other});
+                return tail;
+            }
+            if (budget[0] > 20000) return null;
+        }
+        return null;
     }
 
     /** Verteilt die Einheiten (in Rangfolge) rekursiv auf Hälften, Viertel …: Setzmuster, Gruppengleiche getrennt. */

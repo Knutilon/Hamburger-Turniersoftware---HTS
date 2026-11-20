@@ -25,6 +25,45 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.3.0
+
+- **Gruppenphase mit Freistellung:** Neuer Modus für Phase 1 (nur Einzel). Die Setzplätze S1–S4 spielen keine
+  Gruppenspiele und steigen erst im KO-System ein. Vorausgewählt sind die 4 mit dem höchsten TTR (gleicher TTR: Los);
+  je Setzplatz änderbar, „Auf TTR-Vorschlag zurücksetzen“, vor dem Start per Drag & Drop mit einem Gruppenmitglied
+  tauschbar. Gruppenanzahl bzw. -größe frei, „Weiter je Gruppe“ Plätze 1–2 oder 1–3. Phase 2 ist immer ein KO-System
+  ohne Freilose: 4 + Gruppen × Weiterkommende muss 8, 16, 32, 64 oder 128 ergeben – sonst zeigt schon der Modus-Dialog
+  die Rechnung mit Vorschlägen (z. B. 6 Gruppen × Plätze 1–2 = 12 + 4 = 16er-Feld) und „Auslosen“ bleibt gesperrt.
+  Bei 4 Gruppen × 3 gelten feste Paarungen (S1–D3, B1–D2, A1–C2, S4–C3, S3–A3, C1–B2, D1–A2, S2–B3); sonst spielen die
+  Freigestellten gegen die schlechtesten Gruppenzweiten (bzw. -dritten), die Gruppenersten nach Spiel-, Satz- und
+  Punkteverhältnis gegeneinander bzw. gegen die übrigen Zweiten – ohne Gruppenduell in Runde 1. Über den Gruppen steht
+  die Leiste „Freigestellt für das Achtelfinale“.
+- **Korrektur-Reiter:** Ändert die Korrektur eines Ergebnisses die bereits laufende Folgephase (andere Plätze, damit
+  andere Paarungen), entsteht der Reiter „Phase n – Korrektur“ – ohne Dialog. Er zeigt die Phase genau wie die
+  laufende, nur korrekt; neue Partien haben einen orangen Rahmen, neue Spielerinnen und Spieler sind hellorange
+  hinterlegt. Daraus wird nichts eingereiht. Knöpfe: „Korrektur verwerfen“ (nur der Reiter verschwindet, die Korrektur
+  in der Vorphase bleibt), „Unveränderte Ergebnisse übernehmen“ (Spiele mit gleicher Paarung, im KO rücken die Sieger
+  nach) und „Phase n weiterführen“ (Warnhinweis, Abbrechen links, Weiter rechts): Die bisherige Phase heißt dann
+  „Phase n – deaktiviert“ (grau, durchgestrichen), laufende Spiele werden zurückgerufen, ihre Spiele sind auf der Seite
+  „Spiele“ als „deaktiviert“ markiert und kommen weder ins Endergebnis noch in die click-TT-Ergebnisdatei. Es gibt
+  höchstens einen Korrektur-Reiter (jede weitere Korrektur rechnet ihn neu), aber beliebig viele deaktivierte. Wirkung
+  nur auf die direkt folgende Phase.
+- **Reiterleiste mit Blättern:** Je Klasse höchstens 6 Reiter je Seite; bei mehr erscheinen Pfeile und „Seite x / y“,
+  der gewählte Reiter springt automatisch auf seine Seite.
+- **Qualifikation – Zusatzspiel:** Nach der letzten KO-Runde lässt sich bei Bedarf ein „Zusatzspiel für die Verlierer
+  der Runde 2“ anlegen (zurücknehmbar, solange kein Ergebnis steht). Danach wird entschieden – und bis zum Klassenende
+  änderbar –, ob dessen Gewinner qualifiziert oder Nachrücker 1. Ranges sind; die übrigen Nachrücker-Ränge folgen
+  (jeweils nach TTR).
+- **Schweizer System und Badeni:** Knöpfe „Weitere Runde“ und „Spieler pausieren“ mit dem Infotext stehen als feste
+  Leiste über der Tabelle (graue Linien als Trennung); die Spiele rechts daneben zeigen oben immer die aktuelle Runde
+  („läuft · n offen“), sind alle gespielt, von der letzten zur ersten Runde. Plätze 1–3 als Chips in Gold, Silber und
+  Bronze. Bei Badeni entfallen die Spalten BHZ und FBHZ (auch im PDF).
+- **Aufsteiger-Chips in der Gruppenphase:** Erst wenn Phase 2 angelegt ist, liegt der Gruppenplatz der
+  Weiterkommenden in einem runden Chip ohne Beschriftung: dunkelblau = Phase 2 / Hauptrunde / direkt qualifiziert,
+  hellblau = Trostrunde bzw. KO-Qualifikation, grau = Nachrücker.
+- **Behoben:** Der Reiter „Teilnehmende der Klasse“ rutschte beim Wechsel der Klasse ans Ende der Reiterleiste. KO nach
+  der Gruppenphase: Bei ungünstiger Reihenfolge der Gruppenzweiten konnten sich zwei aus derselben Gruppe in Runde 1
+  treffen – die Paarung schaut jetzt voraus.
+
 ## Neu in 1.2.0
 
 - **Haupt- und Trostrunde:** Als Phase 2 nach einer Gruppenphase wählbar („Phase abschließen“ → „Neue Phase“). Welche

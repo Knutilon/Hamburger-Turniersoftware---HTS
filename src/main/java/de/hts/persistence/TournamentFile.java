@@ -391,6 +391,17 @@ public final class TournamentFile {
                     el.setAttribute("qual-place", String.join(",", qp));
                 }
                 if (c.isQualExtra()) el.setAttribute("qual-extra", "true");
+                if (c.getQualExtraDecision() != 0) el.setAttribute("qual-extra-decision", String.valueOf(c.getQualExtraDecision()));
+                if (c.getRecipe() != null) {
+                    el.setAttribute("recipe", c.getRecipe());
+                    el.setAttribute("recipe-seed", String.valueOf(c.getRecipeSeed()));
+                }
+                if (c.getCorrectionOf() != null) el.setAttribute("correction-of", c.getCorrectionOf());
+                if (c.isDeactivated()) el.setAttribute("deactivated", "true");
+                if (!c.getExempt().isEmpty()) {
+                    el.setAttribute("exempt", String.join(",", c.getExempt()));
+                    el.setAttribute("exempt-places", String.valueOf(c.getExemptPlaces()));
+                }
                 if (!c.getQualField().isEmpty()) {
                     List<String> qf = new java.util.ArrayList<>();
                     c.getQualField().forEach((id, g) -> qf.add(id + "=" + g));
@@ -673,6 +684,21 @@ public final class TournamentFile {
                 pc.setQualPlace(qp);
             }
             pc.setQualExtra("true".equals(attr(el, "qual-extra")));
+            pc.setQualExtraDecision(intOr(el, "qual-extra-decision", 0));
+            if (attr(el, "recipe") != null && !attr(el, "recipe").isBlank()) {
+                pc.setRecipe(attr(el, "recipe"));
+                try {
+                    pc.setRecipeSeed(Long.parseLong(attr(el, "recipe-seed")));
+                } catch (RuntimeException e) {
+                    pc.setRecipe(null);
+                }
+            }
+            if (attr(el, "correction-of") != null && !attr(el, "correction-of").isBlank()) pc.setCorrectionOf(attr(el, "correction-of"));
+            pc.setDeactivated("true".equals(attr(el, "deactivated")));
+            if (attr(el, "exempt") != null && !attr(el, "exempt").isBlank()) {
+                pc.setExempt(List.of(attr(el, "exempt").split(",")));
+                pc.setExemptPlaces(intOr(el, "exempt-places", 2));
+            }
             if (attr(el, "qual-field") != null && !attr(el, "qual-field").isBlank()) {
                 java.util.LinkedHashMap<String, Integer> qf = new java.util.LinkedHashMap<>();
                 for (String e : attr(el, "qual-field").split(",")) {

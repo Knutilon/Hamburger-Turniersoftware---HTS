@@ -129,6 +129,8 @@ public final class DrawView {
     private final Label tbLabel = new Label("Bei gleichem Spielverhältnis:");
     private final Button finishBtn = new Button("Klasse beenden");
     private final VBox overviewBox = new VBox(12);
+    /** 1.3 (#103): feste Leiste zwischen Werkzeugzeile und scrollender Ansicht. */
+    private final VBox stickyHolder = new VBox();
     /** Gruppenphase: Suche nach Teilnehmenden (Vor- und/oder Nachname). */
     private final javafx.scene.control.TextField groupSearch = new javafx.scene.control.TextField();
     private final HBox searchRow;
@@ -145,6 +147,9 @@ public final class DrawView {
     private GroupSearch groupSearchIndex;
     /** Sammelt beim Aufbau einer Gruppenkarte die Namens-Labels (für die Suche). */
     private List<Map.Entry<String, Label>> nameSink;
+    /** 1.3 (#107): Korrektur-Reiter – neue Teilnehmende (Entrant-IDs) und neue Paarungen. */
+    private java.util.Set<String> corrNewPlayers = java.util.Set.of();
+    private java.util.Set<Match> corrNewPairs = java.util.Set.of();
     /** Sammelt beim Aufbau einer Spielliste die Zeilen (für die Suche). */
     private List<MatchEntry> matchSink;
     /** Suche erst 0,25 s nach dem letzten Tastendruck auswerten. */
@@ -439,7 +444,9 @@ public final class DrawView {
         overviewBox.minWidthProperty().bind(javafx.beans.binding.Bindings.createDoubleBinding(
                 () -> Math.max(0, scroll.getViewportBounds().getWidth() - 2), scroll.viewportBoundsProperty()));
         VBox.setVgrow(scroll, Priority.ALWAYS);
-        root.getChildren().addAll(controls, warning, scroll);
+        stickyHolder.setVisible(false);
+        stickyHolder.setManaged(false);
+        root.getChildren().addAll(controls, warning, stickyHolder, scroll);
         installAutoScroll(scroll);
         root.setPadding(new Insets(10, 0, 0, 0));
     }
@@ -546,6 +553,7 @@ public final class DrawView {
         searchDelay.stop();
         try {
             overviewBox.getChildren().clear();
+            setStickyBar(null);
             warning.setVisible(false);
             if (c == null) {
                 controls.setDisable(true);
@@ -553,6 +561,8 @@ public final class DrawView {
                 groupRow.setVisible(false);
                 return;
             }
+            corrNewPlayers = c.getCorrectionOf() != null ? tournament.newEntrants(c) : java.util.Set.of();
+            corrNewPairs = c.getCorrectionOf() != null ? tournament.newPairings(c) : java.util.Set.of();
             List<Entrant> entrants = tournament.entrantsOf(c);
             boolean phase = c.isPhase();
             boolean canChoose = !phase && tournament.canChooseMode(c);
@@ -660,6 +670,8 @@ public final class DrawView {
                 thirdBtn.setTooltip(new Tooltip((c.isThirdPlace() ? "Spiel um Platz 3 ist an" : "Spiel um Platz 3 ist aus")
                         + " – klicken zum Umschalten (Gewinner 3., Verlierer 4.)"));
             }
+
+            if (c.isSideClass()) showSideClass(c);
 
             if (!canChoose && !c.isDrawn()) {
                 showWarning(c.isDoubles()
@@ -984,6 +996,135 @@ public final class DrawView {
         show(c);
     }
 
+    /**
+     * 1.3 (#107): Korrektur-Reiter bzw. deaktivierte Phase – nur ansehen (und drucken). Der Korrektur-Reiter hat eine feste
+     * Leiste mit „Korrektur verwerfen“, „Unveränderte Ergebnisse übernehmen“ und „Phase n weiterführen“.
+     */
+    private void showSideClass(PlayingClass c) {
+        for (Node b : new Node[]{drawBtn, discardWrap, backWrap, readyBtn, startBtn, pauseBtn, restartBtn, endEarlyBtn, undoEndBtn,
+                followBtn, finishBtn, nextPhaseBtn}) {
+            b.setVisible(false);
+            if (!b.managedProperty().isBound()) b.setManaged(false);
+        }
+        thirdBtn.setDisable(true);
+        tiebreakBox.setDisable(true);
+        PlayingClass running = tournament.correctedPhase(c);
+        PlayingClass source = c.getSourceClass() == null ? null : tournament.findClass(c.getSourceClass()).orElse(null);
+        int n = source == null ? 2 : tournament.phaseNumber(source) + 1;
+        if (c.isDeactivated()) {
+            followLabel.setText("Phase " + n + " – deaktiviert: durch die korrigierte Phase " + n + " ersetzt. Sie wird nicht mehr "
+                    + "gespielt, zählt nicht im Endergebnis und kommt nicht in die click-TT-Ergebnisdatei – nur zum Nachsehen.");
+            followRow.setVisible(true);
+            settingsSummary.setText(summary(c) + " · deaktiviert");
+            return;
+        }
+        followRow.setVisible(false);
+        settingsSummary.setText("");
+        if (presentation || running == null) return;
+        Button discard = new Button("Korrektur verwerfen");
+        discard.getStyleClass().add("pill");
+        discard.setTooltip(new Tooltip("Nur diesen Reiter verwerfen – die Korrektur in Phase " + (n - 1) + " bleibt."));
+        discard.setOnAction(e -> {
+            tournament.discardCorrection(c);
+            status.accept("Korrektur verworfen – Phase " + n + " läuft unverändert weiter.");
+            onChanged.run();
+            onOpenClass.accept(running.getName());
+        });
+        int takeable = tournament.takeOverCount(c);
+        Button take = new Button("Unveränderte Ergebnisse übernehmen");
+        take.getStyleClass().add("pill");
+        take.setDisable(takeable == 0);
+        take.setTooltip(new Tooltip(takeable == 0 ? "Keine gleiche Paarung mit Ergebnis in der laufenden Phase " + n + "."
+                : takeable + (takeable == 1 ? " Ergebnis" : " Ergebnisse") + " gleicher Paarungen aus der laufenden Phase " + n + " übernehmen."));
+        take.setOnAction(e -> {
+            int k = tournament.takeOverUnchanged(c);
+            status.accept(k + (k == 1 ? " Ergebnis" : " Ergebnisse") + " aus der laufenden Phase " + n + " übernommen.");
+            onChanged.run();
+            show(c);
+        });
+        Button adopt = new Button("Phase " + n + " weiterführen");
+        adopt.getStyleClass().add("navy-pill");
+        adopt.setOnAction(e -> adoptCorrection(c, n));
+        for (Button b : new Button[]{discard, take, adopt}) b.setMinWidth(Region.USE_PREF_SIZE);
+        Label info = new Label(summary(c) + " · korrigiert nach Änderungen in Phase " + (n - 1)
+                + " · noch nicht aktiv – es wird nichts eingereiht");
+        info.getStyleClass().add("criteria");
+        info.setWrapText(true);
+        info.setMinWidth(0);
+        info.setMaxWidth(Double.MAX_VALUE);
+        javafx.scene.layout.FlowPane buttons = new javafx.scene.layout.FlowPane(10, 8, discard, take, adopt);
+        buttons.setAlignment(Pos.CENTER_LEFT);
+        Region lp = new Region();
+        lp.getStyleClass().add("corr-legend-pair");
+        Region lpl = new Region();
+        lpl.getStyleClass().add("corr-legend-player");
+        Label lPair = new Label("neue Partie");
+        Label lPlayer = new Label("neue Spielerin/neuer Spieler in dieser Phase bzw. Partie");
+        lPair.getStyleClass().add("hint");
+        lPlayer.getStyleClass().add("hint");
+        lPlayer.setWrapText(true);
+        HBox p1 = new HBox(6, lp, lPair), p2 = new HBox(6, lpl, lPlayer);
+        p1.setAlignment(Pos.CENTER_LEFT);
+        p2.setAlignment(Pos.CENTER_LEFT);
+        javafx.scene.layout.FlowPane legend = new javafx.scene.layout.FlowPane(16, 6, p1, p2);
+        legend.setMinWidth(0);
+        buttons.setMinWidth(0);
+        VBox bar = new VBox(8, buttons, info, legend);
+        bar.setMinWidth(0);
+        bar.widthProperty().addListener((o, a, b) -> {          // umbrechen statt „…“
+            double w = b.doubleValue() - bar.getInsets().getLeft() - bar.getInsets().getRight();
+            if (w > 20) {
+                info.setMinHeight(info.prefHeight(w));
+                lPlayer.setMinHeight(lPlayer.prefHeight(Math.max(20, w - 30)));
+            }
+        });
+        bar.getStyleClass().add("sticky-bar");
+        setStickyBar(bar);
+    }
+
+    /** „Phase n weiterführen“: Warnhinweis (Abbrechen links, Weiter rechts), dann die korrigierte Phase übernehmen. */
+    private void adoptCorrection(PlayingClass c, int n) {
+        Tournament.AdoptInfo info = tournament.adoptInfo(c);
+        javafx.scene.control.Dialog<ButtonType> d = new javafx.scene.control.Dialog<>();
+        d.initOwner(window());
+        d.setTitle("Phase " + n + " weiterführen");
+        d.setHeaderText("Korrigierte Phase " + n + " weiterführen?");
+        StringBuilder sb = new StringBuilder("Die bisher laufende Phase " + n + " wird deaktiviert und heißt danach „Phase " + n
+                + " – deaktiviert“. Die korrigierte Phase wird zur laufenden Phase " + n + ".\n");
+        if (info.recalled() > 0) sb.append("\n• ").append(info.recalled()).append(info.recalled() == 1 ? " Spiel wird" : " Spiele werden")
+                .append(" von den Tischen zurückgerufen.");
+        if (info.playedDropped() > 0) sb.append("\n• ").append(info.playedDropped()).append(info.playedDropped() == 1
+                ? " gespieltes Spiel kommt" : " gespielte Spiele kommen").append(" nicht in die click-TT-Ergebnisdatei und ")
+                .append(info.playedDropped() == 1 ? "ist" : "sind").append(" auf der Seite „Spiele“ als „deaktiviert“ markiert.");
+        sb.append("\n• ").append(info.taken()).append(info.taken() == 1 ? " unverändertes Ergebnis ist" : " unveränderte Ergebnisse sind")
+                .append(" übernommen.");
+        sb.append("\n\nDie deaktivierte Phase bleibt zum Nachsehen erhalten, wird aber nicht mehr gespielt.");
+        Label text = new Label(sb.toString());
+        text.setWrapText(true);
+        text.setMaxWidth(560);
+        d.getDialogPane().setContent(text);
+        ButtonType cancel = new ButtonType("Abbrechen", javafx.scene.control.ButtonBar.ButtonData.LEFT);
+        ButtonType go = new ButtonType("Weiter – Phase " + n + " deaktivieren", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        d.getDialogPane().getButtonTypes().addAll(cancel, go);
+        DialogSizing.fit(d);
+        if (d.showAndWait().orElse(cancel) != go) return;
+        try {
+            tournament.adoptCorrection(c);
+            status.accept("Korrigierte Phase " + n + " läuft – die bisherige Phase " + n + " ist deaktiviert.");
+            onChanged.run();
+            onOpenClass.accept(c.getName());
+        } catch (IllegalStateException ex) {
+            showWarning(ex.getMessage());
+        }
+    }
+
+    /** 1.3 (#107): im Korrektur-Reiter neue Spielerinnen/Spieler einer Partie hellorange hinterlegen. */
+    private void markCorrection(Match m, Node a, Node b) {
+        if (m == null || corrNewPlayers.isEmpty()) return;
+        if (m.getA() != null && corrNewPlayers.contains(m.getA())) a.getStyleClass().add("corr-new-player");
+        if (m.getB() != null && corrNewPlayers.contains(m.getB())) b.getStyleClass().add("corr-new-player");
+    }
+
     /** Phase abschließen: Endergebnis (Klasse beenden) oder neue Phase. */
     private void closePhase() {
         PlayingClass c = current;
@@ -1093,6 +1234,77 @@ public final class DrawView {
         onChanged.run();
     }
 
+    /** 1.3 (#105): Knöpfe zum Zusatzspiel und zur Entscheidung danach. */
+    private List<Node> qualificationExtraControls(PlayingClass c) {
+        List<Node> out = new java.util.ArrayList<>();
+        int n = c.getQualRounds();
+        if (tournament.canAddQualificationExtra(c)) {
+            Button add = new Button("Zusatzspiel für die Verlierer der Runde " + n);
+            add.getStyleClass().add("pill");
+            add.setTooltip(new Tooltip("Nur bei Bedarf: Die Verlierer der Runde " + n + " spielen gegeneinander (frei gelost). "
+                    + "Danach wird entschieden, ob die Gewinner qualifiziert oder Nachrücker sind."));
+            add.setOnAction(e -> {
+                try {
+                    tournament.addQualificationExtra(c);
+                    status.accept("Zusatzspiel ausgelost und eingereiht.");
+                } catch (IllegalStateException ex) {
+                    showWarning(ex.getMessage());
+                }
+                onChanged.run();
+            });
+            out.add(add);
+        } else if (tournament.qualificationExtraDecisionPending(c)) {
+            Label ask = new Label("Das Zusatzspiel ist gespielt: Sind die Gewinner qualifiziert oder Nachrücker?");
+            ask.getStyleClass().add("class-name");
+            ask.setWrapText(true);
+            Button yes = new Button("Gewinner sind qualifiziert");
+            yes.getStyleClass().add("navy-pill");
+            yes.setOnAction(e -> decideExtra(c, true));
+            Button no = new Button("Gewinner sind Nachrücker 1. Ranges");
+            no.getStyleClass().add("pill");
+            no.setOnAction(e -> decideExtra(c, false));
+            javafx.scene.layout.FlowPane decide = new javafx.scene.layout.FlowPane(10, 8, ask, yes, no);
+            decide.setAlignment(Pos.CENTER_LEFT);
+            decide.getStyleClass().add("qual-decision");
+            out.add(decide);
+        } else if (c.isQualExtra() && c.getQualExtraDecision() != 0 && !tournament.rootOf(c).isFinished()) {
+            boolean q = c.getQualExtraDecision() == 1;
+            Label l = new Label(q ? "Gewinner des Zusatzspiels: qualifiziert" : "Gewinner des Zusatzspiels: Nachrücker 1. Ranges");
+            l.getStyleClass().add("hint");
+            Button change = new Button(q ? "Ändern: Gewinner sind Nachrücker" : "Ändern: Gewinner sind qualifiziert");
+            change.getStyleClass().add("pill");
+            change.setOnAction(e -> decideExtra(c, !q));
+            javafx.scene.layout.FlowPane row = new javafx.scene.layout.FlowPane(10, 8, l, change);
+            row.setAlignment(Pos.CENTER_LEFT);
+            out.add(row);
+        }
+        if (tournament.canRemoveQualificationExtra(c)) {
+            Button rm = new Button("Zusatzspiel zurücknehmen");
+            rm.getStyleClass().add("pill");
+            rm.setOnAction(e -> {
+                try {
+                    tournament.removeQualificationExtra(c);
+                    status.accept("Zusatzspiel zurückgenommen.");
+                } catch (IllegalStateException ex) {
+                    showWarning(ex.getMessage());
+                }
+                onChanged.run();
+            });
+            out.add(rm);
+        }
+        return out;
+    }
+
+    private void decideExtra(PlayingClass c, boolean qualified) {
+        try {
+            tournament.decideQualificationExtra(c, qualified);
+            status.accept(qualified ? "Die Gewinner des Zusatzspiels sind qualifiziert." : "Die Gewinner des Zusatzspiels sind Nachrücker 1. Ranges.");
+        } catch (IllegalStateException ex) {
+            showWarning(ex.getMessage());
+        }
+        onChanged.run();
+    }
+
     private void decideQualification(PlayingClass c, boolean winnersQualified) {
         try {
             tournament.decideQualification(c, winnersQualified);
@@ -1171,6 +1383,7 @@ public final class DrawView {
         index.noHits.managedProperty().bind(index.noHits.visibleProperty());
         index.noHits.setVisible(false);
         list.getChildren().add(index.noHits);
+        if (!c.getExempt().isEmpty()) list.getChildren().add(exemptBar(c));
         for (int g = 0; g < groups.size(); g++) {
             List<Entrant> members = groups.get(g);
             int gi = g;
@@ -1202,6 +1415,46 @@ public final class DrawView {
         groupSearchIndex = index;
         applyGroupSearch(searchQuery());
         return list;
+    }
+
+    /** 1.3 (#106): Leiste „Freigestellt für das Achtelfinale“ über den Gruppen (S1–S4). */
+    private Node exemptBar(PlayingClass c) {
+        int field = tournament.exemptFieldSize(c);
+        Label title = new Label("Freigestellt für das " + de.hts.tournament.KnockoutDraw.roundName(field));
+        title.getStyleClass().add("class-name");
+        javafx.scene.layout.FlowPane chips = new javafx.scene.layout.FlowPane(18, 6);
+        chips.setPrefWrapLength(620);
+        chips.setAlignment(Pos.CENTER_LEFT);
+        VBox box = new VBox(6, title, chips);
+        box.getStyleClass().add("exempt-bar");
+        box.setMaxWidth(Region.USE_PREF_SIZE);
+        javafx.scene.layout.FlowPane bar = chips;
+        Map<String, Entrant> index = tournament.entrantIndex(c);
+        for (int k = 0; k < c.getExempt().size(); k++) {
+            String id = c.getExempt().get(k);
+            Entrant e = index.get(id);
+            Label chip = new Label("S" + (k + 1));
+            chip.getStyleClass().add("exempt-chip");
+            chip.setMinWidth(Region.USE_PREF_SIZE);
+            Label name = new Label(e == null ? "(entfernt)" : e.name());
+            name.getStyleClass().add("exempt-name");
+            name.setMinWidth(Region.USE_PREF_SIZE);
+            if (nameSink != null) nameSink.add(Map.entry(id, name));
+            Label detail = new Label(e == null ? "" : (e.detail() == null ? "" : e.detail()) + (e.ttr() == null ? "" : (e.detail() == null ? "" : " · ") + e.ttr()));
+            detail.getStyleClass().add("hint");
+            detail.setMinWidth(Region.USE_PREF_SIZE);
+            HBox one = new HBox(6, chip, name, detail);
+            one.setAlignment(Pos.CENTER_LEFT);
+            if (groupEditable()) installMemberDnD(name, id);
+            bar.getChildren().add(one);
+        }
+        if (groupEditable()) {
+            Label hint = new Label("vor dem Start per Drag & Drop mit einem Gruppenmitglied tauschbar");
+            hint.getStyleClass().add("hint");
+            hint.setWrapText(true);
+            box.getChildren().add(hint);
+        }
+        return box;
     }
 
     private static void shown(Node n, boolean b) {
@@ -1268,12 +1521,16 @@ public final class DrawView {
                 + ", höchstens " + de.hts.tournament.SwissSystem.maxRounds(n));
     }
 
-    /** Schweizer System: Tabelle mit Buchholz/Feinbuchholz, daneben die Spiele aller bisherigen Runden. */
+    /**
+     * Schweizer System (auch Badeni): Tabelle, rechts daneben die Spiele – oben die aktuelle Runde, darunter die früheren;
+     * sind alle Runden gespielt, von der letzten zur ersten. 1.3 (#103): Knöpfe und Infotext stehen als feste Leiste über
+     * der scrollenden Ansicht (Knöpfe links, Text rechts, oben/unten eine graue Linie).
+     */
     private Node buildSwiss(PlayingClass c) {
         List<Match> all = tournament.matchesOf(c);
         List<Entrant> members = tournament.groupsOf(c).get(0);
         int round = tournament.swissRound(c);
-        HBox row = new HBox(14, groupCard("Tabelle", 0, members, all), groupMatchList(all));
+        HBox row = new HBox(14, groupCard("Tabelle", 0, members, all), swissRoundList(c, all, round));
         row.setAlignment(Pos.TOP_LEFT);
         Label summary = new Label("Runde " + round + " von " + tournament.swissRounds(c) + " · " + all.size() + " Spiele · ausgelost "
                 + (c.isDrawSeeded() ? "nach Setzung (1. Runde: obere gegen untere Hälfte)" : "zufällig")
@@ -1285,8 +1542,10 @@ public final class DrawView {
         }
         summary.getStyleClass().add("hint");
         summary.setWrapText(true);
-        summary.setMaxWidth(760);
-        VBox box = new VBox(12, summary);
+        summary.setMinWidth(0);
+        HBox bar = new HBox(16);
+        bar.setAlignment(Pos.CENTER_LEFT);
+        bar.getStyleClass().add("sticky-bar");
         if (!presentation && !tournament.rootOf(c).isFinished()) {
             // 1.2 (#95): weitere Runde (z. B. Platzierungsrunde) und Pausieren
             javafx.scene.control.Button more = new javafx.scene.control.Button("Weitere Runde");
@@ -1304,9 +1563,23 @@ public final class DrawView {
             javafx.scene.control.Button pause = new javafx.scene.control.Button("Spieler pausieren");
             pause.setTooltip(new Tooltip("Wer pausiert, wird ab der nächsten Runde nicht gepaart; der Stand bleibt erhalten"));
             pause.setOnAction(e -> pauseSwissPlayers(c, members));
-            javafx.scene.layout.FlowPane actions = new javafx.scene.layout.FlowPane(8, 6, more, pause);
-            box.getChildren().add(actions);
+            for (javafx.scene.control.Button b : List.of(more, pause)) b.setMinWidth(Region.USE_PREF_SIZE);
+            HBox buttons = new HBox(8, more, pause);
+            buttons.setMinWidth(Region.USE_PREF_SIZE);
+            bar.getChildren().add(buttons);
         }
+        HBox.setHgrow(summary, Priority.ALWAYS);
+        bar.getChildren().add(summary);
+        // Infotext rechts neben den Knöpfen umbrechen statt mit „…“ abzukürzen (HBox kennt die Höhe sonst nicht)
+        bar.widthProperty().addListener((o, a, b) -> {
+            double used = bar.getInsets().getLeft() + bar.getInsets().getRight();
+            for (Node x : bar.getChildren()) if (x != summary) used += x.prefWidth(-1) + bar.getSpacing();
+            double w = b.doubleValue() - used;
+            if (w > 20) summary.setMinHeight(summary.prefHeight(w));
+        });
+        VBox box = new VBox(12);
+        if (presentation) box.getChildren().add(bar);
+        else setStickyBar(bar);                              // bleibt beim Scrollen stehen
         box.getChildren().add(row);
         List<String> byes = c.getSwissByes();
         for (int i = 0; i < byes.size(); i++) {
@@ -1318,6 +1591,44 @@ public final class DrawView {
             box.getChildren().add(l);
         }
         return box;
+    }
+
+    /** 1.3 (#103): Spiele je Runde – aktuelle Runde oben, dann absteigend (alle gespielt: letzte zuerst). */
+    private Node swissRoundList(PlayingClass c, List<Match> all, int current) {
+        VBox box = new VBox(8);
+        Label head = new Label("Spiele");
+        head.getStyleClass().add("round-title");
+        boolean allDone = tournament.isPhaseComplete(c);
+        Label hint = new Label(allDone ? "alle Runden gespielt · letzte Runde zuerst" : "aktuelle Runde zuerst");
+        hint.getStyleClass().add("hint");
+        HBox top = new HBox(10, head, hint);
+        top.setAlignment(Pos.BASELINE_LEFT);
+        box.getChildren().add(top);
+        for (int r = current; r >= 1; r--) {
+            int rr = r;
+            List<Match> ms = all.stream().filter(m -> m.getRound() == rr).toList();
+            if (ms.isEmpty()) continue;
+            long open = ms.stream().filter(m -> m.getStatus() != MatchStatus.DONE && m.getStatus() != MatchStatus.CANCELLED).count();
+            Label rt = new Label("Runde " + r);
+            rt.getStyleClass().add("round-title");
+            HBox rh = new HBox(8, rt);
+            rh.setAlignment(Pos.CENTER_LEFT);
+            if (open > 0) {
+                Label chip = new Label("läuft · " + open + " offen");
+                chip.getStyleClass().addAll("chip", "chip-running");
+                chip.setMinWidth(Region.USE_PREF_SIZE);
+                rh.getChildren().add(chip);
+            }
+            box.getChildren().addAll(rh, groupMatchList(ms));
+        }
+        return box;
+    }
+
+    /** Feste Leiste über der scrollenden Ansicht (z. B. Schweizer System); {@code null} = keine. */
+    private void setStickyBar(Node bar) {
+        stickyHolder.getChildren().setAll(bar == null ? List.of() : List.of(bar));
+        stickyHolder.setVisible(bar != null);
+        stickyHolder.setManaged(bar != null);
     }
 
     /** 1.2 (#95): Pausierende im Schweizer System/Badeni auswählen. */
@@ -1378,7 +1689,7 @@ public final class DrawView {
         }
         boolean dbl = p.getSeeds().stream().anyMatch(x -> x != null && x.startsWith("pair:"));
         cardH = dbl ? 136 : 96;
-        boolean seedsEditable = !presentation && tournament.matchesOf(c).stream()
+        boolean seedsEditable = !presentation && !c.isSideClass() && tournament.matchesOf(c).stream()
                 .allMatch(m -> m.getStatus() == MatchStatus.PLANNED || m.getStatus() == MatchStatus.QUEUED) && !tournament.rootOf(c).isFinished();
         Label hint = new Label(switch (p.getKind()) {
             case MAIN_CONSOLATION -> "Hauptrunde und Trostrunde mit getrennten Endergebnissen.";
@@ -1543,7 +1854,9 @@ public final class DrawView {
         table.setHgap(8);
         table.setVgap(3);
         boolean swissCard = current.getMode() == TournamentMode.SWISS;
-        String[] heads = swissCard ? new String[]{"Pl.", "Name", "Verein", "TTR", "Sp", "Pkt", "S:N", "Sätze", "Bälle", "BHZ", "FBHZ"}
+        boolean badeniCard = swissCard && current.isBadeni();        // 1.3 (#102): ohne Buchholz
+        String[] heads = badeniCard ? new String[]{"Pl.", "Name", "Verein", "TTR", "Sp", "Pkt", "S:N", "Sätze", "Bälle"}
+                : swissCard ? new String[]{"Pl.", "Name", "Verein", "TTR", "Sp", "Pkt", "S:N", "Sätze", "Bälle", "BHZ", "FBHZ"}
                 : new String[]{"Pl.", "Name", "Verein", "TTR", "Sp", "S:N", "Sätze", "Bälle"};
         boolean teamCard = tournament.rootOf(current).isTeam();
         if (teamCard) heads = new String[]{"Pl.", "Team", "Verein", "Ø TTR", "Sp", "S:N", "Partien", ""};   // ohne Sätze/Bälle
@@ -1558,16 +1871,29 @@ public final class DrawView {
         int qualCount = current.getNextPhase() == TournamentMode.PLACEMENT ? 2 : current.getQualifiers();
         java.util.Set<Integer> qualPlaces = current.getNextPhase() == TournamentMode.KNOCKOUT && !current.getQualifierPlaces().isEmpty()
                 ? new java.util.HashSet<>(current.getQualifierPlaces()) : null;       // 0.38 (#61): bestimmte Gruppenplätze
+        java.util.Map<String, Integer> marks = tournament.advanceMarks(current);   // 1.3 (#104)
         int r = 1;
         for (de.hts.tournament.GroupStanding.Row row : rows) {
             boolean qualified = showQual && (qualPlaces != null ? qualPlaces.contains(row.place()) : row.place() <= qualCount)
                     && row.played() > 0;
             Label pl = new Label(String.valueOf(row.place()));
-            pl.getStyleClass().add(row.place() == 1 && row.played() > 0 ? "seed" : "pos");
+            // 1.3 (#104): Schweizer System Gold/Silber/Bronze; Gruppen nur mit Folgephase: Chip, wohin es geht
+            Integer mark = marks.get(row.entrant().id());
+            if (swissCard && row.played() > 0 && row.place() <= 3) {
+                pl.getStyleClass().add("medal-" + row.place());
+                pl.setTooltip(new Tooltip(row.place() == 1 ? "Gold" : row.place() == 2 ? "Silber" : "Bronze"));
+            } else if (mark != null) {
+                pl.getStyleClass().add("adv-" + mark);
+                pl.setTooltip(new Tooltip(tournament.advanceMarkText(current, mark)));
+            } else {
+                pl.getStyleClass().add("pos");
+            }
             pl.setMinWidth(22);
+            pl.setPrefWidth(22);
             Label name = new Label(row.entrant().name());
             name.getStyleClass().add("match-name");
             name.setMinWidth(Region.USE_PREF_SIZE);        // 0.36: Namen vollständig
+            if (corrNewPlayers.contains(row.entrant().id())) name.getStyleClass().add("corr-new-player");
             boolean head1 = members.indexOf(row.entrant()) == 0 || (!members.isEmpty() && members.get(0).id().equals(row.entrant().id()));
             if (searchHits.contains(row.entrant().id())) {
                 name.getStyleClass().add("search-hit");
@@ -1607,7 +1933,8 @@ public final class DrawView {
                 fbh.setTooltip(new Tooltip("Feinbuchholz: Summe der Buchholzzahlen aller Gegner"));
                 bh.getStyleClass().add("table-num");
                 fbh.getStyleClass().add("table-num");
-                cells = new Node[]{pl, name, club, ttr, played, score, wl, sets, pts, bh, fbh};
+                cells = badeniCard ? new Node[]{pl, name, club, ttr, played, score, wl, sets, pts}
+                        : new Node[]{pl, name, club, ttr, played, score, wl, sets, pts, bh, fbh};
             } else {
                 cells = new Node[]{pl, name, club, ttr, played, wl, sets, pts};
             }
@@ -1721,6 +2048,8 @@ public final class DrawView {
             HBox row = new HBox(8, nr, rd, a, vs, b, s, tableInfo(m), result, statusChip(m.getStatus()));
             row.setAlignment(Pos.CENTER_LEFT);
             row.getStyleClass().add("group-match-row");
+            markCorrection(m, a, b);
+            if (corrNewPairs.contains(m)) row.getStyleClass().add("corr-new-pair");
             installResultEntry(row, m);
             if (m.getStatus() == MatchStatus.DONE && !m.getSetsText().isEmpty()) {
                 // Klick auf das Ergebnis: Satzergebnisse darunter ausklappen; weiterer Klick auf die Zeile: einklappen
@@ -2106,10 +2435,13 @@ public final class DrawView {
                 });
                 box.getChildren().add(undo);
             }
+            // 1.3 (#105): optionales Zusatzspiel für die Verlierer der letzten Runde
+            if (!presentation) box.getChildren().addAll(qualificationExtraControls(c));
         }
         for (int r = 1; r <= rounds; r++) {
             final int round = r;
-            Label title = new Label("Qualifikation Runde " + r);
+            Label title = new Label(r > c.getQualRounds() ? "Qualifikation Zusatzspiel (Verlierer der Runde " + c.getQualRounds() + ")"
+                    : "Qualifikation Runde " + r);
             title.getStyleClass().add("round-title");
             Node titleNode = title;
             if (!presentation && r == rounds && c.isAwaitingStart()) {
@@ -2267,9 +2599,11 @@ public final class DrawView {
         headRow.getChildren().addAll(head, sp, table, statusChip(m.getStatus()));
         headRow.setAlignment(Pos.CENTER_LEFT);
         boolean rowEditable = editable && (c.isPaused() || (m.getStatus() != MatchStatus.DONE && !m.getStatus().atTable()));
-        VBox card = new VBox(3, headRow, qualRow(c, idx.get(m.getA()), m, true, rowEditable),
-                qualRow(c, idx.get(m.getB()), m, false, rowEditable));
+        Node qa = qualRow(c, idx.get(m.getA()), m, true, rowEditable), qb = qualRow(c, idx.get(m.getB()), m, false, rowEditable);
+        markCorrection(m, qa, qb);
+        VBox card = new VBox(3, headRow, qa, qb);
         card.getStyleClass().addAll("match-card", statusStyle(m.getStatus()));
+        if (corrNewPairs.contains(m)) card.getStyleClass().add("corr-new-pair");
         card.setPrefWidth(matchWidth);
         if (!m.getSetsText().isEmpty()) Tooltip.install(card, new Tooltip(m.getSetsText()));
         installResultEntry(card, m);
@@ -2318,7 +2652,8 @@ public final class DrawView {
     }
 
     private boolean qualEditable() {
-        return !presentation && current != null && current.getMode() == TournamentMode.QUALIFICATION && !tournament.rootOf(current).isFinished();
+        return !presentation && current != null && current.getMode() == TournamentMode.QUALIFICATION && !tournament.rootOf(current).isFinished()
+                && !current.isSideClass();
     }
 
     /** Karte für das Spiel um Platz 3 (unter dem KO-Baum). */
@@ -2381,8 +2716,10 @@ public final class DrawView {
         Node rowA = sideRow(bm.a(), m == null ? null : m.getA(), m, seedOf, true, round == 0 ? 2 * index : -1);
         Node rowB = sideRow(bm.b(), m == null ? null : m.getB(), m, seedOf, false, round == 0 ? 2 * index + 1 : -1);
         rowB.getStyleClass().add("side-b");
+        markCorrection(m, rowA, rowB);
         VBox card = new VBox(3, headRow, rowA, rowB);
         card.getStyleClass().addAll("match-card", statusStyle(m == null ? null : m.getStatus()));
+        if (m != null && corrNewPairs.contains(m)) card.getStyleClass().add("corr-new-pair");
         if (m != null) {
             if (m.getStatus() == MatchStatus.DONE && !m.getSetsText().isEmpty()) {
                 Label sets = new Label(m.getSetsText().startsWith("Aufgabe") || m.getSetsText().startsWith("kampflos")
@@ -2476,13 +2813,13 @@ public final class DrawView {
     private static final String DND_QUAL = "hts-qual:";
 
     private boolean groupEditable() {
-        return !presentation && current != null && !current.isStarted() && current.getMode() == TournamentMode.GROUPS;
+        return !presentation && current != null && !current.isStarted() && current.getMode() == TournamentMode.GROUPS && !current.isSideClass();
     }
 
     /** KO: vor dem Start frei; während der Phase für Erstrundenspiele, die noch nicht laufen bzw. gespielt sind. */
     private boolean koEditable() {
         return !presentation && current != null && (current.getMode() == TournamentMode.KNOCKOUT)
-                && !tournament.rootOf(current).isFinished();
+                && !tournament.rootOf(current).isFinished() && !current.isSideClass();
     }
 
     private static String dragged(javafx.scene.input.DragEvent e) {
@@ -2567,7 +2904,7 @@ public final class DrawView {
 
     /** Doppelklick: Ergebnis eintragen (aktiv/eingereiht) bzw. korrigieren (abgeschlossen). */
     private void installResultEntry(Node node, Match m) {
-        if (presentation || !ResultEntry.isEditable(m)) return;
+        if (presentation || !ResultEntry.isEditable(m) || (current != null && current.isSideClass())) return;
         node.getStyleClass().add("clickable");
         node.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {

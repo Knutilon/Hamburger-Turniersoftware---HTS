@@ -1,4 +1,4 @@
-# Zwischenstand HTS 1.2.0 (19.11.2026)
+# Zwischenstand HTS 1.3.0 (20.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -50,60 +50,11 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 - click-TT-Upload der Ergebnisdatei: Praxistest erfolgreich (Nutzer 15.11.2026); Einschränkung unter „Bekannte
   Grenzen“ in der Doku gestrichen (mit 1.1.0 ausgeliefert).
 
-## Feature-Sammlung für 1.3.0 (NICHT kompilieren – bis „… kompilieren“; Nutzer 20.11.2026: nächste Version 1.3.0)
+## Feature-Sammlung für 1.4.0 (NICHT kompilieren – bis „… kompilieren“)
 
-(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.2.x)
+(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.3.x)
 
-1. BADENI: SPALTEN BHZ UND FBHZ AUSBLENDEN (Nutzer 20.11.2026, Issue #102): Beim Schweizer System nach Badeni zählen
-   Buchholz und Feinbuchholz nicht (Reihung Siege, TTR, Sätze); in der Tabelle stehen dort derzeit nur „null“.
-   Vorschlag (übernommen): Spalten auch im PDF der Phase, in der Präsentationsansicht und auf den Live-Seiten
-   entfernen; normales Schweizer System unverändert; in 1.3.0.
-2. BADENI: LEISTE „WEITERE RUNDE / SPIELER PAUSIEREN“ FIXIEREN (Nutzer 20.11.2026, Issue #103): Knöpfe links, Infotext
-   rechts daneben (bricht um, nie „…“), oben und unten feine graue Linie (#d5d9e0) als Trennung von den Phasen-Knöpfen
-   bzw. der Tabelle; die Leiste bleibt beim Scrollen der Tabelle stehen, gescrollt mit leichtem Schatten.
-   Spalte „Spiele“ bleibt rechts neben der Tabelle: oben immer die aktuelle Runde (Status „läuft · n offen“), darunter
-   die früheren Runden absteigend; sind alle Runden gespielt, von der letzten bis zur ersten Runde. Gilt für Schweizer
-   System und Badeni. Design vom Nutzer bestätigt (20.11.2026): Design-Canvas
-   https://claude.ai/artifact/6fv4ofe1C21Qqqfhm7R8Aj, Bilder 1–3.
-3. TABELLEN-MARKIERUNG (Nutzer 20.11.2026, Issue #104): Schweizer System und Badeni – Plätze 1–3 als runde Chips
-   in Gold (#e9c44a), Silber (#cfd4dc), Bronze (#d79a62). Gruppenphase – keine Platz-Markierung; erst wenn Phase 2 als
-   Phase 2 angelegt ist, liegt der Gruppenplatz der Weiterkommenden in einem runden Chip OHNE Beschriftung (Nutzer
-   20.11.2026, bei allen Phasentypen): dunkelblau = in Phase 2 / Hauptrunde / direkt qualifiziert; hellblau = Trostrunde
-   bzw. KO-Qualifikation; grau = Nachrücker (Qualifikationsmodus); Leistungsstufen (alle kommen weiter): keine Markierung
-   (bestätigt 20.11.2026). Wer nicht weiterkommt: ohne Chip. Design: gleicher Canvas, Bilder 1, 3 und 4.
-4. QUALIFIKATION: OPTIONALES ZUSATZSPIEL FÜR DIE VERLIERER DER RUNDE 2 (Nutzer 20.11.2026, Issue #105; Anlass: HEM-Quali
-   12 Gruppen à 6–7, direkter Vergleich, Gruppenerste direkt, Zweite/Dritte KO, 2 Siege = qualifiziert – Simulation:
-   alles abbildbar außer diesem Spiel; die Zusatzrunde wurde in 0.38.0 entfernt). Nach Runde 2 Knopf „Zusatzspiel für die
-   Verlierer der Runde 2“ im Phasen-Reiter (nur bei Bedarf, zurücknehmbar ohne Ergebnis); frei gelost, möglichst ohne
-   Wiederholung. KORREKTUR Nutzer 20.11.2026: für die Gewinner des Zusatzspiels wird entschieden, ob sie qualifiziert
-   oder Nachrücker sind (Vorschlag BESTÄTIGT 20.11.2026: Frage nach dem letzten Zusatzspiel wie nach Runde 1, nachträglich
-   änderbar bis zum Klassenende). Qualifiziert: Verlierer Zusatzspiel = Nachrücker 1. Ranges, Verlierer Runde 1 = 2.;
-   Nachrücker: Gewinner Zusatzspiel = 1., Verlierer Zusatzspiel = 2., Verlierer Runde 1 = 3. Ranges; innerhalb eines
-   Ranges nach TTR. Ohne Zusatzspiel wie bisher. Dazu veralteten Hinweis „Zusatzrunde im Phasen-Reiter“ im Dialog „Phase abschließen“ korrigieren.
-5. PHASE 1 „GRUPPENPHASE MIT FREISTELLUNG“ (Nutzer 20.11.2026, Issue #106): Setzplätze 1–4 freigestellt (keine Gruppenspiele),
-   Auswahl im Modus-Dialog: STANDARD vorausgewählt die 4 mit dem höchsten TTR (gleicher TTR: Los; Nutzer 20.11.2026),
-   änderbar per Auswahlliste je Platz oder Drag & Drop, „Auf TTR-Vorschlag zurücksetzen“; Phase anlegen erst mit 4. Gruppenanzahl/
-   -größe frei; „Weiter je Gruppe“ Plätze 1–2 oder 1–3. Phase 2 fest: KO ab Achtelfinale OHNE Freilose – Freigestellte +
-   Gruppen × Weiterkommende muss 2/4/8/16/32/64/128 ergeben, sonst schon bei der Phasenanlage (Modus-Dialog) Hinweis mit Rechnung und Vorschlag, Anlage der Phase gesperrt (bestätigt).
-   Beispiele: weibl. Jugend 15/19 4 + 4 Gruppen × 3 = 16; männl. Jugend 15/19 28 Spieler: 4 + 6 Vierergruppen × 2 = 16.
-   Feste Paarungen bei 4 × 3 (bestätigt): S1–D3, B1–D2, A1–C2, S4–C3, S3–A3, C1–B2, D1–A2, S2–B3; sonst Freigestellte auf
-   Setzplatz 1–4 gegen die schlechtesten Gruppenzweiten (nach Spiel-, Satz-, Punkteverhältnis; S1 gegen den schlechtesten),
-   die schlechtesten Gruppenersten gegeneinander, die besten Gruppenersten gegen die übrigen Gruppenzweiten (BESTÄTIGT
-   20.11.2026). Beispiel 6 × 2: S1–Z6, S2–Z5, S3–Z4, S4–Z3, E1–Z2, E2–Z1, E3–E6, E4–E5; gleiche Gruppe in Runde 1 möglichst
-   vermeiden (Tausch mit dem Nächstplatzierten). Design: https://claude.ai/artifact/VvCMhT5WsVpLhJvbfFb1zn
-6. KORREKTUR IN PHASE 1 BEI LAUFENDER FOLGEPHASE (Nutzer 20.11.2026, Issue #107): Ändert eine Korrektur in Phase 1 die
-   Folgephase, entsteht ein weiterer Reiter „Phase 2 – Korrektur“ (kein Dialog); Hin- und Herschalten möglich; Ansicht 1:1
-   wie die laufende Phase, nur korrekt – markiert nur neue Partien (Rahmen) und neue Spieler/innen (hinterlegt). Laufende Phase bleibt ausschlaggebend, aus der Korrektur wird nichts eingereiht, bis sie
-   aktiv ist. Knopf „Unveränderte Ergebnisse übernehmen“ (gespielte Spiele mit gleicher Paarung). Knopf „Phase 2
-   weiterführen“ mit Warn-Dialog (Weiter rechts, Abbrechen links): alte Phase → Reiter „Phase 2 – deaktiviert“, ihre Spiele
-   in der Spielübersicht markiert und aus der Ergebnis-XML entfernt, laufende Spiele zurückgerufen. Kernpunkt: Spiele in
-   abgeschlossenen Phasen bleiben bearbeitbar; Knopf „Korrektur verwerfen“ (Nutzer 12:09/12:11) verwirft nur die
-   korrigierte Phase (Reiter verschwindet); die Korrektur in der Vorphase BLEIBT, laufende Phase läuft unverändert. Nur ein Korrektur-Reiter (rechnet jede weitere Korrektur ein),
-   aber mehrere „deaktiviert“-Reiter möglich; Reiterleiste mit höchstens 6 Reitern je Seite und Pfeilen (Seite 2 = Reiter
-   7–12 usw.). Auswirkung NUR auf die direkt folgende Phase: Korrektur in Phase 1 bei laufender Phase 3 ändert nur das
-   Ergebnis (kein Einfluss auf den Verlauf); Korrektur in Phase 2 → Prüfung + Korrektur-Reiter für Phase 3.
-   Reiterleiste: alle Reiter der Klasse zählen zu den 6 je Seite. Design (bestätigt 20.11.2026):
-   https://claude.ai/artifact/NQBy8vHntVYCjfKsGmP5LT
+(noch leer)
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
@@ -141,6 +92,78 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 
 ## Umgesetzt
+
+1.3.0 (20.11.2026, Commit „HTS 1.3.0“, Closes #102–#107): #102 PdfReports.standings(…, badeni) und DrawView.groupCard
+   ohne BHZ/FBHZ bei Badeni. #103 DrawView.buildSwiss mit fester Leiste (stickyHolder/setStickyBar, Stil „sticky-bar“,
+   Infotext bricht um) und swissRoundList (aktuelle Runde zuerst, Chip „läuft · n offen“). #104 Chips .medal-1/2/3
+   (Schweizer System/Badeni nach dem ersten Spiel) und .adv-1/2/3 über Tournament.advanceMarks/advanceMarkText (nur mit
+   angelegter Phase 2; Leistungsstufen ohne). #105 PlayingClass.qualExtraDecision (Datei qual-extra-decision),
+   Tournament.canAdd/add/canRemove/removeQualificationExtra, qualificationExtraDecisionPending, decideQualificationExtra,
+   Nachrücker-Ränge in qualificationTiers; DrawView-Knöpfe, ResultEntry-Frage. #106 PlayingClass.exempt/exemptPlaces
+   (Datei exempt, exempt-places), Tournament.groupEntrantsOf/exemptSuggestion/exemptProblem/exemptSuggestionText/
+   drawGroupsWithExemption/exemptFieldSize/buildExemptKnockout (festes Schema EXEMPT_4X3, sonst seedOrder +
+   avoidSameGroupInRoundOne), swapGroupMembers tauscht Freigestellte; ModeDialog Opt.EXEMPT (S1–S4-Auswahl, Prüfung,
+   „Auslosen“ gesperrt), PhaseCloseDialog nur KO, DrawView.exemptBar. #107 PlayingClass.recipe/recipeSeed (jede
+   Folgephase merkt Art, Einstellungen und Los: withRecipe/recreate), correctionOf, deactivated (Datei recipe,
+   recipe-seed, correction-of, deactivated); Tournament.updateCorrection (nach correctResult/recordTeamResult),
+   newEntrants/newPairings, takeOverCount/takeOverUnchanged, adoptInfo/adoptCorrection, discardCorrection,
+   deactivatedAfter, isInactiveMatch; removeClass räumt Korrektur-/deaktivierte Phasen mit ab. UI: ClassesView-Reiter
+   (deaktiviert, Korrektur, Blättern mit 6 Reitern je Seite: logicalTabs/showTabs/selectTab), DrawView.showSideClass
+   (Leiste, Legende, Warnhinweis adoptCorrection), Markierungen corr-new-pair/corr-new-player, MatchesView „deaktiviert“.
+   Außerdem: KnockoutDraw.pairUp (Vorausschau gegen Gruppenduelle in Runde 1), Reiterkopf-Reihenfolge (clear + addAll).
+   Tests Version130Test (7), Fixture turnierdatei-1.3.0.hts, Belastungstest mit Freistellung (32er-Feld) und
+   Korrektur-Reiter. Umgesetzte Punkte (Wortlaut der Feature-Sammlung):
+
+   1. BADENI: SPALTEN BHZ UND FBHZ AUSBLENDEN (Nutzer 20.11.2026, Issue #102): Beim Schweizer System nach Badeni zählen
+      Buchholz und Feinbuchholz nicht (Reihung Siege, TTR, Sätze); in der Tabelle stehen dort derzeit nur „null“.
+      Vorschlag (übernommen): Spalten auch im PDF der Phase, in der Präsentationsansicht und auf den Live-Seiten
+      entfernen; normales Schweizer System unverändert; in 1.3.0.
+   2. BADENI: LEISTE „WEITERE RUNDE / SPIELER PAUSIEREN“ FIXIEREN (Nutzer 20.11.2026, Issue #103): Knöpfe links, Infotext
+      rechts daneben (bricht um, nie „…“), oben und unten feine graue Linie (#d5d9e0) als Trennung von den Phasen-Knöpfen
+      bzw. der Tabelle; die Leiste bleibt beim Scrollen der Tabelle stehen, gescrollt mit leichtem Schatten.
+      Spalte „Spiele“ bleibt rechts neben der Tabelle: oben immer die aktuelle Runde (Status „läuft · n offen“), darunter
+      die früheren Runden absteigend; sind alle Runden gespielt, von der letzten bis zur ersten Runde. Gilt für Schweizer
+      System und Badeni. Design vom Nutzer bestätigt (20.11.2026): Design-Canvas
+      https://claude.ai/artifact/6fv4ofe1C21Qqqfhm7R8Aj, Bilder 1–3.
+   3. TABELLEN-MARKIERUNG (Nutzer 20.11.2026, Issue #104): Schweizer System und Badeni – Plätze 1–3 als runde Chips
+      in Gold (#e9c44a), Silber (#cfd4dc), Bronze (#d79a62). Gruppenphase – keine Platz-Markierung; erst wenn Phase 2 als
+      Phase 2 angelegt ist, liegt der Gruppenplatz der Weiterkommenden in einem runden Chip OHNE Beschriftung (Nutzer
+      20.11.2026, bei allen Phasentypen): dunkelblau = in Phase 2 / Hauptrunde / direkt qualifiziert; hellblau = Trostrunde
+      bzw. KO-Qualifikation; grau = Nachrücker (Qualifikationsmodus); Leistungsstufen (alle kommen weiter): keine Markierung
+      (bestätigt 20.11.2026). Wer nicht weiterkommt: ohne Chip. Design: gleicher Canvas, Bilder 1, 3 und 4.
+   4. QUALIFIKATION: OPTIONALES ZUSATZSPIEL FÜR DIE VERLIERER DER RUNDE 2 (Nutzer 20.11.2026, Issue #105; Anlass: HEM-Quali
+      12 Gruppen à 6–7, direkter Vergleich, Gruppenerste direkt, Zweite/Dritte KO, 2 Siege = qualifiziert – Simulation:
+      alles abbildbar außer diesem Spiel; die Zusatzrunde wurde in 0.38.0 entfernt). Nach Runde 2 Knopf „Zusatzspiel für die
+      Verlierer der Runde 2“ im Phasen-Reiter (nur bei Bedarf, zurücknehmbar ohne Ergebnis); frei gelost, möglichst ohne
+      Wiederholung. KORREKTUR Nutzer 20.11.2026: für die Gewinner des Zusatzspiels wird entschieden, ob sie qualifiziert
+      oder Nachrücker sind (Vorschlag BESTÄTIGT 20.11.2026: Frage nach dem letzten Zusatzspiel wie nach Runde 1, nachträglich
+      änderbar bis zum Klassenende). Qualifiziert: Verlierer Zusatzspiel = Nachrücker 1. Ranges, Verlierer Runde 1 = 2.;
+      Nachrücker: Gewinner Zusatzspiel = 1., Verlierer Zusatzspiel = 2., Verlierer Runde 1 = 3. Ranges; innerhalb eines
+      Ranges nach TTR. Ohne Zusatzspiel wie bisher. Dazu veralteten Hinweis „Zusatzrunde im Phasen-Reiter“ im Dialog „Phase abschließen“ korrigieren.
+   5. PHASE 1 „GRUPPENPHASE MIT FREISTELLUNG“ (Nutzer 20.11.2026, Issue #106): Setzplätze 1–4 freigestellt (keine Gruppenspiele),
+      Auswahl im Modus-Dialog: STANDARD vorausgewählt die 4 mit dem höchsten TTR (gleicher TTR: Los; Nutzer 20.11.2026),
+      änderbar per Auswahlliste je Platz oder Drag & Drop, „Auf TTR-Vorschlag zurücksetzen“; Phase anlegen erst mit 4. Gruppenanzahl/
+      -größe frei; „Weiter je Gruppe“ Plätze 1–2 oder 1–3. Phase 2 fest: KO ab Achtelfinale OHNE Freilose – Freigestellte +
+      Gruppen × Weiterkommende muss 2/4/8/16/32/64/128 ergeben, sonst schon bei der Phasenanlage (Modus-Dialog) Hinweis mit Rechnung und Vorschlag, Anlage der Phase gesperrt (bestätigt).
+      Beispiele: weibl. Jugend 15/19 4 + 4 Gruppen × 3 = 16; männl. Jugend 15/19 28 Spieler: 4 + 6 Vierergruppen × 2 = 16.
+      Feste Paarungen bei 4 × 3 (bestätigt): S1–D3, B1–D2, A1–C2, S4–C3, S3–A3, C1–B2, D1–A2, S2–B3; sonst Freigestellte auf
+      Setzplatz 1–4 gegen die schlechtesten Gruppenzweiten (nach Spiel-, Satz-, Punkteverhältnis; S1 gegen den schlechtesten),
+      die schlechtesten Gruppenersten gegeneinander, die besten Gruppenersten gegen die übrigen Gruppenzweiten (BESTÄTIGT
+      20.11.2026). Beispiel 6 × 2: S1–Z6, S2–Z5, S3–Z4, S4–Z3, E1–Z2, E2–Z1, E3–E6, E4–E5; gleiche Gruppe in Runde 1 möglichst
+      vermeiden (Tausch mit dem Nächstplatzierten). Design: https://claude.ai/artifact/VvCMhT5WsVpLhJvbfFb1zn
+   6. KORREKTUR IN PHASE 1 BEI LAUFENDER FOLGEPHASE (Nutzer 20.11.2026, Issue #107): Ändert eine Korrektur in Phase 1 die
+      Folgephase, entsteht ein weiterer Reiter „Phase 2 – Korrektur“ (kein Dialog); Hin- und Herschalten möglich; Ansicht 1:1
+      wie die laufende Phase, nur korrekt – markiert nur neue Partien (Rahmen) und neue Spieler/innen (hinterlegt). Laufende Phase bleibt ausschlaggebend, aus der Korrektur wird nichts eingereiht, bis sie
+      aktiv ist. Knopf „Unveränderte Ergebnisse übernehmen“ (gespielte Spiele mit gleicher Paarung). Knopf „Phase 2
+      weiterführen“ mit Warn-Dialog (Weiter rechts, Abbrechen links): alte Phase → Reiter „Phase 2 – deaktiviert“, ihre Spiele
+      in der Spielübersicht markiert und aus der Ergebnis-XML entfernt, laufende Spiele zurückgerufen. Kernpunkt: Spiele in
+      abgeschlossenen Phasen bleiben bearbeitbar; Knopf „Korrektur verwerfen“ (Nutzer 12:09/12:11) verwirft nur die
+      korrigierte Phase (Reiter verschwindet); die Korrektur in der Vorphase BLEIBT, laufende Phase läuft unverändert. Nur ein Korrektur-Reiter (rechnet jede weitere Korrektur ein),
+      aber mehrere „deaktiviert“-Reiter möglich; Reiterleiste mit höchstens 6 Reitern je Seite und Pfeilen (Seite 2 = Reiter
+      7–12 usw.). Auswirkung NUR auf die direkt folgende Phase: Korrektur in Phase 1 bei laufender Phase 3 ändert nur das
+      Ergebnis (kein Einfluss auf den Verlauf); Korrektur in Phase 2 → Prüfung + Korrektur-Reiter für Phase 3.
+      Reiterleiste: alle Reiter der Klasse zählen zu den 6 je Seite. Design (bestätigt 20.11.2026):
+      https://claude.ai/artifact/NQBy8vHntVYCjfKsGmP5LT
 
 1.2.0 (19.11.2026, Commit „HTS 1.2.0“, Closes #94–#100): neue Plan-Engine Plan.java (Modus TournamentMode.PLAN,
    Knoten mit Quellen S#/W:/L:/-, Bedingung IFB: für den Stichkampf, Speichern als <plan> mit plan-section/plan-node/

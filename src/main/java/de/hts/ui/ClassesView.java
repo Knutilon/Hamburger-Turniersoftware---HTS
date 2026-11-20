@@ -85,6 +85,14 @@ public final class ClassesView {
     private final Tab participantsTab = new Tab("Teilnehmende der Klasse");
     private final List<Tab> phaseTabs = new ArrayList<>();
     private final Tab resultTab = new Tab("Endergebnis");
+    /** 1.3: alle Reiter der Klasse in Reihenfolge; angezeigt werden höchstens {@link #TABS_PER_PAGE} je Seite. */
+    private final List<Tab> logicalTabs = new ArrayList<>();
+    private static final int TABS_PER_PAGE = 6;
+    private int tabPage;
+    private final Button tabPrev = new Button("‹");
+    private final Button tabNext = new Button("›");
+    private final Label tabPageLabel = new Label();
+    private final HBox tabPager = new HBox(6);
     private final Button modeBtn = new Button("Teilnehmende fertig – Modus festlegen", Icons.of(Icons.START, 14));
     private final java.util.Random random = new java.security.SecureRandom();
     private final FinalResultView resultView;
@@ -159,7 +167,7 @@ public final class ClassesView {
             onRunningChanged.run();
         }, c -> {
             refresh();
-            classTabs.getSelectionModel().select(participantsTab);
+            selectTab(participantsTab);
         }, this::openClassDraw);
         this.resultView = new FinalResultView(tournament, status);
         this.status = status;
@@ -402,7 +410,22 @@ public final class ClassesView {
         participantsScroll.getStyleClass().add("page-scroll");
         participantsTab.setContent(participantsScroll);
         resultTab.setContent(resultView.getRoot());
+        logicalTabs.add(participantsTab);
         classTabs.getTabs().addAll(participantsTab);
+        tabPrev.getStyleClass().add("tab-page-arrow");
+        tabNext.getStyleClass().add("tab-page-arrow");
+        tabPrev.setTooltip(new javafx.scene.control.Tooltip("Vorige Reiter"));
+        tabNext.setTooltip(new javafx.scene.control.Tooltip("Weitere Reiter"));
+        tabPageLabel.getStyleClass().add("hint");
+        tabPageLabel.setMinWidth(Region.USE_PREF_SIZE);
+        tabPrev.setOnAction(e -> turnTabPage(-1));
+        tabNext.setOnAction(e -> turnTabPage(1));
+        tabPager.getChildren().addAll(tabPrev, tabPageLabel, tabNext);
+        tabPager.setAlignment(Pos.CENTER_RIGHT);
+        tabPager.setMaxWidth(Double.MAX_VALUE);
+        tabPager.setPadding(new Insets(0, 4, 0, 0));
+        tabPager.managedProperty().bind(tabPager.visibleProperty());
+        tabPager.setVisible(false);
         classTabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         classTabs.getStyleClass().add("result-tabs");
         classTabs.getSelectionModel().selectedItemProperty().addListener((o, a, b) -> {
@@ -443,7 +466,8 @@ public final class ClassesView {
         lockChip.setVisible(false);
         HBox classHead = new HBox(10, headText, lockChip, classState);
         classHead.setAlignment(Pos.CENTER_LEFT);
-        VBox classCard = new VBox(6, classHead, classTabs);
+        // Blättern: kleine Zeile rechts über der Reiterleiste, nur wenn es mehr als 6 Reiter gibt
+        VBox classCard = new VBox(6, classHead, tabPager, classTabs);
         classCard.getStyleClass().add("card");
 
         SplitPane split = new SplitPane(left, classCard);
@@ -477,7 +501,7 @@ public final class ClassesView {
     private void openClassDraw(String name) {
         if (DrawView.RESULT_TAB.equals(name)) {
             refresh();
-            if (classTabs.getTabs().contains(resultTab)) classTabs.getSelectionModel().select(resultTab);
+            if (logicalTabs.contains(resultTab)) selectTab(resultTab);
             return;
         }
         tournament.findClass(name).ifPresent(pc -> {
@@ -485,7 +509,7 @@ public final class ClassesView {
             if (selectedClass() != first) select(first);
             else refresh();
             phaseTabs.stream().filter(t -> name.equals(t.getUserData()) || String.valueOf(t.getUserData()).startsWith(name + "#")).findFirst()
-                    .ifPresent(t -> classTabs.getSelectionModel().select(t));
+                    .ifPresent(this::selectTab);
         });
     }
 
@@ -497,65 +521,111 @@ public final class ClassesView {
         // „Phase 1“ erst, wenn die Teilnehmenden feststehen und der Modus festgelegt (= ausgelost) ist
         List<PlayingClass> phases = c == null || !c.isDrawn() ? List.of() : tournament.phasesOf(c);
         // 1.2 (#94): Haupt- und Trostrunde bekommen je einen Reiter („Name#0“, „Name#1“)
+        // 1.3 (#107): vor der Phase ihre deaktivierten Vorgänger, dahinter der Korrektur-Reiter
         List<String> keys = new ArrayList<>();
         List<String> titles = new ArrayList<>();
+        List<String> styles = new ArrayList<>();
         for (int i = 0; i < phases.size(); i++) {
             PlayingClass ph = phases.get(i);
+            if (i > 0) {
+                List<PlayingClass> off = tournament.deactivatedAfter(phases.get(i - 1));
+                for (int k = 0; k < off.size(); k++) {
+                    keys.add(off.get(k).getName());
+                    titles.add("Phase " + (i + 1) + " – deaktiviert" + (k > 0 ? " (" + (k + 1) + ")" : ""));
+                    styles.add("tab-deactivated");
+                }
+            }
             int results = ph.getMode() == de.hts.tournament.TournamentMode.PLAN && ph.getPlan() != null ? ph.getPlan().getResultTitles().size() : 1;
             if (results > 1) {
                 for (int g = 0; g < results; g++) {
                     keys.add(ph.getName() + "#" + g);
                     titles.add("Phase " + (i + 1) + " – " + ph.getPlan().getResultTitles().get(g));
+                    styles.add("");
                 }
             } else {
                 keys.add(ph.getName());
                 titles.add(DrawView.phaseTabTitle(i + 1, ph));
+                styles.add("");
+            }
+            PlayingClass corr = tournament.correctionOf(ph);
+            if (corr != null) {
+                keys.add(corr.getName());
+                titles.add("Phase " + (i + 1) + " – Korrektur");
+                styles.add("tab-correction");
             }
         }
         List<Object> old = phaseTabs.stream().map(Tab::getUserData).toList();
+        boolean finished = c != null && c.isFinished();
+        Tab selected = classTabs.getSelectionModel().getSelectedItem();
+        Tab target = selected;
         if (phases.isEmpty() || !keys.equals(old)) {
-            Tab selected = classTabs.getSelectionModel().getSelectedItem();
             boolean wasPhase = phaseTabs.contains(selected);
             Object selKey = selected == null ? null : selected.getUserData();
-            syncingTabs = true;
-            try {
-                phaseTabs.forEach(t -> t.setContent(null));
-                phaseTabs.clear();
-                for (String k : keys) {
-                    Tab t = new Tab();
-                    t.setUserData(k);
-                    phaseTabs.add(t);
-                }
-                List<Tab> all = new ArrayList<>();
-                all.add(participantsTab);
-                all.addAll(phaseTabs);
-                if (classTabs.getTabs().contains(resultTab)) all.add(resultTab);
-                classTabs.getTabs().setAll(all);
-                Tab target = selected == resultTab ? resultTab : participantsTab;
-                if (wasPhase && !phaseTabs.isEmpty()) {
-                    target = phaseTabs.stream().filter(t -> t.getUserData().equals(selKey)).findFirst().orElse(phaseTabs.get(0));
-                }
-                classTabs.getSelectionModel().select(target);
-            } finally {
-                syncingTabs = false;
+            phaseTabs.forEach(t -> t.setContent(null));
+            phaseTabs.clear();
+            for (String k : keys) {
+                Tab t = new Tab();
+                t.setUserData(k);
+                phaseTabs.add(t);
+            }
+            target = selected == resultTab ? resultTab : participantsTab;
+            if (wasPhase && !phaseTabs.isEmpty()) {
+                target = phaseTabs.stream().filter(t -> t.getUserData().equals(selKey)).findFirst().orElse(phaseTabs.get(0));
             }
         }
-        for (int i = 0; i < keys.size(); i++) phaseTabs.get(i).setText(titles.get(i));
+        for (int i = 0; i < keys.size(); i++) {
+            Tab t = phaseTabs.get(i);
+            t.setText(titles.get(i));
+            t.getStyleClass().removeAll("tab-deactivated", "tab-correction");
+            if (!styles.get(i).isEmpty()) t.getStyleClass().add(styles.get(i));
+        }
+        logicalTabs.clear();
+        logicalTabs.add(participantsTab);
+        logicalTabs.addAll(phaseTabs);
         // „Endergebnis“ erst, wenn die Klasse beendet ist (nach dem letzten Spiel bzw. „Klasse beenden“)
-        boolean finished = c != null && c.isFinished();
-        if (finished && !classTabs.getTabs().contains(resultTab)) {
-            classTabs.getTabs().add(resultTab);
-        } else if (!finished && classTabs.getTabs().contains(resultTab)) {
-            syncingTabs = true;
-            try {
-                if (classTabs.getSelectionModel().getSelectedItem() == resultTab) {
-                    classTabs.getSelectionModel().select(phaseTabs.isEmpty() ? participantsTab : phaseTabs.get(phaseTabs.size() - 1));
-                }
-                classTabs.getTabs().remove(resultTab);
-            } finally {
-                syncingTabs = false;
+        if (finished) logicalTabs.add(resultTab);
+        if (target == resultTab && !finished) target = phaseTabs.isEmpty() ? participantsTab : phaseTabs.get(phaseTabs.size() - 1);
+        if (target == null || !logicalTabs.contains(target)) target = participantsTab;
+        showTabs(target);
+        showSelectedTab();
+    }
+
+    /** Zeigt die Seite der Reiterleiste, auf der {@code target} liegt, und wählt ihn aus (ohne die Ansicht neu aufzubauen). */
+    private void showTabs(Tab target) {
+        if (target == null || !logicalTabs.contains(target)) target = logicalTabs.isEmpty() ? null : logicalTabs.get(0);
+        int pages = Math.max(1, (logicalTabs.size() + TABS_PER_PAGE - 1) / TABS_PER_PAGE);
+        tabPage = target == null ? 0 : logicalTabs.indexOf(target) / TABS_PER_PAGE;
+        List<Tab> show = new ArrayList<>(logicalTabs.subList(tabPage * TABS_PER_PAGE,
+                Math.min(logicalTabs.size(), (tabPage + 1) * TABS_PER_PAGE)));
+        syncingTabs = true;
+        try {
+            if (!classTabs.getTabs().equals(show)) {
+                // erst leeren, dann neu befüllen: setAll mit einem behaltenen Reiter („Teilnehmende der Klasse“) stellt
+                // dessen Kopf sonst ans Ende
+                classTabs.getTabs().clear();
+                classTabs.getTabs().addAll(show);
             }
+            if (target != null && classTabs.getSelectionModel().getSelectedItem() != target) classTabs.getSelectionModel().select(target);
+        } finally {
+            syncingTabs = false;
         }
+        tabPager.setVisible(pages > 1);
+        tabPageLabel.setText("Seite " + (tabPage + 1) + " / " + pages);
+        tabPrev.setDisable(tabPage == 0);
+        tabNext.setDisable(tabPage >= pages - 1);
+    }
+
+    /** Pfeile der Reiterleiste: vorige bzw. nächste Seite, dort den ersten Reiter wählen. */
+    private void turnTabPage(int delta) {
+        int pages = Math.max(1, (logicalTabs.size() + TABS_PER_PAGE - 1) / TABS_PER_PAGE);
+        int page = Math.max(0, Math.min(pages - 1, tabPage + delta));
+        if (page == tabPage) return;
+        selectTab(logicalTabs.get(page * TABS_PER_PAGE));
+    }
+
+    /** Reiter auswählen – auch auf einer anderen Seite der Reiterleiste. */
+    private void selectTab(Tab t) {
+        showTabs(t);
         showSelectedTab();
     }
 
@@ -585,7 +655,7 @@ public final class ClassesView {
         if (Boolean.TRUE.equals(new ModeDialog(window(), tournament, c, random).showAndWait().orElse(false))) {
             status.accept("„" + c.getName() + "“ ausgelost – Phase 1 steht.");
             changed();
-            if (!phaseTabs.isEmpty()) classTabs.getSelectionModel().select(phaseTabs.get(0));
+            if (!phaseTabs.isEmpty()) selectTab(phaseTabs.get(0));
         }
     }
 
@@ -619,10 +689,12 @@ public final class ClassesView {
      * sonst „Teilnehmende der Klasse“.
      */
     private void openDefaultTab(PlayingClass c) {
-        Tab target = c.isFinished() && classTabs.getTabs().contains(resultTab) ? resultTab
-                : !phaseTabs.isEmpty() ? phaseTabs.get(phaseTabs.size() - 1) : participantsTab;
-        if (classTabs.getSelectionModel().getSelectedItem() != target) classTabs.getSelectionModel().select(target);
-        else showSelectedTab();
+        // 1.3 (#107): aktuellste Phase = letzte reguläre (nicht der Korrektur- bzw. deaktivierte Reiter)
+        Tab lastPhase = null;
+        for (Tab t : phaseTabs) if (!t.getStyleClass().contains("tab-deactivated") && !t.getStyleClass().contains("tab-correction")) lastPhase = t;
+        Tab target = c.isFinished() && logicalTabs.contains(resultTab) ? resultTab
+                : lastPhase != null ? lastPhase : participantsTab;
+        selectTab(target);
     }
 
     private void showClass(PlayingClass c) {

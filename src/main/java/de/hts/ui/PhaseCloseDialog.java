@@ -127,6 +127,9 @@ final class PhaseCloseDialog extends Dialog<PhaseCloseDialog.Choice> {
         for (Plan.Kind pk : t.planKindsAfter(c)) {
             for (K k : K.values()) if (k.plan() == pk) kinds.add(k);
         }
+        // 1.3 (#106): nach der Gruppenphase mit Freistellung folgt nur das KO-System ohne Freilose
+        boolean exemptMode = !c.getExempt().isEmpty();
+        if (exemptMode) kinds.retainAll(List.of(K.KNOCKOUT));
         kind.getItems().setAll(kinds);
         kind.setConverter(new StringConverter<>() {
             @Override
@@ -312,7 +315,7 @@ final class PhaseCloseDialog extends Dialog<PhaseCloseDialog.Choice> {
             qf.setMin(quali ? 0 : 1);
             if (qualifiers.getValue() != null && qualifiers.getValue() < qf.getMin()) qf.setValue(qf.getMin());
             qLabel.setText(quali ? "Direkt qualifiziert je Gruppe:" : swiss ? "Aufsteiger insgesamt:" : "Aufsteiger je Gruppe:");
-            boolean koPlacesPossible = k == TournamentMode.KNOCKOUT && !swiss;
+            boolean koPlacesPossible = k == TournamentMode.KNOCKOUT && !swiss && !exemptMode;
             boolean usePlaces = koPlacesPossible && advPlaces.isSelected();
             // KO: statt der Beschriftung „Aufsteiger je Gruppe“ die beiden Optionsfelder (entweder – oder)
             opts.getChildren().remove(advTop);
@@ -337,8 +340,8 @@ final class PhaseCloseDialog extends Dialog<PhaseCloseDialog.Choice> {
             }
             placesError.setText(placesProblem == null ? "" : "⚠ " + placesProblem);
             placesError.setVisible(placesProblem != null);
-            qLabel.setVisible(!placement && !planKind && !tiersKind);
-            qualifiers.setVisible(!placement && !planKind && !tiersKind);
+            qLabel.setVisible(!placement && !planKind && !tiersKind && !exemptMode);
+            qualifiers.setVisible(!placement && !planKind && !tiersKind && !exemptMode);
             qLabel.setManaged(qLabel.isVisible());
             qualifiers.setManaged(qualifiers.isVisible());
             for (javafx.scene.Node x : new javafx.scene.Node[]{kLabel, koBox, nLabel, reserve}) {
@@ -379,6 +382,16 @@ final class PhaseCloseDialog extends Dialog<PhaseCloseDialog.Choice> {
             } else {
                 for (List<String> g : c.getGroups()) count += Math.min(g.size(), qualifiers.getValue() == null ? 0 : qualifiers.getValue());
             }
+            if (exemptMode && k == TournamentMode.KNOCKOUT) {
+                int field = t.exemptFieldSize(c), places = c.getExemptPlaces();
+                preview.setText("→ " + field + "er-Feld ohne Freilose: S1–S4 und aus jeder Gruppe die Plätze 1–" + places
+                        + (c.getGroups().size() == 4 && places == 3 ? ". Feste Paarungen: S1–D3, B1–D2, A1–C2, S4–C3, S3–A3, C1–B2, D1–A2, S2–B3."
+                        : ". Setzliste: S1–S4, dann die Gruppenersten, dann die Zweiten" + (places == 3 ? ", dann die Dritten" : "")
+                        + ", jeweils nach Spiel-, Satz- und Punkteverhältnis (Gleichstand: Los). Die Freigestellten spielen gegen die "
+                        + "schlechtesten Gruppen" + (places == 3 ? "dritten" : "zweiten") + "; Spieler/innen derselben Gruppe treffen "
+                        + "in Runde 1 nicht aufeinander.") + " Die übrigen behalten ihren Gruppenplatz.");
+                return;
+            }
             String planText = planPreview(t, c, kk, po, tierWidth.getValue() == null ? 1 : tierWidth.getValue(),
                     groupSize.getValue() == null ? 4 : groupSize.getValue(), tierMode.getSelectionModel().getSelectedIndex() == 0);
             if (planText != null) {
@@ -412,8 +425,9 @@ final class PhaseCloseDialog extends Dialog<PhaseCloseDialog.Choice> {
                                 .append(koCount).append(" Teilnehmende). Runde 1: besser gegen schlechter Platzierte (möglichst andere "
                                 + "Gruppe), Freilos für den Stärksten nach der Gruppenphase; Runde 2 frei gelost. Wer 2 Spiele gewinnt "
                                 + "(Freilos zählt als Sieg), ist qualifiziert. Nachrücker: Verlierer der Runde 2, dann Verlierer der "
-                                + "Runde 1 (nach TTR). Im Phasen-Reiter lässt sich eine Zusatzrunde für die Verlierer der Runde 2 "
-                                + "zuschalten – deren Gewinner sind ebenfalls qualifiziert.");
+                                + "Runde 1 (nach TTR). Nach Runde 2 lässt sich im Phasen-Reiter bei Bedarf ein Zusatzspiel für die "
+                                + "Verlierer der Runde 2 anlegen – danach wird entschieden, ob dessen Gewinner qualifiziert oder "
+                                + "Nachrücker sind.");
                     }
                     int rv = reserve.getValue() == null ? 0 : reserve.getValue();
                     if (rv > 0 && totalMode) {

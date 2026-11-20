@@ -373,6 +373,40 @@ public final class PlayingClass {
     private boolean qualExtra;
     public boolean isQualExtra() { return qualExtra; }
     public void setQualExtra(boolean b) { qualExtra = b; }
+    /** 1.3 (#105): Entscheidung zum Zusatzspiel – 0 offen, 1 Gewinner qualifiziert, 2 Gewinner Nachrücker. */
+    /** 1.3 (#107): Wie die Phase angelegt wurde (Art und Einstellungen) und mit welchem Los – zum Neuberechnen nach Korrekturen. */
+    private String recipe;
+    private long recipeSeed;
+    public String getRecipe() { return recipe; }
+    public void setRecipe(String r) { recipe = r; }
+    public long getRecipeSeed() { return recipeSeed; }
+    public void setRecipeSeed(long s) { recipeSeed = s; }
+    /** 1.3 (#107): Reiter „Phase n – Korrektur“: Name der laufenden Phase, die diese Phase korrigiert (sonst {@code null}). */
+    private String correctionOf;
+    public String getCorrectionOf() { return correctionOf; }
+    public void setCorrectionOf(String n) { correctionOf = n; }
+    /** 1.3 (#107): durch eine Korrektur ersetzt („Phase n – deaktiviert“) – wird nicht mehr gespielt, gewertet oder exportiert. */
+    private boolean deactivated;
+    public boolean isDeactivated() { return deactivated; }
+    public void setDeactivated(boolean d) { deactivated = d; }
+    /** Korrektur- bzw. deaktivierte Phase (hängt an der Vorphase, gehört aber nicht zur Phasenfolge). */
+    public boolean isSideClass() { return correctionOf != null || deactivated; }
+
+    /** 1.3 (#106): Gruppenphase mit Freistellung – Setzplätze S1–S4 (Reihenfolge = Setzung), die erst im KO einsteigen. */
+    private final java.util.List<String> exempt = new java.util.ArrayList<>();
+    public java.util.List<String> getExempt() { return java.util.Collections.unmodifiableList(exempt); }
+    public void setExempt(java.util.Collection<String> ids) {
+        exempt.clear();
+        if (ids != null) exempt.addAll(ids);
+    }
+    /** 1.3 (#106): so viele Plätze je Gruppe kommen ins KO (2 oder 3). */
+    private int exemptPlaces;
+    public int getExemptPlaces() { return exemptPlaces; }
+    public void setExemptPlaces(int q) { exemptPlaces = q; }
+
+    private int qualExtraDecision;
+    public int getQualExtraDecision() { return qualExtraDecision; }
+    public void setQualExtraDecision(int d) { qualExtraDecision = d; }
 
     public boolean isPaused() { return paused; }
     public void setPaused(boolean p) { paused = p; }

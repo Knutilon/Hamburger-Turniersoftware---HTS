@@ -451,7 +451,7 @@ public final class PdfReports {
         header(c, t, title, sub);
         if (groupIndex >= 0) {
             c.y += c.text(c.left(), c.y, "Tabelle", BOLD, 11, c.width()) + 2;
-            standings(c, t, t.standings(phase, groupIndex), phase.getMode() == TournamentMode.SWISS);
+            standings(c, t, t.standings(phase, groupIndex), phase.getMode() == TournamentMode.SWISS, phase.isBadeni());
             c.y += 10;
         }
         for (String n : notes) c.paragraph(n, REGULAR, 8.5f, c.width());
@@ -687,9 +687,16 @@ public final class PdfReports {
     }
 
     private static void standings(PdfCanvas c, Tournament t, List<GroupStanding.Row> rows, boolean swiss) {
-        String[] heads = swiss ? new String[]{"Pl.", "Name", "Verein", "Sp", "Pkt", "S:N", "Sätze", "Bälle", "BHZ", "FBHZ"}
+        standings(c, t, rows, swiss, false);
+    }
+
+    /** @param badeni 1.3 (#102): Schweizer System nach Badeni – mit TTR, ohne Buchholz/Feinbuchholz */
+    private static void standings(PdfCanvas c, Tournament t, List<GroupStanding.Row> rows, boolean swiss, boolean badeni) {
+        String[] heads = badeni ? new String[]{"Pl.", "Name", "Verein", "TTR", "Sp", "Pkt", "S:N", "Sätze", "Bälle"}
+                : swiss ? new String[]{"Pl.", "Name", "Verein", "Sp", "Pkt", "S:N", "Sätze", "Bälle", "BHZ", "FBHZ"}
                 : new String[]{"Pl.", "Name", "Verein", "Sp", "S:N", "Sätze", "Bälle"};
-        float[] widths = swiss ? new float[]{24, 140, 110, 22, 26, 32, 38, 54, 30, 34} : new float[]{24, 160, 140, 22, 34, 40, 56};
+        float[] widths = badeni ? new float[]{24, 150, 120, 34, 22, 26, 32, 38, 54}
+                : swiss ? new float[]{24, 140, 110, 22, 26, 32, 38, 54, 30, 34} : new float[]{24, 160, 140, 22, 34, 40, 56};
         // auf die Seitenbreite verteilen: Zusatzplatz an Name und Verein
         float extra = Math.max(0, Math.min(c.width() - sum(widths), 260));
         widths[1] += extra * 0.55f;
@@ -704,12 +711,14 @@ public final class PdfReports {
         c.y += 3;
         for (GroupStanding.Row r : rows) {
             List<String> v = new ArrayList<>(List.of(r.place() + ".", r.entrant().name(),
-                    r.entrant().detail() == null ? "" : r.entrant().detail(), String.valueOf(r.played())));
+                    r.entrant().detail() == null ? "" : r.entrant().detail()));
+            if (badeni) v.add(r.entrant().ttr() == null ? "–" : String.valueOf(r.entrant().ttr()));
+            v.add(String.valueOf(r.played()));
             if (swiss) v.add(String.valueOf(r.score()));
             v.add(r.won() + ":" + r.lost());
             v.add(r.setsWon() + ":" + r.setsLost());
             v.add(r.pointsWon() + ":" + r.pointsLost());
-            if (swiss) {
+            if (swiss && !badeni) {
                 v.add(String.valueOf(r.buchholz()));
                 v.add(String.valueOf(r.fineBuchholz()));
             }

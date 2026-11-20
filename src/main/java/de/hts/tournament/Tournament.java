@@ -198,6 +198,13 @@ public final class Tournament {
     /** Löscht eine Klasse samt aller Meldungen zu dieser Klasse. */
     public void removeClass(PlayingClass c) {
         if (c.getFollowUpClass() != null) findClass(c.getFollowUpClass()).filter(f -> f != c).ifPresent(this::removeClass);
+        // 1.3 (#107): Korrektur- und deaktivierte Phasen hängen an der Vorphase – mit ihr bzw. mit der regulären Folgephase weg
+        if (!c.isSideClass()) {
+            for (PlayingClass side : new java.util.ArrayList<>(classes)) {
+                if (side == c || !side.isSideClass() || side.getSourceClass() == null) continue;
+                if (side.getSourceClass().equals(c.getName()) || side.getSourceClass().equals(c.getSourceClass())) removeClass(side);
+            }
+        }
         for (Player p : players) {
             p.forgetClass(c.getName());
         }
@@ -517,6 +524,7 @@ public final class Tournament {
     /** Lost die Klasse im KO-System aus (zufällig oder nach Setzung), speichert das Ergebnis und legt die Spiele an. */
     public List<Entrant> drawKnockout(PlayingClass c, boolean seeded, java.util.Random random) {
         requireNotStarted(c);
+        c.setExempt(List.of());
         // Doppel: Vereinsgleichheit spielt keine Rolle
         List<Entrant> slots = KnockoutDraw.draw(entrantsOf(c), seeded, c.isAvoidSameClub() && !c.isDoubles(), random);
         c.setMode(TournamentMode.KNOCKOUT);
@@ -543,19 +551,25 @@ public final class Tournament {
     public static final int MAX_DOUBLES_GROUP = 5;
 
     public int plannedGroupCount(PlayingClass c) {
-        int n = entrantsOf(c).size();
+        int n = groupEntrantsOf(c).size();
         return c.isGroupsBySize() ? GroupDraw.groupCountForSize(n, c.getGroupSize()) : c.getGroupCount();
     }
 
     /** Lost die Gruppenphase aus (Schlangensystem, zufällig oder nach Setzung), speichert sie und legt die Spiele an. */
     public List<List<Entrant>> drawGroups(PlayingClass c, boolean seeded, java.util.Random random) {
         requireNotStarted(c);
+        c.setExempt(List.of());
+        c.setExemptPlaces(0);
+        return drawGroupsOf(c, seeded, random);
+    }
+
+    private List<List<Entrant>> drawGroupsOf(PlayingClass c, boolean seeded, java.util.Random random) {
         if (c.isPureDoubles() && !c.isPhase() && entrantsOf(c).size() > MAX_DOUBLES_GROUP) {
             throw new IllegalStateException("Bei mehr als " + MAX_DOUBLES_GROUP + " Doppeln ist Phase 1 ein KO-System.");
         }
         // Doppel (Phase 1): genau eine Gruppe, jeder gegen jeden; Vereinsgleichheit spielt keine Rolle
         int groupCount = c.isPureDoubles() && !c.isPhase() ? 1 : plannedGroupCount(c);
-        List<List<Entrant>> groups = GroupDraw.draw(entrantsOf(c), groupCount,
+        List<List<Entrant>> groups = GroupDraw.draw(groupEntrantsOf(c), groupCount,
                 seeded ? c.getGroupSeeding() : GroupDraw.Seeding.RANDOM, c.isAvoidSameClub() && !c.isDoubles(), random);
         c.setMode(TournamentMode.GROUPS);
         c.setSwissByes(List.of());
@@ -565,6 +579,192 @@ public final class Tournament {
         createGroupMatches(c);
         markModified();
         return groups;
+    }
+
+    // --- 1.3 (#106): Gruppenphase mit Freistellung -----------------------------------------------
+
+    /** So viele Setzplätze (S1–S4) sind von der Gruppenphase freigestellt. */
+    public static final int EXEMPT_COUNT = 4;
+
+    /** Parteien, die in Phase 1 in Gruppen spielen – ohne die Freigestellten. */
+    public List<Entrant> groupEntrantsOf(PlayingClass c) {
+        if (c.getExempt().isEmpty()) return entrantsOf(c);
+        java.util.Set<String> ex = new java.util.HashSet<>(c.getExempt());
+        return entrantsOf(c).stream().filter(e -> !ex.contains(e.id())).toList();
+    }
+
+    /** TTR-Vorschlag für die Freistellung: die {@value #EXEMPT_COUNT} mit dem höchsten TTR (bei gleichem TTR entscheidet das Los). */
+    public List<String> exemptSuggestion(PlayingClass c, java.util.Random random) {
+        List<Entrant> all = new java.util.ArrayList<>(entrantsOf(c));
+        java.util.Collections.shuffle(all, random);
+        all.sort(java.util.Comparator.comparing((Entrant e) -> e.ttr() == null ? Integer.MIN_VALUE : e.ttr()).reversed());
+        return all.stream().limit(EXEMPT_COUNT).map(Entrant::id).toList();
+    }
+
+    /** KO-Feld ohne Freilose: 2, 4, 8, 16, 32, 64 oder 128. */
+    public static boolean isFullKoField(int n) {
+        return n >= 2 && n <= 128 && Integer.bitCount(n) == 1;
+    }
+
+    /**
+     * Warum sich die Gruppenphase mit Freistellung so nicht anlegen lässt – sonst {@code null}. 4 Freigestellte plus
+     * Gruppen × Plätze je Gruppe müssen ein KO-Feld ohne Freilose ergeben.
+     *
+     * @param groupPlayers Teilnehmende in den Gruppen (ohne die Freigestellten)
+     */
+    public static String exemptProblem(int groupPlayers, int groups, int places) {
+        if (groups < 1) return "Es muss mindestens eine Gruppe geben.";
+        if (groupPlayers / groups < 2) {
+            return "Bei " + groups + " Gruppen hätte eine Gruppe weniger als 2 Mitglieder – bitte weniger Gruppen wählen.";
+        }
+        if (groupPlayers / groups <= places) {
+            return "Bei " + groups + " Gruppen kämen aus einer Gruppe alle weiter (Plätze 1–" + places + ") – bitte weniger Gruppen wählen. "
+                    + exemptSuggestionText(groupPlayers);
+        }
+        int field = EXEMPT_COUNT + groups * places;
+        if (!isFullKoField(field)) {
+            return EXEMPT_COUNT + " Freigestellte + " + groups + " Gruppen × " + places + " Weiterkommende = " + field
+                    + " – das ist kein KO-Feld ohne Freilose (8, 16, 32, 64 oder 128). Freilose gibt es in diesem Modus nicht. "
+                    + exemptSuggestionText(groupPlayers);
+        }
+        return null;
+    }
+
+    /** Vorschläge, die bei so vielen Gruppen-Teilnehmenden ein KO-Feld ohne Freilose ergeben. */
+    public static String exemptSuggestionText(int groupPlayers) {
+        List<String> out = new java.util.ArrayList<>();
+        for (int q = 2; q <= 3; q++) {
+            for (int field = 8; field <= 128; field *= 2) {
+                if ((field - EXEMPT_COUNT) % q != 0) continue;
+                int g = (field - EXEMPT_COUNT) / q;
+                if (g < 1 || groupPlayers / g <= q || GroupDraw.maxGroupSize(groupPlayers, g) > 10) continue;
+                int min = groupPlayers / g, max = GroupDraw.maxGroupSize(groupPlayers, g);
+                out.add(g + " Gruppen (" + (min == max ? "à " + min : "mit " + min + " oder " + max) + ") × Plätze 1–" + q
+                        + " = " + (g * q) + " + " + EXEMPT_COUNT + " = " + field + "er-Feld");
+            }
+        }
+        return out.isEmpty() ? "Bei " + groupPlayers + " Teilnehmenden in den Gruppen ergibt keine Einteilung ein KO-Feld ohne Freilose."
+                : "Möglich: " + String.join("; ", out) + ".";
+    }
+
+    /**
+     * Lost die Gruppenphase mit Freistellung aus: die Setzplätze {@code exempt} (S1–S4) spielen keine Gruppenspiele und
+     * steigen erst in Phase 2 (KO-System ohne Freilose) ein; aus jeder Gruppe kommen die Plätze 1–{@code places} weiter.
+     */
+    public List<List<Entrant>> drawGroupsWithExemption(PlayingClass c, List<String> exempt, int places, boolean seeded,
+                                                       java.util.Random random) {
+        requireNotStarted(c);
+        if (c.isDoubles()) throw new IllegalStateException("Die Gruppenphase mit Freistellung gibt es nur im Einzel.");
+        if (places < 2 || places > 3) throw new IllegalArgumentException("Weiter je Gruppe: Plätze 1–2 oder 1–3.");
+        java.util.Set<String> all = new java.util.HashSet<>();
+        for (Entrant e : entrantsOf(c)) all.add(e.id());
+        if (exempt == null || exempt.size() != EXEMPT_COUNT || exempt.stream().anyMatch(java.util.Objects::isNull)
+                || new java.util.HashSet<>(exempt).size() != EXEMPT_COUNT) {
+            throw new IllegalArgumentException("Bitte für S1 bis S4 je eine andere Person wählen.");
+        }
+        if (!all.containsAll(exempt)) throw new IllegalArgumentException("Eine freigestellte Person spielt nicht in dieser Klasse.");
+        int groupPlayers = all.size() - EXEMPT_COUNT;
+        int groups = c.isGroupsBySize() ? GroupDraw.groupCountForSize(Math.max(1, groupPlayers), c.getGroupSize()) : c.getGroupCount();
+        String problem = exemptProblem(groupPlayers, groups, places);
+        if (problem != null) throw new IllegalArgumentException(problem);
+        c.setExempt(exempt);
+        c.setExemptPlaces(places);
+        c.setQualifiers(places);
+        c.setQualifierPlaces(List.of());
+        return drawGroupsOf(c, seeded, random);
+    }
+
+    /** Größe des KO-Feldes nach der Gruppenphase mit Freistellung (0 = keine Freistellung). */
+    public int exemptFieldSize(PlayingClass c) {
+        return c.getExempt().isEmpty() ? 0 : c.getExempt().size() + c.getGroups().size() * c.getExemptPlaces();
+    }
+
+    /**
+     * Feste Paarungen bei 4 Gruppen à mindestens 4 und Plätzen 1–3 (16er-Feld), von oben nach unten.
+     */
+    private static final String[] EXEMPT_4X3 = {"S1", "D3", "B1", "D2", "A1", "C2", "S4", "C3", "S3", "A3", "C1", "B2", "D1", "A2", "S2", "B3"};
+
+    /**
+     * Phase 2 nach der Gruppenphase mit Freistellung: KO ohne Freilose. Setzliste: S1–S4, dann die Gruppenersten, dann
+     * die Zweiten (ggf. Dritten), jeweils nach Spiel-, Satz- und Punkteverhältnis (Gleichstand: Los); Setzplatz k spielt
+     * gegen F+1−k (die Freigestellten gegen die schlechtesten Gruppenzweiten bzw. -dritten). Gleiche Gruppe in Runde 1
+     * wird durch Tausch mit dem Nächstplatzierten vermieden. 4 Gruppen × 3: festes Schema {@link #EXEMPT_4X3}.
+     */
+    private void buildExemptKnockout(PlayingClass c, PlayingClass next, List<List<GroupStanding.Row>> tables,
+                                     java.util.Map<String, String> idMap, java.util.Random random) {
+        int q = c.getExemptPlaces();
+        java.util.Map<String, Entrant> index = entrantIndex(c);
+        List<Entrant> seeds = new java.util.ArrayList<>();
+        java.util.Map<String, Integer> groupOf = new java.util.HashMap<>();
+        java.util.Map<String, String> labels = new java.util.LinkedHashMap<>();
+        java.util.Map<String, Entrant> byLabel = new java.util.HashMap<>();
+        for (int k = 0; k < c.getExempt().size(); k++) {
+            Entrant e = index.get(c.getExempt().get(k));
+            Entrant now = e == null ? null : carryOver(next, e, idMap);
+            if (now == null) continue;
+            seeds.add(now);
+            groupOf.put(now.id(), -1 - k);
+            labels.put(now.id(), "S" + (k + 1));
+            byLabel.put("S" + (k + 1), now);
+        }
+        for (int place = 0; place < q; place++) {
+            for (int g : tierOrder(tables, place, random, false)) {
+                Entrant now = carryOver(next, tables.get(g).get(place).entrant(), idMap);
+                if (now == null) continue;
+                seeds.add(now);
+                groupOf.put(now.id(), g);
+                labels.put(now.id(), groupLabel(c, g) + (place + 1));
+                byLabel.put(GroupDraw.groupName(g) + (place + 1), now);
+            }
+        }
+        int f = seeds.size();
+        if (!isFullKoField(f)) {
+            removeClass(next);
+            throw new IllegalStateException("Es kommen " + f + " ins KO-System – das ist kein KO-Feld ohne Freilose.");
+        }
+        List<Entrant> slots = new java.util.ArrayList<>();
+        boolean fixed = tables.size() == 4 && q == 3 && f == 16 && java.util.Arrays.stream(EXEMPT_4X3).allMatch(byLabel::containsKey);
+        if (fixed) {
+            for (String l : EXEMPT_4X3) slots.add(byLabel.get(l));
+        } else {
+            int[] order = KnockoutDraw.seedOrder(f);
+            for (int i = 0; i < f; i++) slots.add(seeds.get(order[i] - 1));
+            java.util.Map<String, Integer> rank = new java.util.HashMap<>();
+            for (int i = 0; i < f; i++) rank.put(seeds.get(i).id(), i);
+            avoidSameGroupInRoundOne(slots, rank, groupOf);
+        }
+        next.setMode(TournamentMode.KNOCKOUT);
+        next.setSeedLabels(labels);
+        next.setDraw(slots.stream().map(Entrant::id).toList(), true);
+        createKnockoutMatches(next);
+    }
+
+    /** Gleiche Gruppe in Runde 1: der schwächer Gesetzte tauscht mit dem Nächstplatzierten, mit dem kein Konflikt entsteht. */
+    static void avoidSameGroupInRoundOne(List<Entrant> slots, java.util.Map<String, Integer> rank, java.util.Map<String, Integer> groupOf) {
+        for (int p = 0; p < slots.size() / 2; p++) {
+            if (!groupClash(slots, p, groupOf)) continue;
+            int a = 2 * p, b = a + 1;
+            int weak = rank.get(slots.get(a).id()) > rank.get(slots.get(b).id()) ? a : b;
+            int wr = rank.get(slots.get(weak).id());
+            int best = -1, bestDist = Integer.MAX_VALUE;
+            for (int i = 0; i < slots.size(); i++) {
+                if (i / 2 == p || groupOf.get(slots.get(i).id()) < 0) continue;   // Freigestellte bleiben auf ihrem Platz
+                int d = Math.abs(rank.get(slots.get(i).id()) - wr);
+                java.util.Collections.swap(slots, weak, i);
+                boolean ok = !groupClash(slots, p, groupOf) && !groupClash(slots, i / 2, groupOf);
+                java.util.Collections.swap(slots, weak, i);
+                if (ok && d < bestDist) {
+                    best = i;
+                    bestDist = d;
+                }
+            }
+            if (best >= 0) java.util.Collections.swap(slots, weak, best);
+        }
+    }
+
+    private static boolean groupClash(List<Entrant> slots, int pair, java.util.Map<String, Integer> groupOf) {
+        Integer x = groupOf.get(slots.get(2 * pair).id()), y = groupOf.get(slots.get(2 * pair + 1).id());
+        return x != null && x >= 0 && x.equals(y);
     }
 
     /** Rundenzahl im Schweizer System (Einstellung oder Vorschlag), höchstens so viele wie ohne Wiederholung möglich. */
@@ -582,6 +782,7 @@ public final class Tournament {
     /** Lost die 1. Runde im Schweizer System aus; die weiteren Runden werden nach der Tabelle gepaart. */
     public void drawSwiss(PlayingClass c, boolean seeded, java.util.Random random) {
         requireNotStarted(c);
+        c.setExempt(List.of());
         if (c.isDoubles()) throw new IllegalStateException("Das Schweizer System gibt es für Doppel und 2er/3er Turniere nicht.");
         List<Entrant> entrants = entrantsOf(c);
         if (entrants.size() < 2) throw new IllegalArgumentException("Für das Schweizer System braucht es mindestens 2 Teilnehmende.");
@@ -604,6 +805,7 @@ public final class Tournament {
      */
     public void drawBadeni(PlayingClass c, java.util.Random random) {
         requireNotStarted(c);
+        c.setExempt(List.of());
         if (c.isDoubles()) throw new IllegalStateException("Das Schweizer System nach Badeni gibt es für Doppel und 2er/3er Turniere nicht.");
         List<Entrant> entrants = new java.util.ArrayList<>(entrantsOf(c));
         if (entrants.size() < 2) throw new IllegalArgumentException("Dafür braucht es mindestens 2 Teilnehmende.");
@@ -687,6 +889,25 @@ public final class Tournament {
             int ia = groups.get(g).indexOf(idA), ib = groups.get(g).indexOf(idB);
             if (ia >= 0) pa = new int[]{g, ia};
             if (ib >= 0) pb = new int[]{g, ib};
+        }
+        // 1.3 (#106): Freigestellte mit einem Gruppenmitglied tauschen (vor dem Start)
+        int ea = c.getExempt().indexOf(idA), eb = c.getExempt().indexOf(idB);
+        if ((ea >= 0 && pb != null) || (eb >= 0 && pa != null) || (ea >= 0 && eb >= 0)) {
+            List<String> ex = new java.util.ArrayList<>(c.getExempt());
+            if (ea >= 0 && eb >= 0) {
+                java.util.Collections.swap(ex, ea, eb);
+            } else if (ea >= 0) {
+                ex.set(ea, idB);
+                groups.get(pb[0]).set(pb[1], idA);
+            } else {
+                ex.set(eb, idA);
+                groups.get(pa[0]).set(pa[1], idB);
+            }
+            c.setExempt(ex);
+            c.setGroups(groups, c.isDrawSeeded());
+            createGroupMatches(c);
+            markModified();
+            return;
         }
         if (pa == null || pb == null) throw new IllegalArgumentException("Nicht in dieser Auslosung.");
         groups.get(pa[0]).set(pa[1], idB);
@@ -1791,6 +2012,8 @@ public final class Tournament {
         if (phase.getMode() == TournamentMode.QUALIFICATION) {
             if (phase.getQualDecision() == 1) phase.setQualification(phase.getQualDirect(), phase.getQualKo(), QUAL_WINS);
             phase.setQualDecision(0);
+            phase.setQualExtra(false);
+            phase.setQualExtraDecision(0);
         }
         phase.setScheduleAnchor(null);                         // 1.0 (#77): Zeitplan beginnt neu
         phase.getReleasedRounds().clear();
@@ -1844,6 +2067,11 @@ public final class Tournament {
      */
     /** 0.38 (#61): KO-Folgephase mit bestimmten Gruppenplätzen (z. B. 2, 3, 4) statt der Besten je Gruppe. */
     public PlayingClass createNextPhase(PlayingClass c, List<Integer> places, java.util.Random random) {
+        return withRecipe("places|" + (places == null ? "" : String.join(",", places.stream().map(String::valueOf).toList())), random,
+                r -> createNextPhase0(c, places, r));
+    }
+
+    private PlayingClass createNextPhase0(PlayingClass c, List<Integer> places, java.util.Random random) {
         String problem = placesProblem(c, places);
         if (problem != null) throw new IllegalArgumentException(problem);
         c.setNextPhase(TournamentMode.KNOCKOUT);
@@ -1897,6 +2125,12 @@ public final class Tournament {
 
     public PlayingClass createNextPhase(PlayingClass c, TournamentMode kind, int qualifiers, int groupSize,
                                         java.util.Random random) {
+        return withRecipe("kind|" + (kind == null ? "NONE" : kind.name()) + "|" + qualifiers + "|" + groupSize, random,
+                r -> createNextPhase0(c, kind, qualifiers, groupSize, r));
+    }
+
+    private PlayingClass createNextPhase0(PlayingClass c, TournamentMode kind, int qualifiers, int groupSize,
+                                          java.util.Random random) {
         if (kind == TournamentMode.QUALIFICATION) {
             throw new IllegalArgumentException("Für den Qualifikationsmodus createQualificationPhase verwenden.");
         }
@@ -1938,13 +2172,16 @@ public final class Tournament {
         source.setFollowUpClass(null);
         source.setNextPhase(kind);
         source.setGroupSize(groupSize);
-        PlayingClass next = createNextPhase(source, random, true);
+        long seed = random.nextLong();
+        PlayingClass next = createNextPhase(source, new java.util.Random(seed), true);
+        next.setRecipe("next");
+        next.setRecipeSeed(seed);
         markModified();
         return next;
     }
 
     public PlayingClass createNextPhase(PlayingClass c, java.util.Random random) {
-        return createNextPhase(c, random, false);
+        return withRecipe("next", random, r -> createNextPhase(c, r, false));
     }
 
     private PlayingClass createNextPhase(PlayingClass c, java.util.Random random, boolean startPaused) {
@@ -1973,7 +2210,15 @@ public final class Tournament {
         for (int g = 0; g < groupCount; g++) tables.add(standings(c, g));
         java.util.Map<String, String> idMap = new java.util.HashMap<>();
 
-        if (kind == TournamentMode.QUALIFICATION) {
+        if (!c.getExempt().isEmpty()) {
+            if (kind != TournamentMode.KNOCKOUT) {
+                removeClass(next);
+                throw new IllegalStateException("Nach der Gruppenphase mit Freistellung folgt immer das KO-System.");
+            }
+            c.setQualifiers(c.getExemptPlaces());
+            c.setQualifierPlaces(List.of());
+            buildExemptKnockout(c, next, tables, idMap, random);
+        } else if (kind == TournamentMode.QUALIFICATION) {
             int q = c.getQualDirect(), k = c.getQualKo();
             List<Entrant> direct = new java.util.ArrayList<>();
             java.util.Map<String, Integer> groupOf = new java.util.HashMap<>();
@@ -2141,6 +2386,324 @@ public final class Tournament {
         return out;
     }
 
+    // =====================================================================================================
+    // 1.3 (#107): Korrektur-Reiter – Folgephase nach einer Ergebniskorrektur neu berechnen
+    // =====================================================================================================
+
+    private int recipeDepth;
+
+    /** Legt eine Folgephase mit eigenem, gespeichertem Los an, damit sie sich später identisch neu berechnen lässt. */
+    private PlayingClass withRecipe(String recipe, java.util.Random random, java.util.function.Function<java.util.Random, PlayingClass> create) {
+        if (recipeDepth > 0) return create.apply(random);
+        long seed = random.nextLong();
+        PlayingClass next;
+        recipeDepth++;
+        try {
+            next = create.apply(new java.util.Random(seed));
+        } finally {
+            recipeDepth--;
+        }
+        next.setRecipe(recipe);
+        next.setRecipeSeed(seed);
+        return next;
+    }
+
+    private static List<Integer> intsOf(String s) {
+        List<Integer> l = parsePlaces(s);
+        return l == null ? List.of() : l;
+    }
+
+    /** Folgephase nach Rezept neu anlegen (die Vorphase darf dabei keine Folgephase haben und nicht gestartet sein). */
+    private PlayingClass recreate(PlayingClass source, String recipe, long seed) {
+        java.util.Random r = new java.util.Random(seed);
+        String[] p = recipe.split("\\|", -1);
+        recipeDepth++;
+        try {
+            return switch (p[0]) {
+                case "next" -> createNextPhase(source, r);
+                case "places" -> createNextPhase(source, intsOf(p[1]), r);
+                case "kind" -> createNextPhase(source, TournamentMode.valueOf(p[1]), Integer.parseInt(p[2]), Integer.parseInt(p[3]), r);
+                case "qual" -> createQualificationPhase(source, Integer.parseInt(p[1]), Integer.parseInt(p[2]), Boolean.parseBoolean(p[3]),
+                        Integer.parseInt(p[4]), r);
+                case "plan" -> createPlanPhase(source, Plan.Kind.valueOf(p[1]), "-".equals(p[2]) ? null : new PlanOptions(intsOf(p[2]),
+                        intsOf(p[3]), Boolean.parseBoolean(p[4]), Boolean.parseBoolean(p[5]), Integer.parseInt(p[6])), r);
+                case "tier" -> createTieredPhase(source, Integer.parseInt(p[1]), Integer.parseInt(p[2]), Boolean.parseBoolean(p[3]), r);
+                default -> null;
+            };
+        } finally {
+            recipeDepth--;
+        }
+    }
+
+    /** Die laufende (reguläre) Folgephase der Vorphase, sonst {@code null}. */
+    private PlayingClass followUpOf(PlayingClass source) {
+        return source == null || source.getFollowUpClass() == null ? null : findClass(source.getFollowUpClass()).orElse(null);
+    }
+
+    /** Korrektur-Reiter der Phase {@code phase} (= „Phase n – Korrektur“ zu dieser laufenden Phase), sonst {@code null}. */
+    public PlayingClass correctionOf(PlayingClass phase) {
+        if (phase == null) return null;
+        for (PlayingClass x : classes) if (phase.getName().equals(x.getCorrectionOf())) return x;
+        return null;
+    }
+
+    /** Die laufende Phase, die eine Korrektur- bzw. deaktivierte Phase ersetzt bzw. ersetzen würde. */
+    public PlayingClass correctedPhase(PlayingClass side) {
+        if (side == null || side.getCorrectionOf() == null) return null;
+        return findClass(side.getCorrectionOf()).orElse(null);
+    }
+
+    /** Deaktivierte Phasen, die an der Vorphase {@code source} hängen (in der Reihenfolge ihres Entstehens). */
+    public List<PlayingClass> deactivatedAfter(PlayingClass source) {
+        List<PlayingClass> out = new java.util.ArrayList<>();
+        if (source == null) return out;
+        for (PlayingClass x : classes) if (x.isDeactivated() && source.getName().equals(x.getSourceClass())) out.add(x);
+        return out;
+    }
+
+    /** Spiel einer deaktivierten Phase bzw. eines Korrektur-Reiters (zählt nirgends, wird nicht exportiert)? */
+    public boolean isInactiveMatch(Match m) {
+        PlayingClass c = m == null ? null : findClass(m.getClassName()).orElse(null);
+        return c != null && c.isSideClass();
+    }
+
+    /**
+     * Nach einer Ergebniskorrektur in Phase n: Phase n+1 nach ihrem Rezept neu berechnen – nur, wenn es Phase n+1 gibt und
+     * danach keine weitere Phase. Weicht das Ergebnis ab (andere Paarungen bzw. Teilnehmende), entsteht bzw. erneuert sich
+     * der Reiter „Phase n+1 – Korrektur“; sonst verschwindet ein bisheriger Korrektur-Reiter.
+     *
+     * @return der Korrektur-Reiter oder {@code null}
+     */
+    public PlayingClass updateCorrection(PlayingClass source) {
+        PlayingClass follow = followUpOf(source);
+        if (follow == null || follow.getFollowUpClass() != null || follow.getRecipe() == null || follow.isSideClass()) return null;
+        PlayingClass old = correctionOf(follow);
+        if (old != null) removeClass(old);
+        PlayingClass root = rootOf(source);
+        LocalDateTime started = source.getStartedAt(), finished = root.getFinishedAt();
+        PlayingClass corr = null;
+        source.setFollowUpClass(null);
+        source.setStartedAt(null);
+        root.setFinishedAt(null);
+        try {
+            corr = recreate(source, follow.getRecipe(), follow.getRecipeSeed());
+        } catch (RuntimeException e) {
+            corr = null;            // z. B. kämen jetzt weniger als 2 weiter – dann bleibt es bei der laufenden Phase
+        } finally {
+            if (source.getFollowUpClass() != null && corr == null) {
+                findClass(source.getFollowUpClass()).filter(x -> x != follow).ifPresent(this::removeClass);
+            }
+            source.setFollowUpClass(follow.getName());
+            source.setStartedAt(started);
+            root.setFinishedAt(finished);
+        }
+        if (corr == null) {
+            markModified();
+            return null;
+        }
+        corr.setRecipe(follow.getRecipe());
+        corr.setRecipeSeed(follow.getRecipeSeed());
+        corr.setCorrectionOf(follow.getName());
+        corr.setStartedAt(null);
+        corr.setReady(false);
+        corr.setPaused(false);
+        corr.setAwaitingStart(false);
+        if (structureOf(corr).equals(structureOf(follow)) && newPairings(corr).isEmpty()) {
+            removeClass(corr);
+            markModified();
+            return null;
+        }
+        markModified();
+        return corr;
+    }
+
+    /** Aufbau einer Phase (Gruppen, KO-Feld, Qualifikation, Setzkürzel) unabhängig von Doppel-Kopien. */
+    private String structureOf(PlayingClass p) {
+        StringBuilder sb = new StringBuilder(p.getMode().name()).append('|');
+        for (List<String> g : p.getGroups()) sb.append(g.stream().map(this::personKey).toList()).append(';');
+        sb.append('|').append(p.getDraw().stream().map(this::personKey).toList());
+        sb.append('|').append(p.getQualifiedDirect().stream().map(this::personKey).toList());
+        sb.append('|').append(p.getQualField().keySet().stream().map(this::personKey).toList());
+        java.util.TreeMap<String, String> labels = new java.util.TreeMap<>();
+        p.getSeedLabels().forEach((k, v) -> labels.put(String.valueOf(personKey(k)), v));
+        sb.append('|').append(labels);
+        if (p.getPlan() != null) sb.append('|').append(p.getPlan().getSeedOrigins());
+        return sb.toString();
+    }
+
+    private String pairKey(Match m) {
+        String a = personKey(m.getA()), b = personKey(m.getB());
+        return a.compareTo(b) <= 0 ? a + "~" + b : b + "~" + a;
+    }
+
+    /** Personen (bzw. Doppel als Personenpaar), die in der Phase vorkommen. */
+    private java.util.Set<String> phasePersons(PlayingClass p) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        for (List<String> g : p.getGroups()) for (String id : g) out.add(personKey(id));
+        for (String id : p.getDraw()) if (id != null) out.add(personKey(id));
+        for (String id : p.getQualifiedDirect()) out.add(personKey(id));
+        for (String id : p.getQualField().keySet()) out.add(personKey(id));
+        for (Match m : matchesOf(p)) {
+            if (m.getA() != null) out.add(personKey(m.getA()));
+            if (m.getB() != null) out.add(personKey(m.getB()));
+        }
+        out.remove(null);
+        return out;
+    }
+
+    /** Korrektur-Reiter: Teilnehmende (Entrant-IDs), die in der laufenden Phase nicht vorkommen. */
+    public java.util.Set<String> newEntrants(PlayingClass corr) {
+        PlayingClass old = correctedPhase(corr);
+        java.util.Set<String> out = new java.util.HashSet<>();
+        if (old == null) return out;
+        java.util.Set<String> before = phasePersons(old);
+        java.util.Set<String> ids = new java.util.HashSet<>();
+        for (List<String> g : corr.getGroups()) ids.addAll(g);
+        for (String id : corr.getDraw()) if (id != null) ids.add(id);
+        ids.addAll(corr.getQualifiedDirect());
+        ids.addAll(corr.getQualField().keySet());
+        for (Match m : matchesOf(corr)) {
+            if (m.getA() != null) ids.add(m.getA());
+            if (m.getB() != null) ids.add(m.getB());
+        }
+        for (String id : ids) if (!before.contains(personKey(id))) out.add(id);
+        return out;
+    }
+
+    /** Korrektur-Reiter: Spiele, deren Paarung es in der laufenden Phase nicht gibt. */
+    public java.util.Set<Match> newPairings(PlayingClass corr) {
+        PlayingClass old = correctedPhase(corr);
+        java.util.Set<Match> out = new java.util.HashSet<>();
+        if (old == null) return out;
+        java.util.Set<String> before = new java.util.HashSet<>();
+        for (Match m : matchesOf(old)) if (m.getA() != null && m.getB() != null) before.add(pairKey(m));
+        for (Match m : matchesOf(corr)) if (m.getA() != null && m.getB() != null && !before.contains(pairKey(m))) out.add(m);
+        return out;
+    }
+
+    /** Spiel der laufenden Phase mit demselben Ergebnis-Schlüssel (Paarung und Spielart), das schon gespielt ist. */
+    private Match unchangedPlayed(List<Match> oldMatches, Match m) {
+        String key = pairKey(m);
+        for (Match o : oldMatches) {
+            if (o.getStatus() != MatchStatus.DONE || o.getA() == null || o.getB() == null || o.getRetirementOf() != null) continue;
+            if ((o.getGroupIndex() >= 0) != (m.getGroupIndex() >= 0) || o.getKoRound() != m.getKoRound()) continue;
+            if (key.equals(pairKey(o))) return o;
+        }
+        return null;
+    }
+
+    /** Wie viele Ergebnisse „Unveränderte Ergebnisse übernehmen“ jetzt übernehmen würde. */
+    public int takeOverCount(PlayingClass corr) {
+        PlayingClass old = correctedPhase(corr);
+        if (old == null) return 0;
+        List<Match> om = matchesOf(old);
+        int n = 0;
+        for (Match m : matchesOf(corr)) {
+            if (m.getStatus() != MatchStatus.DONE && !m.isCarried() && m.getA() != null && m.getB() != null && unchangedPlayed(om, m) != null) n++;
+        }
+        return n;
+    }
+
+    /**
+     * „Unveränderte Ergebnisse übernehmen“: Spiele mit derselben Paarung wie ein schon gespieltes Spiel der laufenden Phase
+     * bekommen dessen Ergebnis; im KO rücken die Sieger nach, und auch daraus entstehende gleiche Paarungen werden übernommen.
+     *
+     * @return Anzahl übernommener Ergebnisse
+     */
+    public int takeOverUnchanged(PlayingClass corr) {
+        PlayingClass old = correctedPhase(corr);
+        if (old == null) throw new IllegalStateException("Kein Korrektur-Reiter.");
+        List<Match> om = matchesOf(old);
+        int taken = 0;
+        for (boolean changed = true; changed; ) {
+            changed = false;
+            for (Match m : matchesOf(corr)) {
+                if (m.getStatus() == MatchStatus.DONE || m.isCarried() || m.getA() == null || m.getB() == null) continue;
+                Match o = unchangedPlayed(om, m);
+                if (o == null) continue;
+                boolean flip = !String.valueOf(personKey(o.getA())).equals(personKey(m.getA()));
+                List<int[]> sets = new java.util.ArrayList<>();
+                for (int[] x : o.getPoints()) sets.add(flip ? new int[]{x[1], x[0]} : new int[]{x[0], x[1]});
+                int retired = o.getRetired() == 0 ? 0 : flip ? 3 - o.getRetired() : o.getRetired();
+                int sa = o.getSetsA() == null ? 0 : o.getSetsA(), sb = o.getSetsB() == null ? 0 : o.getSetsB();
+                m.setScore(sets, retired, flip ? sb : sa, flip ? sa : sb);
+                m.setLineups(flip ? o.getLineupB() : o.getLineupA(), flip ? o.getLineupA() : o.getLineupB());
+                m.setStatus(MatchStatus.DONE);
+                m.setTable(o.getTable());
+                m.setStartedAt(o.getStartedAt());
+                m.setFinishedAt(o.getFinishedAt());
+                taken++;
+                changed = true;
+            }
+            if (changed && corr.getMode() == TournamentMode.KNOCKOUT) resolveKnockout(corr);
+            if (changed && corr.getMode() == TournamentMode.PLAN) resolvePlan(corr);
+        }
+        markModified();
+        return taken;
+    }
+
+    /** Folgen von „Phase n weiterführen“ (für den Warnhinweis). */
+    public record AdoptInfo(int recalled, int playedDropped, int taken) {
+    }
+
+    public AdoptInfo adoptInfo(PlayingClass corr) {
+        PlayingClass old = correctedPhase(corr);
+        if (old == null) return new AdoptInfo(0, 0, 0);
+        int recalled = 0, dropped = 0;
+        java.util.Set<String> keptPairs = new java.util.HashSet<>();
+        for (Match m : matchesOf(corr)) if (m.getStatus() == MatchStatus.DONE && m.getA() != null && m.getB() != null) keptPairs.add(pairKey(m));
+        for (Match m : matchesOf(old)) {
+            if (m.getStatus().atTable()) recalled++;
+            else if (m.getStatus() == MatchStatus.DONE && m.isExported() && m.getA() != null && m.getB() != null
+                    && !keptPairs.contains(pairKey(m))) dropped++;
+        }
+        int taken = (int) matchesOf(corr).stream().filter(m -> m.getStatus() == MatchStatus.DONE && !m.isCarried()
+                && m.getA() != null && m.getB() != null).count();
+        return new AdoptInfo(recalled, dropped, taken);
+    }
+
+    /**
+     * „Phase n weiterführen“: die bisherige Phase n wird deaktiviert (laufende Spiele zurückgerufen, offene nicht mehr
+     * gespielt; sie zählt nirgends und kommt nicht in die click-TT-Ergebnisdatei), die korrigierte Phase wird zur laufenden.
+     */
+    public PlayingClass adoptCorrection(PlayingClass corr) {
+        PlayingClass old = correctedPhase(corr);
+        PlayingClass source = corr.getSourceClass() == null ? null : findClass(corr.getSourceClass()).orElse(null);
+        if (old == null || source == null || !old.getName().equals(source.getFollowUpClass())) {
+            throw new IllegalStateException("Der Korrektur-Reiter passt nicht mehr zur laufenden Phase.");
+        }
+        if (old.getFollowUpClass() != null) throw new IllegalStateException("Nach Phase " + phaseNumber(old) + " gibt es schon eine weitere Phase.");
+        for (Match m : matchesOf(old)) {
+            if (m.getStatus() == MatchStatus.DONE || m.getStatus() == MatchStatus.CANCELLED) continue;
+            m.setStatus(MatchStatus.CANCELLED);
+            m.setTable(null);
+        }
+        old.setDeactivated(true);
+        old.setPaused(false);
+        old.setAwaitingStart(false);
+        corr.setCorrectionOf(null);
+        source.setFollowUpClass(corr.getName());
+        PlayingClass root = rootOf(source);
+        if (root.isFinished()) root.setFinishedAt(null);
+        if (source.isStarted()) {
+            corr.setStartedAt(LocalDateTime.now().withNano(0));
+            corr.setReady(true);
+            if (corr.getMode() == TournamentMode.KNOCKOUT) resolveKnockout(corr);
+            else if (corr.getMode() == TournamentMode.PLAN) resolvePlan(corr);
+            queueReady(corr);
+            dispatch();
+        }
+        markModified();
+        return corr;
+    }
+
+    /** „Korrektur verwerfen“: nur der Korrektur-Reiter verschwindet; die Korrektur in der Vorphase bleibt. */
+    public void discardCorrection(PlayingClass corr) {
+        if (corr == null || corr.getCorrectionOf() == null) throw new IllegalStateException("Kein Korrektur-Reiter.");
+        removeClass(corr);
+        markModified();
+    }
+
     /** Qualifiziert ist in der KO-Qualifikation, wer 2 Spiele gewinnt (ein Freilos in Runde 1 zählt als Sieg). */
     public static final int QUAL_WINS = 2;
 
@@ -2203,6 +2766,11 @@ public final class Tournament {
      * @param reserve Nachrücker je Gruppe ohne Spiel, ab dem ersten Nicht-KO-Teilnehmenden der Gruppe
      */
     public PlayingClass createQualificationPhase(PlayingClass c, int direct, int ko, boolean koTotal, int reserve, java.util.Random random) {
+        return withRecipe("qual|" + direct + "|" + ko + "|" + koTotal + "|" + reserve, random,
+                r -> createQualificationPhase0(c, direct, ko, koTotal, reserve, r));
+    }
+
+    private PlayingClass createQualificationPhase0(PlayingClass c, int direct, int ko, boolean koTotal, int reserve, java.util.Random random) {
         if (c.getMode() != TournamentMode.GROUPS || phaseNumber(c) != 1) {
             throw new IllegalStateException("Der Qualifikationsmodus folgt nur auf eine Gruppenphase in Phase 1.");
         }
@@ -2230,7 +2798,7 @@ public final class Tournament {
 
     // --- Qualifikationsmodus (HEM): KO aufwärts, qualifiziert nach n Siegen, Zusatzrunde ------------
 
-    public static final String QUAL_EXTRA_STAGE = "Qualifikation Zusatzrunde";
+    public static final String QUAL_EXTRA_STAGE = "Qualifikation Zusatzspiel";
 
     /** Zufall für die Auslosung der KO-Qualifikation (Tests können ihn festlegen). */
     private java.util.Random qualRandom = new java.util.Random();
@@ -2263,7 +2831,7 @@ public final class Tournament {
      * Verein) kommt.
      */
     private void addQualificationRound(PlayingClass c, int round, List<String> ranked) {
-        String stage = round > c.getQualRounds() ? QUAL_EXTRA_STAGE : "Qualifikation Runde " + round;
+        String stage = round > c.getQualRounds() ? QUAL_EXTRA_STAGE : "Qualifikation Runde " + round;   // 1.3: „Qualifikation Zusatzspiel“
         List<String> rest = new java.util.ArrayList<>(ranked);
         java.util.List<String> byes = new java.util.ArrayList<>(c.getSwissByes());
         while (byes.size() < round - 1) byes.add(null);
@@ -2537,6 +3105,7 @@ public final class Tournament {
         int round = qualificationRound(c);
         if (round == 0 || !qualificationRoundDone(c, round)) return false;
         if (round < n) return fieldOrder(c, roundWinners(c, round)).size() < 2;   // offene Entscheidung: nicht abgeschlossen
+        if (round > n) return c.getQualExtraDecision() != 0;                    // 1.3 (#105): Zusatzspiel entschieden
         return true;
     }
 
@@ -2568,7 +3137,7 @@ public final class Tournament {
             for (Match m : roundMatches(c, n)) if (m.winner() != null) ids.add(m.winner());
             String bye = qualBye(c, n);
             if (bye != null) ids.add(bye);
-            if (qualificationRound(c) > n && qualificationRoundDone(c, n + 1)) ids.addAll(roundWinners(c, n + 1));
+            if (qualificationRound(c) > n && qualificationRoundDone(c, n + 1) && c.getQualExtraDecision() == 1) ids.addAll(roundWinners(c, n + 1));
         }
         List<Entrant> out = new java.util.ArrayList<>();
         for (String id : fieldOrder(c, ids)) if (idx.containsKey(id)) out.add(idx.get(id));
@@ -2604,7 +3173,11 @@ public final class Tournament {
         };
         if (n > 0 && round >= n && qualificationRoundDone(c, n)) {
             if (round > n) {
-                if (qualificationRoundDone(c, n + 1)) tiers.add(byField.apply(roundLosers(c, n + 1)));
+                // 1.3 (#105): Zusatzspiel – Gewinner qualifiziert (1) oder Nachrücker 1. Ranges (2); innerhalb nach TTR
+                if (qualificationRoundDone(c, n + 1) && c.getQualExtraDecision() != 0) {
+                    if (c.getQualExtraDecision() == 2) tiers.add(byTtr(idx, roundWinners(c, n + 1)));
+                    tiers.add(byTtr(idx, roundLosers(c, n + 1)));
+                }
             } else if (n == 1) {
                 // 0.38 (#60): nur eine KO-Runde – die Verlierer sind Nachrücker 1. Ranges, Rangfolge nach TTR
                 List<Entrant> l = new java.util.ArrayList<>();
@@ -2624,6 +3197,66 @@ public final class Tournament {
         tiers.add(reserveFromGroups(c));
         tiers.removeIf(List::isEmpty);
         return tiers;
+    }
+
+    private static List<Entrant> byTtr(java.util.Map<String, Entrant> idx, java.util.Collection<String> ids) {
+        List<Entrant> l = new java.util.ArrayList<>();
+        for (String id : ids) if (idx.containsKey(id)) l.add(idx.get(id));
+        l.sort(java.util.Comparator.comparing((Entrant e) -> e.ttr() == null ? Integer.MIN_VALUE : e.ttr()).reversed());
+        return l;
+    }
+
+    // --- 1.3 (#105): optionales Zusatzspiel für die Verlierer der letzten Runde --------------------------
+
+    /** Lässt sich das Zusatzspiel anlegen (nach der letzten Runde, mindestens 2 Verlierer)? */
+    public boolean canAddQualificationExtra(PlayingClass c) {
+        if (c == null || c.getMode() != TournamentMode.QUALIFICATION || c.isQualExtra() || rootOf(c).isFinished()) return false;
+        int n = c.getQualRounds();
+        return n >= 2 && qualificationRound(c) == n && qualificationRoundDone(c, n) && roundLosers(c, n).size() >= 2;
+    }
+
+    /** Zusatzspiel anlegen: die Verlierer der letzten Runde spielen gegeneinander (frei gelost). */
+    public void addQualificationExtra(PlayingClass c) {
+        if (!canAddQualificationExtra(c)) throw new IllegalStateException("Ein Zusatzspiel ist jetzt nicht möglich.");
+        int n = c.getQualRounds();
+        c.setQualExtra(true);
+        c.setQualExtraDecision(0);
+        addQualificationRound(c, n + 1, fieldOrder(c, roundLosers(c, n)));
+        PlayingClass root = rootOf(c);
+        if (root.isFinished()) root.setFinishedAt(null);
+        dispatch();
+        markModified();
+    }
+
+    /** Zusatzspiel zurücknehmen, solange darin kein Ergebnis steht. */
+    public boolean canRemoveQualificationExtra(PlayingClass c) {
+        return c != null && c.isQualExtra() && !rootOf(c).isFinished()
+                && roundMatches(c, c.getQualRounds() + 1).stream().noneMatch(m -> m.getStatus() == MatchStatus.DONE || m.getStatus().atTable());
+    }
+
+    public void removeQualificationExtra(PlayingClass c) {
+        if (!canRemoveQualificationExtra(c)) throw new IllegalStateException("Im Zusatzspiel steht schon ein Ergebnis bzw. es läuft.");
+        int n = c.getQualRounds();
+        matches.removeAll(roundMatches(c, n + 1));
+        List<String> byes = new java.util.ArrayList<>(c.getSwissByes());
+        if (byes.size() > n) c.setSwissByes(byes.subList(0, n));
+        c.setQualExtra(false);
+        c.setQualExtraDecision(0);
+        dispatch();
+        markModified();
+    }
+
+    /** Zusatzspiel gespielt, Entscheidung offen? */
+    public boolean qualificationExtraDecisionPending(PlayingClass c) {
+        return c != null && c.getMode() == TournamentMode.QUALIFICATION && c.isQualExtra() && c.getQualExtraDecision() == 0
+                && qualificationRound(c) > c.getQualRounds() && qualificationRoundDone(c, c.getQualRounds() + 1);
+    }
+
+    /** Gewinner des Zusatzspiels qualifiziert ({@code true}) oder Nachrücker – änderbar, bis die Klasse beendet ist. */
+    public void decideQualificationExtra(PlayingClass c, boolean winnersQualified) {
+        if (c == null || !c.isQualExtra() || rootOf(c).isFinished()) throw new IllegalStateException("Nichts zu entscheiden.");
+        c.setQualExtraDecision(winnersQualified ? 1 : 2);
+        markModified();
     }
 
     /**
@@ -2958,6 +3591,16 @@ public final class Tournament {
 
     /** Folgephase als Platzierungsplan anlegen und (wenn die Klasse läuft) starten. */
     public PlayingClass createPlanPhase(PlayingClass c, Plan.Kind kind, PlanOptions o, java.util.Random random) {
+        String opts = o == null ? "-|||||" : joinInts(o.mainPlaces()) + "|" + joinInts(o.consPlaces()) + "|" + o.thirdMain() + "|"
+                + o.thirdCons() + "|" + o.cutoffSize();
+        return withRecipe("plan|" + (kind == null ? "" : kind.name()) + "|" + opts, random, r -> createPlanPhase0(c, kind, o, r));
+    }
+
+    private static String joinInts(List<Integer> l) {
+        return l == null ? "" : String.join(",", l.stream().map(String::valueOf).toList());
+    }
+
+    private PlayingClass createPlanPhase0(PlayingClass c, Plan.Kind kind, PlanOptions o, java.util.Random random) {
         requireNextPhase(c);
         if (!planKindsAfter(c).contains(kind)) throw new IllegalStateException(kind.getLabel() + " ist nach dieser Phase nicht wählbar.");
         String problem = planProblem(c, kind, o == null ? PlanOptions.of(List.of(1, 2)) : o);
@@ -3046,6 +3689,11 @@ public final class Tournament {
      * Ergebnisse werden nicht übernommen.
      */
     public PlayingClass createTieredPhase(PlayingClass c, int tierWidth, int groupSize, boolean mirrored, java.util.Random random) {
+        return withRecipe("tier|" + tierWidth + "|" + groupSize + "|" + mirrored, random,
+                r -> createTieredPhase0(c, tierWidth, groupSize, mirrored, r));
+    }
+
+    private PlayingClass createTieredPhase0(PlayingClass c, int tierWidth, int groupSize, boolean mirrored, java.util.Random random) {
         requireNextPhase(c);
         if (!canChooseTiers(c)) throw new IllegalStateException("„Gruppen nach Leistungsstufen“ gibt es nur als Phase 2 nach einer Gruppenphase.");
         if (tierWidth < 1) throw new IllegalArgumentException("Eine Stufe umfasst mindestens einen Gruppenplatz.");
@@ -3122,6 +3770,7 @@ public final class Tournament {
     /** Phase 1 im doppelten K.-o.-System (#99): Auslosung wie beim einfachen KO. */
     public void drawDoubleKo(PlayingClass c, boolean seeded, java.util.Random random) {
         requireNotStarted(c);
+        c.setExempt(List.of());
         List<Entrant> entrants = entrantsOf(c);
         if (entrants.size() < 3) throw new IllegalArgumentException("Das doppelte K.-o.-System braucht mindestens 3 Teilnehmende.");
         List<Entrant> slots = KnockoutDraw.draw(entrants, seeded, c.isAvoidSameClub() && !c.isDoubles(), random);
@@ -3331,6 +3980,64 @@ public final class Tournament {
 
     private static String placeText(int from, int to) {
         return from == to ? "Platz " + from : "Platz " + from + "–" + to;
+    }
+
+    // --- 1.3 (#104): Kennzeichnung, wer aus der Gruppenphase weiterkommt -------------------------------
+
+    /** Schlüssel einer Partei über ihre Personen (Doppel werden beim Übernehmen kopiert und bekommen neue IDs). */
+    private String personKey(String entrantId) {
+        if (entrantId == null) return null;
+        if (!entrantId.startsWith("pair:")) return entrantId;
+        List<String> ids = new java.util.ArrayList<>();
+        for (Player p : personsOf(entrantId)) if (p != null) ids.add(p.getId());
+        java.util.Collections.sort(ids);
+        return String.join("+", ids);
+    }
+
+    /**
+     * Wer aus dieser Gruppenphase weiterkommt – nur wenn die Folgephase angelegt ist: Entrant-ID → 1 (dunkelblau: in Phase 2,
+     * Hauptrunde, direkt qualifiziert), 2 (hellblau: Trostrunde, KO-Qualifikation), 3 (grau: Nachrücker). Bei
+     * Leistungsstufen (alle kommen weiter) leer.
+     */
+    public java.util.Map<String, Integer> advanceMarks(PlayingClass c) {
+        java.util.Map<String, Integer> out = new java.util.HashMap<>();
+        if (c == null || c.getMode() != TournamentMode.GROUPS || c.getFollowUpClass() == null) return out;
+        PlayingClass f = findClass(c.getFollowUpClass()).orElse(null);
+        if (f == null || f.isTiered()) return out;
+        java.util.Map<String, Integer> byKey = new java.util.HashMap<>();
+        if (f.getMode() == TournamentMode.PLAN && f.getPlan() != null) {
+            Plan p = f.getPlan();
+            for (int i = 0; i < p.getSeeds().size(); i++) {
+                String id = p.getSeeds().get(i);
+                if (id != null) byKey.put(personKey(id), p.getSeedGroups().get(i) == 0 ? 1 : 2);
+            }
+        } else if (f.getMode() == TournamentMode.QUALIFICATION) {
+            for (Entrant e : qualifiedDirect(f)) byKey.put(personKey(e.id()), 1);
+            for (String id : f.getQualField().keySet()) byKey.putIfAbsent(personKey(id), 2);
+            for (List<Entrant> tier : qualificationTiers(f)) for (Entrant e : tier) byKey.putIfAbsent(personKey(e.id()), 3);
+        } else {
+            for (String id : f.getDraw()) if (id != null) byKey.put(personKey(id), 1);
+            for (List<String> g : f.getGroups()) for (String id : g) byKey.put(personKey(id), 1);
+        }
+        for (List<String> g : c.getGroups()) {
+            for (String id : g) {
+                Integer m = byKey.get(personKey(id));
+                if (m != null) out.put(id, m);
+            }
+        }
+        return out;
+    }
+
+    /** Tooltip zur Kennzeichnung. */
+    public String advanceMarkText(PlayingClass c, int mark) {
+        PlayingClass f = c.getFollowUpClass() == null ? null : findClass(c.getFollowUpClass()).orElse(null);
+        if (f != null && f.getMode() == TournamentMode.QUALIFICATION) {
+            return mark == 1 ? "direkt qualifiziert" : mark == 2 ? "spielt die KO-Qualifikation" : "Nachrücker (ohne Spiel)";
+        }
+        if (f != null && f.getMode() == TournamentMode.PLAN && f.getPlan() != null && f.getPlan().getResultTitles().size() > 1) {
+            return mark == 1 ? "spielt in der " + f.getPlan().getResultTitles().get(0) : "spielt in der " + f.getPlan().getResultTitles().get(1);
+        }
+        return "zieht in Phase " + (phaseNumber(c) + 1) + " ein";
     }
 
     // --- Wertung -----------------------------------------------------------------------------------------
@@ -3558,6 +4265,18 @@ public final class Tournament {
             case QUALIFICATION -> rankQualification(c);
             case PLAN -> c.getPlan() == null ? List.of() : rankPlanAll(c);
             case GROUPS, SWISS -> {
+                if (follow == null && !c.getExempt().isEmpty()) {
+                    // 1.3 (#106): Freigestellte stehen vor allen Gruppenplätzen (Bereich bis zur Feldgröße noch offen)
+                    List<Placing> out = new java.util.ArrayList<>();
+                    java.util.Map<String, Entrant> index = entrantIndex(c);
+                    int f = Math.max(c.getExempt().size(), exemptFieldSize(c));
+                    for (int k = 0; k < c.getExempt().size(); k++) {
+                        Entrant e = index.get(c.getExempt().get(k));
+                        if (e != null) out.add(new Placing(1, f, e, "freigestellt (S" + (k + 1) + ")"));
+                    }
+                    out.addAll(rankGroups(c, 0, 0).stream().map(pl -> new Placing(pl.from(), pl.to(), pl.entrant(), pl.info())).toList());
+                    yield out;
+                }
                 if (follow == null) yield c.isTiered() ? rankTiers(c) : rankGroups(c, 0, 0);
                 List<Placing> top = new java.util.ArrayList<>(rank(follow, depth + 1));
                 if (follow.getMode() == TournamentMode.PLAN && follow.getPlan() != null) {
@@ -3982,6 +4701,7 @@ public final class Tournament {
         }
         if (m.isKnockout() && c != null) resolveKnockout(c);
         if (c != null && c.getMode() == TournamentMode.PLAN) resolvePlan(c);
+        if (correction && c != null && !c.isSideClass()) updateCorrection(c);       // 1.3 (#107)
         dispatch();
         markModified();
     }
@@ -4064,6 +4784,8 @@ public final class Tournament {
         syncCarriedCopies(m);
         if (m.isKnockout() && c != null) resolveKnockout(c);
         if (c != null && c.getMode() == TournamentMode.PLAN) resolvePlan(c);
+        // 1.3 (#107): Folgephase neu berechnen – weicht sie ab, erscheint der Reiter „Phase n+1 – Korrektur“
+        if (c != null && !c.isSideClass()) updateCorrection(c);
         dispatch();
         markModified();
     }
@@ -4272,6 +4994,7 @@ public final class Tournament {
         java.util.Set<String> drawn = new java.util.HashSet<>();
         for (String id : c.getDraw()) if (id != null) drawn.add(id);
         for (List<String> g : c.getGroups()) drawn.addAll(g);
+        drawn.addAll(c.getExempt());
         java.util.Set<String> now = new java.util.HashSet<>();
         for (Entrant e : entrantsOf(c)) now.add(e.id());
         return !drawn.equals(now);

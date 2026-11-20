@@ -142,7 +142,7 @@ public final class MatchesView {
         String cur = classFilter.getValue();
         List<String> names = new java.util.ArrayList<>();
         names.add("Alle Klassen");
-        tournament.getClasses().stream().map(PlayingClass::getName).forEach(names::add);
+        tournament.getClasses().stream().filter(pc -> pc.getCorrectionOf() == null).map(PlayingClass::getName).forEach(names::add);
         classFilter.getItems().setAll(names);
         classFilter.setValue(cur != null && names.contains(cur) ? cur : "Alle Klassen");
         String clsNow = classFilter.getValue();
@@ -167,7 +167,11 @@ public final class MatchesView {
         String cls = classFilter.getValue();
         String grp = groupFilter.getValue();
         String q = search.getText() == null ? "" : search.getText().trim();
+        // 1.3 (#107): Spiele eines Korrektur-Reiters sind noch nicht aktiv – nicht auf dieser Seite
+        java.util.Set<String> hidden = new java.util.HashSet<>();
+        for (PlayingClass pc : tournament.getClasses()) if (pc.getCorrectionOf() != null) hidden.add(pc.getName());
         List<Match> list = tournament.getMatches().stream()
+                .filter(m -> !hidden.contains(m.getClassName()))
                 .filter(m -> cls == null || cls.equals("Alle Klassen") || m.getClassName().equals(cls))
                 .filter(m -> grp == null || grp.equals(ALL_GROUPS) || grp.equals(m.getStage()))
                 .filter(m -> q.isEmpty() || matchesName(m, q))
@@ -201,8 +205,15 @@ public final class MatchesView {
             @Override
             protected void updateItem(MatchStatus s, boolean empty) {
                 super.updateItem(s, empty);
-                setGraphic(empty || s == null ? null : DrawView.statusChip(s));
+                setGraphic(null);
                 setText(null);
+                if (empty || s == null) return;
+                Match m = getTableRow() == null ? null : getTableRow().getItem();
+                if (m != null && tournament.isInactiveMatch(m)) {
+                    setText("deaktiviert");           // 1.3 (#107): Spiel einer deaktivierten Phase
+                    return;
+                }
+                setGraphic(DrawView.statusChip(s));
             }
         });
         st.setPrefWidth(120);
@@ -212,7 +223,7 @@ public final class MatchesView {
         table.getColumns().add(center(col("Tisch", m -> m.getTable() == null ? "" : tournament.getTableNames().containsKey(m.getTable())
                 ? tournament.tableName(m.getTable()) : String.valueOf(m.getTable()), 80)));
         table.getColumns().add(left(col("Klasse", Match::getClassName, 150)));
-        table.getColumns().add(left(col("Gruppe", Match::getStage, 110)));     // 0.38 (#49): Überschrift „Gruppe“
+        table.getColumns().add(left(col("Gruppe", m -> tournament.isInactiveMatch(m) ? m.getStage() + " (Phase deaktiviert)" : m.getStage(), 110)));     // 0.38 (#49): Überschrift „Gruppe“
         table.getColumns().add(center(col("Runde", Match::getRound, 60)));
         table.getColumns().add(center(col("Spiel", Match::getNumber, 55)));
         table.getColumns().add(left(col("Teilnehmende A", m -> name(m, m.getA()), 210)));
@@ -225,10 +236,21 @@ public final class MatchesView {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.setPlaceholder(new Label("Keine Spiele für diese Auswahl."));
         table.setRowFactory(tv -> {
-            TableRow<Match> row = new TableRow<>();
+            TableRow<Match> row = new TableRow<>() {
+                @Override
+                protected void updateItem(Match m, boolean empty) {
+                    super.updateItem(m, empty);
+                    boolean off = !empty && m != null && tournament.isInactiveMatch(m);
+                    if (off) {
+                        if (!getStyleClass().contains("match-deactivated")) getStyleClass().add("match-deactivated");
+                    } else {
+                        getStyleClass().remove("match-deactivated");
+                    }
+                }
+            };
             row.setOnMouseClicked(e -> {
                 if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2 && !row.isEmpty()
-                        && ResultEntry.isEditable(row.getItem())) {
+                        && ResultEntry.isEditable(row.getItem()) && !tournament.isInactiveMatch(row.getItem())) {
                     enterResult(row.getItem());
                 }
             });
@@ -262,7 +284,12 @@ public final class MatchesView {
                 super.updateItem(m, empty);
                 setText(null);
                 setGraphic(null);
-                if (empty || m == null || m.getStatus() != MatchStatus.DONE) return;
+                if (empty || m == null) return;
+                if (tournament.isInactiveMatch(m)) {
+                    setText("nein (deaktiviert)");
+                    return;
+                }
+                if (m.getStatus() != MatchStatus.DONE) return;
                 if (m.getRetirementOf() != null) {
                     setText("nein (kampflos)");
                 } else if (m.isCarried()) {

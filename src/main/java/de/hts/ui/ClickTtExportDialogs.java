@@ -59,7 +59,7 @@ final class ClickTtExportDialogs {
     static int matchesOf(Tournament t, Player p) {
         int n = 0;
         for (Match m : t.getMatches()) {
-            if (m.getStatus() != MatchStatus.DONE || m.isCarried()) continue;
+            if (m.getStatus() != MatchStatus.DONE || m.isCarried() || t.isInactiveMatch(m)) continue;
             if (ClickTtResultExporter.persons(t, m.getA()).contains(p.getId()) || ClickTtResultExporter.persons(t, m.getB()).contains(p.getId())) n++;
         }
         return n;

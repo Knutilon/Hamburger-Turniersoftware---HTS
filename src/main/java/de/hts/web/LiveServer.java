@@ -523,7 +523,7 @@ public final class LiveServer {
         Player p = id == null ? null : t.getPlayers().stream().filter(x -> x.getId().equals(id)).findFirst().orElse(null);
         if (p == null) return page("Meine Spiele", "<p>Person nicht gefunden. <a href=\"/live/suche\">Neu suchen</a></p>", false);
         List<Match> mine = new ArrayList<>();
-        for (Match m : t.getMatches()) if (t.personsOf(m).contains(id)) mine.add(m);
+        for (Match m : t.getMatches()) if (!t.isInactiveMatch(m) && t.personsOf(m).contains(id)) mine.add(m);
         StringBuilder b = new StringBuilder();
         b.append("<div class=\"card me\"><b>").append(esc(p.getDisplayName())).append("</b><div class=\"muted\">").append(esc(p.getClubName()))
                 .append(" · <a href=\"/live/suche\">andere Person</a></div></div>");

@@ -63,8 +63,14 @@ final class ResultEntry {
             a.showAndWait();
             return false;
         }
+        // 1.3 (#107): ändert die Korrektur die Folgephase, steht die korrigierte Fassung im Reiter „Phase n – Korrektur“
+        de.hts.tournament.PlayingClass mc = t.findClass(m.getClassName()).orElse(null);
+        de.hts.tournament.PlayingClass follow = mc == null || mc.getFollowUpClass() == null ? null : t.findClass(mc.getFollowUpClass()).orElse(null);
+        boolean corrTab = correction && follow != null && t.correctionOf(follow) != null;
         status.accept("Spiel " + m.getNumber() + " (" + m.getClassName() + "): " + m.getResultText() + " – " + m.getSetsText()
-                + (correction ? " (korrigiert)" : table != null ? " · " + t.tableName(table) + " ist frei" : ""));
+                + (correction ? " (korrigiert)" : table != null ? " · " + t.tableName(table) + " ist frei" : "")
+                + (corrTab ? " · Die Korrektur ändert Phase " + t.phaseNumber(follow) + " – siehe Reiter „Phase "
+                + t.phaseNumber(follow) + " – Korrektur“." : ""));
         askQualification(owner, t, m, status);
         return true;
     }
@@ -72,6 +78,24 @@ final class ResultEntry {
     /** 0.38 (#60): Ist Runde 1 der KO-Qualifikation fertig, fragen, ob die Gewinner qualifiziert sind. */
     static void askQualification(Window owner, Tournament t, Match m, Consumer<String> status) {
         de.hts.tournament.PlayingClass c = t.findClass(m.getClassName()).orElse(null);
+        if (t.qualificationExtraDecisionPending(c)) {        // 1.3 (#105)
+            ButtonType q = new ButtonType("Gewinner sind qualifiziert", javafx.scene.control.ButtonBar.ButtonData.YES);
+            ButtonType r = new ButtonType("Gewinner sind Nachrücker", javafx.scene.control.ButtonBar.ButtonData.NO);
+            ButtonType later = new ButtonType("Später entscheiden", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+            Alert a = new Alert(Alert.AlertType.CONFIRMATION, "Das Zusatzspiel der Qualifikation von „" + t.rootOf(c).getName()
+                    + "“ ist gespielt.\n\nSind die Gewinner qualifiziert? Sonst sind sie Nachrücker 1. Ranges (nach TTR), die "
+                    + "Verlierer 2. Ranges.\n\nDie Entscheidung lässt sich in der Phasenansicht ändern, solange die Klasse läuft.",
+                    q, r, later);
+            a.initOwner(owner);
+            a.setHeaderText(null);
+            a.setTitle("Qualifikation – Zusatzspiel");
+            DialogSizing.fit(a);
+            ButtonType res = a.showAndWait().orElse(later);
+            if (res == later) return;
+            t.decideQualificationExtra(c, res == q);
+            status.accept(res == q ? "Die Gewinner des Zusatzspiels sind qualifiziert." : "Die Gewinner des Zusatzspiels sind Nachrücker 1. Ranges.");
+            return;
+        }
         if (!t.qualificationDecisionPending(c)) return;
         ButtonType yes = new ButtonType("Gewinner sind qualifiziert", javafx.scene.control.ButtonBar.ButtonData.YES);
         ButtonType no = new ButtonType("Weitere KO-Runde für die Gewinner", javafx.scene.control.ButtonBar.ButtonData.NO);

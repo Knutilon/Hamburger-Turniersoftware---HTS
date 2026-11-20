@@ -52,7 +52,8 @@ final class ModeDialog extends Dialog<Boolean> {
     /** 1.2: Modi der Phase 1 – dazu Badeni (#95) und doppeltes KO (#99). */
     private enum Opt {
         KO("KO-System"), GROUPS("Gruppenphase (jeder gegen jeden)"), SWISS("Schweizer System"),
-        BADENI("Schweizer System nach Badeni"), DOUBLE_KO("Doppeltes K.-o.-System");
+        BADENI("Schweizer System nach Badeni"), DOUBLE_KO("Doppeltes K.-o.-System"),
+        EXEMPT("Gruppenphase mit Freistellung");
         final String label;
 
         Opt(String l) {
@@ -62,7 +63,7 @@ final class ModeDialog extends Dialog<Boolean> {
         TournamentMode mode() {
             return switch (this) {
                 case KO -> TournamentMode.KNOCKOUT;
-                case GROUPS -> TournamentMode.GROUPS;
+                case GROUPS, EXEMPT -> TournamentMode.GROUPS;
                 case SWISS, BADENI -> TournamentMode.SWISS;
                 case DOUBLE_KO -> TournamentMode.PLAN;
             };
@@ -82,10 +83,13 @@ final class ModeDialog extends Dialog<Boolean> {
         if (koOnly) mode.getItems().setAll(Opt.KO, Opt.DOUBLE_KO);                      // Doppel > 5: nur KO-Systeme
         else if (dbl) mode.getItems().setAll(Opt.GROUPS, Opt.KO, Opt.DOUBLE_KO);        // kein Schweizer System
         else mode.getItems().setAll(Opt.KO, Opt.GROUPS, Opt.SWISS, Opt.BADENI, Opt.DOUBLE_KO);
+        // 1.3 (#106): Freistellung nur im Einzel und erst, wenn neben S1–S4 mindestens 2 Gruppen à 3 möglich sind
+        if (!dbl && n >= Tournament.EXEMPT_COUNT + 6) mode.getItems().add(Opt.EXEMPT);
         mode.setConverter(conv(m -> m == Opt.GROUPS && c.isPureDoubles() ? "Gruppenphase (eine Gruppe, jeder gegen jeden)" : m.label));
         Opt initial = switch (c.getMode()) {
             case KNOCKOUT -> Opt.KO;
             case SWISS -> c.isBadeni() ? Opt.BADENI : Opt.SWISS;
+            case GROUPS -> c.getExempt().isEmpty() ? Opt.GROUPS : Opt.EXEMPT;
             case PLAN -> Opt.DOUBLE_KO;
             default -> Opt.GROUPS;
         };
@@ -145,13 +149,56 @@ final class ModeDialog extends Dialog<Boolean> {
         preview.getStyleClass().add("criteria");
         preview.setWrapText(true);
 
+        // 1.3 (#106): Freistellung – Setzplätze S1–S4 (Vorschlag: höchster TTR) und Plätze je Gruppe
+        List<de.hts.tournament.Entrant> everyone = t.entrantsOf(c);
+        java.util.Map<String, de.hts.tournament.Entrant> byId = new java.util.HashMap<>();
+        for (de.hts.tournament.Entrant e : everyone) byId.put(e.id(), e);
+        List<ComboBox<String>> slots = new java.util.ArrayList<>();
+        javafx.scene.layout.FlowPane slotBox = new javafx.scene.layout.FlowPane(12, 8);
+        slotBox.setPrefWrapLength(520);
+        List<String> suggested = t.exemptSuggestion(c, new Random(c.getLotSeed() == 0 ? 1 : c.getLotSeed()));
+        List<String> initialExempt = c.getExempt().size() == Tournament.EXEMPT_COUNT && byId.keySet().containsAll(c.getExempt())
+                ? c.getExempt() : suggested;
+        for (int k = 0; k < Tournament.EXEMPT_COUNT; k++) {
+            ComboBox<String> cb = new ComboBox<>();
+            cb.getItems().setAll(everyone.stream()
+                    .sorted(java.util.Comparator.comparing((de.hts.tournament.Entrant e) -> e.ttr() == null ? Integer.MIN_VALUE : e.ttr()).reversed())
+                    .map(de.hts.tournament.Entrant::id).toList());
+            cb.setConverter(conv(id -> {
+                de.hts.tournament.Entrant e = byId.get(id);
+                return e == null ? "" : e.name() + (e.ttr() == null ? "" : " (" + e.ttr() + ")");
+            }));
+            if (k < initialExempt.size()) cb.setValue(initialExempt.get(k));
+            Label sl = new Label("S" + (k + 1));
+            sl.getStyleClass().add("class-name");
+            HBox one = new HBox(6, sl, cb);
+            one.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+            slots.add(cb);
+            slotBox.getChildren().add(one);
+        }
+        javafx.scene.control.Button resetExempt = new javafx.scene.control.Button("Auf TTR-Vorschlag zurücksetzen");
+        resetExempt.setOnAction(e -> {
+            for (int k = 0; k < slots.size(); k++) slots.get(k).setValue(k < suggested.size() ? suggested.get(k) : null);
+        });
+        VBox exemptBox = new VBox(8, slotBox, resetExempt);
+        ToggleGroup advTg = new ToggleGroup();
+        RadioButton adv2 = new RadioButton("Plätze 1–2");
+        RadioButton adv3 = new RadioButton("Plätze 1–3");
+        adv2.setToggleGroup(advTg);
+        adv3.setToggleGroup(advTg);
+        (c.getExemptPlaces() == 3 ? adv3 : adv2).setSelected(true);
+        HBox advBox = new HBox(12, adv2, adv3);
+        Label lExempt = new Label("Freigestellt (Setzplätze):"), lAdv = new Label("Weiter je Gruppe:");
+        javafx.beans.property.BooleanProperty blocked = new javafx.beans.property.SimpleBooleanProperty(false);
+
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
         Label lMode = new Label("Modus:"), lSeed = new Label("Setzung:"), lGroups = new Label("Gruppen:"),
                 lTb = new Label("Bei gleichem Spielverhältnis:"), lRounds = new Label("Anzahl Runden:"),
                 lSets = new Label("Gewinnsätze:"), lClubs = new Label("Vereinsgleichheit beachten:");
-        for (Label l : new Label[]{lMode, lSeed, lGroups, lTb, lRounds, lSets, lClubs}) l.getStyleClass().add("class-name");
+        for (Label l : new Label[]{lMode, lSeed, lGroups, lTb, lRounds, lSets, lClubs, lExempt, lAdv}) l.getStyleClass().add("class-name");
+        lExempt.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
         // Auswahllisten einheitlich breit (an der längsten Option ausgerichtet)
         for (javafx.scene.control.ComboBox<?> cb : List.of(mode, seed, sets)) {
             cb.setPrefWidth(320);
@@ -168,6 +215,9 @@ final class ModeDialog extends Dialog<Boolean> {
         grid.addRow(4, lTb, tbBox);
         grid.addRow(5, lRounds, rounds);
         grid.addRow(6, lSets, sets);
+        grid.addRow(7, lExempt, exemptBox);
+        grid.addRow(8, lAdv, advBox);
+        javafx.scene.layout.GridPane.setValignment(lExempt, javafx.geometry.VPos.TOP);
         VBox content = new VBox(12, grid, clubsHint, preview);
         content.setPadding(new Insets(10));
         content.setPrefWidth(640);
@@ -180,6 +230,12 @@ final class ModeDialog extends Dialog<Boolean> {
             Opt o = mode.getValue();
             TournamentMode m = o.mode();
             boolean groups = m == TournamentMode.GROUPS, swiss = m == TournamentMode.SWISS, badeni = o == Opt.BADENI;
+            boolean exemptMode = o == Opt.EXEMPT;
+            for (javafx.scene.Node x : new javafx.scene.Node[]{lExempt, exemptBox, lAdv, advBox}) {
+                x.setVisible(exemptMode);
+                x.setManaged(exemptMode);
+            }
+            blocked.set(false);
             List<Seed> options = badeni ? List.of(Seed.TTR) : groups ? List.of(Seed.SNAKE, Seed.POTS, Seed.HEADS, Seed.RANDOM) : List.of(Seed.TTR, Seed.RANDOM);
             Seed cur = seed.getValue();
             if (!seed.getItems().equals(options)) {
@@ -248,7 +304,28 @@ final class ModeDialog extends Dialog<Boolean> {
                     + "geht das nicht mehr, wird normal nach der Schlange verteilt.");
             // Vorschau
             String text;
-            if (groups && c.isPureDoubles()) {
+            if (exemptMode) {
+                int places = adv3.isSelected() ? 3 : 2, gp = n - Tournament.EXEMPT_COUNT;
+                int g = bySize.isSelected() ? GroupDraw.groupCountForSize(Math.max(2, gp), size.getValue()) : count.getValue();
+                List<String> chosen = slots.stream().map(ComboBox::getValue).toList();
+                String problem = chosen.stream().anyMatch(java.util.Objects::isNull) || new java.util.HashSet<>(chosen).size() != Tournament.EXEMPT_COUNT
+                        ? "Bitte für S1 bis S4 je eine andere Person wählen." : Tournament.exemptProblem(gp, g, places);
+                if (problem != null) {
+                    text = "⚠ " + problem + "\nPhase 1 lässt sich so nicht anlegen.";
+                    blocked.set(true);
+                } else {
+                    int big = gp % g == 0 ? g : gp % g, bigSize = GroupDraw.maxGroupSize(gp, g), small = g - big;
+                    String sizes = gp % g == 0 ? g + " Gruppen à " + bigSize : big + " × " + bigSize + " und " + small + " × " + (bigSize - 1);
+                    int games = big * bigSize * (bigSize - 1) / 2 + (gp % g == 0 ? 0 : small * (bigSize - 1) * (bigSize - 2) / 2);
+                    int field = Tournament.EXEMPT_COUNT + g * places;
+                    text = "→ S1–S4 freigestellt, " + gp + " Teilnehmende in " + sizes + " · " + games + " Gruppenspiele · "
+                            + Tournament.EXEMPT_COUNT + " + " + g + " × " + places + " = " + field + "er-Feld (KO ohne Freilose, ab "
+                            + de.hts.tournament.KnockoutDraw.roundName(field) + ")"
+                            + (g == 4 && places == 3 ? " · feste Paarungen: S1–D3, B1–D2, A1–C2, S4–C3, S3–A3, C1–B2, D1–A2, S2–B3"
+                            : " · die Freigestellten spielen gegen die schlechtesten Gruppen" + (places == 3 ? "dritten" : "zweiten")
+                            + ", die Gruppenersten untereinander nach Spiel-, Satz- und Punkteverhältnis");
+                }
+            } else if (groups && c.isPureDoubles()) {
                 text = "→ eine Gruppe mit " + n + " Doppeln, jeder gegen jeden · " + (n * (n - 1) / 2) + " Spiele";
             } else if (groups) {
                 int g = bySize.isSelected() ? GroupDraw.groupCountForSize(Math.max(2, n), size.getValue()) : count.getValue();
@@ -300,6 +377,8 @@ final class ModeDialog extends Dialog<Boolean> {
         size.valueProperty().addListener((o, a, b) -> update.run());
         count.valueProperty().addListener((o, a, b) -> update.run());
         rounds.valueProperty().addListener((o, a, b) -> update.run());
+        advTg.selectedToggleProperty().addListener((o, a, b) -> update.run());
+        for (ComboBox<String> cb : slots) cb.valueProperty().addListener((o, a, b) -> update.run());
         update.run();
 
         ButtonType ok = new ButtonType("Auslosen", ButtonBar.ButtonData.OK_DONE);
@@ -326,6 +405,8 @@ final class ModeDialog extends Dialog<Boolean> {
             boolean seeded = s != Seed.RANDOM;
             try {
                 if (o == Opt.GROUPS) t.drawGroups(c, seeded, random);
+                else if (o == Opt.EXEMPT) t.drawGroupsWithExemption(c, slots.stream().map(ComboBox::getValue).toList(),
+                        adv3.isSelected() ? 3 : 2, seeded, random);
                 else if (o == Opt.BADENI) t.drawBadeni(c, random);
                 else if (o == Opt.SWISS) t.drawSwiss(c, seeded, random);
                 else if (o == Opt.DOUBLE_KO) t.drawDoubleKo(c, seeded, random);
@@ -336,6 +417,7 @@ final class ModeDialog extends Dialog<Boolean> {
                 e.consume();
             }
         });
+        getDialogPane().lookupButton(ok).disableProperty().bind(blocked);
         DialogSizing.fit(this);
         setResultConverter(bt -> bt == ok);
     }
