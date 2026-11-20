@@ -58,6 +58,10 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Buchholz und Feinbuchholz nicht (Reihung Siege, TTR, Sätze); in der Tabelle stehen dort derzeit nur „null“.
    Vorschlag (Rückfrage gestellt): Spalten auch im PDF der Phase, in der Präsentationsansicht und auf den Live-Seiten
    entfernen; normales Schweizer System unverändert; als Fehlerbehebung 1.2.1.
+2. BADENI: LEISTE „WEITERE RUNDE / SPIELER PAUSIEREN“ FIXIEREN (Nutzer 20.11.2026, Issue #103): Knöpfe links, Infotext
+   rechts daneben (bricht um, nie „…“), oben und unten feine graue Linie (#d5d9e0) als Trennung von den Phasen-Knöpfen
+   bzw. der Tabelle; die Leiste bleibt beim Scrollen der Tabelle stehen, gescrollt mit leichtem Schatten.
+   Designvorschlag: Design-Canvas https://claude.ai/artifact/6fv4ofe1C21Qqqfhm7R8Aj (Rückfrage gestellt: Version 1.2.1?).
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
