@@ -97,8 +97,8 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    aktiv ist. Knopf „Unveränderte Ergebnisse übernehmen“ (gespielte Spiele mit gleicher Paarung). Knopf „Phase 2
    weiterführen“ mit Warn-Dialog (Weiter rechts, Abbrechen links): alte Phase → Reiter „Phase 2 – deaktiviert“, ihre Spiele
    in der Spielübersicht markiert und aus der Ergebnis-XML entfernt, laufende Spiele zurückgerufen. Kernpunkt: Spiele in
-   abgeschlossenen Phasen bleiben bearbeitbar; Knopf „Korrektur verwerfen“ (Nutzer 12:09: doch sinnvoll) nimmt die
-   Korrektur(en) der Vorphase zurück, Reiter verschwindet. Nur ein Korrektur-Reiter (rechnet jede weitere Korrektur ein),
+   abgeschlossenen Phasen bleiben bearbeitbar; Knopf „Korrektur verwerfen“ (Nutzer 12:09/12:11) verwirft nur die
+   korrigierte Phase (Reiter verschwindet); die Korrektur in der Vorphase BLEIBT, laufende Phase läuft unverändert. Nur ein Korrektur-Reiter (rechnet jede weitere Korrektur ein),
    aber mehrere „deaktiviert“-Reiter möglich; Reiterleiste mit höchstens 6 Reitern je Seite und Pfeilen (Seite 2 = Reiter
    7–12 usw.). Auswirkung NUR auf die direkt folgende Phase: Korrektur in Phase 1 bei laufender Phase 3 ändert nur das
    Ergebnis (kein Einfluss auf den Verlauf); Korrektur in Phase 2 → Prüfung + Korrektur-Reiter für Phase 3.
