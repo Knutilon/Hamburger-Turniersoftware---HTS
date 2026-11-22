@@ -74,6 +74,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Einträgen (Wortlaut): Alexander Zappe (NSR und Verbandsorga) – Hamburg; Felix Merkel (Softwareinputs und
    Verbandsorga) – Hamburg; Roman Diewald (NSR) – Hamburg; David Schnell (Geschäftsführer HaTTV) – Hamburg.
    Als Liste, ein Eintrag je Zeile, Texte nie abkürzen; Doku (README/Handbuch) bei „Info“ ergänzen.
+3. FEHLER: INFO-FENSTER LÄSST SICH MIT DER MAUS NICHT SAUBER VERGRÖSSERN/VERKLEINERN (Nutzer 22.11.2026, Issue #110):
+   Ursache: DialogSizing.fit ruft bei jeder Layoutänderung des Inhalts (auch beim Ziehen am Rand, weil Texte neu
+   umbrechen) Window.sizeToScene() auf und setzt die Größe damit zurück (Test unter Xvfb: gezogene Breiten 522/462/402
+   springen immer auf 584 × 637). Korrektur (im Test bestätigt): DialogSizing merkt sich, ob der Nutzer die Größe selbst
+   geändert hat (Größenänderung außerhalb der eigenen Anpassung, Kennzeichen „state“ mit Zurücksetzen per runLater);
+   danach kein sizeToScene mehr, das Fenster wächst nur noch mit, wenn der Inhalt höher wird. Gilt für alle Dialoge mit
+   DialogSizing.fit. Nach dem Bau mit echter Maus unter Windows prüfen (Info-Fenster schmaler/breiter/niedriger ziehen).
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
