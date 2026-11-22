@@ -81,6 +81,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    geändert hat (Größenänderung außerhalb der eigenen Anpassung, Kennzeichen „state“ mit Zurücksetzen per runLater);
    danach kein sizeToScene mehr, das Fenster wächst nur noch mit, wenn der Inhalt höher wird. Gilt für alle Dialoge mit
    DialogSizing.fit. Nach dem Bau mit echter Maus unter Windows prüfen (Info-Fenster schmaler/breiter/niedriger ziehen).
+4. PRÄSENTATIONSANSICHT: ANZAHL DER NÄCHSTEN SPIELE ALS EIGENE ZEILE (Nutzer 22.11.2026, Issue #111): Bisher steht die
+   Anzahl in einer türkisen Pille (count-pill, PresentationView.nextRow) neben dem Häkchen „Die nächsten Spiele (alle
+   Klassen)“. Neu: eigene, eingerückte Zeile (22 px, wie die Phasen-Häkchen) unter dem Häkchen: „Anzahl der Spiele:“
+   (fett), Zahlenfeld wie „Wechselzeit“ (4 bis 48), „Spiele je Anzeige (4 bis 48)“; darunter Hinweis „Gilt für die
+   klassenübergreifende Warteschlange. Bei mehr als 16 Spielen verteilt HTS sie auf mehrere Seiten.“ Häkchen aus =
+   Zeile ausgegraut, Feld gesperrt. Texte nie abkürzen, umbrechen. Design (bestätigt 22.11.2026):
+   https://claude.ai/artifact/TUN71dYm782Np3FTzYxR3M (Bilder: Jetzt, Vorschlag, Vorschlag mit Häkchen aus).
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
