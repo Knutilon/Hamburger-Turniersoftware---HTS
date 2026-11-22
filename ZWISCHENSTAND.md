@@ -88,6 +88,10 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    klassenübergreifende Warteschlange. Bei mehr als 16 Spielen verteilt HTS sie auf mehrere Seiten.“ Häkchen aus =
    Zeile ausgegraut, Feld gesperrt. Texte nie abkürzen, umbrechen. Design (bestätigt 22.11.2026):
    https://claude.ai/artifact/TUN71dYm782Np3FTzYxR3M (Bilder: Jetzt, Vorschlag, Vorschlag mit Häkchen aus).
+5. ARCHIV FÜR VERGANGENE TURNIERE (Nutzer 22.11.2026, Issue #112): Neuer Reiter „Archivierte Turniere“ neben „Turniere“
+   in der Kopfleiste der Turnierliste. Turniere, deren Turnierdatum mehr als 14 Tage zurückliegt (heute minus Datum
+   größer als 14 Tage), erscheinen nur noch dort und nicht mehr unter „Turniere“; Öffnen, Bearbeiten und Löschen
+   wie bisher. Beide Listen nach Datum sortiert, neuestes zuerst. Kein manuelles Archivieren in dieser Version.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
