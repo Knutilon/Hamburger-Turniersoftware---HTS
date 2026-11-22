@@ -96,9 +96,10 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 6. URKUNDEN (Nutzer 22.11.2026, Issue #113; Vorlage: urkunde_ver_JUG.docx des HaTTV, A4 hoch, Ränder oben 5 cm, links/rechts
    2,5 cm): Ablauf (Nutzer 22.11.2026): Der Urkundendruck beginnt NICHT automatisch.
    Sobald das Turnier beendet ist (Tournament.isCompletelyFinished), öffnet sich ein Dialog „Urkundendruck starten?“ mit
-   zwei Knöpfen: links „Abbrechen“, rechts „Drucken“. Es gibt einen eigenen neuen Reiter „Urkunden drucken“ in der
+   zwei Knöpfen: links „Abbrechen“, rechts „Zur Druckansicht“
+   (nicht „Drucken“, Nutzer 22.11.2026). Es gibt einen eigenen neuen Reiter „Urkunden drucken“ in der
    Kopfleiste (erscheint erst nach Turnierende, bei beiden Antworten):
-   - „Drucken“ -> direkt in den Reiter „Urkunden drucken“, Plätze 1 bis 3 sind vorausgewählt.
+   - „Zur Druckansicht“ -> direkt in den Reiter „Urkunden drucken“, Plätze 1 bis 3 sind vorausgewählt.
    - „Abbrechen“ -> der Reiter erscheint trotzdem, aber es ist KEINE Urkunde zum Druck ausgewählt (0 von n, Vorschau
      leer mit Hinweis, „Als PDF speichern“/„Drucken“ gesperrt, Auswahl „Eigene Auswahl“).
    - Inhalt je Urkunde: „Ehrenurkunde“ (Arial 50 pt), Name (Comic Neue fett 22 pt) und Verein (Comic Neue fett 18 pt),
