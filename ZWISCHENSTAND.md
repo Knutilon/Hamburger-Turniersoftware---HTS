@@ -65,7 +65,7 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    - Option 2 „Schiedsrichterzettel“ = Design nach dem DTTB-Schiedsrichterzettel (A6 hoch, Einzel und Doppel):
      Kopf mit Spiel-Nr., Zeit, Tisch, Konkurrenz; Einzel: Spieler/in 1 = „A“, Spieler/in 2 = „X“ (auch in den Zeilen der
      Satztabelle; Nutzer 22.11.2026), Doppel: A B X Y; je Spieler Auf/Rück, gelbe/gelb-rote Karten (Ziffern 1/2), Auszeit „T“;
-     Satztabelle mit „1. Aufschlag“ je Satz (Doppel: A B X Y); „Gewinner/in“ und „Schiedsrichter/in“. Schwarz-weiß-tauglich
+     Satztabelle mit „1. Aufschlag“ je Satz (Einzel: A X, Doppel: A B X Y); „Gewinner/in“ und „Schiedsrichter/in“. Schwarz-weiß-tauglich
      (weiße Felder mit kräftigem Rahmen, Tisch und Sätze hellgrau), kein Berater/in, HTS-Marke statt DTTB-Logo, kein TTR.
    - 2er/3er-Mannschaftszettel (A4) bleibt in beiden Optionen unverändert (Nutzer 22.11.2026).
    - Texte nie abkürzen, Prüfen der Tische-Leiste bei 1093 × 614 und 911 × 512 (Dropdown neben den PDF-Knöpfen: notfalls
