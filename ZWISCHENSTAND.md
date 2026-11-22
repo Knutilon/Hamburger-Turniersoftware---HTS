@@ -54,7 +54,22 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.3.x)
 
-(noch leer)
+1. ZETTEL-DESIGN JE TURNIER WÄHLBAR (Nutzer 22.11.2026, Issue #108): Im Reiter „Tische“ Auswahlliste „Zettel-Design“
+   oben rechts, links neben „Gesamtergebnis als PDF“ (Text davor: „Zettel-Design:“; Liste mit Kurzbeschreibung je Eintrag
+   und Hinweis „Gilt für alle Spielzettel dieses Turniers.“). Gilt je Turnier, in der Turnierdatei gespeichert (ältere
+   Dateien ohne Angabe = Spielerzettel).
+   - Option 1 „Spielerzettel“ (Standard) = bisheriges Design, aber OHNE „Wahl“ und OHNE „Unterschrift
+     Schiedsrichter/in“. Neu: „Ergebnis (gewonnene Sätze)“ in zwei quadratischen Boxen (z. B. 3 : 2, Beschriftung
+     „Spieler/in 1“/„Spieler/in 2“) und „Gewinner/in“ mit Strich für den Namen (z. B. „Michaelis“). Zeile „Sätze“ der
+     Satztabelle entfällt (ersetzt durch die Ergebnis-Boxen). Gilt für Einzel UND Doppel (A6).
+   - Option 2 „Schiedsrichterzettel“ = Design nach dem DTTB-Schiedsrichterzettel (A6 hoch, Einzel und Doppel):
+     Kopf mit Spiel-Nr., Zeit, Tisch, Konkurrenz; je Spieler Auf/Rück, gelbe/gelb-rote Karten (Ziffern 1/2), Auszeit „T“;
+     Satztabelle mit „1. Aufschlag“ je Satz (Doppel: A B X Y); „Gewinner/in“ und „Schiedsrichter/in“. Schwarz-weiß-tauglich
+     (weiße Felder mit kräftigem Rahmen, Tisch und Sätze hellgrau), kein Berater/in, HTS-Marke statt DTTB-Logo, kein TTR.
+   - 2er/3er-Mannschaftszettel (A4) bleibt in beiden Optionen unverändert (Nutzer 22.11.2026).
+   - Texte nie abkürzen, Prüfen der Tische-Leiste bei 1093 × 614 und 911 × 512 (Dropdown neben den PDF-Knöpfen: notfalls
+     umbrechen). Design (bestätigt 22.11.2026): Design-Canvas https://claude.ai/artifact/Czpz8CWSwyqtE6jaBNvxbU
+     (Reihen: Schiedsrichterzettel Einzel/Doppel, Spielerzettel Einzel/Doppel, Tische-Reiter mit Dropdown, Mannschaftszettel).
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
