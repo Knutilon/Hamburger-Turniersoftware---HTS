@@ -94,16 +94,22 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    größer als 14 Tage), erscheinen nur noch dort und nicht mehr unter „Turniere“; Öffnen, Bearbeiten und Löschen
    wie bisher. Beide Listen nach Datum sortiert, neuestes zuerst. Kein manuelles Archivieren in dieser Version.
 6. URKUNDEN (Nutzer 22.11.2026, Issue #113; Vorlage: urkunde_ver_JUG.docx des HaTTV, A4 hoch, Ränder oben 5 cm, links/rechts
-   2,5 cm): Nach Abschluss des Turniers (Tournament.isCompletelyFinished) öffnet sich einmal automatisch die
-   Druckvorschau der Urkunden, danach über den Knopf „Urkunden drucken“ neben „Gesamtergebnis als PDF“.
+   2,5 cm): Ablauf (Nutzer 22.11.2026): Der Urkundendruck beginnt NICHT automatisch.
+   Sobald das Turnier beendet ist (Tournament.isCompletelyFinished), öffnet sich ein Dialog „Urkundendruck starten?“ mit
+   zwei Knöpfen: links „Abbrechen“, rechts „Drucken“. Es gibt einen eigenen neuen Reiter „Urkunden drucken“ in der
+   Kopfleiste (erscheint erst nach Turnierende, bei beiden Antworten):
+   - „Drucken“ -> direkt in den Reiter „Urkunden drucken“, Plätze 1 bis 3 sind vorausgewählt.
+   - „Abbrechen“ -> der Reiter erscheint trotzdem, aber es ist KEINE Urkunde zum Druck ausgewählt (0 von n, Vorschau
+     leer mit Hinweis, „Als PDF speichern“/„Drucken“ gesperrt, Auswahl „Eigene Auswahl“).
    - Inhalt je Urkunde: „Ehrenurkunde“ (Arial 50 pt), Name (Comic Neue fett 22 pt) und Verein (Comic Neue fett 18 pt),
      „errang bei der Verbandsendrunde / des Hamburger Ranglistenturnieres“ (= Turniername, zwei Zeilen, bricht um),
      „in der Altersklasse <Klasse>“, „den <n>. Platz“ (Arial fett 24 pt), „Als Anerkennung / wird diese Urkunde
      überreicht“, unten „<Ort>, den <Datum>“ links und „<Unterschrift rechts>“ (14 pt), „<Ausrichter>“ (Arial fett 20 pt).
      Datum = Turnierdatum, Platz/Name/Verein aus dem Endergebnis der Klasse (Doppel: beide Personen, Mannschaft: Teamname).
-   - Druckvorschau: Klasse wählen; „Plätze 1 bis 3“ / „Alle Plätze“ / „Eigene Auswahl“ (von/bis); Liste mit Häkchen je
+   - Inhalt des Reiters (Druckvorschau): Klasse wählen; „Plätze 1 bis 3“ / „Alle Plätze“ / „Eigene Auswahl“ (von/bis); Liste mit Häkchen je
      Urkunde (Klasse, Platz, Name, Verein) und Zähler „9 von 56 Urkunden ausgewählt“; rechts Vorschau mit Blättern;
-     „Als PDF speichern“, „Drucken“ (PdfViewer/Reports). Alle Plätze sind druckbar.
+     „Als PDF speichern“, „Drucken“ (PdfViewer/Reports). Alle Plätze sind druckbar. Der Dialog hat keinen Knopf „Schließen“, der Reiter bleibt
+     dauerhaft.
    - Urkundentexte je Turnier einstellbar (in der Turnierdatei): Überschrift, Ort, Unterschrift rechts, Ausrichter unten
      (Vorgabe: Ehrenurkunde, Hamburg, Jugendausschuss, Hamburger Tisch-Tennis-Verband e.V.). Bleibt ein Feld leer, bleibt
      die Stelle auf der Urkunde frei (bei „Ort“ entfällt dann auch das Komma: „den <Datum>“). Häkchen „Oben 5 cm frei
@@ -116,8 +122,8 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      PDType0Font), Lizenztext (OFL) unter „Lizenzen“ im Programmordner und in der Info bei „Mitgelieferte Bibliotheken“
      ergänzen, CVE-/Abhängigkeitsliste docs/ABHAENGIGKEITEN.md um die Schrift ergänzen.
    - Annahmen vom Nutzer bestätigt: Turniername ersetzt die Zeile der Vorlage, Wort „Altersklasse“ bleibt fest,
-     Texte je Turnier einstellbar, Mannschaftsturniere mit Teamname. Design (Entwurf, Änderbarkeit ergänzt):
-     https://claude.ai/artifact/M7mfRNQTzhrogA8Ls6mhQQ (Urkunde, Druckvorschau, Knopf).
+     Texte je Turnier einstellbar, Mannschaftsturniere mit Teamname. Design (Entwurf, Ablauf mit Dialog und Reiter
+     ergänzt): https://claude.ai/artifact/M7mfRNQTzhrogA8Ls6mhQQ (Urkunde, Dialog, Reiter nach „Drucken“ und nach „Abbrechen“).
    - Texte nie abkürzen; Druckvorschau über DialogSizing.fit; Prüfen bei 1093 × 614 und 911 × 512.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
