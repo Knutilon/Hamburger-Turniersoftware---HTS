@@ -93,6 +93,30 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    in der Kopfleiste der Turnierliste. Turniere, deren Turnierdatum mehr als 14 Tage zurückliegt (heute minus Datum
    größer als 14 Tage), erscheinen nur noch dort und nicht mehr unter „Turniere“; Öffnen, Bearbeiten und Löschen
    wie bisher. Beide Listen nach Datum sortiert, neuestes zuerst. Kein manuelles Archivieren in dieser Version.
+6. URKUNDEN (Nutzer 22.11.2026, Issue #113; Vorlage: urkunde_ver_JUG.docx des HaTTV, A4 hoch, Ränder oben 5 cm, links/rechts
+   2,5 cm): Nach Abschluss des Turniers (Tournament.isCompletelyFinished) öffnet sich einmal automatisch die
+   Druckvorschau der Urkunden, danach über den Knopf „Urkunden drucken“ neben „Gesamtergebnis als PDF“.
+   - Inhalt je Urkunde: „Ehrenurkunde“ (Arial 50 pt), Name (Comic Neue fett 22 pt) und Verein (Comic Neue fett 18 pt),
+     „errang bei der Verbandsendrunde / des Hamburger Ranglistenturnieres“ (= Turniername, zwei Zeilen, bricht um),
+     „in der Altersklasse <Klasse>“, „den <n>. Platz“ (Arial fett 24 pt), „Als Anerkennung / wird diese Urkunde
+     überreicht“, unten „<Ort>, den <Datum>“ links und „<Unterschrift>“ rechts (14 pt), „<Verband>“ (Arial fett 20 pt).
+     Datum = Turnierdatum, Platz/Name/Verein aus dem Endergebnis der Klasse (Doppel: beide Personen, Mannschaft: Teamname).
+   - Druckvorschau: Klasse wählen; „Plätze 1 bis 3“ / „Alle Plätze“ / „Eigene Auswahl“ (von/bis); Liste mit Häkchen je
+     Urkunde (Klasse, Platz, Name, Verein) und Zähler „9 von 56 Urkunden ausgewählt“; rechts Vorschau mit Blättern;
+     „Als PDF speichern“, „Drucken“ (PdfViewer/Reports). Alle Plätze sind druckbar.
+   - Urkundentexte je Turnier einstellbar (in der Turnierdatei): Überschrift, Ort, Unterschrift links, Verband unten
+     (Vorgabe: Ehrenurkunde, Hamburg, Jugendausschuss, Hamburger Tisch-Tennis-Verband e.V.); Häkchen „Oben 5 cm frei
+     lassen (für vorgedrucktes Briefpapier)“.
+   - Name und Verein sind je Urkunde NUR FÜR DEN DRUCK änderbar (Felder in der Liste, Markierung „nur für Druck
+     geändert“, Klick darauf = Originalwert). Gespeichert als Druckanpassung in der Turnierdatei; KEINE Auswirkung auf
+     Teilnehmerdaten, Ergebnisse, Präsentation, LiveServer und click-TT-XML.
+   - Schrift Comic Neue (Nutzer 22.11.2026: nehmen, OFL): Schriftdatei mit in die Programmdatei einbetten (PDFBox
+     PDType0Font), Lizenztext (OFL) unter „Lizenzen“ im Programmordner und in der Info bei „Mitgelieferte Bibliotheken“
+     ergänzen, CVE-/Abhängigkeitsliste docs/ABHAENGIGKEITEN.md um die Schrift ergänzen.
+   - Annahmen vom Nutzer bestätigt: Turniername ersetzt die Zeile der Vorlage, Wort „Altersklasse“ bleibt fest,
+     Texte je Turnier einstellbar, Mannschaftsturniere mit Teamname. Design (Entwurf, Änderbarkeit ergänzt):
+     https://claude.ai/artifact/M7mfRNQTzhrogA8Ls6mhQQ (Urkunde, Druckvorschau, Knopf).
+   - Texte nie abkürzen; Druckvorschau über DialogSizing.fit; Prüfen bei 1093 × 614 und 911 × 512.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
