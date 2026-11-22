@@ -70,6 +70,10 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    - Texte nie abkürzen, Prüfen der Tische-Leiste bei 1093 × 614 und 911 × 512 (Dropdown neben den PDF-Knöpfen: notfalls
      umbrechen). Design (bestätigt 22.11.2026): Design-Canvas https://claude.ai/artifact/Czpz8CWSwyqtE6jaBNvxbU
      (Reihen: Schiedsrichterzettel Einzel/Doppel, Spielerzettel Einzel/Doppel, Tische-Reiter mit Dropdown, Mannschaftszettel).
+2. INFO: BEREICH „DANKE AN:“ (Nutzer 22.11.2026, Issue #109): In der Info (InfoDialog) ein Bereich „Danke an:“ mit den
+   Einträgen (Wortlaut): Alexander Zappe (NSR und Verbandsorga) – Hamburg; Felix Merkel (Softwareinputs und
+   Verbandsorga) – Hamburg; Roman Diewald (NSR) – Hamburg; David Schnell (Geschäftsführer HaTTV) – Hamburg.
+   Als Liste, ein Eintrag je Zeile, Texte nie abkürzen; Doku (README/Handbuch) bei „Info“ ergänzen.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
