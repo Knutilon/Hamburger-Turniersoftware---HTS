@@ -99,14 +99,16 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    - Inhalt je Urkunde: „Ehrenurkunde“ (Arial 50 pt), Name (Comic Neue fett 22 pt) und Verein (Comic Neue fett 18 pt),
      „errang bei der Verbandsendrunde / des Hamburger Ranglistenturnieres“ (= Turniername, zwei Zeilen, bricht um),
      „in der Altersklasse <Klasse>“, „den <n>. Platz“ (Arial fett 24 pt), „Als Anerkennung / wird diese Urkunde
-     überreicht“, unten „<Ort>, den <Datum>“ links und „<Unterschrift>“ rechts (14 pt), „<Verband>“ (Arial fett 20 pt).
+     überreicht“, unten „<Ort>, den <Datum>“ links und „<Unterschrift rechts>“ (14 pt), „<Ausrichter>“ (Arial fett 20 pt).
      Datum = Turnierdatum, Platz/Name/Verein aus dem Endergebnis der Klasse (Doppel: beide Personen, Mannschaft: Teamname).
    - Druckvorschau: Klasse wählen; „Plätze 1 bis 3“ / „Alle Plätze“ / „Eigene Auswahl“ (von/bis); Liste mit Häkchen je
      Urkunde (Klasse, Platz, Name, Verein) und Zähler „9 von 56 Urkunden ausgewählt“; rechts Vorschau mit Blättern;
      „Als PDF speichern“, „Drucken“ (PdfViewer/Reports). Alle Plätze sind druckbar.
-   - Urkundentexte je Turnier einstellbar (in der Turnierdatei): Überschrift, Ort, Unterschrift links, Verband unten
-     (Vorgabe: Ehrenurkunde, Hamburg, Jugendausschuss, Hamburger Tisch-Tennis-Verband e.V.); Häkchen „Oben 5 cm frei
-     lassen (für vorgedrucktes Briefpapier)“.
+   - Urkundentexte je Turnier einstellbar (in der Turnierdatei): Überschrift, Ort, Unterschrift rechts, Ausrichter unten
+     (Vorgabe: Ehrenurkunde, Hamburg, Jugendausschuss, Hamburger Tisch-Tennis-Verband e.V.). Bleibt ein Feld leer, bleibt
+     die Stelle auf der Urkunde frei (bei „Ort“ entfällt dann auch das Komma: „den <Datum>“). Häkchen „Oben 5 cm frei
+     lassen (für vorgedrucktes Briefpapier)“. „Unterschrift links“ gibt es nicht: links steht „<Ort>, den <Datum>“,
+     rechts der Unterzeichner (Nutzer 22.11.2026).
    - Name und Verein sind je Urkunde NUR FÜR DEN DRUCK änderbar (Felder in der Liste, Markierung „nur für Druck
      geändert“, Klick darauf = Originalwert). Gespeichert als Druckanpassung in der Turnierdatei; KEINE Auswirkung auf
      Teilnehmerdaten, Ergebnisse, Präsentation, LiveServer und click-TT-XML.
