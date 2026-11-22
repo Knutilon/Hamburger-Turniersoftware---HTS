@@ -14,6 +14,7 @@ import de.hts.tournament.GroupStanding;
 import de.hts.tournament.Match;
 import de.hts.tournament.MatchStatus;
 import de.hts.tournament.PlayingClass;
+import de.hts.tournament.SlipDesign;
 import de.hts.tournament.Tournament;
 import de.hts.tournament.TournamentMode;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -69,8 +70,17 @@ public final class PdfReports {
                 + (koStyle(m) || m.getPlacement() > 0 || m.getStage().startsWith("Runde") ? "" : " · Runde " + m.getRound());
     }
 
+    /**
+     * Spielzettel einer Begegnung. 1.4.0 (#108): Einzel und Doppel (A6) je nach Zettel-Design des Turniers als
+     * Spielerzettel (Standard) oder Schiedsrichterzettel; Mannschaftsbegegnungen (A4) immer wie bisher.
+     */
     public static PDDocument slip(Tournament t, Match m) {
         if (t.isTeamMatch(m)) return teamSlip(t, m);
+        return t.getSlipDesign() == SlipDesign.REFEREE ? refereeSlip(t, m) : playerSlip(t, m);
+    }
+
+    /** Spielerzettel (A6): schlicht, mit Satztabelle, Ergebnis in Boxen und „Gewinner/in“ (seit 1.4.0 ohne „Wahl“ und Unterschrift). */
+    private static PDDocument playerSlip(Tournament t, Match m) {
         PDDocument doc = newDoc("Spielzettel Spiel " + m.getNumber());
         PdfCanvas c = new PdfCanvas(doc, A6, 16);
         c.newPage();
@@ -104,24 +114,24 @@ public final class PdfReports {
         c.text(x + c0 + c1 + 3, c.y + 4, "Bälle Spieler/in 2", BOLD, 7.5f, c1 - 6);
         c.y += hh;
         int max = 2 * t.winningSets(m) - 1;
-        for (int i = 1; i <= max + 1; i++) {
+        for (int i = 1; i <= max; i++) {
             c.rect(x, c.y, c0, rh, 0.6f);
             c.rect(x + c0, c.y, c1, rh, 0.6f);
             c.rect(x + c0 + c1, c.y, c1, rh, 0.6f);
-            c.text(x + 3, c.y + 5, i <= max ? i + ". Satz" : "Sätze", i <= max ? REGULAR : BOLD, 8, c0 - 6);
+            c.text(x + 3, c.y + 5, i + ". Satz", REGULAR, 8, c0 - 6);
             c.y += rh;
         }
-        c.y += 7;
-        // Wahl
-        float bx = x;
-        c.text(bx, c.y, "Wahl:", REGULAR, 8, 30);
-        bx += 30;
-        for (String opt : new String[]{"Aufschlag", "Rückschlag", "Seite"}) {
-            c.rect(bx, c.y + 0.5f, 7, 7, 0.6f);
-            c.text(bx + 10, c.y, opt, REGULAR, 8, 60);
-            bx += 12 + PdfCanvas.textWidth(opt, REGULAR, 8) + 10;
-        }
-        c.y += 12;
+        c.y += 9;
+        // 1.4.0 (#108): Ergebnis (gewonnene Sätze) in zwei quadratischen Boxen – ersetzt „Sätze“ und „Wahl“
+        float box = 27f, bx = x + 84;
+        c.text(x, c.y + 3, "Ergebnis", BOLD, 8.5f, 80);
+        c.text(x, c.y + 13, "gewonnene Sätze", REGULAR, 6.5f, 80);
+        c.rect(bx, c.y, box, box, 1.3f);
+        c.text(bx + box + 6, c.y + 6, ":", BOLD, 16, 12);
+        c.rect(bx + box + 24, c.y, box, box, 1.3f);
+        c.text(bx - 6, c.y + box + 2, "Spieler/in 1", REGULAR, 6, box + 12, PdfCanvas.Align.CENTER, 0f);
+        c.text(bx + box + 18, c.y + box + 2, "Spieler/in 2", REGULAR, 6, box + 12, PdfCanvas.Align.CENTER, 0f);
+        c.y += box + 12;
         // Vorgabeturnier: Aufschlag automatisch für die Partei ohne Punktevorsprung
         int hc = t.handicapOf(m);
         if (hc != 0 && t.getHandicapRules().getServe() == de.hts.tournament.HandicapRules.Serve.NO_ADVANTAGE) {
@@ -129,9 +139,201 @@ public final class PdfReports {
             c.text(x, c.y, "Aufschlag: " + server + " (ohne Vorsprung)", REGULAR, 7.5f, w);
             c.y += 6;
         }
-        c.y += 10;
+        c.y += 6;
         signature(c, "Gewinner/in:");
-        signature(c, "Unterschrift Schiedsrichter/in:");
+        c.finish();
+        return doc;
+    }
+
+    // --- Schiedsrichterzettel (A6, 1.4.0 #108) ------------------------------------
+
+    private static final float[] NAVY = {0.09f, 0.227f, 0.424f};
+    private static final float[] INK = {0.07f, 0.16f, 0.30f};
+
+    /** Entwurfsmaß in Bildpunkten (A6 = 397 × 559) in PDF-Punkte. */
+    private static float px(float v) {
+        return v * 0.75f;
+    }
+
+    /** Beschriftung über einem Feld (8 px). */
+    private static void label(PdfCanvas c, float x, float y, String s) {
+        c.text(px(x), px(y), s, REGULAR, px(8), px(365), PdfCanvas.Align.LEFT, 0.17f);
+    }
+
+    /** Eintragsfeld: weiß (oder grau) mit dunkelblauem Rahmen. */
+    private static void field(PdfCanvas c, float x, float y, float w, float h, float gray) {
+        if (gray < 1f) c.fill(px(x), px(y), px(w), px(h), gray);
+        c.rect(px(x), px(y), px(w), px(h), px(1.25f), NAVY[0], NAVY[1], NAVY[2]);
+    }
+
+    /** Text waagerecht und senkrecht in einem Kasten (Bildpunkte). */
+    private static void centered(PdfCanvas c, float x, float y, float w, float h, String s, org.apache.pdfbox.pdmodel.font.PDFont f,
+                                 float ptPx, float[] rgb) {
+        float pt = px(ptPx);
+        c.text(px(x), px(y) + px(h) / 2 - 0.44f * pt, s, f, pt, px(w), PdfCanvas.Align.CENTER, rgb[0], rgb[1], rgb[2]);
+    }
+
+    private static void card(PdfCanvas c, float x, float y, float w, float h, float[] fillRgb) {
+        c.fill(px(x), px(y), px(w), px(h), fillRgb[0], fillRgb[1], fillRgb[2]);
+        c.rect(px(x), px(y), px(w), px(h), px(1f), 0.17f, 0.17f, 0.17f);
+    }
+
+    private static final float[] YELLOW = {0.96f, 0.82f, 0.06f};
+    private static final float[] RED = {0.84f, 0.16f, 0.24f};
+
+    /** Die drei Kartenzeichen: gelb, gelb-rot 1, gelb-rot 2 (ab x, in der Zeile y bis y + rowH). */
+    private static void cards(PdfCanvas c, float x, float y, float rowH) {
+        float top = y + (rowH - 22) / 2;
+        card(c, x, top + 3, 12, 17, YELLOW);
+        float x2 = x + 25;
+        for (int k = 1; k <= 2; k++) {
+            card(c, x2 + 9, top + 1, 12, 17, RED);
+            card(c, x2 + 1, top + 4, 12, 17, YELLOW);
+            centered(c, x2 + 1, top + 4, 12, 17, String.valueOf(k), BOLD, 8, new float[]{0.17f, 0.17f, 0.17f});
+            x2 += 27;
+        }
+    }
+
+    /** Zeile eines Spielers: Kennbuchstabe, Name mit Verein, Auf/Rück, Karten. */
+    private static void playerRow(PdfCanvas c, float y, float rowH, String letter, String name, String club, String handicap, boolean single) {
+        float s = single ? 28 : 26;
+        float bx = 16, by = y + (rowH - s) / 2;
+        c.rect(px(bx), px(by), px(s), px(s), px(1f), NAVY[0], NAVY[1], NAVY[2]);
+        centered(c, bx, by, s, s, letter, BOLD, 14, NAVY);
+        float fx = bx + s + 6, cardsX = 381 - 76, arX = cardsX - 6 - 36, fw = arX - 6 - fx;
+        field(c, fx, y, fw, rowH, 1f);
+        float namePx = single ? 12 : 11;
+        String line2 = (club == null ? "" : club) + (handicap.isEmpty() ? "" : (club == null || club.isBlank() ? "" : " · ") + handicap);
+        float blockH = namePx + 2 + 10;
+        float ty = y + (rowH - blockH) / 2;
+        float maxW = px(fw - 12);
+        float npt = px(namePx);
+        while (npt > px(7) && PdfCanvas.textWidth(name == null ? "" : name, BOLD, npt) > maxW) npt -= 0.25f;
+        c.text(px(fx + 6), px(ty), name == null ? "" : name, BOLD, npt, maxW, PdfCanvas.Align.LEFT, INK[0], INK[1], INK[2]);
+        float cpt = px(8);
+        while (cpt > px(5.5f) && PdfCanvas.textWidth(line2, REGULAR, cpt) > maxW) cpt -= 0.25f;
+        c.text(px(fx + 6), px(ty + namePx + 2), line2, REGULAR, cpt, maxW, PdfCanvas.Align.LEFT, 0.17f);
+        float h = single ? 15 : 13, total = 2 * h + 2, ay = y + (rowH - total) / 2;
+        for (int k = 0; k < 2; k++) {
+            float yy = ay + k * (h + 2);
+            field(c, arX, yy, 36, h, 1f);
+            centered(c, arX, yy, 36, h, k == 0 ? "Auf" : "Rück", BOLD, 8, NAVY);
+        }
+        cards(c, cardsX, y, rowH);
+    }
+
+    /** Kopf eines Blocks: Überschrift links, „Auszeit“ mit Kästchen „T“ rechts. */
+    private static void sideHead(PdfCanvas c, float y, String title) {
+        c.text(px(16), px(y + 2), title, BOLD, px(10), px(250), PdfCanvas.Align.LEFT, NAVY[0], NAVY[1], NAVY[2]);
+        field(c, 361, y, 20, 20, 1f);
+        centered(c, 361, y, 20, 20, "T", BOLD, 11, NAVY);
+        c.text(px(300), px(y + 6), "Auszeit", REGULAR, px(8), px(57), PdfCanvas.Align.RIGHT, 0.17f);
+    }
+
+    private static PDDocument refereeSlip(Tournament t, Match m) {
+        PDDocument doc = newDoc("Spielzettel Spiel " + m.getNumber());
+        PdfCanvas c = new PdfCanvas(doc, A6, 0);
+        c.newPage();
+        List<String[]> a = t.partyLines(m, m.getA()), b = t.partyLines(m, m.getB());
+        boolean single = a.size() < 2 && b.size() < 2;
+        // Kopf
+        c.text(px(16), px(14), "Spielzettel", BOLD, px(25), px(260), PdfCanvas.Align.LEFT, NAVY[0], NAVY[1], NAVY[2]);
+        c.text(px(16), px(44), "Tischtennis · " + (single ? "Einzel" : "Doppel"), REGULAR, px(9), px(260), PdfCanvas.Align.LEFT, 0.17f);
+        c.text(px(281), px(19), "HTS", BOLD, px(17), px(100), PdfCanvas.Align.RIGHT, NAVY[0], NAVY[1], NAVY[2]);
+        c.text(px(281), px(38), "Hamburger Turniersoftware", REGULAR, px(6.5f), px(100), PdfCanvas.Align.RIGHT, NAVY[0], NAVY[1], NAVY[2]);
+        // Spiel-Nr., Zeit, Tisch
+        String time = m.getStartedAt() != null ? m.getStartedAt().format(HM) : LocalDateTime.now().format(HM);
+        String tn = m.getTable() == null ? "Tisch ____" : t.tableName(m.getTable());
+        float y = 62;
+        label(c, 16, y, "Spiel-Nr.");
+        label(c, 102, y, "Zeit (Beginn)");
+        label(c, 188, y, "Tisch");
+        field(c, 16, y + 12, 78, 30, 1f);
+        field(c, 102, y + 12, 78, 30, 1f);
+        field(c, 188, y + 12, 193, 30, 0.894f);
+        centered(c, 16, y + 12, 78, 30, String.valueOf(m.getNumber()), BOLD, 17, NAVY);
+        centered(c, 102, y + 12, 78, 30, time, BOLD, 17, NAVY);
+        centered(c, 188, y + 12, 193, 30, tn, BOLD, tn.length() > 12 ? (tn.length() > 20 ? 10 : 13) : 17, NAVY);
+        // Konkurrenz
+        y = 111;
+        label(c, 16, y, "Konkurrenz");
+        field(c, 16, y + 12, 365, 24, 1f);
+        String comp = competition(t, m);
+        float cpt = px(11);
+        while (cpt > px(6.5f) && PdfCanvas.textWidth(comp, BOLD, cpt) > px(353)) cpt -= 0.25f;
+        c.text(px(22), px(y + 12 + 12) - 0.44f * cpt, comp, BOLD, cpt, px(353), PdfCanvas.Align.LEFT, INK[0], INK[1], INK[2]);
+        c.line(px(16), px(154), px(381), px(154), px(1f), NAVY[0], NAVY[1], NAVY[2]);
+        // Spieler
+        float rowH = single ? 36 : 30;
+        y = 161;
+        String[] sideA = single ? new String[]{"A"} : new String[]{"A", "B"};
+        String[] sideB = single ? new String[]{"X"} : new String[]{"X", "Y"};
+        for (int side = 0; side < 2; side++) {
+            List<String[]> lines = side == 0 ? a : b;
+            String id = side == 0 ? m.getA() : m.getB();
+            String[] letters = side == 0 ? sideA : sideB;
+            String hc = t.handicapLabel(m, id).isEmpty() ? "" : "+ " + t.handicapLabel(m, id).substring(1) + " Punkte";
+            sideHead(c, y, single ? "Spieler/in " + (side + 1) : "Doppel " + (side + 1) + " (Seite " + (side == 0 ? "A" : "B") + ")");
+            y += 24;
+            for (int i = 0; i < letters.length; i++) {
+                String[] ln = i < lines.size() ? lines.get(i) : new String[]{"______________________", ""};
+                playerRow(c, y, rowH, letters[i], ln[0], ln[1], i == 0 ? hc : "", single);
+                y += rowH + 4;
+            }
+            y += 3;
+        }
+        c.line(px(16), px(y - 7), px(381), px(y - 7), px(1f), NAVY[0], NAVY[1], NAVY[2]);
+        // Satztabelle
+        int sets = 2 * t.winningSets(m) - 1;
+        float labelW = 50, sumW = 54, gap = 3, colW = (365 - labelW - sumW - (sets + 1) * gap) / sets;
+        y += 0;
+        float ty = y;
+        for (int k = 0; k < sets; k++) {
+            float x = 16 + labelW + gap + k * (colW + gap);
+            c.text(px(x), px(ty + 2), (k + 1) + ". Satz", REGULAR, px(8.5f), px(colW), PdfCanvas.Align.CENTER, 0.17f);
+        }
+        c.text(px(16 + labelW + gap + sets * (colW + gap)), px(ty + 2), "Sätze", BOLD, px(9), px(sumW), PdfCanvas.Align.CENTER, NAVY[0], NAVY[1], NAVY[2]);
+        ty += 18;
+        float sh = single ? 36 : 32;
+        String[] rowLabels = single ? new String[]{"A", "X"} : new String[]{"A/B", "X/Y"};
+        for (String rl : rowLabels) {
+            float bw = rl.length() > 1 ? 34 : 26;
+            c.rect(px(16), px(ty + (sh - 26) / 2), px(bw), px(26), px(1f), NAVY[0], NAVY[1], NAVY[2]);
+            centered(c, 16, ty + (sh - 26) / 2, bw, 26, rl, BOLD, rl.length() > 1 ? 11 : 14, NAVY);
+            for (int k = 0; k < sets; k++) field(c, 16 + labelW + gap + k * (colW + gap), ty, colW, sh, 1f);
+            field(c, 16 + labelW + gap + sets * (colW + gap), ty, sumW, sh, 0.894f);
+            ty += sh + 4;
+        }
+        // 1. Aufschlag je Satz
+        c.text(px(16), px(ty + 2), "1. Aufschlag", REGULAR, px(7.5f), px(50), PdfCanvas.Align.LEFT, 0.17f);
+        String[] serve = single ? new String[]{"A", "X"} : new String[]{"A", "B", "X", "Y"};
+        float bs = single ? 14 : 11, bgap = 2, groupW = serve.length * bs + (serve.length - 1) * bgap;
+        for (int k = 0; k < sets; k++) {
+            float gx = 16 + labelW + gap + k * (colW + gap) + (colW - groupW) / 2;
+            for (int q = 0; q < serve.length; q++) {
+                float bx = gx + q * (bs + bgap);
+                field(c, bx, ty, bs, bs, 1f);
+                centered(c, bx, ty, bs, bs, serve[q], BOLD, single ? 8 : 6.5f, NAVY);
+            }
+        }
+        ty += bs + 8;
+        c.line(px(16), px(ty), px(381), px(ty), px(1f), NAVY[0], NAVY[1], NAVY[2]);
+        ty += 7;
+        // Gewinner/in und Schiedsrichter/in
+        float bh = single ? 40 : 34, fw = (365 - 8) / 2f;
+        label(c, 16, ty, "Gewinner/in");
+        label(c, 16 + fw + 8, ty, "Schiedsrichter/in");
+        field(c, 16, ty + 12, fw, bh, 1f);
+        field(c, 16 + fw + 8, ty + 12, fw, bh, 1f);
+        // Vorgabeturnier: Aufschlag automatisch für die Partei ohne Punktevorsprung
+        int hcv = t.handicapOf(m);
+        if (hcv != 0 && t.getHandicapRules().getServe() == de.hts.tournament.HandicapRules.Serve.NO_ADVANTAGE) {
+            String server = hcv > 0 ? t.partyFullName(m, m.getB()) : t.partyFullName(m, m.getA());
+            c.text(px(16), px(ty + 12 + bh + 5), "Aufschlag: " + server + " (ohne Vorsprung)", REGULAR, px(7.5f), px(365), PdfCanvas.Align.LEFT, 0.17f);
+        }
+        // Fußzeile
+        c.text(px(16), px(540), "Auf = Aufschlag · Rück = Rückschlag · T = Auszeit", REGULAR, px(7.5f), px(250), PdfCanvas.Align.LEFT, 0.17f);
+        c.text(px(181), px(540), "HTS · Hamburger Turniersoftware", REGULAR, px(7.5f), px(200), PdfCanvas.Align.RIGHT, 0.17f);
         c.finish();
         return doc;
     }

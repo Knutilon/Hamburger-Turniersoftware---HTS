@@ -14,6 +14,7 @@ Stand: 20.11.2026 · Programmversion **1.3.0**
 
 | Datum | Programmversion | Änderung |
 | --- | --- | --- |
+| 22.11.2026 | 1.4.0 | Urkunden drucken (Frage „Urkundendruck starten?“ beim Turnierende, Reiter „Urkunden drucken“ mit Auswahl, Vorschau, Urkundentexten je Turnier und Druckanpassung von Name und Verein), Zettel-Design je Turnier (Spielerzettel neu, Schiedsrichterzettel nach DTTB), Reiter „Archivierte Turniere“, Anzahl der Spiele als eigene Zeile in der Präsentationsansicht, „Danke an:“ in der Info, Dialoggröße bleibt nach Ändern mit der Maus |
 | 20.11.2026 | 1.3.0 | Gruppenphase mit Freistellung (S1–S4 direkt ins KO ohne Freilose), Korrektur-Reiter „Phase n – Korrektur“ mit „Unveränderte Ergebnisse übernehmen“ und „Phase n weiterführen“ (alte Phase „deaktiviert“), Reiterleiste mit Blättern (6 je Seite), Zusatzspiel in der Qualifikation, feste Leiste und aktuelle Runde zuerst im Schweizer System, Gold/Silber/Bronze und Aufsteiger-Chips, Badeni ohne BHZ/FBHZ |
 | 19.11.2026 | 1.2.0 | Nachtrag 0.42.0–1.2.0: Lizenz AGPL-3.0, Turnierdateien früherer Versionen bleiben lesbar (0.42.0); Startgebühren mit Kassenübersicht, Zeitplan je Klasse, Export-Knöpfe und aktualisierte Teilnehmerliste, Warteschlange je Klasse in der Präsentationsansicht, Handy-Zugang ausgeblendet (1.0.0); Startzeiten im Zeitplan, Startgebühren überarbeitet (bezahlt = angemeldet, „Gebühr erlassen“), Linux und macOS, Bedienung auf Windows-Tablets (1.1.0); neue Phasentypen: Haupt- und Trostrunde, fortgesetztes und doppeltes K.-o.-System, Gruppen nach Leistungsstufen mit Phase 3, TOP24-/TOP32-Platzierungsspiele sowie das Schweizer System nach Badeni (1.2.0) |
 | 11.11.2026 | 0.41.0 | Nachtrag der Versionen 0.31.0–0.41.0: Vorgabeturnier sowie 2er und 3er Turnier, Anwesenheit am Turniertag (Meldungen, „Angemeldet“, Startsperre für importierte Klassen), Handy-Zugang mit Live-Anzeige und Anmeldung per QR-Code (Seite „Mobile Einstellungen“), Setzplatz und durchsuchbarer Vereinsfilter, Qualifikationsmodus überarbeitet (KO-Qualifikation je Gruppe oder insgesamt, Runden einzeln starten, Entscheidung nach Runde 1, Herkunft „A2“), KO-Folgephase mit bestimmten Gruppenplätzen, Phase vorzeitig beenden bzw. neu starten, feste Spielreihenfolge in Gruppen, Vereinsgleichheit „Schwächster zu Stärkstem“, Tischzuordnung „Haken = darf spielen“, kompakter Klassenkopf, Texte nie abgekürzt, Satzeingabe ohne Vorzeichen |
@@ -112,7 +113,7 @@ HTS hat zwei Ebenen: die Turnierübersicht und die Ansicht eines geöffneten Tur
 
 ### Kopfleiste
 
-Die dunkelblaue Kopfleiste zeigt links das HTS-Logo und daneben das geöffnete Turnier („Turnier: Name · Datum“, bei Testturnieren „TESTTURNIER: …“). Darunter liegt das Menü, rechts oben der runde Knopf zurück zur Turnierübersicht. Bei Testturnieren steht daneben ein Würfel-Knopf (Abschnitt 3). Ganz rechts steht immer der **Info-Knopf (i)**: Er zeigt Version, Signatur, die Lizenz (AGPL 3.0) samt Lizenzhinweis, Links zur Feature- und Bug-Sammlung auf GitHub sowie die Lizenzen der mitgelieferten Bibliotheken. In der Turnierübersicht gibt es nur den Info-Knopf; neue Turniere legt der Knopf **Neues Turnier** auf der Seite an.
+Die dunkelblaue Kopfleiste zeigt links das HTS-Logo und daneben das geöffnete Turnier („Turnier: Name · Datum“, bei Testturnieren „TESTTURNIER: …“). Darunter liegt das Menü, rechts oben der runde Knopf zurück zur Turnierübersicht. Bei Testturnieren steht daneben ein Würfel-Knopf (Abschnitt 3). Ganz rechts steht immer der **Info-Knopf (i)**: Er zeigt Version, Signatur, die Lizenz (AGPL 3.0) samt Lizenzhinweis, Links zur Feature- und Bug-Sammlung auf GitHub sowie – seit 1.4.0 – den Bereich „Danke an:“ und die Lizenzen der mitgelieferten Bibliotheken (PDFBox, JavaFX, Java-Laufzeit, Schrift Comic Neue). Lässt sich das Fenster mit der Maus vergrößern, bleibt die gewählte Größe erhalten (seit 1.4.0; vorher sprang es zurück). In der Turnierübersicht gibt es nur den Info-Knopf; neue Turniere legt der Knopf **Neues Turnier** auf der Seite an.
 
 | Menüpunkt | Zweck |
 | --- | --- |
@@ -122,6 +123,7 @@ Die dunkelblaue Kopfleiste zeigt links das HTS-Logo und daneben das geöffnete T
 | Tische | belegte und freie Tische, Warteschlange, Tischzuordnung, Tischnamen |
 | Spiele | alle Spiele klassenübergreifend, Suche, Ergebnisse und Korrekturen, Export-Markierung |
 | Präsentationsansicht | Anzeige auf einem zweiten Bildschirm starten, Wechselzeit und Ansichten wählen (Abschnitt 6) |
+| Urkunden drucken | erst nach dem Turnierende: Urkunden auswählen, Texte einstellen, Vorschau, PDF und Druck (Abschnitt 9, seit 1.4.0) |
 | Mobile Einstellungen | Handy-Zugang starten und beenden, QR-Codes drucken, Anmeldung per Adresse sperren (Abschnitt 11) |
 | Vorgaberegeln | nur im Vorgabeturnier: Art der Vorgabe und Grenzen (Abschnitt 12) |
 
@@ -147,6 +149,7 @@ Die dunkelblaue Kopfleiste zeigt links das HTS-Logo und daneben das geöffnete T
 In der Turnierübersicht legt **Neues Turnier** ein Turnier an. Pflicht sind Name, Datum und die Anzahl der Spieltische; das Turnier ist sofort gespeichert.
 
 - Jede Karte zeigt Datum, Anzahl Teilnehmende und Klassen sowie den Status.
+- **Turniere und Archivierte Turniere (seit 1.4.0):** Der Reiter „Turniere“ zeigt alle Turniere, deren Datum höchstens 14 Tage zurückliegt (auch künftige und solche ohne Datum); ältere stehen nur noch unter **Archivierte Turniere**. Beide Listen sind nach Datum sortiert, das neueste zuerst. Öffnen, Bearbeiten und Löschen funktionieren in beiden Listen gleich; ein manuelles Archivieren gibt es nicht – ändert man das Datum, wandert das Turnier entsprechend.
 - **Öffnen** oder Doppelklick öffnet das Turnier, **Bearbeiten** ändert Name, Datum, Spieltische und den Ort der Turnierdatei, **Löschen** entfernt die Turnierdatei (Exporte bleiben erhalten).
 - Beim Anlegen zeigt der Dialog, wo die Turnierdatei landet (Standard: `Dokumente\HTS Turniere\<Name>\Turnierdatei`); **Durchsuchen** wählt einen anderen Ordner (Abschnitt 1).
 - **Turnierdatei übernehmen** holt eine vorhandene `.hts`-Datei als neues Turnier herein.
@@ -522,7 +525,7 @@ Die Seiten richten sich nach der **Auflösung des zweiten Bildschirms**. Nie wir
 
 Gruppen und Tische werden nie kleiner als die normale HTS-Schrift dargestellt – dann gibt es lieber mehr Seiten.
 
-Seit 1.0.0: **Die nächsten Spiele (alle Klassen)** mit einstellbarer Anzahl (4–48, Standard 16; mehr als 16 auf mehreren Seiten) und je laufender Klasse **Warteschlange dieser Klasse** – bei Gruppen nach jeder Seite mit Gruppen die Warteschlange genau dieser Gruppen, sonst nach den Seiten der Phase. Seit 1.1.0 stehen bei Klassen mit Zeitplan die Startzeiten der Runden dabei; seit 1.2.0 zeigt ein Platzierungsplan je Wertung (z. B. Haupt- und Trostrunde) eine eigene Seite.
+Seit 1.0.0: **Die nächsten Spiele (alle Klassen)** mit einstellbarer Anzahl (4–48, Standard 16; mehr als 16 auf mehreren Seiten; seit 1.4.0 als eigene, eingerückte Zeile „Anzahl der Spiele:“ unter dem Häkchen, ausgegraut, solange das Häkchen fehlt) und je laufender Klasse **Warteschlange dieser Klasse** – bei Gruppen nach jeder Seite mit Gruppen die Warteschlange genau dieser Gruppen, sonst nach den Seiten der Phase. Seit 1.1.0 stehen bei Klassen mit Zeitplan die Startzeiten der Runden dabei; seit 1.2.0 zeigt ein Platzierungsplan je Wertung (z. B. Haupt- und Trostrunde) eine eigene Seite.
 
 ## 7. Ergebnisse erfassen und korrigieren
 
@@ -760,7 +763,8 @@ Alle Ausdrucke entstehen als PDF und öffnen sich im eingebauten PDF-Viewer. Nur
 
 | Dokument | Wo | Format | Inhalt |
 | --- | --- | --- | --- |
-| Spielzettel | automatisch beim Aufruf an einen Tisch; Tische → Drucken | A6 hoch | Tisch (bzw. Tischname), Zeit, Spiel-Nr., Konkurrenz, Namen mit Verein (Doppel je Person eine Zeile), Satztabelle, Wahl, Gewinner/in, Unterschrift |
+| Spielzettel | automatisch beim Aufruf an einen Tisch; Tische → Drucken | A6 hoch | je nach Zettel-Design (siehe unten): Spielerzettel oder Schiedsrichterzettel |
+| Urkunden | Reiter „Urkunden drucken“ → Als PDF speichern / Drucken (seit 1.4.0) | A4 hoch | je Urkunde eine Seite nach der Vorlage des HaTTV (siehe unten) |
 | Phase (Gruppen) | Phasen-Reiter → PDF / Drucken ▾ → Alle Gruppen bzw. eine Gruppe; einzelne Gruppe auch über „Drucken“ auf der Gruppenkarte | A4 quer | je Gruppe eine Seite: Tabelle mit Zwischenstand, darunter der Spielplan zweispaltig je Runde („Runde k“) mit Ergebnissen und Sätzen sowie kommenden Spielen |
 | Phase (Platzierungsplan) | Phasen-Reiter → PDF / Drucken | A4 quer | je Abschnitt die Spiele mit Paarung (Herkunft „A1“), Ergebnis bzw. Tisch und dem Weg von Sieger und Verlierer (seit 1.2.0) |
 | Kassenübersicht, Quittung | Teilnehmende → Startgebühren ▾ | A4 | Einnahmen nach bar, Überweisung, erlassen (mit Grund) und offen; Quittung je Verein (seit 1.0.0) |
@@ -771,6 +775,37 @@ Alle Ausdrucke entstehen als PDF und öffnen sich im eingebauten PDF-Viewer. Nur
 | Abgemeldete | Teilnehmende → Abgemeldete als PDF | A4 hoch | endgültig Abgemeldete je Klasse: Name, Vorname, Verein, TTR, abgemeldet durch Handy oder Turnierleitung; sortiert nach Klasse, dann Name |
 | QR-Code-Aushang | Mobile Einstellungen → QR-Codes drucken | A4 | QR-Codes „Live-Anzeige“ und „Anmeldung am Turniertag“ mit Adressen, Felder für WLAN-Name und Passwort |
 | Spielzettel 2er/3er Turnier | wie Spielzettel | A4 | Schema der Partien, Felder für die Aufstellung, Teams mit TTR, ggf. Vorgabe-Tabelle |
+
+### Zettel-Design (seit 1.4.0)
+
+Im Reiter **Tische** steht oben rechts **Zettel-Design:**. Die Auswahl gilt für alle Spielzettel (Einzel und Doppel, A6) dieses Turniers und wird in der Turnierdatei gespeichert; ältere Turnierdateien verwenden den Spielerzettel. Der Mannschaftszettel des 2er/3er Turniers (A4) bleibt in beiden Fällen unverändert.
+
+| Design | Inhalt |
+| --- | --- |
+| Spielerzettel (Standard) | Tisch, Spiel-Nr., Zeit, Konkurrenz, beide Parteien mit Verein (Doppel je Person eine Zeile), Satztabelle „Bälle Spieler/in 1/2“, **Ergebnis (gewonnene Sätze)** in zwei quadratischen Boxen (z. B. 3 : 2) und **Gewinner/in** mit Strich für den Namen. Keine „Wahl“ und keine Schiedsrichter-Unterschrift mehr |
+| Schiedsrichterzettel | nach dem DTTB-Schiedsrichterzettel, schwarz-weiß-tauglich: Kopf mit Spiel-Nr., Zeit, Tisch und Konkurrenz; Einzel A gegen X, Doppel A/B gegen X/Y; je Person Auf/Rück und die Karten (gelb, gelb-rot 1 und 2), je Seite Auszeit „T“; Satztabelle mit „Sätze“ und **1. Aufschlag** je Satz (Einzel A X, Doppel A B X Y); Felder Gewinner/in und Schiedsrichter/in; HTS-Schriftzug statt DTTB-Logo |
+
+### Urkunden (seit 1.4.0)
+
+Ist das Turnier beendet – alle ausgelosten Klassen über **Klasse beenden** abgeschlossen –, fragt HTS einmal **Urkundendruck starten?**. Links **Abbrechen**, rechts **Zur Druckansicht**. In beiden Fällen erscheint in der Kopfleiste der Reiter **Urkunden drucken** und bleibt dauerhaft (auch nach dem erneuten Öffnen des Turniers). „Zur Druckansicht“ öffnet ihn mit den Plätzen 1 bis 3 aller Klassen vorausgewählt; „Abbrechen“ zeigt ihn ohne ausgewählte Urkunde (Vorschau leer, „Als PDF speichern“ und „Drucken“ gesperrt). Der Druck beginnt nie von selbst.
+
+- **Auswahl:** Klasse („Alle Klassen“ oder eine Klasse), dann **Plätze 1 bis 3**, **Alle Plätze** oder **Eigene Auswahl** (Platz von … bis …). In der Liste steht je Urkunde ein Häkchen mit Klasse, Platz, Name und Verein; der Zähler zeigt z. B. „8 von 16 Urkunden ausgewählt“. Ein geteilter Platz (z. B. 5.–8.) erscheint auf der Urkunde als „den 5. Platz“.
+- **Vorschau** der ausgewählten Urkunden mit Blättern (‹ ›, „Urkunde 1 von 8“), **Als PDF speichern** (Ordner „PDF Export“ des Turniers) und **Drucken** (Druckdialog).
+- **Name und Verein nur für den Druck ändern:** Die Felder in der Liste lassen sich überschreiben (z. B. ausgeschriebener Vereinsname). Geänderte Zeilen tragen die Markierung „nur für Druck geändert“; ein Klick darauf stellt die Originalwerte wieder her. Die Änderung wird in der Turnierdatei gespeichert und wirkt **nur auf die Urkunde** – nicht auf Teilnehmerdaten, Ergebnisse, Präsentationsansicht oder die click-TT-Ergebnisdatei.
+- **Urkundentexte** (je Turnier, in der Turnierdatei): Überschrift (Vorgabe „Ehrenurkunde“), Ort („Hamburg“), Unterschrift rechts („Jugendausschuss“), Ausrichter unten („Hamburger Tisch-Tennis-Verband e.V.“). Bleibt ein Feld leer, bleibt die Stelle auf der Urkunde frei; ohne Ort entfällt auch das Komma („den 12. September 2026“). Das Häkchen **Oben 5 cm frei lassen (für vorgedrucktes Briefpapier)** ist voreingestellt; ohne Häkchen rückt der Text nach oben.
+
+| Zeile der Urkunde | Inhalt |
+| --- | --- |
+| Überschrift | Urkundentext „Überschrift“ (Arial 50 pt) |
+| Name | Einzel „Vorname Nachname“, Doppel beide Personen, Mannschaft der Teamname (Comic Neue fett 22 pt) |
+| Verein | Verein bzw. beide Vereine (Comic Neue fett 18 pt) |
+| Turnier | Turniername, bei Bedarf auf zwei Zeilen umbrochen |
+| Klasse | „in der Altersklasse <Klasse>“ |
+| Platz | „den <n>. Platz“ (fett 24 pt) |
+| Schluss | „Als Anerkennung wird diese Urkunde überreicht“ |
+| unten | links „<Ort>, den <Turnierdatum>“, rechts „<Unterschrift rechts>“, darunter „<Ausrichter unten>“ (fett 20 pt) |
+
+Zu lange Namen werden kleiner gesetzt, nie mit „…“ gekürzt. Die Schrift Comic Neue (SIL Open Font License 1.1) ist in HTS eingebettet; ihr Lizenztext liegt im Programmordner unter „Lizenzen“.
 
 ### Automatischer Spielzettel
 

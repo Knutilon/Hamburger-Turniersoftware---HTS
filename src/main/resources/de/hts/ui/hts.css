@@ -1011,7 +1011,9 @@
 /* 0.38 (#60): Entscheidung nach Runde 1 der KO-Qualifikation */
 .qual-decision { -fx-background-color: #fff7e0; -fx-background-radius: 8; -fx-padding: 8 12 8 12; }
 /* 1.0 (#81): Anzahl der nächsten Spiele in der Präsentationsansicht */
-.count-pill { -fx-background-color: -hts-turquoise-light; -fx-background-radius: 999; -fx-padding: 3 6 3 12; }
+/* 1.4.0 (#111): Anzahl der nächsten Spiele als eigene Zeile unter dem Häkchen */
+.count-box { -fx-background-color: #fafbfc; -fx-background-radius: 10; -fx-border-color: -hts-line; -fx-border-radius: 10; -fx-padding: 10 14 10 14; }
+.count-box:disabled { -fx-opacity: 0.5; }
 /* 1.0 (#82): Startgebühr offen / bezahlt */
 .table-cell.fee-open { -fx-text-fill: #8a5a00; -fx-font-weight: bold; }
 .table-cell.fee-paid { -fx-text-fill: #1d6b24; }

@@ -25,6 +25,36 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.4.0
+
+- **Urkunden drucken:** Ist das Turnier beendet (alle Klassen über „Klasse beenden“ abgeschlossen), fragt HTS einmal
+  „Urkundendruck starten?“ – links „Abbrechen“, rechts „Zur Druckansicht“. In beiden Fällen erscheint in der
+  Kopfleiste der neue Reiter „Urkunden drucken“ und bleibt dauerhaft; „Zur Druckansicht“ wählt die Plätze 1 bis 3
+  vor, „Abbrechen“ zeigt den Reiter ohne ausgewählte Urkunde. Im Reiter: Klasse wählen, „Plätze 1 bis 3“, „Alle Plätze“
+  oder „Eigene Auswahl“ (Platz von/bis), Häkchen je Urkunde mit Zähler („8 von 16 Urkunden ausgewählt“), Vorschau
+  mit Blättern, „Als PDF speichern“ und „Drucken“. Die Urkunde (A4 hoch) folgt der Vorlage des HaTTV: Überschrift,
+  Name und Verein in Comic Neue, Turniername, „in der Altersklasse …“, „den n. Platz“, Ort und Datum, Unterschrift
+  rechts, Ausrichter unten. Doppel: beide Personen, Mannschaft: Teamname. Urkundentexte je Turnier einstellbar
+  (Überschrift, Ort, Unterschrift rechts, Ausrichter unten; ein leeres Feld bleibt auf der Urkunde frei) und
+  „Oben 5 cm frei lassen (für vorgedrucktes Briefpapier)“. Name und Verein lassen sich je Urkunde **nur für den Druck**
+  ändern (Markierung „nur für Druck geändert“, Klick darauf = Originalwert) – ohne Wirkung auf Teilnehmerdaten,
+  Ergebnisse, Präsentationsansicht und die click-TT-Ergebnisdatei.
+- **Zettel-Design je Turnier:** Im Reiter „Tische“ oben rechts „Zettel-Design:“ mit „Spielerzettel“ (Standard) und
+  „Schiedsrichterzettel“; gilt für alle Spielzettel (Einzel und Doppel, A6) dieses Turniers und wird in der
+  Turnierdatei gespeichert. Der Spielerzettel hat keine „Wahl“ und keine Schiedsrichter-Unterschrift mehr, dafür
+  „Ergebnis (gewonnene Sätze)“ in zwei quadratischen Boxen und „Gewinner/in“ mit Strich. Der Schiedsrichterzettel folgt
+  dem DTTB-Schiedsrichterzettel (Einzel A/X, Doppel A B X Y, Auf/Rück, gelbe und gelb-rote Karten, Auszeit „T“,
+  „1. Aufschlag“ je Satz, Gewinner/in und Schiedsrichter/in) und ist schwarz-weiß-tauglich. Der Mannschaftszettel (A4)
+  bleibt unverändert.
+- **Archivierte Turniere:** In der Turnierübersicht neuer Reiter „Archivierte Turniere“ – dort stehen alle Turniere,
+  deren Datum mehr als 14 Tage zurückliegt. Beide Listen sind nach Datum sortiert, das neueste zuerst.
+- **Präsentationsansicht:** „Anzahl der Spiele“ der klassenübergreifenden Warteschlange steht als eigene, eingerückte
+  Zeile unter „Die nächsten Spiele (alle Klassen)“ (4 bis 48, mit Hinweis); ohne Häkchen ist sie ausgegraut.
+- **Info:** neuer Bereich „Danke an:“; Comic Neue (SIL Open Font License) unter „Mitgelieferte Bibliotheken“.
+- **Behoben:** Das Info-Fenster (und andere Dialoge) sprang nach dem Vergrößern mit der Maus wieder auf die
+  Ausgangsgröße zurück – eine vom Nutzer gewählte Größe bleibt jetzt erhalten. Der Ablageordner in der
+  Turnierübersicht wird umbrochen statt mit „…“ gekürzt.
+
 ## Neu in 1.3.0
 
 - **Gruppenphase mit Freistellung:** Neuer Modus für Phase 1 (nur Einzel). Die Setzplätze S1–S4 spielen keine
@@ -665,7 +695,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 - **PDF statt Direktdruck**: Phase („PDF / Drucken“ im Phasen-Reiter, je Gruppe eine A4-Seite), Endergebnis
   („Als PDF anzeigen / drucken“) und Spielzettel öffnen im eingebauten PDF-Viewer. Der automatische
   Spielzettel-Druck beim Aufruf an einen Tisch läuft weiter ohne Rückfrage auf dem Standarddrucker (A6).
-- PDF-Bibliothek: Apache PDFBox 3.0.5 (Apache License 2.0, siehe `Lizenzen/`).
+- PDF-Bibliothek: Apache PDFBox 3.0.8 (Apache License 2.0, siehe `Lizenzen/`).
 
 ## Neu in 0.12.0 – Schweizer System, Drucken, Spielzettel
 

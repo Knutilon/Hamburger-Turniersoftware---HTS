@@ -1,4 +1,4 @@
-# Zwischenstand HTS 1.3.0 (20.11.2026)
+# Zwischenstand HTS 1.4.0 (22.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -13,7 +13,7 @@ PFLICHT BEI JEDEM „KOMPILIEREN“ (Nutzer 18.11.2026):
 - Was im Abschnitt „Backlog“ steht, NICHT einbauen.
 - HANDBUCH (Nutzer 18.11.2026, 21:53: „kompilieren inklusive Handbuch“): bei jedem „kompilieren“ das Handbuch
   mitziehen – Claude-Dokument „HTS-Dokumentation“ (Docs-Artifact 5b0b78d4-…, volle Ids mit Präfix mc3yk00qn9b) UND
-  docs/HTS-Dokumentation.md (kommt in alle drei Pakete). Stand 19.11.2026: beide auf 1.2.0 (Docs-Dokument
+  docs/HTS-Dokumentation.md (kommt in alle drei Pakete). Stand 22.11.2026: beide auf 1.4.0 (Docs-Dokument
   https://claude.ai/artifact/CF57Uw5Z3LoTJc9kK3R972, Knoten dc7b8f6f-8478) → bei jedem „kompilieren“ die neue Version
   nachtragen (Versionsverlauf, Stand-Zeile, Kapitel).
   Ersetzt die alte Regel „Dokumentation nur auf Zuruf“.
@@ -50,82 +50,11 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 - click-TT-Upload der Ergebnisdatei: Praxistest erfolgreich (Nutzer 15.11.2026); Einschränkung unter „Bekannte
   Grenzen“ in der Doku gestrichen (mit 1.1.0 ausgeliefert).
 
-## Feature-Sammlung für 1.4.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 1.5.0 (NICHT kompilieren – bis „… kompilieren“)
 
-(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.3.x)
+(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.4.x)
 
-1. ZETTEL-DESIGN JE TURNIER WÄHLBAR (Nutzer 22.11.2026, Issue #108): Im Reiter „Tische“ Auswahlliste „Zettel-Design“
-   oben rechts, links neben „Gesamtergebnis als PDF“ (Text davor: „Zettel-Design:“; Liste mit Kurzbeschreibung je Eintrag
-   und Hinweis „Gilt für alle Spielzettel dieses Turniers.“). Gilt je Turnier, in der Turnierdatei gespeichert (ältere
-   Dateien ohne Angabe = Spielerzettel).
-   - Option 1 „Spielerzettel“ (Standard) = bisheriges Design, aber OHNE „Wahl“ und OHNE „Unterschrift
-     Schiedsrichter/in“. Neu: „Ergebnis (gewonnene Sätze)“ in zwei quadratischen Boxen (z. B. 3 : 2, Beschriftung
-     „Spieler/in 1“/„Spieler/in 2“) und „Gewinner/in“ mit Strich für den Namen (z. B. „Michaelis“). Zeile „Sätze“ der
-     Satztabelle entfällt (ersetzt durch die Ergebnis-Boxen). Gilt für Einzel UND Doppel (A6).
-   - Option 2 „Schiedsrichterzettel“ = Design nach dem DTTB-Schiedsrichterzettel (A6 hoch, Einzel und Doppel):
-     Kopf mit Spiel-Nr., Zeit, Tisch, Konkurrenz; Einzel: Spieler/in 1 = „A“, Spieler/in 2 = „X“ (auch in den Zeilen der
-     Satztabelle; Nutzer 22.11.2026), Doppel: A B X Y; je Spieler Auf/Rück, gelbe/gelb-rote Karten (Ziffern 1/2), Auszeit „T“;
-     Satztabelle mit „1. Aufschlag“ je Satz (Einzel: A X, Doppel: A B X Y); „Gewinner/in“ und „Schiedsrichter/in“. Schwarz-weiß-tauglich
-     (weiße Felder mit kräftigem Rahmen, Tisch und Sätze hellgrau), kein Berater/in, HTS-Marke statt DTTB-Logo, kein TTR.
-   - 2er/3er-Mannschaftszettel (A4) bleibt in beiden Optionen unverändert (Nutzer 22.11.2026).
-   - Texte nie abkürzen, Prüfen der Tische-Leiste bei 1093 × 614 und 911 × 512 (Dropdown neben den PDF-Knöpfen: notfalls
-     umbrechen). Design (bestätigt 22.11.2026): Design-Canvas https://claude.ai/artifact/Czpz8CWSwyqtE6jaBNvxbU
-     (Reihen: Schiedsrichterzettel Einzel/Doppel, Spielerzettel Einzel/Doppel, Tische-Reiter mit Dropdown, Mannschaftszettel).
-2. INFO: BEREICH „DANKE AN:“ (Nutzer 22.11.2026, Issue #109): In der Info (InfoDialog) ein Bereich „Danke an:“ mit den
-   Einträgen (Wortlaut): Alexander Zappe (NSR und Verbandsorga) – Hamburg; Felix Merkel (Softwareinputs und
-   Verbandsorga) – Hamburg; Roman Diewald (NSR) – Hamburg; David Schnell (Geschäftsführer HaTTV) – Hamburg.
-   Als Liste, ein Eintrag je Zeile, Texte nie abkürzen; Doku (README/Handbuch) bei „Info“ ergänzen.
-3. FEHLER: INFO-FENSTER LÄSST SICH MIT DER MAUS NICHT SAUBER VERGRÖSSERN/VERKLEINERN (Nutzer 22.11.2026, Issue #110):
-   Ursache: DialogSizing.fit ruft bei jeder Layoutänderung des Inhalts (auch beim Ziehen am Rand, weil Texte neu
-   umbrechen) Window.sizeToScene() auf und setzt die Größe damit zurück (Test unter Xvfb: gezogene Breiten 522/462/402
-   springen immer auf 584 × 637). Korrektur (im Test bestätigt): DialogSizing merkt sich, ob der Nutzer die Größe selbst
-   geändert hat (Größenänderung außerhalb der eigenen Anpassung, Kennzeichen „state“ mit Zurücksetzen per runLater);
-   danach kein sizeToScene mehr, das Fenster wächst nur noch mit, wenn der Inhalt höher wird. Gilt für alle Dialoge mit
-   DialogSizing.fit. Nach dem Bau mit echter Maus unter Windows prüfen (Info-Fenster schmaler/breiter/niedriger ziehen).
-4. PRÄSENTATIONSANSICHT: ANZAHL DER NÄCHSTEN SPIELE ALS EIGENE ZEILE (Nutzer 22.11.2026, Issue #111): Bisher steht die
-   Anzahl in einer türkisen Pille (count-pill, PresentationView.nextRow) neben dem Häkchen „Die nächsten Spiele (alle
-   Klassen)“. Neu: eigene, eingerückte Zeile (22 px, wie die Phasen-Häkchen) unter dem Häkchen: „Anzahl der Spiele:“
-   (fett), Zahlenfeld wie „Wechselzeit“ (4 bis 48), „Spiele je Anzeige (4 bis 48)“; darunter Hinweis „Gilt für die
-   klassenübergreifende Warteschlange. Bei mehr als 16 Spielen verteilt HTS sie auf mehrere Seiten.“ Häkchen aus =
-   Zeile ausgegraut, Feld gesperrt. Texte nie abkürzen, umbrechen. Design (bestätigt 22.11.2026):
-   https://claude.ai/artifact/TUN71dYm782Np3FTzYxR3M (Bilder: Jetzt, Vorschlag, Vorschlag mit Häkchen aus).
-5. ARCHIV FÜR VERGANGENE TURNIERE (Nutzer 22.11.2026, Issue #112): Neuer Reiter „Archivierte Turniere“ neben „Turniere“
-   in der Kopfleiste der Turnierliste. Turniere, deren Turnierdatum mehr als 14 Tage zurückliegt (heute minus Datum
-   größer als 14 Tage), erscheinen nur noch dort und nicht mehr unter „Turniere“; Öffnen, Bearbeiten und Löschen
-   wie bisher. Beide Listen nach Datum sortiert, neuestes zuerst. Kein manuelles Archivieren in dieser Version.
-6. URKUNDEN (Nutzer 22.11.2026, Issue #113; Vorlage: urkunde_ver_JUG.docx des HaTTV, A4 hoch, Ränder oben 5 cm, links/rechts
-   2,5 cm): Ablauf (Nutzer 22.11.2026): Der Urkundendruck beginnt NICHT automatisch.
-   Sobald das Turnier beendet ist (Tournament.isCompletelyFinished), öffnet sich ein Dialog „Urkundendruck starten?“ mit
-   zwei Knöpfen: links „Abbrechen“, rechts „Zur Druckansicht“
-   (nicht „Drucken“, Nutzer 22.11.2026). Es gibt einen eigenen neuen Reiter „Urkunden drucken“ in der
-   Kopfleiste (erscheint erst nach Turnierende, bei beiden Antworten):
-   - „Zur Druckansicht“ -> direkt in den Reiter „Urkunden drucken“, Plätze 1 bis 3 sind vorausgewählt.
-   - „Abbrechen“ -> der Reiter erscheint trotzdem, aber es ist KEINE Urkunde zum Druck ausgewählt (0 von n, Vorschau
-     leer mit Hinweis, „Als PDF speichern“/„Drucken“ gesperrt, Auswahl „Eigene Auswahl“).
-   - Inhalt je Urkunde: „Ehrenurkunde“ (Arial 50 pt), Name (Comic Neue fett 22 pt) und Verein (Comic Neue fett 18 pt),
-     „errang bei der Verbandsendrunde / des Hamburger Ranglistenturnieres“ (= Turniername, zwei Zeilen, bricht um),
-     „in der Altersklasse <Klasse>“, „den <n>. Platz“ (Arial fett 24 pt), „Als Anerkennung / wird diese Urkunde
-     überreicht“, unten „<Ort>, den <Datum>“ links und „<Unterschrift rechts>“ (14 pt), „<Ausrichter>“ (Arial fett 20 pt).
-     Datum = Turnierdatum, Platz/Name/Verein aus dem Endergebnis der Klasse (Doppel: beide Personen, Mannschaft: Teamname).
-   - Inhalt des Reiters (Druckvorschau): Klasse wählen; „Plätze 1 bis 3“ / „Alle Plätze“ / „Eigene Auswahl“ (von/bis); Liste mit Häkchen je
-     Urkunde (Klasse, Platz, Name, Verein) und Zähler „9 von 56 Urkunden ausgewählt“; rechts Vorschau mit Blättern;
-     „Als PDF speichern“, „Drucken“ (PdfViewer/Reports). Alle Plätze sind druckbar. Der Dialog hat keinen Knopf „Schließen“, der Reiter bleibt
-     dauerhaft.
-   - Urkundentexte je Turnier einstellbar (in der Turnierdatei): Überschrift, Ort, Unterschrift rechts, Ausrichter unten
-     (Vorgabe: Ehrenurkunde, Hamburg, Jugendausschuss, Hamburger Tisch-Tennis-Verband e.V.). Bleibt ein Feld leer, bleibt
-     die Stelle auf der Urkunde frei (bei „Ort“ entfällt dann auch das Komma: „den <Datum>“). Häkchen „Oben 5 cm frei
-     lassen (für vorgedrucktes Briefpapier)“. „Unterschrift links“ gibt es nicht: links steht „<Ort>, den <Datum>“,
-     rechts der Unterzeichner (Nutzer 22.11.2026).
-   - Name und Verein sind je Urkunde NUR FÜR DEN DRUCK änderbar (Felder in der Liste, Markierung „nur für Druck
-     geändert“, Klick darauf = Originalwert). Gespeichert als Druckanpassung in der Turnierdatei; KEINE Auswirkung auf
-     Teilnehmerdaten, Ergebnisse, Präsentation, LiveServer und click-TT-XML.
-   - Schrift Comic Neue (Nutzer 22.11.2026: nehmen, OFL): Schriftdatei mit in die Programmdatei einbetten (PDFBox
-     PDType0Font), Lizenztext (OFL) unter „Lizenzen“ im Programmordner und in der Info bei „Mitgelieferte Bibliotheken“
-     ergänzen, CVE-/Abhängigkeitsliste docs/ABHAENGIGKEITEN.md um die Schrift ergänzen.
-   - Annahmen vom Nutzer bestätigt: Turniername ersetzt die Zeile der Vorlage, Wort „Altersklasse“ bleibt fest,
-     Texte je Turnier einstellbar, Mannschaftsturniere mit Teamname. Design (Entwurf, Ablauf mit Dialog und Reiter
-     ergänzt): https://claude.ai/artifact/M7mfRNQTzhrogA8Ls6mhQQ (Urkunde, Dialog, Reiter nach „Drucken“ und nach „Abbrechen“).
-   - Texte nie abkürzen; Druckvorschau über DialogSizing.fit; Prüfen bei 1093 × 614 und 911 × 512.
+(noch leer)
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
@@ -163,6 +92,35 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 
 ## Umgesetzt
+
+1.4.0 (22.11.2026, Commit „HTS 1.4.0“, Closes #108–#113). README „Neu in 1.4.0“, Handbuch (md + Claude-Docs) nachgetragen.
+   #108 Enum SlipDesign (PLAYER/REFEREE), Tournament.slipDesign, Turnierdatei „slip-design“ (auch in der Leseliste von
+   TournamentFile ergänzt); PdfReports.slip verzweigt: playerSlip (ohne Wahl/Unterschrift SR, ohne Zeile „Sätze“, neu
+   „Ergebnis (gewonnene Sätze)“ mit zwei Boxen + Gewinner/in) und refereeSlip (A6, Entwurfsmaße in px × 0,75; A/X bzw.
+   A B X Y, Auf/Rück, Karten, Auszeit T, 1. Aufschlag, Gewinner/in, Schiedsrichter/in; dunkelblau #173a6c, grau #e4e4e4);
+   PdfCanvas: farbige text/rect/fill/line. WorkspaceView.slipDesignControl (ComboBox in topActions der Seite „Tische“,
+   Zellen mit Kurzbeschreibung). Mannschaftszettel unverändert.
+   #109 InfoDialog.THANKS „Danke an:“ + Comic Neue in „Mitgelieferte Bibliotheken“.
+   #110 DialogSizing: state[0] = Programm setzt Größe, state[1] = Nutzer hat geändert (Fensterlistener „hts.sizeWatch“);
+   danach nur noch mitwachsen in der Höhe. NOCH MIT ECHTER MAUS UNTER WINDOWS PRÜFEN (nur Xvfb getestet).
+   #111 PresentationView.nextRow: eingerückte Zeile .count-box „Anzahl der Spiele:“ + Hinweis, ausgegraut ohne Häkchen.
+   #112 OverviewView: Reiter „Turniere“/„Archivierte Turniere“ (isArchived: Datum vor mehr als 14 Tagen), beide nach
+   Datum absteigend; im Archiv ohne „Neues Turnier“/Import. Ablageordner-Zeile bricht um (statt „…“).
+   #113 Urkunden: Tournament.certTitle/Place/Signer/Host (leer bleibt leer), certLeaveTop, certTabShown, certOverrides
+   (Klasse+Partei → Name/Verein), certificateEntries()/CertEntry, setCertOverride; Turnierdatei „cert-title“ … „cert-tab“
+   (hasAttribute, damit leere Werte erhalten bleiben) und „cert-ov.N“ (URL-kodiert). CertificateReport (A4, Positionen
+   der Vorlage, Comic Neue Bold als PDType0Font; Dokument wird einmal gespeichert/neu geladen, damit Vorschau und Druck
+   die eingebettete Schrift sehen). Schrift: Debian fonts-comic-neue 2.51 (OTF/CFF) mit fontTools in TTF umgerechnet
+   (/home/claude/work/comic), src/main/resources/de/hts/fonts/ComicNeue-Bold.ttf + OFL-ComicNeue.txt (auch in
+   „Lizenzen“ aller Pakete, LIESMICH ergänzt, docs/ABHAENGIGKEITEN.md). CertificatesDialog („Urkundendruck starten?“,
+   Knopfreihenfolge „CO“ = links Abbrechen, rechts Zur Druckansicht), CertificatesView (Klasse, Plätze 1 bis 3 / Alle /
+   Eigene Auswahl, Liste mit Häkchen und Feldern, Markierung „nur für Druck geändert“, Urkundentexte, Vorschau mit
+   Blättern, PDF/Drucken). WorkspaceView.offerCertificates beim Übergang zu isCompletelyFinished (nach „Klasse
+   beenden“), Menüpunkt „certs“ dauerhaft (certTabShown oder schon beendet beim Öffnen).
+   Tests: Version140Test (7), Fixture turnierdatei-1.4.0; alle 262 Tests grün. Screenshots 1093×614 / 911×512 mit
+   /home/claude/work/uikeep/Shot140.java (shots140.sh).
+   Offene Annahme: Auf der Urkunde steht nur der Turniername (ohne „errang bei …“) – ggf. mit dem Nutzer klären.
+
 
 1.3.0 (20.11.2026, Commit „HTS 1.3.0“, Closes #102–#107): #102 PdfReports.standings(…, badeni) und DrawView.groupCard
    ohne BHZ/FBHZ bei Badeni. #103 DrawView.buildSwiss mit fester Leiste (stickyHolder/setStickyBar, Stil „sticky-bar“,

@@ -94,18 +94,26 @@ public final class TournamentFile {
     }
 
     static final String TABLE_NAME_KEY = "tname.";
+    /** 1.4.0 (#113): Druckanpassung einer Urkunde „cert-ov.N“ = Klasse|Partei|Name|Verein (jeweils URL-kodiert). */
+    static final String CERT_OV_KEY = "cert-ov.";
 
     private static Map<String, String> readFolders(Element root) {
         Map<String, String> m = new java.util.LinkedHashMap<>();
-        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on", "pres-next", "late-fee-cents", "handicap", "hc", "imported", "model", "checkin-locked", "checkin-token", "phone-results", "phone-results-direct")) {
+        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on", "pres-next", "late-fee-cents", "handicap", "hc", "imported", "model", "checkin-locked", "checkin-token", "phone-results", "phone-results-direct", "slip-design")) {
             String v = root.getAttribute(k);
             if (v != null && !v.isBlank()) m.put(k, v);
+        }
+        for (String k : List.of("cert-title", "cert-place", "cert-signer", "cert-host")) {        // 1.4.0 (#113): leer ist erlaubt
+            if (root.hasAttribute(k)) m.put(k, root.getAttribute(k));
+        }
+        for (String k : List.of("cert-top", "cert-tab")) {
+            if (root.hasAttribute(k)) m.put(k, root.getAttribute(k));
         }
         if (!m.containsKey("model")) m.put("legacy", "true");         // Datei vor 0.35 → beim Laden umstellen
         org.w3c.dom.NamedNodeMap attrs = root.getAttributes();       // Tischnamen „tname.N“
         for (int i = 0; i < attrs.getLength(); i++) {
             org.w3c.dom.Node a = attrs.item(i);
-            if (a.getNodeName().startsWith(TABLE_NAME_KEY)) m.put(a.getNodeName(), a.getNodeValue());
+            if (a.getNodeName().startsWith(TABLE_NAME_KEY) || a.getNodeName().startsWith(CERT_OV_KEY)) m.put(a.getNodeName(), a.getNodeValue());
         }
         return m;
     }
@@ -158,6 +166,14 @@ public final class TournamentFile {
                             Map.Entry::getKey, e -> List.copyOf(e.getValue()))), folders(t));
         }
 
+        private static String enc(String x) {
+            return java.net.URLEncoder.encode(x == null ? "" : x, java.nio.charset.StandardCharsets.UTF_8);
+        }
+
+        private static String dec(String x) {
+            return java.net.URLDecoder.decode(x, java.nio.charset.StandardCharsets.UTF_8);
+        }
+
         private static Map<String, String> folders(Tournament t) {
             Map<String, String> m = new java.util.LinkedHashMap<>();
             if (t.getFolder() != null) m.put("folder", t.getFolder());
@@ -180,6 +196,19 @@ public final class TournamentFile {
             t.getTableNames().forEach((nr, name) -> m.put(TABLE_NAME_KEY + nr, name));
             if (t.getPresentationSeconds() != 20) m.put("pres-secs", String.valueOf(t.getPresentationSeconds()));
             if (t.getPresentationNextCount() != 16) m.put("pres-next", String.valueOf(t.getPresentationNextCount()));   // 1.0 (#81)
+            if (!t.getCertTitle().equals(Tournament.CERT_TITLE_DEFAULT)) m.put("cert-title", t.getCertTitle());       // 1.4.0 (#113)
+            if (!t.getCertPlace().equals(Tournament.CERT_PLACE_DEFAULT)) m.put("cert-place", t.getCertPlace());
+            if (!t.getCertSigner().equals(Tournament.CERT_SIGNER_DEFAULT)) m.put("cert-signer", t.getCertSigner());
+            if (!t.getCertHost().equals(Tournament.CERT_HOST_DEFAULT)) m.put("cert-host", t.getCertHost());
+            if (!t.isCertLeaveTop()) m.put("cert-top", "false");
+            if (t.isCertTabShown()) m.put("cert-tab", "true");
+            int certNr = 0;
+            for (Map.Entry<String, String[]> ov : t.getCertOverrides().entrySet()) {
+                String[] kc = ov.getKey().split("\u0001", 2);
+                if (kc.length < 2) continue;
+                m.put(CERT_OV_KEY + (++certNr), enc(kc[0]) + "|" + enc(kc[1]) + "|" + enc(ov.getValue()[0]) + "|" + enc(ov.getValue()[1]));
+            }
+            if (t.getSlipDesign() != de.hts.tournament.SlipDesign.PLAYER) m.put("slip-design", t.getSlipDesign().name());   // 1.4.0 (#108)
             if (t.getLateFeeCents() > 0) m.put("late-fee-cents", String.valueOf(t.getLateFeeCents()));               // 1.0 (#82)
             if (!t.getPresentationOff().isEmpty()) m.put("pres-off", String.join("|", t.getPresentationOff()));
             if (!t.getPresentationOn().isEmpty()) m.put("pres-on", String.join("|", t.getPresentationOn()));
@@ -230,6 +259,18 @@ public final class TournamentFile {
                 } catch (NumberFormatException ignored) {
                     // Standard 20 s
                 }
+                if (folders.containsKey("cert-title") || folders.containsKey("cert-place") || folders.containsKey("cert-signer")
+                        || folders.containsKey("cert-host")) {                                                 // 1.4.0 (#113)
+                    t.setCertTexts(folders.get("cert-title"), folders.get("cert-place"), folders.get("cert-signer"), folders.get("cert-host"));
+                }
+                t.setCertLeaveTop(!"false".equals(folders.get("cert-top")));
+                t.setCertTabShown("true".equals(folders.get("cert-tab")));
+                folders.forEach((k, v) -> {
+                    if (!k.startsWith(CERT_OV_KEY)) return;
+                    String[] q = v.split("\\|", -1);
+                    if (q.length == 4) t.restoreCertOverride(dec(q[0]), dec(q[1]), dec(q[2]), dec(q[3]));
+                });
+                if (folders.get("slip-design") != null) t.setSlipDesign(de.hts.tournament.SlipDesign.fromName(folders.get("slip-design")));   // 1.4.0 (#108)
                 if (folders.get("pres-off") != null) {
                     for (String k : folders.get("pres-off").split("\\|")) if (!k.isBlank()) t.setPresentationOn(k, false);
                 }

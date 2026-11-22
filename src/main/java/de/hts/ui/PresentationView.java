@@ -167,29 +167,37 @@ public final class PresentationView {
         updateButtons();
     }
 
-    /** 1.0 (#81): „Die nächsten Spiele (alle Klassen)“ mit einstellbarer Anzahl. */
+    /**
+     * 1.0 (#81): „Die nächsten Spiele (alle Klassen)“ mit einstellbarer Anzahl.
+     * 1.4.0 (#111): Die Anzahl steht in einer eigenen, eingerückten Zeile unter dem Häkchen (statt in einer Pille daneben);
+     * ist das Häkchen aus, ist die Zeile ausgegraut und das Feld gesperrt.
+     */
     private Node nextRow(Station s) {
         CheckBox cb = check(s);
-        Label lbl = new Label("Anzahl:");
+        Label lbl = new Label("Anzahl der Spiele:");
         lbl.getStyleClass().add("class-name");
         Spinner<Integer> count = new Spinner<>(4, 48, tournament.getPresentationNextCount(), 1);
         count.setEditable(true);
-        count.setPrefWidth(80);
+        count.setPrefWidth(90);
         count.valueProperty().addListener((o, a, b) -> {
             if (b != null && b != tournament.getPresentationNextCount()) tournament.setPresentationNextCount(b);
         });
-        Label unit = new Label("Spiele");
-        HBox pill = new HBox(8, lbl, count, unit);
-        pill.setAlignment(Pos.CENTER_LEFT);
-        pill.getStyleClass().add("count-pill");
-        pill.setMinWidth(Region.USE_PREF_SIZE);
-        Label hint = new Label("gilt für die klassenübergreifende Warteschlange · 4 bis 48, bei mehr als 16 auf mehreren Seiten");
+        Label unit = new Label("Spiele je Anzeige (4 bis 48)");
+        unit.getStyleClass().add("hint");
+        javafx.scene.layout.FlowPane line = new javafx.scene.layout.FlowPane(10, 4, lbl, count, unit);
+        line.setAlignment(Pos.CENTER_LEFT);
+        Label hint = new Label("Gilt für die klassenübergreifende Warteschlange. Bei mehr als 16 Spielen verteilt HTS sie auf mehrere Seiten.");
         hint.getStyleClass().add("hint");
         hint.setWrapText(true);
-        javafx.scene.layout.FlowPane row = new javafx.scene.layout.FlowPane(10, 6, cb, pill, hint);
-        row.setAlignment(Pos.CENTER_LEFT);
-        Ui.oneLineWhenPossible(row);
-        return row;
+        hint.setMinHeight(Region.USE_PREF_SIZE);
+        hint.setMaxWidth(620);
+        VBox box = new VBox(6, line, hint);
+        box.getStyleClass().add("count-box");
+        box.setMaxWidth(Region.USE_PREF_SIZE);
+        box.disableProperty().bind(cb.selectedProperty().not());
+        VBox wrap = new VBox(6, cb, box);
+        VBox.setMargin(box, new Insets(0, 0, 0, 22));
+        return wrap;
     }
 
     private Label blockTitle(String text, boolean first) {

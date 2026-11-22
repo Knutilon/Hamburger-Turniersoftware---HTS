@@ -33,6 +33,13 @@ public final class InfoDialog extends Dialog<ButtonType> {
     static final String NEW_BUG = HtsApp.REPO_URL + "/issues/new?labels=bug";
     static final String LICENSE = HtsApp.REPO_URL + "/blob/main/LICENSE";
 
+    /** 1.4.0 (#109): „Danke an:“ – Wortlaut wie vom Nutzer vorgegeben. */
+    static final java.util.List<String> THANKS = java.util.List.of(
+            "Alexander Zappe (NSR und Verbandsorga) – Hamburg",
+            "Felix Merkel (Softwareinputs und Verbandsorga) – Hamburg",
+            "Roman Diewald (NSR) – Hamburg",
+            "David Schnell (Geschäftsführer HaTTV) – Hamburg");
+
     /** 0.42 (#73): Lizenzhinweis – derselbe Text steht in der Datei NOTICE und oben in der README. */
     public static final String NOTICE = """
             HTS - Hamburger Turniersoftware is an application for executing tournaments
@@ -92,16 +99,27 @@ public final class InfoDialog extends Dialog<ButtonType> {
                 new HBox(10, link("Feature-Sammlung (Wünsche ansehen)", FEATURES), link("neuen Wunsch melden", NEW_FEATURE)),
                 new HBox(10, link("Bug-Sammlung (Fehler ansehen)", BUGS), link("neuen Fehler melden", NEW_BUG)));
 
+        // 1.4.0 (#109): Danksagung
+        Label thanksHead = new Label("Danke an:");
+        thanksHead.getStyleClass().add("class-name");
+        VBox thanks = new VBox(2);
+        for (String line : THANKS) {
+            Label l = new Label("• " + line);
+            l.setWrapText(true);
+            thanks.getChildren().add(l);
+        }
+
         Label libsHead = new Label("Mitgelieferte Bibliotheken");
         libsHead.getStyleClass().add("class-name");
         Label libs = new Label("• Apache PDFBox 3.0.8 – Apache License 2.0\n"
                 + "• JavaFX 21.0.8 (OpenJFX) – GNU GPL v2 mit Classpath Exception\n"
                 + "• Java-Laufzeit Eclipse Temurin 21.0.13 – GNU GPL v2 mit Classpath Exception\n"
+                + "• Schrift Comic Neue (für Urkunden) – SIL Open Font License 1.1\n"
                 + "Die Lizenztexte liegen im Programmordner unter „Lizenzen“ (Java-Laufzeit zusätzlich unter „jre\\legal“).");
         libs.getStyleClass().add("hint");
         libs.setWrapText(true);
 
-        VBox content = new VBox(12, top, license, notice, new HBox(10, licenseLink, source), feedbackHead, feedback, libsHead, libs);
+        VBox content = new VBox(12, top, license, notice, new HBox(10, licenseLink, source), feedbackHead, feedback, thanksHead, thanks, libsHead, libs);
         content.setPadding(new Insets(8, 6, 4, 6));
         content.setPrefWidth(560);
         getDialogPane().setContent(content);

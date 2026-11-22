@@ -5569,6 +5569,140 @@ public final class Tournament {
         return String.format(Locale.GERMAN, "%d,%02d €", cents / 100, cents % 100);
     }
 
+    /** 1.4.0 (#108): Aussehen der Spielzettel (A6), Standard: Spielerzettel. */
+    private SlipDesign slipDesign = SlipDesign.PLAYER;
+
+    public SlipDesign getSlipDesign() { return slipDesign; }
+
+    public void setSlipDesign(SlipDesign d) {
+        SlipDesign n = d == null ? SlipDesign.PLAYER : d;
+        if (n == slipDesign) return;
+        slipDesign = n;
+        markModified();
+    }
+
+    // --- Urkunden (1.4.0, #113) --------------------------------------------------------------
+
+    public static final String CERT_TITLE_DEFAULT = "Ehrenurkunde";
+    public static final String CERT_PLACE_DEFAULT = "Hamburg";
+    public static final String CERT_SIGNER_DEFAULT = "Jugendausschuss";
+    public static final String CERT_HOST_DEFAULT = "Hamburger Tisch-Tennis-Verband e.V.";
+
+    private String certTitle = CERT_TITLE_DEFAULT, certPlace = CERT_PLACE_DEFAULT, certSigner = CERT_SIGNER_DEFAULT,
+            certHost = CERT_HOST_DEFAULT;
+    private boolean certLeaveTop = true;
+    private boolean certTabShown;
+
+    /** Druckanpassungen (nur für die Urkunde): Schlüssel {@code Klasse + '\u0001' + Partei-ID} → {Name, Verein}. */
+    private final Map<String, String[]> certOverrides = new java.util.LinkedHashMap<>();
+
+    public String getCertTitle() { return certTitle; }
+    public String getCertPlace() { return certPlace; }
+    public String getCertSigner() { return certSigner; }
+    public String getCertHost() { return certHost; }
+    public boolean isCertLeaveTop() { return certLeaveTop; }
+
+    /** Ein leerer Text bleibt leer (die Stelle auf der Urkunde bleibt frei); {@code null} = Vorgabe. */
+    public void setCertTexts(String title, String place, String signer, String host) {
+        String t = title == null ? CERT_TITLE_DEFAULT : title.strip(), p = place == null ? CERT_PLACE_DEFAULT : place.strip(),
+                sg = signer == null ? CERT_SIGNER_DEFAULT : signer.strip(), h = host == null ? CERT_HOST_DEFAULT : host.strip();
+        if (t.equals(certTitle) && p.equals(certPlace) && sg.equals(certSigner) && h.equals(certHost)) return;
+        certTitle = t;
+        certPlace = p;
+        certSigner = sg;
+        certHost = h;
+        markModified();
+    }
+
+    public void setCertLeaveTop(boolean b) {
+        if (b == certLeaveTop) return;
+        certLeaveTop = b;
+        markModified();
+    }
+
+    /** Wurde der Reiter „Urkunden drucken“ (nach Turnierende) schon freigeschaltet? Bleibt dauerhaft. */
+    public boolean isCertTabShown() { return certTabShown; }
+
+    public void setCertTabShown(boolean b) {
+        if (b == certTabShown) return;
+        certTabShown = b;
+        markModified();
+    }
+
+    /** Alle Druckanpassungen (schreibgeschützt) – für die Turnierdatei. */
+    public Map<String, String[]> getCertOverrides() { return java.util.Collections.unmodifiableMap(certOverrides); }
+
+    /** Lädt eine Druckanpassung aus der Turnierdatei (ohne „geändert“-Markierung). */
+    public void restoreCertOverride(String className, String entrantId, String name, String club) {
+        certOverrides.put(className + '\u0001' + entrantId, new String[]{name, club});
+    }
+
+    /** Eine Urkunde: Klasse, Platz, Name und Verein (ggf. für den Druck geändert), dazu die Originalwerte. */
+    public record CertEntry(String className, String entrantId, int place, String name, String club, String originalName,
+                            String originalClub) {
+        public boolean changed() {
+            return !java.util.Objects.equals(name, originalName) || !java.util.Objects.equals(club, originalClub);
+        }
+
+        public String key() {
+            return className + '\u0001' + entrantId;
+        }
+    }
+
+    /** Name und Verein nur für den Druck ändern; stimmen beide mit dem Original überein, entfällt die Anpassung. */
+    public void setCertOverride(CertEntry e, String name, String club) {
+        String n = name == null ? "" : name.strip(), c = club == null ? "" : club.strip();
+        String key = e.key();
+        String[] old = certOverrides.get(key);
+        if (n.equals(e.originalName()) && c.equals(e.originalClub() == null ? "" : e.originalClub())) {
+            if (certOverrides.remove(key) != null) markModified();
+            return;
+        }
+        if (old != null && old[0].equals(n) && old[1].equals(c)) return;
+        certOverrides.put(key, new String[]{n, c});
+        markModified();
+    }
+
+    /**
+     * Urkunden für alle Klassen mit abgeschlossener Auslosung: je Platzierung eine (Spanne 5.–8. = Platz 5), sortiert nach
+     * Klasse (Reihenfolge der Klassen) und Platz. Einzel „Vorname Nachname“, Doppel beide Personen, Mannschaft der Teamname.
+     */
+    public List<CertEntry> certificateEntries() {
+        List<CertEntry> out = new java.util.ArrayList<>();
+        for (PlayingClass root : rootClasses()) {
+            if (!root.isDrawn()) continue;
+            for (Placing pl : finalResult(root).rows()) {
+                Entrant e = pl.entrant();
+                if (e == null) continue;
+                String name = certName(e), club = e.detail() == null ? "" : e.detail();
+                String[] ov = certOverrides.get(root.getName() + '\u0001' + e.id());
+                out.add(new CertEntry(root.getName(), e.id(), pl.from(), ov == null ? name : ov[0], ov == null ? club : ov[1], name, club));
+            }
+        }
+        return out;
+    }
+
+    private String certName(Entrant e) {
+        if (e.id() != null && e.id().startsWith("pair:")) {
+            String pid = e.id().substring(5);
+            for (DoublesPair pair : pairs) {
+                if (!pair.getId().equals(pid)) continue;
+                if (pair.getCapacity() >= 3 || pair.getThird() != null) return e.name();
+                List<String> names = new java.util.ArrayList<>();
+                for (Player p : pair.members()) if (p != null) names.add(fullName(p));
+                return names.isEmpty() ? e.name() : String.join(" / ", names);
+            }
+            return e.name();
+        }
+        for (Player p : players) if (p.getId().equals(e.id())) return fullName(p);
+        return e.name();
+    }
+
+    private static String fullName(Player p) {
+        String f = p.getFirstname() == null ? "" : p.getFirstname().strip(), l = p.getLastname() == null ? "" : p.getLastname().strip();
+        return (f + " " + l).strip();
+    }
+
     /** 1.0 (#81): Anzahl der Spiele in „Die nächsten Spiele (alle Klassen)“, 4–48, Standard 16. */
     private int presentationNextCount = 16;
 

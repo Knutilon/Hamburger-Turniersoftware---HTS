@@ -136,6 +136,11 @@ final class PdfCanvas {
 
     /** Text mit Oberkante {@code top}; liefert die Zeilenhöhe. */
     float text(float x, float top, String s, PDFont f, float pt, float maxWidth, Align align, float gray) {
+        return text(x, top, s, f, pt, maxWidth, align, gray, gray, gray);
+    }
+
+    /** 1.4.0 (#108): wie {@link #text(float, float, String, PDFont, float, float, Align, float)}, aber in Farbe (RGB 0–1). */
+    float text(float x, float top, String s, PDFont f, float pt, float maxWidth, Align align, float r, float g, float b) {
         String t = fit(s, f, pt, maxWidth);
         float w = textWidth(t, f, pt);
         float dx = switch (align) {
@@ -145,7 +150,7 @@ final class PdfCanvas {
         };
         try {
             cs.beginText();
-            cs.setNonStrokingColor(gray, gray, gray);
+            cs.setNonStrokingColor(r, g, b);
             cs.setFont(f, pt);
             cs.newLineAtOffset(x + Math.max(0, dx), size.getHeight() - top - pt * 0.8f);
             cs.showText(t);
@@ -190,11 +195,50 @@ final class PdfCanvas {
         }
     }
 
+    /** 1.4.0 (#108): Linie in Farbe (RGB 0–1). */
+    void line(float x1, float y1, float x2, float y2, float width, float r, float g, float b) {
+        try {
+            cs.setStrokingColor(r, g, b);
+            cs.setLineWidth(width);
+            cs.moveTo(x1, size.getHeight() - y1);
+            cs.lineTo(x2, size.getHeight() - y2);
+            cs.stroke();
+            cs.setStrokingColor(0f, 0f, 0f);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     void rect(float x, float top, float w, float h, float lineWidth) {
         try {
             cs.setLineWidth(lineWidth);
             cs.addRect(x, size.getHeight() - top - h, w, h);
             cs.stroke();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** 1.4.0 (#108): Rahmen in Farbe (RGB 0–1). */
+    void rect(float x, float top, float w, float h, float lineWidth, float r, float g, float b) {
+        try {
+            cs.setStrokingColor(r, g, b);
+            cs.setLineWidth(lineWidth);
+            cs.addRect(x, size.getHeight() - top - h, w, h);
+            cs.stroke();
+            cs.setStrokingColor(0f, 0f, 0f);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** 1.4.0 (#108): Fläche in Farbe (RGB 0–1). */
+    void fill(float x, float top, float w, float h, float r, float g, float b) {
+        try {
+            cs.setNonStrokingColor(r, g, b);
+            cs.addRect(x, size.getHeight() - top - h, w, h);
+            cs.fill();
+            cs.setNonStrokingColor(0f, 0f, 0f);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

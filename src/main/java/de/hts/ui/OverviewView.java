@@ -33,6 +33,7 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Consumer;
@@ -50,6 +51,24 @@ public final class OverviewView {
     private final BorderPane root = new BorderPane();
     private final ListView<TournamentStore.Summary> list = new ListView<>();
     private final Label message = new Label();
+    /** 1.4.0 (#112): true = Reiter „Archivierte Turniere“ (Turniere, die mehr als 14 Tage zurückliegen). */
+    private boolean archive;
+    private List<TournamentStore.Summary> allTournaments = List.of();
+    private final AppHeader appHeader = new AppHeader();
+    private final Label title = new Label("Meine Turniere");
+    private final Label subtitle = new Label(HtsApp.NAME + " · Version " + HtsApp.VERSION);
+    private final Label empty = new Label();
+    private Button create;
+    private Button importFile;
+    private Button importResults;
+
+    /** Ab so vielen Tagen Abstand zum Turnierdatum zählt ein Turnier als archiviert (mehr als 14 Tage). */
+    public static final int ARCHIVE_AFTER_DAYS = 14;
+
+    /** 1.4.0 (#112): Turnier ist archiviert, wenn sein Datum mehr als 14 Tage vor {@code today} liegt (ohne Datum: nein). */
+    public static boolean isArchived(LocalDate date, LocalDate today) {
+        return date != null && java.time.temporal.ChronoUnit.DAYS.between(date, today) > ARCHIVE_AFTER_DAYS;
+    }
 
     public OverviewView(Stage stage, TournamentStore store, Consumer<Tournament> onOpen) {
         this.stage = stage;
@@ -57,27 +76,25 @@ public final class OverviewView {
         this.onOpen = onOpen;
 
         // Kopfleiste
-        AppHeader appHeader = new AppHeader();
-        appHeader.addMenuItem("tournaments", "Turniere", null, this::refresh);
+        appHeader.addMenuItem("tournaments", "Turniere", null, () -> showArchive(false));
+        appHeader.addMenuItem("archive", "Archivierte Turniere", null, () -> showArchive(true));
         appHeader.select("tournaments");
         InfoDialog.install(appHeader, () -> stage);
 
         // Seitenkopf
-        Label title = new Label("Meine Turniere");
         title.getStyleClass().add("page-title");
-        Label subtitle = new Label(HtsApp.NAME + " · Version " + HtsApp.VERSION);
         subtitle.getStyleClass().add("page-subtitle");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        Button create = new Button("Neues Turnier", Icons.of(Icons.PLUS, 16));
+        create = new Button("Neues Turnier", Icons.of(Icons.PLUS, 16));
         create.getStyleClass().add("accent");
         create.setOnAction(e -> createTournament());
-        Button importFile = new Button("Turnierdatei übernehmen", Icons.of(Icons.FOLDER, 16));
+        importFile = new Button("Turnierdatei übernehmen", Icons.of(Icons.FOLDER, 16));
         importFile.setOnAction(e -> importTournamentFile());
         importFile.getStyleClass().add("pill");
         create.getStyleClass().remove("accent");
         create.getStyleClass().add("navy-pill");
-        Button importResults = new Button("Fertiges Turnier importieren (click-TT)", Icons.of(Icons.UPLOAD, 16));
+        importResults = new Button("Fertiges Turnier importieren (click-TT)", Icons.of(Icons.UPLOAD, 16));
         importResults.setOnAction(e -> importFinishedTournament());
         importResults.getStyleClass().add("pill");
         importResults.setTooltip(new javafx.scene.control.Tooltip("click-TT-Ergebnisdatei (XML, z. B. „Ergebnisse.xml“) eines "
@@ -89,7 +106,6 @@ public final class OverviewView {
         // Liste
         list.setCellFactory(lv -> new TournamentCell());
         list.getStyleClass().add("tournament-list");
-        Label empty = new Label("Noch keine Turniere.\nMit „Neues Turnier“ das erste anlegen.");
         empty.getStyleClass().add("hint");
         list.setPlaceholder(empty);
         list.setOnMouseClicked(e -> {
@@ -109,6 +125,8 @@ public final class OverviewView {
         Label folder = new Label("Ablageordner: " + store.getDirectory().toAbsolutePath()
                 + "  (je Turnier ein Ordner mit „Turnierdatei“, „XML Export“ und „PDF Export“)", Icons.of(Icons.FOLDER, 14));
         folder.getStyleClass().add("hint");
+        folder.setWrapText(true);                         // 1.4.0: nie mit „…“ abkürzen, sondern umbrechen
+        folder.setMinHeight(Region.USE_PREF_SIZE);
         VBox footer = new VBox(4, message, folder);
         footer.setPadding(new Insets(8, 40, 14, 40));
 
@@ -121,7 +139,7 @@ public final class OverviewView {
         root.setCenter(center);
         root.setBottom(footer);
         root.getStyleClass().addAll("content", "overview");
-        refresh();
+        showArchive(false);
     }
 
     public Node getRoot() {
@@ -130,7 +148,15 @@ public final class OverviewView {
 
     public void refresh() {
         try {
-            list.getItems().setAll(store.list());
+            allTournaments = store.list();
+            LocalDate today = LocalDate.now();
+            // 1.4.0 (#112): „Turniere“ = bis 14 Tage alt, „Archivierte Turniere“ = älter; jeweils neuestes Datum zuerst
+            list.getItems().setAll(allTournaments.stream()
+                    .filter(t -> isArchived(t.date(), today) == archive)
+                    .sorted(java.util.Comparator.comparing(TournamentStore.Summary::date,
+                                    java.util.Comparator.nullsLast(java.util.Comparator.<LocalDate>reverseOrder()))
+                            .thenComparing(t -> t.name() == null ? "" : t.name(), String.CASE_INSENSITIVE_ORDER))
+                    .toList());
             var problems = store.getProblems();
             message.setText(problems.isEmpty() ? "" : "Nicht lesbar: " + problems.stream()
                     .map(p -> p.file().getFileName() + " (" + p.message() + ")").collect(Collectors.joining("; ")));
@@ -139,10 +165,27 @@ public final class OverviewView {
         }
     }
 
+    /** 1.4.0 (#112): zwischen „Turniere“ und „Archivierte Turniere“ wechseln. */
+    private void showArchive(boolean on) {
+        archive = on;
+        appHeader.select(on ? "archive" : "tournaments");
+        title.setText(on ? "Archivierte Turniere" : "Meine Turniere");
+        subtitle.setText(on ? "Turniere, die mehr als " + ARCHIVE_AFTER_DAYS + " Tage zurückliegen"
+                : HtsApp.NAME + " · Version " + HtsApp.VERSION);
+        empty.setText(on ? "Keine archivierten Turniere.\nTurniere, die mehr als " + ARCHIVE_AFTER_DAYS
+                + " Tage zurückliegen, erscheinen hier."
+                : "Noch keine Turniere.\nMit „Neues Turnier“ das erste anlegen.");
+        for (Button b : new Button[]{create, importFile, importResults}) {
+            b.setVisible(!on);
+            b.setManaged(!on);
+        }
+        refresh();
+    }
+
     // --- Aktionen ----------------------------------------------------------
 
     private void createTournament() {
-        TournamentDialog dlg = new TournamentDialog(stage, null, null, null, true, null, false, new java.util.ArrayList<>(list.getItems()));
+        TournamentDialog dlg = new TournamentDialog(stage, null, null, null, true, null, false, new java.util.ArrayList<>(allTournaments));
         dlg.showAndWait().ifPresent(r -> {
             try {
                 Tournament t = r.copyFrom() != null

@@ -60,7 +60,7 @@ public final class WorkspaceView {
     private static final String PREF_LAST_IMPORT_DIR = "lastImportDir";
     private static final DateTimeFormatter START_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm 'Uhr'");
 
-    private enum Page { PARTICIPANTS, HANDICAP, CLASSES, TABLES, MATCHES, PRESENTATION, MOBILE }
+    private enum Page { PARTICIPANTS, HANDICAP, CLASSES, TABLES, MATCHES, PRESENTATION, MOBILE, CERTIFICATES }
 
     private final Stage stage;
     private final TournamentStore store;
@@ -74,6 +74,9 @@ public final class WorkspaceView {
     private final TablesView tablesView;
     private final MatchesView matchesView;
     private final PresentationView presentationView;
+    private final CertificatesView certificatesView;                 // 1.4.0 (#113)
+    private javafx.scene.control.Button certMenu;
+    private boolean wasFinished;
     private final HandicapView handicapView;
     private Button matchesMenu;
     /** Menüpunkte, die ein Vorgabeturnier erst nach dem Speichern der Vorgaberegeln zeigt */
@@ -104,6 +107,8 @@ public final class WorkspaceView {
         this.tablesView = new TablesView(tournament, this::setStatus, this::onRunningChanged);
         this.matchesView = new MatchesView(tournament, this::setStatus, this::onRunningChanged);
         this.presentationView = new PresentationView(tournament, this::setStatus);
+        this.certificatesView = new CertificatesView(tournament, this::setStatus);
+        this.wasFinished = tournament.isStarted() && tournament.isCompletelyFinished();
         this.handicapView = new HandicapView(tournament, this::setStatus, this::onHandicapSaved, () -> stage);
         // Spielzettel drucken, sobald ein Spiel an einen Tisch geht
         tournament.addActivationListener(m -> {
@@ -197,6 +202,7 @@ public final class WorkspaceView {
         if (de.hts.HtsApp.MOBILE_ENABLED) {                // 1.0 (#80): ausgeblendet, Code bleibt
             afterHandicapMenus.add(header.addMenuItem("mobile", "Mobile Einstellungen", null, () -> showPage(Page.MOBILE)));
         }
+        if (tournament.isCertTabShown() || wasFinished) showCertMenu();       // 1.4.0 (#113): erst nach Turnierende
         updateHandicapMenus();
         matchesMenu.setDisable(!tournament.isRunning());
         matchesMenu.setTooltip(new javafx.scene.control.Tooltip("Verfügbar, sobald das Turnier oder eine Klasse gestartet ist"));
@@ -381,6 +387,61 @@ public final class WorkspaceView {
         return content;
     }
 
+    private HBox slipDesignBox;
+
+    /**
+     * 1.4.0 (#108): Auswahl „Zettel-Design“ (Spielerzettel oder Schiedsrichterzettel) oben rechts im Reiter „Tische“;
+     * gilt für alle Spielzettel (Einzel und Doppel) dieses Turniers.
+     */
+    private HBox slipDesignControl() {
+        if (slipDesignBox != null) return slipDesignBox;
+        Label lbl = new Label("Zettel-Design:");
+        lbl.getStyleClass().add("class-name");
+        lbl.setMinWidth(Region.USE_PREF_SIZE);
+        javafx.scene.control.ComboBox<de.hts.tournament.SlipDesign> box = new javafx.scene.control.ComboBox<>();
+        box.getItems().setAll(de.hts.tournament.SlipDesign.values());
+        box.setValue(tournament.getSlipDesign());
+        box.setMinWidth(Region.USE_PREF_SIZE);
+        box.setCellFactory(lv -> new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(de.hts.tournament.SlipDesign d, boolean empty) {
+                super.updateItem(d, empty);
+                if (empty || d == null) {
+                    setGraphic(null);
+                    setText(null);
+                    return;
+                }
+                Label name = new Label(d.getLabel());
+                name.setStyle("-fx-font-weight: bold;");
+                Label desc = new Label(d.getDescription());
+                desc.getStyleClass().add("hint");
+                desc.setWrapText(true);
+                desc.setMaxWidth(320);
+                desc.setMinHeight(Region.USE_PREF_SIZE);
+                setGraphic(new VBox(2, name, desc));
+                setText(null);
+            }
+        });
+        box.setButtonCell(new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(de.hts.tournament.SlipDesign d, boolean empty) {
+                super.updateItem(d, empty);
+                setText(empty || d == null ? null : d.getLabel());
+            }
+        });
+        box.valueProperty().addListener((o, a, b) -> {
+            if (b != null && b != tournament.getSlipDesign()) {
+                tournament.setSlipDesign(b);
+                setStatus("Spielzettel: " + b.getLabel() + " (gilt für alle Spielzettel dieses Turniers).");
+            }
+        });
+        box.setTooltip(new Tooltip("Aussehen der Spielzettel (A6) dieses Turniers. Gilt für alle Spielzettel dieses Turniers; "
+                + "der Mannschaftszettel (A4) bleibt unverändert."));
+        slipDesignBox = new HBox(8, lbl, box);
+        slipDesignBox.setAlignment(Pos.CENTER_LEFT);
+        return slipDesignBox;
+    }
+
     private void showPage(Page page) {
         if (currentPage == Page.HANDICAP && page != Page.HANDICAP && !handicapView.confirmLeave()) {
             header.select("handicap");
@@ -440,6 +501,7 @@ public final class WorkspaceView {
         } else if (page == Page.TABLES) {
             header.select("tables");
             pageTitle.setText("Tische");
+            topActions.getChildren().add(slipDesignControl());
             pageContent.getChildren().setAll(tablesView.getRoot());
             tablesView.refresh();
         } else if (page == Page.PRESENTATION) {
@@ -447,6 +509,11 @@ public final class WorkspaceView {
             pageTitle.setText("Präsentationsansicht");
             pageContent.getChildren().setAll(presentationView.getRoot());
             presentationView.refresh();
+        } else if (page == Page.CERTIFICATES) {
+            header.select("certs");
+            pageTitle.setText("Urkunden drucken");
+            pageContent.getChildren().setAll(certificatesView.getRoot());
+            certificatesView.refresh();
         } else if (page == Page.MOBILE) {
             header.select("mobile");
             pageTitle.setText("Mobile Einstellungen");
@@ -468,8 +535,34 @@ public final class WorkspaceView {
         }
     }
 
+    /** 1.4.0 (#113): Menüpunkt „Urkunden drucken“ (bleibt danach dauerhaft). */
+    private void showCertMenu() {
+        if (certMenu != null) return;
+        certMenu = header.addMenuItem("certs", "Urkunden drucken", null, () -> showPage(Page.CERTIFICATES));
+    }
+
+    /** 1.4.0 (#113): Beim Turnierende fragt HTS einmal, ob der Urkundendruck gestartet werden soll. */
+    private void offerCertificates() {
+        boolean finished = tournament.isStarted() && tournament.isCompletelyFinished();
+        boolean justFinished = finished && !wasFinished && !tournament.isCertTabShown();
+        wasFinished = finished;
+        if (finished) showCertMenu();
+        if (!justFinished) return;
+        tournament.setCertTabShown(true);
+        javafx.application.Platform.runLater(() -> {
+            if (CertificatesDialog.ask(stage)) {
+                showPage(Page.CERTIFICATES);
+                certificatesView.selectTop3();
+            } else {
+                showPage(Page.CERTIFICATES);
+                certificatesView.selectNone();
+            }
+        });
+    }
+
     /** Nach Starts und Ergebnissen: Menü, Startanzeige und offene Seiten aktualisieren. */
     private void onRunningChanged() {
+        offerCertificates();
         participants.refresh();
         if (matchesMenu != null) matchesMenu.setDisable(!tournament.isRunning());
         updateStartBox();
