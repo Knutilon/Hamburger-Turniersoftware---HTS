@@ -54,7 +54,72 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.4.x)
 
-(noch leer)
+1. ZAHLENFELDER OHNE KASTEN (Nutzer 22.11.2026, Issue #114, Fehler aus 1.4.0): Spinner zeigten ein rundes graues
+   Textfeld in einem eckigen Kasten. ERLEDIGT im Code (hts.css: .spinner als ein graues Pill-Feld, Textfeld und Pfeile
+   transparent, Dialoge weiß mit Rahmen) – kommt mit dem nächsten „kompilieren“ (1.4.1).
+2. URKUNDEN JE BEENDETER KLASSE (Nutzer 22.11.2026, Issue #115, Ablauf vom Nutzer bestätigt 22:52): Frage „Urkundendruck starten?“ nicht erst bei
+   Turnierende, sondern sobald eine Klasse über „Klasse beenden“ abgeschlossen ist – einmal je Klasse. „Zur
+   Druckansicht“ = Reiter mit Plätzen 1–3 DIESER Klasse; „Abbrechen“ = Reiter erscheint, nichts ausgewählt (man bleibt
+   auf der aktuellen Seite). Reiter ab der ersten beendeten Klasse; Liste nur beendete Klassen. ERLEDIGT im Code
+   (Tournament.certAsked/finishedRootClasses, Datei „cert-asked“, WorkspaceView.offerCertificates,
+   CertificatesDialog.ask(owner, Klasse), CertificatesView.selectTop3/selectNone(Klasse); Test
+   urkundenJeBeendeterKlasseUndFrageGemerkt). Beim „kompilieren“ README/Handbuch (1.4.0-Text „Ist das Turnier beendet“)
+   anpassen.
+3. URKUNDEN SCHON NACH EINER PHASE (Nutzer 22.11.2026, Issue #116; Regel bestätigt 23:16): Platz steht fest, wenn die
+   Partei in keiner späteren Phase mehr spielt und ihre Phase komplett gespielt ist (Folgephase angelegt); bei offenem
+   Korrektur-Reiter keine festen Plätze. Frage „Urkundendruck starten?“ NUR nach Abschluss einer Phase (bzw. „Klasse
+   beenden“), einmal je abgeschlossener Phase; Reiter „Urkunden drucken“ ab Turnierstart sichtbar (manueller Druck).
+   ERLEDIGT im Code: Tournament.fixedEntrants/certificateClasses/certAskKey („Klasse · Phase n“ bzw. Klassenname),
+   certificateEntries mit festen Plätzen laufender Klassen; Dialog-Text je nach Phase/Klasse; Test
+   urkundenFuerFestePlaetzeNachPhase1.
+4. BELASTUNGSTEST 30 × 200 (22.11.2026, ERLEDIGT im Code): Urkundenliste war ein GridPane mit 2 Eingabefeldern je
+   Urkunde → bei 6000 Urkunden OutOfMemory (1 GB). Jetzt virtualisierte TableView (Doppelklick ändert Name/Verein,
+   Spalte „Druckanpassung“ mit Knopf). certName über playerById statt linearer Suche; Bearbeiten berechnet das
+   Endergebnis nicht neu (Tournament.currentCertEntry). Messwerte: Turnier öffnen 3,3 s, Urkunden-Reiter mit 6000
+   Zeilen 1,3 s, läuft auch mit -Xmx256m; Urkunden-PDF 6000 Seiten 1,7 s (3 MB); Turnierdatei 5,9 MB speichern 0,6 s /
+   laden 1,3 s; keine Fehler gefunden. Test: /home/claude/work/stress140/Stress140.java, uikeep/ShotBig.java.
+   Offen: finalResult über alle 30 Klassen ca. 0,8 s (bestehender Code) – bei Bedarf zwischenspeichern.
+5. URKUNDEN-REITER BREITE NUTZEN (Nutzer 22.11.2026, 23:16; Entwurf bestätigt 23:20, ERLEDIGT im Code: CertificatesView.layoutFor ab 1420 px drei Spalten, sonst Vorschau links unter den Einstellungen; Suche in der Tabelle; Druckknopf „n Urkunden drucken“) – Canvas
+   https://claude.ai/artifact/M7mfRNQTzhrogA8Ls6mhQQ, Boards „Breite“ (drei Spalten: links „Welche Urkunden?“ +
+   Urkundentexte untereinander, Mitte Tabelle mit Suche über volle Höhe, rechts Vorschau größer und stehend mit
+   Blättern und „Als PDF speichern“ / „n Urkunden drucken“) und „Schmal“ (1093 px: Vorschau unter den Einstellungen).
+6. TABLET: KNOPF ZUSÄTZLICH ZUM DOPPELKLICK (Nutzer 23.11.2026, Issue #117): Überall, wo bisher ein Doppelklick nötig
+   ist (Turnier öffnen, Zeile bearbeiten, Name/Verein bei Urkunden ändern), zusätzlich einen sichtbaren Knopf anbieten
+   – Doppeltippen ist am Tablet unzuverlässig.
+7. TABLET: HINWEISE ZU GESPERRTEN KNÖPFEN PER ANTIPPEN (Nutzer 23.11.2026, Issue #118): Erklärungen, die bisher nur
+   beim Darüberfahren mit der Maus erscheinen (z. B. warum „Gesamtergebnis als PDF“ gesperrt ist), auch per Antippen
+   zeigen.
+8. TABLET: BILDSCHIRMTASTATUR BEI EINGABEFELDERN ÖFFNEN (Nutzer 23.11.2026, Issue #119): Die Windows-
+   Bildschirmtastatur gezielt öffnen, wenn ein Eingabefeld mit dem Finger angetippt wird (JavaFX macht das nicht
+   zuverlässig von selbst).
+9. TABLET: GRÖSSERE ZIELE IM KO-BAUM (Nutzer 23.11.2026, Issue #120): Spielkarten im KO-Baum und Blätter-Pfeile im
+   Touch-Modus größer, damit sie mit dem Finger sicher treffbar sind.
+10. TABLET: EIGENES ZAHLENFELD IM ERGEBNISDIALOG (Nutzer 23.11.2026, Issue #121): Große Tasten 0–9, „Weiter“ und
+   „Löschen“ im Ergebnisdialog, damit die Bildschirmtastatur nicht gebraucht wird.
+11. ERGEBNIS: SCHNELLEINGABE DER SÄTZE (Nutzer 23.11.2026, Issue #122): Knöpfe für häufige Satzergebnisse (z. B. 11:7)
+   mit einem Tipp; nur Ausnahmen wie 13:11 von Hand.
+12. ERGEBNIS DIREKT VON DER TISCHKARTE (Nutzer 23.11.2026, Issue #123): Ein Tipp auf einen belegten Tisch öffnet
+   sofort die Ergebniseingabe für dieses Spiel.
+13. TABLET-MODUS ZUM EINSCHALTEN (Nutzer 23.11.2026, Issue #124): Dauerhafter Schalter (z. B. in der Info) für den
+   Tablet-Modus statt nur automatischer Umschaltung beim ersten Fingertipp – auch für Touch-Laptops.
+14. DIALOGE: WICHTIGE KNÖPFE UNTEN FEST (Nutzer 23.11.2026, Issue #125): „Speichern“, „Weiter“, „Drucken“ in Dialogen
+   größer und immer sichtbar am unteren Rand, ohne Scrollen.
+15. TABLET: SICHTBARES „⋮“-MENÜ STATT LANGEM ANTIPPEN (Nutzer 23.11.2026, Issue #126): An Zeilen und Karten ein
+   „⋮“-Symbol, das dieselben Aktionen wie das Kontextmenü anbietet.
+16. AUSLOSUNG: TAUSCHEN PER ANTIPPEN (Nutzer 23.11.2026, Issue #127): Beim Tauschen in der Auslosung zusätzlich
+   „Antippen, dann Ziel antippen“ statt nur Ziehen.
+17. TABLET: HOCH- UND QUERFORMAT (Nutzer 23.11.2026, Issue #128): Tische, Warteschlange und Spiele so anordnen, dass
+   auch ein hochkant gehaltenes Tablet sinnvoll aussieht.
+18. TABLET: ZOOM MIT ZWEI FINGERN (Nutzer 23.11.2026, Issue #129): KO-Baum und Gruppenansicht mit zwei Fingern
+   vergrößern und verkleinern.
+19. WARTEZUSTAND SICHTBAR (Nutzer 23.11.2026, Issue #130): Bei längeren Vorgängen (Phase anlegen, großes PDF) ein
+   deutlicher Hinweis, damit niemand mehrfach tippt bzw. klickt.
+20. LETZTES ERGEBNIS ZURÜCKNEHMEN (Nutzer 23.11.2026, Issue #131): Knopf „Letztes Ergebnis zurücknehmen“ für
+   Tippfehler, ohne den Weg über die Korrektur.
+21. URKUNDEN: GEDRUCKTE URKUNDEN MERKEN (Nutzer 23.11.2026, Issue #132): Bereits gedruckte Urkunden markieren, damit
+   nach einer weiteren Phase nur die neuen ausgewählt werden.
+22. TABLET: TEST AUF ECHTEM GERÄT (Nutzer 23.11.2026, Issue #133): Nach den Tablet-Verbesserungen einmal auf einem
+   echten Windows-Tablet testen (bisher nur nachgebildete Fingereingaben).
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
