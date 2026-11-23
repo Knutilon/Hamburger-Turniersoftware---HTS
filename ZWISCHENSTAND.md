@@ -82,6 +82,18 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    - Hinweis an den Nutzer: Schutz gilt für die Oberfläche; Adresse/Schlüssel liegen weiter in den Java-Einstellungen des
      Rechners (Windows-Registrierung) – ggf. später verschlüsselt ablegen.
 
+4. WEBSERVER-ADRESSE UND SCHLÜSSEL VERSCHLÜSSELT ABLEGEN (Nutzer 23.11.2026, Issue #142; ergänzt Punkt 3):
+   - Statt Klartext in Preferences: AES-256-GCM (javax.crypto, keine neue Bibliothek), je Wert eigener Zufalls-IV.
+   - Schlüssel zum Entschlüsseln (HTS muss ohne Admin-Passwort hochladen können):
+     Windows → zufälliger AES-Schlüssel, geschützt mit DPAPI (an das Windows-Benutzerkonto gebunden; Aufruf über
+     PowerShell ConvertTo-/ConvertFrom-SecureString bzw. [Security.Cryptography.ProtectedData], keine JNA);
+     Linux/macOS → zufälliger Schlüssel in einer Datei im Benutzerprofil, nur für den Benutzer lesbar (rw-------).
+   - Vorhandene Klartext-Einträge (1.5.0) beim ersten Start verschlüsselt übernehmen und den Klartext löschen.
+   - Lässt sich nicht entschlüsseln (anderer Rechner/Benutzer): Hinweis „Webserver-Einstellungen neu eintragen“ (mit
+     Admin-Passwort), Veröffentlichen pausiert.
+   - Grenze (dem Nutzer gesagt): schützt gegen Mitlesen in der Registrierung und Kopieren auf andere Rechner, nicht gegen
+     jemanden, der unter demselben Benutzerkonto angemeldet ist.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) LIVE-SCORING ÜBER GEMIETETEN HETZNER-SERVER CX23 (Nutzer 18.11.2026, Issue #101, ZURÜCKGESTELLT; ersetzt #92 App und
