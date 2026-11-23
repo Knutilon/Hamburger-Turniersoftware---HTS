@@ -94,6 +94,15 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    - Grenze (dem Nutzer gesagt): schützt gegen Mitlesen in der Registrierung und Kopieren auf andere Rechner, nicht gegen
      jemanden, der unter demselben Benutzerkonto angemeldet ist.
 
+5. AUSRICHTER: „LOGO HOCHLADEN“ OHNE „…“, SVG ERLAUBEN (Nutzer 23.11.2026, Issue #143):
+   - Knopf im Reiter „Ausrichter“ heißt „Logo hochladen“ (ohne „…“; auch sonst keine „…“ in Knopftexten prüfen).
+   - Dateiauswahl: PNG, JPG und SVG. SVG wird beim Hochladen in ein PNG umgerechnet (lange Seite ca. 1200 Bildpunkte,
+     damit es auf dem A6-Zettel scharf druckt; Transparenz bleibt). Dafür neue Bibliothek nötig – Vorschlag JSVG
+     (com.github.weisj:jsvg, MIT-Lizenz, ohne weitere Abhängigkeiten): in pom.xml und Fat-Jar, Lizenztext unter
+     „Lizenzen“, Info „Mitgelieferte Bibliotheken“, docs/ABHAENGIGKEITEN.md (CVE-Prüfung). Jar muss ggf. der Nutzer
+     liefern, falls Maven Central aus der Arbeitsumgebung gesperrt ist.
+   - Unlesbare SVG (z. B. mit externen Verweisen/Skripten): verständliche Fehlermeldung; externe Verweise nicht laden.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) LIVE-SCORING ÜBER GEMIETETEN HETZNER-SERVER CX23 (Nutzer 18.11.2026, Issue #101, ZURÜCKGESTELLT; ersetzt #92 App und
