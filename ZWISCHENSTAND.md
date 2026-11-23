@@ -120,6 +120,18 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    nach einer weiteren Phase nur die neuen ausgewählt werden.
 22. TABLET: TEST AUF ECHTEM GERÄT (Nutzer 23.11.2026, Issue #133): Nach den Tablet-Verbesserungen einmal auf einem
    echten Windows-Tablet testen (bisher nur nachgebildete Fingereingaben).
+23. WEBSERVER: EINSTELLUNGEN SERVERADRESSE, SCHLÜSSEL, VERÖFFENTLICHEN EIN/AUS (Nutzer 23.11.2026, Issue #135):
+   Einstellungen für die Ergebnisse auf dem Webserver: Serveradresse und geheimer Schlüssel (je Turnier oder als
+   Programmeinstellung) sowie „Veröffentlichen ein/aus“. Teil von #101 auf HTS-Seite; der Server selbst bleibt im
+   Backlog.
+24. WEBSERVER: TURNIERSTAND HOCHLADEN (Nutzer 23.11.2026, Issue #136): Nach jeder Änderung (Ergebnis, neue Phase,
+   Tischvergabe) schickt HTS den Turnierstand verschlüsselt (HTTPS) an den Server, gedrosselt auf höchstens alle paar
+   Sekunden; Grundlage ist die Turnierdatei. Nur Einsehen – vom Server fließt nichts zurück.
+25. WEBSERVER: PUFFER BEI FUNKLOCH UND STATUSANZEIGE (Nutzer 23.11.2026, Issue #137): Ist der Server nicht erreichbar,
+   merkt sich HTS den letzten Stand und schickt ihn nach, sobald die Verbindung wieder steht. Kleine Anzeige
+   „veröffentlicht vor 5 s“ bzw. „keine Verbindung“.
+26. WEBSERVER: DATENSCHUTZ-KNÖPFE (Nutzer 23.11.2026, Issue #138): Knöpfe „Live-Daten löschen“ und „nur Endergebnis
+   behalten“ sowie optional abgekürzte Vornamen für die veröffentlichten Daten.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
