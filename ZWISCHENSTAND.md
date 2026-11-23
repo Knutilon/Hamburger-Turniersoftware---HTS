@@ -109,7 +109,8 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      obere Hälfte:  S1–D2 · F1–E1 · A1–B2 · C2–S4
      untere Hälfte: S3–E2 · A2–B1 · C1–D1 · F2–S2
    (Sieger Spiel 1/2 → Viertelfinale 1, 3/4 → VF 2, 5/6 → VF 3, 7/8 → VF 4; Halbfinale obere gegen untere Hälfte erst im
-   Finale.) Vereinsgleichheit/Gruppenduell-Prüfung entfällt bei diesem festen Schema wie bei 4 × 3. Handbuch-Tabelle
+   Finale.) F1–E1 (zwei Gruppenerste) ist gewollt: Durch die 4 Freigestellten gibt es nicht genug Gruppenzweite (Nutzer
+   23.11.2026). Vereinsgleichheit/Gruppenduell-Prüfung entfällt bei diesem festen Schema wie bei 4 × 3. Handbuch-Tabelle
    „Gruppenphase mit Freistellung“ und Modus-Dialog-Hinweis ergänzen; Test mit 6 × 2.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
