@@ -106,7 +106,7 @@ public final class TournamentFile {
         for (String k : List.of("cert-title", "cert-place", "cert-signer", "cert-host")) {        // 1.4.0 (#113): leer ist erlaubt
             if (root.hasAttribute(k)) m.put(k, root.getAttribute(k));
         }
-        for (String k : List.of("cert-top", "cert-tab")) {
+        for (String k : List.of("cert-top", "cert-tab", "cert-asked", "cert-printed", "publish", "publish-abbrev")) {
             if (root.hasAttribute(k)) m.put(k, root.getAttribute(k));
         }
         if (!m.containsKey("model")) m.put("legacy", "true");         // Datei vor 0.35 → beim Laden umstellen
@@ -202,6 +202,14 @@ public final class TournamentFile {
             if (!t.getCertHost().equals(Tournament.CERT_HOST_DEFAULT)) m.put("cert-host", t.getCertHost());
             if (!t.isCertLeaveTop()) m.put("cert-top", "false");
             if (t.isCertTabShown()) m.put("cert-tab", "true");
+            if (t.isPublish()) m.put("publish", "true");                                                 // 1.5.0 (#135)
+            if (t.isPublishAbbrev()) m.put("publish-abbrev", "true");
+            if (!t.getCertPrinted().isEmpty()) {                                                      // 1.5.0 (#132)
+                m.put("cert-printed", String.join("|", t.getCertPrinted().stream().map(Content::enc).toList()));
+            }
+            if (!t.getCertAsked().isEmpty()) {                                                        // 1.4.1
+                m.put("cert-asked", String.join("|", t.getCertAsked().stream().map(Content::enc).toList()));
+            }
             int certNr = 0;
             for (Map.Entry<String, String[]> ov : t.getCertOverrides().entrySet()) {
                 String[] kc = ov.getKey().split("\u0001", 2);
@@ -265,6 +273,14 @@ public final class TournamentFile {
                 }
                 t.setCertLeaveTop(!"false".equals(folders.get("cert-top")));
                 t.setCertTabShown("true".equals(folders.get("cert-tab")));
+                t.setPublish("true".equals(folders.get("publish")));
+                t.setPublishAbbrev("true".equals(folders.get("publish-abbrev")));
+                if (folders.get("cert-printed") != null) {
+                    for (String k : folders.get("cert-printed").split("\\|")) if (!k.isBlank()) t.restoreCertPrinted(dec(k));
+                }
+                if (folders.get("cert-asked") != null) {
+                    for (String k : folders.get("cert-asked").split("\\|")) if (!k.isBlank()) t.restoreCertAsked(dec(k));
+                }
                 folders.forEach((k, v) -> {
                     if (!k.startsWith(CERT_OV_KEY)) return;
                     String[] q = v.split("\\|", -1);
@@ -1129,6 +1145,36 @@ public final class TournamentFile {
             return Integer.valueOf(v);
         } catch (NumberFormatException e) {
             return null;
+        }
+    }
+
+    /** 1.5.0 (#136): Turnierstand für den Webserver als Bytes (im Programm-Thread aufrufen). */
+    public static byte[] publishBytes(Tournament t) {
+        try {
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            write(out, Content.of(t));
+            return out.toByteArray();
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * 1.5.0 (#138): Datenschutz – in einer Kopie des Turnierstands die Vornamen abkürzen („Max“ → „M.“); darf im
+     * Hintergrund laufen, das Turnier selbst bleibt unverändert.
+     */
+    public static byte[] abbreviateFirstNames(byte[] data) {
+        try {
+            Tournament copy = read(new java.io.ByteArrayInputStream(data)).toTournament();
+            for (Player p : copy.getPlayers()) {
+                String f = p.getFirstname();
+                if (f != null && !f.isBlank()) p.setFirstname(f.strip().substring(0, 1) + ".");
+            }
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            write(out, Content.of(copy));
+            return out.toByteArray();
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
         }
     }
 }

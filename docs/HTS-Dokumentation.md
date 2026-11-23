@@ -8,12 +8,13 @@
 
 # HTS – Hamburger Turniersoftware: Dokumentation
 
-Stand: 20.11.2026 · Programmversion **1.3.0**
+Stand: 23.11.2026 · Programmversion **1.5.0**
 
 ## Versionsverlauf der Dokumentation
 
 | Datum | Programmversion | Änderung |
 | --- | --- | --- |
+| 23.11.2026 | 1.5.0 | Urkunden nach jeder abgeschlossenen Phase (feste Plätze), Spalte „Gedruckt“, Urkunden-Reiter dreispaltig mit Suche; Reiter „Ausrichter“ (Name, Logo auf Schiedsrichterzettel und Live-Seiten) und „Webserver“; Turnierseite „Live im Internet“ (Veröffentlichen, Vornamen abkürzen, Live-Daten löschen, nur Endergebnis); Tablet-Modus, Zahlenfeld und Schnelleingabe im Ergebnisdialog, Antippen statt Doppelklick, Tauschen per Antippen, Zoom, Tische hochkant; letztes Ergebnis zurücknehmen; „Bitte warten“-Hinweis |
 | 22.11.2026 | 1.4.0 | Urkunden drucken (Frage „Urkundendruck starten?“ beim Turnierende, Reiter „Urkunden drucken“ mit Auswahl, Vorschau, Urkundentexten je Turnier und Druckanpassung von Name und Verein), Zettel-Design je Turnier (Spielerzettel neu, Schiedsrichterzettel nach DTTB), Reiter „Archivierte Turniere“, Anzahl der Spiele als eigene Zeile in der Präsentationsansicht, „Danke an:“ in der Info, Dialoggröße bleibt nach Ändern mit der Maus |
 | 20.11.2026 | 1.3.0 | Gruppenphase mit Freistellung (S1–S4 direkt ins KO ohne Freilose), Korrektur-Reiter „Phase n – Korrektur“ mit „Unveränderte Ergebnisse übernehmen“ und „Phase n weiterführen“ (alte Phase „deaktiviert“), Reiterleiste mit Blättern (6 je Seite), Zusatzspiel in der Qualifikation, feste Leiste und aktuelle Runde zuerst im Schweizer System, Gold/Silber/Bronze und Aufsteiger-Chips, Badeni ohne BHZ/FBHZ |
 | 19.11.2026 | 1.2.0 | Nachtrag 0.42.0–1.2.0: Lizenz AGPL-3.0, Turnierdateien früherer Versionen bleiben lesbar (0.42.0); Startgebühren mit Kassenübersicht, Zeitplan je Klasse, Export-Knöpfe und aktualisierte Teilnehmerliste, Warteschlange je Klasse in der Präsentationsansicht, Handy-Zugang ausgeblendet (1.0.0); Startzeiten im Zeitplan, Startgebühren überarbeitet (bezahlt = angemeldet, „Gebühr erlassen“), Linux und macOS, Bedienung auf Windows-Tablets (1.1.0); neue Phasentypen: Haupt- und Trostrunde, fortgesetztes und doppeltes K.-o.-System, Gruppen nach Leistungsstufen mit Phase 3, TOP24-/TOP32-Platzierungsspiele sowie das Schweizer System nach Badeni (1.2.0) |
@@ -41,8 +42,8 @@ Das Programm deckt den ganzen Turniertag ab:
 - Qualifikationen nach dem Muster der Hamburger Einzelmeisterschaften (HEM): Vor- und Hauptqualifikation mit Nachrückerrängen
 - zum Üben: Testturniere, in denen alle Spiele per Knopfdruck simuliert werden
 - eine Präsentationsansicht für einen zweiten Bildschirm (Beamer, Fernseher) mit wechselnden Ansichten
-- Anwesenheit am Turniertag erfassen, auch per Handy über einen QR-Code; eine Live-Anzeige für die Handys der Teilnehmenden im lokalen WLAN (Abschnitt 11)
-- Vorgabeturniere mit Punktevorsprung nach TTR sowie 2er und 3er Turniere (Mannschaftskämpfe; Abschnitt 12)
+- Anwesenheit am Turniertag erfassen, auch per Handy über einen QR-Code; eine Live-Anzeige für die Handys der Teilnehmenden im lokalen WLAN (Abschnitt 12)
+- Vorgabeturniere mit Punktevorsprung nach TTR sowie 2er und 3er Turniere (Mannschaftskämpfe; Abschnitt 13)
 
 ### Systemvoraussetzungen
 
@@ -57,7 +58,9 @@ Das Programm deckt den ganzen Turniertag ab:
 | Grafik | beliebig; ohne passenden Grafiktreiber (z. B. in einer virtuellen Maschine) zeichnet JavaFX per Software – langsamer, aber lauffähig | aktueller Grafiktreiber (Direct3D) |
 | Drucker | optional; für Spielzettel ein Standarddrucker, ideal mit A6-Papier | – |
 | Internet | nicht nötig, HTS läuft vollständig offline | – |
-| WLAN-Router | nur für den Handy-Zugang (Abschnitt 11): Laptop und Handys im selben WLAN, ohne Internetanschluss | Haupt-WLAN eines Routers, kein Gäste-WLAN |
+| WLAN-Router | nur für den Handy-Zugang (Abschnitt 12): Laptop und Handys im selben WLAN, ohne Internetanschluss | Haupt-WLAN eines Routers, kein Gäste-WLAN |
+
+**Tablet-Modus (seit 1.5.0):** Info → „Bedienung“ → Tablet-Modus hält die großen Bedienelemente dauerhaft. Am Tablet öffnet ein Antippen, was mit der Maus ein Doppelklick öffnet; gesperrte Knöpfe zeigen ihren Hinweis per Antippen; beim Antippen eines Eingabefelds öffnet sich unter Windows die Bildschirmtastatur; die Teilnehmerliste hat je Zeile ein „⋮“ für die Aktionen; in der Auslosung tauscht man per Antippen (erst auswählen, dann Ziel antippen); Gruppen und KO-Baum lassen sich mit zwei Fingern (bzw. Strg + Mausrad) zoomen; hochkant steht auf der Seite „Tische“ die Warteschlange unter den Tischen. Bei längeren Vorgängen erscheint „Bitte warten“. Auf einem echten Tablet ist das noch nicht geprüft.
 
 Windows auf ARM-Prozessoren sollte über die x64-Emulation von Windows 11 funktionieren, ist aber nicht geprüft. Die macOS-Fassung ist noch nicht auf einem echten Mac geprüft. Auf **Windows-Tablets** lässt sich HTS mit dem Finger bedienen (seit 1.1.0): Sobald ein Finger den Bildschirm berührt, werden Knöpfe, Tabellenzeilen, Menüs und Bildlaufleisten größer; langes Antippen öffnet das Kontextmenü wie ein Rechtsklick, Wischen blättert.
 
@@ -123,9 +126,10 @@ Die dunkelblaue Kopfleiste zeigt links das HTS-Logo und daneben das geöffnete T
 | Tische | belegte und freie Tische, Warteschlange, Tischzuordnung, Tischnamen |
 | Spiele | alle Spiele klassenübergreifend, Suche, Ergebnisse und Korrekturen, Export-Markierung |
 | Präsentationsansicht | Anzeige auf einem zweiten Bildschirm starten, Wechselzeit und Ansichten wählen (Abschnitt 6) |
-| Urkunden drucken | erst nach dem Turnierende: Urkunden auswählen, Texte einstellen, Vorschau, PDF und Druck (Abschnitt 9, seit 1.4.0) |
-| Mobile Einstellungen | Handy-Zugang starten und beenden, QR-Codes drucken, Anmeldung per Adresse sperren (Abschnitt 11) |
-| Vorgaberegeln | nur im Vorgabeturnier: Art der Vorgabe und Grenzen (Abschnitt 12) |
+| Live im Internet | Turnier auf dem Webserver veröffentlichen, Datenschutz (Abschnitt 11, seit 1.5.0) |
+| Urkunden drucken | ab Turnierstart: Urkunden der feststehenden Plätze auswählen, Texte einstellen, Vorschau, PDF und Druck (Abschnitt 9, seit 1.4.0) |
+| Mobile Einstellungen | ausgeblendet seit 1.0.0: Handy-Zugang im WLAN (Abschnitt 12) |
+| Vorgaberegeln | nur im Vorgabeturnier: Art der Vorgabe und Grenzen (Abschnitt 13) |
 
 „Spiele“ ist ausgegraut, bis das Turnier oder eine Klasse gestartet ist. Wird das Fenster schmal, bricht das Menü in eine zweite Zeile um; unter 1200 Pixeln Breite entfällt der Schriftzug „Hamburger Turniersoftware“, der Turniername bricht notfalls um.
 
@@ -149,13 +153,15 @@ Die dunkelblaue Kopfleiste zeigt links das HTS-Logo und daneben das geöffnete T
 In der Turnierübersicht legt **Neues Turnier** ein Turnier an. Pflicht sind Name, Datum und die Anzahl der Spieltische; das Turnier ist sofort gespeichert.
 
 - Jede Karte zeigt Datum, Anzahl Teilnehmende und Klassen sowie den Status.
+- **Ausrichter (seit 1.5.0):** Reiter in der Turnierübersicht. Name des Verbands bzw. Vereins und Logo (**Logo hochladen …** als PNG oder JPG, **Standard-Logo (HaTTV)** oder **Kein Logo**). Gilt für alle Turniere auf dem Rechner und liegt im Ablageordner der Turniere. Das Logo steht oben rechts auf dem Schiedsrichterzettel und auf den Live-Seiten.
+- **Webserver (seit 1.5.0):** Reiter in der Turnierübersicht. Adresse und geheimer Schlüssel des Webservers (nur auf diesem Rechner, nicht in der Turnierdatei) und **Verbindung testen** (Abschnitt 11).
 - **Turniere und Archivierte Turniere (seit 1.4.0):** Der Reiter „Turniere“ zeigt alle Turniere, deren Datum höchstens 14 Tage zurückliegt (auch künftige und solche ohne Datum); ältere stehen nur noch unter **Archivierte Turniere**. Beide Listen sind nach Datum sortiert, das neueste zuerst. Öffnen, Bearbeiten und Löschen funktionieren in beiden Listen gleich; ein manuelles Archivieren gibt es nicht – ändert man das Datum, wandert das Turnier entsprechend.
 - **Öffnen** oder Doppelklick öffnet das Turnier, **Bearbeiten** ändert Name, Datum, Spieltische und den Ort der Turnierdatei, **Löschen** entfernt die Turnierdatei (Exporte bleiben erhalten).
 - Beim Anlegen zeigt der Dialog, wo die Turnierdatei landet (Standard: `Dokumente\HTS Turniere\<Name>\Turnierdatei`); **Durchsuchen** wählt einen anderen Ordner (Abschnitt 1).
 - **Turnierdatei übernehmen** holt eine vorhandene `.hts`-Datei als neues Turnier herein.
 - **Fertiges Turnier importieren (click-TT)** liest eine click-TT-Ergebnisdatei (Format TournamentPortal, egal ob aus click-TT, poinTT oder HTS) und legt daraus ein neues, abgeschlossenes Turnier an: je Konkurrenz eine Klasse, Phase 1 als Gruppenphase oder KO-System (inkl. Spiel um Platz 3), alle Spiele mit Sätzen und die Platzierungen. Nicht Angetretene stehen ohne Klasse in der Teilnehmendenliste. Spätere Phasen aus der Datei werden nicht übernommen, sondern im Bericht genannt; Unstimmigkeiten erscheinen als Hinweise statt eines Abbruchs.
 - **Kopie von:** Beim Anlegen lässt sich ein bestehendes Turnier als Vorlage wählen – **ohne Auslosung** (Teilnehmende, Klassen, Zuordnungen, Einstellungen, Tische; Standard), **alles** (inkl. Auslosungen, Spielen und Ergebnissen) oder **nur Teilnehmende** (ohne Klassen). Das Original bleibt unverändert.
-- **Vorgabeturnier:** Option beim Anlegen (später nicht umschaltbar); siehe Abschnitt 12.
+- **Vorgabeturnier:** Option beim Anlegen (später nicht umschaltbar); siehe Abschnitt 13.
 - **Testturnier:** Das Häkchen beim Anlegen bzw. Bearbeiten markiert ein Übungsturnier (Karte „Testturnier“). Dort trägt der Würfel-Knopf in der Kopfleiste **alle offenen Spiele der laufenden Phasen** zufällig und regelgerecht ein (Best of 5 bzw. 7, Verlängerung bis höchstens 20:18), inklusive der Folgerunden im KO- und Schweizer System – ohne Spielzettel zu drucken und ohne Phasen abzuschließen. Angehaltene Phasen werden nicht simuliert. Exporte sind auch für Testturniere möglich.
 
 ### Teilnehmende aus click-TT importieren
@@ -184,7 +190,7 @@ Ein erneuter Import ergänzt und aktualisiert, löscht aber niemanden. HTS legt 
 
 ### Anwesenheit am Turniertag
 
-Die Spalte **„Angemeldet“** bedeutet: am Turniertag anwesend. Sie lässt sich per Klick abhaken; per Handy melden sich Teilnehmende bzw. Betreuende über die Anmeldeseite an (Abschnitt 11).
+Die Spalte **„Angemeldet“** bedeutet: am Turniertag anwesend. Sie lässt sich per Klick abhaken; per Handy melden sich Teilnehmende bzw. Betreuende über die Anmeldeseite an (Abschnitt 12).
 
 | Zustand | Darstellung | Bedeutung |
 | --- | --- | --- |
@@ -533,6 +539,8 @@ Ergebnisse werden Satz für Satz eingetragen („1. Satz“, „2. Satz“ …, 
 
 ### Eingabe
 
+Seit 1.5.0 im Ergebnisdialog zusätzlich: **Schnelleingabe** (Knöpfe 11:3 bis 11:9 bzw. 3:11 bis 9:11 für den aktuellen Satz, springt danach weiter) und – im Tablet-Modus bzw. nach dem ersten Antippen – ein **Zahlenfeld** (0–9, „−“, „:“, ⌫, Weiter). Auf der Seite **Tische** öffnet ein Klick bzw. Antippen auf die Partie einer Tischkarte die Ergebniseingabe. **Letztes Ergebnis zurücknehmen** (Tische und Spiele) nimmt das zuletzt eingetragene Ergebnis zurück, solange noch nichts davon abhängt (das Spiel läuft dann wieder, am alten Tisch, wenn er frei ist); sonst gilt „Ergebnis korrigieren“.
+
 | Eingabe | ergibt |
 | --- | --- |
 | 11:8 (auch 11-8, 11/8, 11 8) | 11:8 |
@@ -783,13 +791,16 @@ Im Reiter **Tische** steht oben rechts **Zettel-Design:**. Die Auswahl gilt für
 | Design | Inhalt |
 | --- | --- |
 | Spielerzettel (Standard) | Tisch, Spiel-Nr., Zeit, Konkurrenz, beide Parteien mit Verein (Doppel je Person eine Zeile), Satztabelle „Bälle Spieler/in 1/2“, **Ergebnis (gewonnene Sätze)** in zwei quadratischen Boxen (z. B. 3 : 2) und **Gewinner/in** mit Strich für den Namen. Keine „Wahl“ und keine Schiedsrichter-Unterschrift mehr |
-| Schiedsrichterzettel | nach dem DTTB-Schiedsrichterzettel, schwarz-weiß-tauglich: Kopf mit Spiel-Nr., Zeit, Tisch und Konkurrenz; Einzel A gegen X, Doppel A/B gegen X/Y; je Person Auf/Rück und die Karten (gelb, gelb-rot 1 und 2), je Seite Auszeit „T“; Satztabelle mit „Sätze“ und **1. Aufschlag** je Satz (Einzel A X, Doppel A B X Y); Felder Gewinner/in und Schiedsrichter/in; HTS-Schriftzug statt DTTB-Logo |
+| Schiedsrichterzettel | genau A6; oben rechts das Logo des Ausrichters (seit 1.5.0), unten rechts die HTS-Marke; nach dem DTTB-Schiedsrichterzettel, schwarz-weiß-tauglich: Kopf mit Spiel-Nr., Zeit, Tisch und Konkurrenz; Einzel A gegen X, Doppel A/B gegen X/Y; je Person Auf/Rück und die Karten (gelb, gelb-rot 1 und 2), je Seite Auszeit „T“; Satztabelle mit „Sätze“ und **1. Aufschlag** je Satz (Einzel A X, Doppel A B X Y); Felder Gewinner/in und Schiedsrichter/in; HTS-Schriftzug statt DTTB-Logo |
 
 ### Urkunden (seit 1.4.0)
 
-Ist das Turnier beendet – alle ausgelosten Klassen über **Klasse beenden** abgeschlossen –, fragt HTS einmal **Urkundendruck starten?**. Links **Abbrechen**, rechts **Zur Druckansicht**. In beiden Fällen erscheint in der Kopfleiste der Reiter **Urkunden drucken** und bleibt dauerhaft (auch nach dem erneuten Öffnen des Turniers). „Zur Druckansicht“ öffnet ihn mit den Plätzen 1 bis 3 aller Klassen vorausgewählt; „Abbrechen“ zeigt ihn ohne ausgewählte Urkunde (Vorschau leer, „Als PDF speichern“ und „Drucken“ gesperrt). Der Druck beginnt nie von selbst.
+Der Reiter **Urkunden drucken** steht ab Turnierstart in der Kopfleiste (seit 1.5.0). Er zeigt nur Plätze, die feststehen: alle Plätze beendeter Klassen und – in laufenden Klassen – die Plätze derer, die in keiner späteren Phase mehr spielen und deren Phase komplett gespielt ist (Folgephase angelegt), z. B. die in der Gruppenphase Ausgeschiedenen. Solange ein Korrektur-Reiter offen ist, zeigt die Klasse keine festen Plätze.
 
-- **Auswahl:** Klasse („Alle Klassen“ oder eine Klasse), dann **Plätze 1 bis 3**, **Alle Plätze** oder **Eigene Auswahl** (Platz von … bis …). In der Liste steht je Urkunde ein Häkchen mit Klasse, Platz, Name und Verein; der Zähler zeigt z. B. „8 von 16 Urkunden ausgewählt“. Ein geteilter Platz (z. B. 5.–8.) erscheint auf der Urkunde als „den 5. Platz“.
+Sobald eine Phase abgeschlossen ist (Folgephase angelegt oder **Klasse beenden**) und dadurch Plätze feststehen, fragt HTS einmal **Urkundendruck starten?** – links **Abbrechen**, rechts **Zur Druckansicht**. „Zur Druckansicht“ öffnet den Reiter mit den Plätzen 1 bis 3 dieser Klasse (soweit fest); „Abbrechen“ lässt ihn ohne ausgewählte Urkunde. Der Druck beginnt nie von selbst.
+
+- **Aufbau (seit 1.5.0):** Auf breiten Bildschirmen links die Auswahl und die Urkundentexte, in der Mitte die Tabelle (mit Suchfeld für Name, Verein oder Klasse), rechts die Vorschau; auf kleinen Bildschirmen steht die Vorschau unter den Einstellungen. Name und Verein ändert ein Doppelklick (am Tablet ein Antippen) in der Zelle; die Spalte **Gedruckt** zeigt, was schon gedruckt bzw. als PDF gespeichert wurde.
+- **Auswahl:** Klasse („Alle Klassen“ oder eine Klasse), dann **Plätze 1 bis 3**, **Alle Plätze**, **Noch nicht gedruckte** (seit 1.5.0) oder **Eigene Auswahl** (Platz von … bis …). In der Liste steht je Urkunde ein Häkchen mit Klasse, Platz, Name und Verein; der Zähler zeigt z. B. „8 von 16 Urkunden ausgewählt“. Ein geteilter Platz (z. B. 5.–8.) erscheint auf der Urkunde als „den 5. Platz“.
 - **Vorschau** der ausgewählten Urkunden mit Blättern (‹ ›, „Urkunde 1 von 8“), **Als PDF speichern** (Ordner „PDF Export“ des Turniers) und **Drucken** (Druckdialog).
 - **Name und Verein nur für den Druck ändern:** Die Felder in der Liste lassen sich überschreiben (z. B. ausgeschriebener Vereinsname). Geänderte Zeilen tragen die Markierung „nur für Druck geändert“; ein Klick darauf stellt die Originalwerte wieder her. Die Änderung wird in der Turnierdatei gespeichert und wirkt **nur auf die Urkunde** – nicht auf Teilnehmerdaten, Ergebnisse, Präsentationsansicht oder die click-TT-Ergebnisdatei.
 - **Urkundentexte** (je Turnier, in der Turnierdatei): Überschrift (Vorgabe „Ehrenurkunde“), Ort („Hamburg“), Unterschrift rechts („Jugendausschuss“), Ausrichter unten („Hamburger Tisch-Tennis-Verband e.V.“). Bleibt ein Feld leer, bleibt die Stelle auf der Urkunde frei; ohne Ort entfällt auch das Komma („den 12. September 2026“). Das Häkchen **Oben 5 cm frei lassen (für vorgedrucktes Briefpapier)** ist voreingestellt; ohne Häkchen rückt der Text nach oben.
@@ -865,7 +876,17 @@ Die Ergebnisdatei ist so aufgebaut wie in poinTT („Export/Import → Click-TT 
 
 Die Export-Markierung gibt es nur auf der Seite „Spiele“ und nur für abgeschlossene Spiele. Vorgabeturniere haben keinen click-TT-Export. Nach dem Export zeigt HTS einen Bericht: Anzahl Konkurrenzen, Spiele und Platzierungen sowie, was nicht exportiert wurde.
 
-## 11. Handy-Zugang (Mobile Einstellungen)
+## 11. Live im Internet (seit 1.5.0)
+
+Ergebnisse lassen sich im Internet einsehen – nur Einsehen, vom Server fließt nichts zurück. Der Handy-Zugang im Hallen-WLAN (unten) bleibt ausgeblendet.
+
+1. Turnierübersicht → **Webserver**: Adresse und geheimer Schlüssel eintragen, **Verbindung testen**.
+2. Im Turnier → **Live im Internet**: **Dieses Turnier veröffentlichen**. HTS lädt nach jeder Änderung den Stand hoch (höchstens alle 5 Sekunden). Unten rechts steht „Live: veröffentlicht vor 5 s“; bei Funkloch „keine Verbindung – wird nachgeholt“ – der letzte Stand wird alle 10 Sekunden erneut gesendet.
+3. **Adresse für Zuschauer** kopieren und z. B. per QR-Code aushängen.
+
+Datenschutz: **Vornamen abkürzen** („M. Mustermann“, nur in der hochgeladenen Kopie), **Live-Daten löschen** (Turnier vom Server entfernen) und **Nur Endergebnis behalten** (alles außer den Endergebnissen entfernen); beide schalten das Veröffentlichen aus. Der Webserver selbst ist noch nicht Teil von HTS (geplant); was er annehmen muss, steht in docs/WEBSERVER-PROTOKOLL.md.
+
+## 12. Handy-Zugang (Mobile Einstellungen, ausgeblendet)
 
 > **Hinweis (ab 1.0.0):** Die Seite „Mobile Einstellungen“ und damit der Handy-Zugang sind derzeit ausgeblendet; die Funktionen bleiben im Programm und kommen später wieder. Vorbereitet (seit 1.1.0, ebenfalls ausgeblendet): **Ergebnisse per Handy eintragen** mit einem QR-Code je Tisch; gemeldete Ergebnisse bestätigt die Turnierleitung. Für eine Live-Anzeige im Internet ist ein gemieteter Server geplant (Backlog).
 
@@ -882,7 +903,7 @@ Die Export-Markierung gibt es nur auf der Seite „Spiele“ und nur für abgesc
 
 **Anmeldung am Turniertag:** Die Adresse enthält einen geheimen Schlüssel (nur über den QR-Code erreichbar). Teilnehmende suchen ihren Namen und melden sich „anwesend“; Betreuende wählen ihren Verein und haken die Anwesenden ab. „Nicht anwesend“ wird zur Handyabmeldung (orange), die die Turnierleitung bestätigt; endgültig Abgemeldete ändert nur die Turnierleitung. Nachrücker erscheinen nicht. Die Anmeldung lässt sich sperren und wieder öffnen; sie endet automatisch, wenn alle Klassen beendet sind.
 
-## 12. Vorgabeturnier sowie 2er und 3er Turnier
+## 13. Vorgabeturnier sowie 2er und 3er Turnier
 
 ### Vorgabeturnier
 
@@ -909,7 +930,7 @@ Mannschaftskämpfe: Teams werden wie Doppelpaarungen gebildet (Drag & Drop, „T
 
 Ergebnis: Aufstellung beider Teams wählen und je Partie den Sieger eintragen (mit Vorgabe je Partie). Gruppenwertung nach Begegnungen, Partien, festem Los. Spielzettel A4 je Begegnung.
 
-## 13. Dateien, Technik und Grenzen
+## 14. Dateien, Technik und Grenzen
 
 ### Dateien
 

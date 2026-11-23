@@ -56,53 +56,53 @@ final class Reports {
     // --- Ansichten -------------------------------------------------------------
 
     static void showSlip(Window owner, Tournament t, Match m, Consumer<String> status) {
-        PdfViewer.show(owner, t, "Spielzettel – " + (m.getTable() == null ? "Tisch -" : t.tableName(m.getTable())) + ", Spiel " + m.getNumber(),
-                PdfReports.slip(t, m), fileName("Spielzettel Spiel " + m.getNumber()), status);
+        Ui.busy(owner, "PDF wird erstellt", () -> PdfViewer.show(owner, t, "Spielzettel – " + (m.getTable() == null ? "Tisch -" : t.tableName(m.getTable())) + ", Spiel " + m.getNumber(),
+                PdfReports.slip(t, m), fileName("Spielzettel Spiel " + m.getNumber()), status));
     }
 
     static void showGroup(Window owner, Tournament t, PlayingClass phase, int g, Consumer<String> status) {
         String name = t.rootOf(phase).getName() + " – Phase " + t.phaseNumber(phase) + " – Gruppe " + t.groupLabel(phase, g);
-        PdfViewer.show(owner, t, name, PdfReports.group(t, phase, g), fileName(name), status);
+        Ui.busy(owner, "PDF wird erstellt", () -> PdfViewer.show(owner, t, name, PdfReports.group(t, phase, g), fileName(name), status));
     }
 
     static void showPhase(Window owner, Tournament t, PlayingClass phase, Consumer<String> status) {
         String name = t.rootOf(phase).getName() + " – Phase " + t.phaseNumber(phase);
-        PdfViewer.show(owner, t, name, PdfReports.phase(t, phase), fileName(name), status);
+        Ui.busy(owner, "PDF wird erstellt", () -> PdfViewer.show(owner, t, name, PdfReports.phase(t, phase), fileName(name), status));
     }
 
     /** 0.38 (#54): Liste der endgültig Abgemeldeten. */
     static void showWithdrawn(Window owner, Tournament t, Consumer<String> status) {
         String name = "Abgemeldete " + (t.getName() == null ? "Turnier" : t.getName());
-        PdfViewer.show(owner, t, name, PdfReports.withdrawnList(t), fileName(name), status);
+        Ui.busy(owner, "PDF wird erstellt", () -> PdfViewer.show(owner, t, name, PdfReports.withdrawnList(t), fileName(name), status));
     }
 
     /** 1.0 (#82): Quittung über bezahlte Startgebühren ({@code club} = Sammelquittung eines Vereins). */
     static void showReceipt(Window owner, Tournament t, java.util.List<de.hts.player.Player> paid, String who, String club, Consumer<String> status) {
         String name = "Quittung " + who;
-        PdfViewer.show(owner, t, name, PdfReports.receipt(t, paid, club), fileName(name), status);
+        Ui.busy(owner, "PDF wird erstellt", () -> PdfViewer.show(owner, t, name, PdfReports.receipt(t, paid, club), fileName(name), status));
     }
 
     /** 1.0 (#82): Kassenübersicht der Startgebühren. */
     static void showCashReport(Window owner, Tournament t, Consumer<String> status) {
         String name = "Kassenübersicht " + (t.getName() == null ? "Turnier" : t.getName());
-        PdfViewer.show(owner, t, name, PdfReports.cashReport(t), fileName(name), status);
+        Ui.busy(owner, "PDF wird erstellt", () -> PdfViewer.show(owner, t, name, PdfReports.cashReport(t), fileName(name), status));
     }
 
     /** 1.0 (#79): nicht exportierte Spiele. */
     static void showNotExported(Window owner, Tournament t, java.util.List<de.hts.importer.clicktt.ClickTtResultExporter.NotExported> list,
                                 Consumer<String> status) {
         String name = "Nicht exportierte Spiele " + (t.getName() == null ? "Turnier" : t.getName());
-        PdfViewer.show(owner, t, name, PdfReports.notExported(t, list), fileName(name), status);
+        Ui.busy(owner, "PDF wird erstellt", () -> PdfViewer.show(owner, t, name, PdfReports.notExported(t, list), fileName(name), status));
     }
 
     static void showTournamentResults(Window owner, Tournament t, Consumer<String> status) {
         String name = "Ergebnisse " + (t.getName() == null ? "Turnier" : t.getName());
-        PdfViewer.show(owner, t, name, PdfReports.tournamentResults(t), fileName(name), status);
+        Ui.busy(owner, "PDF wird erstellt", () -> PdfViewer.show(owner, t, name, PdfReports.tournamentResults(t), fileName(name), status));
     }
 
     static void showFinalResult(Window owner, Tournament t, PlayingClass c, Consumer<String> status) {
         String name = "Endergebnis " + t.rootOf(c).getName();
-        PdfViewer.show(owner, t, name, PdfReports.finalResult(t, c), fileName(name), status);
+        Ui.busy(owner, "PDF wird erstellt", () -> PdfViewer.show(owner, t, name, PdfReports.finalResult(t, c), fileName(name), status));
     }
 
     private static String fileName(String s) {
@@ -142,14 +142,21 @@ final class Reports {
 
     /** Druckdialog für ein Dokument (im Hintergrund); das Dokument wird danach geschlossen. */
     static void printWithDialog(PDDocument doc, String jobName, Consumer<String> status) {
+        printWithDialog(doc, jobName, status, null);
+    }
+
+    /** 1.5.0 (#132): wie oben; {@code onPrinted} läuft (im FX-Thread) nur, wenn wirklich gedruckt wurde. */
+    static void printWithDialog(PDDocument doc, String jobName, Consumer<String> status, Runnable onPrinted) {
         PRINTER.submit(() -> {
             String msg;
+            boolean printed = false;
             try (doc) {
                 PrinterJob pj = PrinterJob.getPrinterJob();
                 pj.setJobName(jobName);
                 pj.setPageable(new PDFPageable(doc));
                 if (pj.printDialog()) {
                     pj.print();
+                    printed = true;
                     msg = "„" + jobName + "“ gedruckt.";
                 } else {
                     msg = "Drucken abgebrochen.";
@@ -158,7 +165,11 @@ final class Reports {
                 msg = "Drucken fehlgeschlagen: " + e.getMessage();
             }
             String fin = msg;
-            Platform.runLater(() -> status.accept(fin));
+            boolean ok = printed;
+            Platform.runLater(() -> {
+                status.accept(fin);
+                if (ok && onPrinted != null) onPrinted.run();
+            });
         });
     }
 }

@@ -129,6 +129,20 @@ public final class DrawView {
     private final Label tbLabel = new Label("Bei gleichem Spielverhältnis:");
     private final Button finishBtn = new Button("Klasse beenden");
     private final VBox overviewBox = new VBox(12);
+    private final javafx.scene.transform.Scale zoomScale = new javafx.scene.transform.Scale(1, 1, 0, 0);
+    private final Button zoomReset = new Button();
+    private double zoom = 1;
+
+    /** 1.5.0 (#129): Zoomstufe 50–250 %; „Zoom n % – zurücksetzen“ erscheint, solange nicht 100 %. */
+    private void setZoom(double z) {
+        zoom = Math.max(0.5, Math.min(2.5, z));
+        if (Math.abs(zoom - 1) < 0.03) zoom = 1;
+        zoomScale.setX(zoom);
+        zoomScale.setY(zoom);
+        zoomReset.setText("Zoom " + Math.round(zoom * 100) + " % – zurücksetzen");
+        zoomReset.setVisible(zoom != 1);
+        runSticky();
+    }
     /** 1.3 (#103): feste Leiste zwischen Werkzeugzeile und scrollender Ansicht. */
     private final VBox stickyHolder = new VBox();
     /** Gruppenphase: Suche nach Teilnehmenden (Vor- und/oder Nachname). */
@@ -421,7 +435,8 @@ public final class DrawView {
         settingsSummary.setTextAlignment(javafx.scene.text.TextAlignment.LEFT);
         settingsSummary.setMinHeight(Region.USE_PREF_SIZE);
         settingsSummary.maxWidthProperty().bind(actionRow.widthProperty().subtract(4));
-        actionRow.getChildren().add(settingsSummary);              // Infozeile („3 Gruppen · 23 Spiele offen“) am Ende
+        actionRow.getChildren().add(settingsSummary);
+        actionRow.getChildren().add(zoomReset);              // Infozeile („3 Gruppen · 23 Spiele offen“) am Ende
         scheduleRow.managedProperty().bind(scheduleRow.visibleProperty());   // 1.0 (#77): wartende Runden (Zeitplan)
         scheduleRow.setVisible(false);
         topRow = new VBox(8, followRow, scheduleRow, actionRow);
@@ -432,8 +447,27 @@ public final class DrawView {
         warning.setWrapText(true);
         warning.managedProperty().bind(warning.visibleProperty());
 
-        ScrollPane scroll = new ScrollPane(overviewBox);
+        // 1.5.0 (#129/#120): Zoom mit zwei Fingern bzw. Strg + Mausrad – Gruppen und KO-Baum größer (größere Ziele am Tablet)
+        javafx.scene.Group zoomGroup = new javafx.scene.Group(overviewBox);
+        overviewBox.getTransforms().setAll(zoomScale);
+        ScrollPane scroll = new ScrollPane(zoomGroup);
         bracketScroll = scroll;
+        scroll.addEventFilter(javafx.scene.input.ZoomEvent.ZOOM, e -> {
+            setZoom(zoom * e.getZoomFactor());
+            e.consume();
+        });
+        scroll.addEventFilter(javafx.scene.input.ScrollEvent.SCROLL, e -> {
+            if (e.isShortcutDown() && e.getDeltaY() != 0) {
+                setZoom(zoom * (e.getDeltaY() > 0 ? 1.1 : 1 / 1.1));
+                e.consume();
+            }
+        });
+        zoomReset.getStyleClass().add("pill");
+        zoomReset.setMinWidth(Region.USE_PREF_SIZE);
+        zoomReset.managedProperty().bind(zoomReset.visibleProperty());
+        zoomReset.setVisible(false);
+        zoomReset.setOnAction(e -> setZoom(1));
+        zoomReset.setTooltip(new Tooltip("Vergrößern/Verkleinern: zwei Finger auseinander-/zusammenziehen oder Strg + Mausrad"));
         scroll.vvalueProperty().addListener((o, a, b) -> runSticky());
         scroll.viewportBoundsProperty().addListener((o, a, b) -> runSticky());
         overviewBox.heightProperty().addListener((o, a, b) -> runSticky());
@@ -442,7 +476,8 @@ public final class DrawView {
         overviewBox.setPadding(new Insets(4));
         // 0.34: mindestens so breit wie der sichtbare Bereich (breitere Inhalte wie der KO-Baum scrollen weiterhin)
         overviewBox.minWidthProperty().bind(javafx.beans.binding.Bindings.createDoubleBinding(
-                () -> Math.max(0, scroll.getViewportBounds().getWidth() - 2), scroll.viewportBoundsProperty()));
+                () -> Math.max(0, scroll.getViewportBounds().getWidth() / zoomScale.getX() - 2), scroll.viewportBoundsProperty(),
+                zoomScale.xProperty()));
         VBox.setVgrow(scroll, Priority.ALWAYS);
         stickyHolder.setVisible(false);
         stickyHolder.setManaged(false);
@@ -1131,6 +1166,10 @@ public final class DrawView {
         if (c == null) return;
         PhaseCloseDialog.Choice choice = new PhaseCloseDialog(window(), tournament, c).showAndWait().orElse(null);
         if (choice == null) return;
+        Ui.busy(window(), choice.finish() ? "Klasse wird beendet" : "nächste Phase wird angelegt und ausgelost", () -> applyClose(c, choice));
+    }
+
+    private void applyClose(PlayingClass c, PhaseCloseDialog.Choice choice) {
         try {
             if (choice.finish()) {
                 tournament.finishClass(c);
@@ -2054,8 +2093,22 @@ public final class DrawView {
             if (m.getStatus() == MatchStatus.DONE && !m.getSetsText().isEmpty()) {
                 // Klick auf das Ergebnis: Satzergebnisse darunter ausklappen; weiterer Klick auf die Zeile: einklappen
                 String st = m.getSetsText();
-                Label details = new Label(st.startsWith("Aufgabe") || st.startsWith("kampflos") ? st : "Sätze: " + st.replace(", ", "  ·  "));
-                details.getStyleClass().add("set-details");
+                Label detailsText = new Label(st.startsWith("Aufgabe") || st.startsWith("kampflos") ? st : "Sätze: " + st.replace(", ", "  ·  "));
+                detailsText.getStyleClass().add("set-details");
+                detailsText.setWrapText(true);
+                HBox details = new HBox(10, detailsText);
+                details.setAlignment(Pos.CENTER_LEFT);
+                if (!presentation && ResultEntry.isEditable(m) && (current == null || !current.isSideClass())) {
+                    // 1.5.0 (#117): sichtbarer Knopf statt nur Doppelklick (Tablet)
+                    Button fix = new Button("Ergebnis korrigieren");
+                    fix.getStyleClass().add("pill");
+                    fix.setMinWidth(Region.USE_PREF_SIZE);
+                    fix.setOnAction(ev -> {
+                        Window w = root.getScene() == null ? null : root.getScene().getWindow();
+                        if (ResultEntry.open(w, tournament, m, status)) onChanged.run();
+                    });
+                    details.getChildren().add(fix);
+                }
                 details.managedProperty().bind(details.visibleProperty());
                 details.setVisible(openSets.contains(m.getId()));
                 result.getStyleClass().add("clickable-result");
@@ -2826,7 +2879,65 @@ public final class DrawView {
         return e.getDragboard().hasString() ? e.getDragboard().getString() : null;
     }
 
-    private static void startDrag(Node source, String payload) {
+    // --- 1.5.0 (#127): Tauschen per Antippen (Tablet): erst antippen = auswählen, dann Ziel antippen -----------------
+
+    private static final String TAP_SOURCE = "hts.tapSource", TAP_TARGET = "hts.tapTarget";
+    private record TapTarget(String prefix, String self, java.util.function.Consumer<String> onDrop) {
+    }
+    private String tapPicked;
+    private Node tapPickedNode;
+    private boolean tapInstalled;
+
+    private void installTapSwap() {
+        if (tapInstalled) return;
+        tapInstalled = true;
+        root.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_CLICKED, e -> {
+            if (e.getButton() != javafx.scene.input.MouseButton.PRIMARY || !TouchSupport.isTouch(root)) return;
+            Node n = e.getTarget() instanceof Node node ? node : null;
+            Node src = null;
+            for (int i = 0; n != null && i < 8; i++, n = n.getParent()) {
+                if (tapPicked != null && n.getProperties().get(TAP_TARGET) instanceof TapTarget tt
+                        && tapPicked.startsWith(tt.prefix()) && !tapPicked.equals(tt.self())) {
+                    String arg = tapPicked.substring(tt.prefix().length());
+                    clearTap();
+                    e.consume();
+                    javafx.application.Platform.runLater(() -> {
+                        try {
+                            tt.onDrop().accept(arg);
+                            onChanged.run();
+                        } catch (IllegalStateException | IllegalArgumentException ex) {
+                            status.accept(ex.getMessage());
+                            showWarning(ex.getMessage());
+                        }
+                    });
+                    return;
+                }
+                if (src == null && n.getProperties().get(TAP_SOURCE) instanceof String) src = n;
+            }
+            if (src != null) {
+                String payload = (String) src.getProperties().get(TAP_SOURCE);
+                boolean same = payload.equals(tapPicked);
+                clearTap();
+                if (!same) {
+                    tapPicked = payload;
+                    tapPickedNode = src;
+                    src.getStyleClass().add("tap-picked");
+                    status.accept("Ausgewählt – jetzt das Ziel antippen, um zu tauschen (nochmals antippen = abbrechen).");
+                }
+                e.consume();
+            }
+        });
+    }
+
+    private void clearTap() {
+        if (tapPickedNode != null) tapPickedNode.getStyleClass().remove("tap-picked");
+        tapPicked = null;
+        tapPickedNode = null;
+    }
+
+    private void startDrag(Node source, String payload) {
+        installTapSwap();
+        source.getProperties().put(TAP_SOURCE, payload);
         source.setOnDragDetected(e -> {
             javafx.scene.input.Dragboard db = source.startDragAndDrop(javafx.scene.input.TransferMode.MOVE);
             javafx.scene.input.ClipboardContent cc = new javafx.scene.input.ClipboardContent();
@@ -2839,6 +2950,7 @@ public final class DrawView {
 
     /** Ziel annehmen, wenn der Inhalt mit {@code prefix} beginnt und nicht {@code self} ist; {@code onDrop} bekommt den Rest. */
     private void dropTarget(Node target, String prefix, String self, java.util.function.Consumer<String> onDrop) {
+        target.getProperties().put(TAP_TARGET, new TapTarget(prefix, self, onDrop));
         target.setOnDragOver(e -> {
             String s = dragged(e);
             if (s != null && s.startsWith(prefix) && !s.equals(self)) {
@@ -2906,8 +3018,10 @@ public final class DrawView {
     private void installResultEntry(Node node, Match m) {
         if (presentation || !ResultEntry.isEditable(m) || (current != null && current.isSideClass())) return;
         node.getStyleClass().add("clickable");
+        boolean toggles = node.getStyleClass().contains("group-match-row") && m.getStatus() == MatchStatus.DONE
+                && !m.getSetsText().isEmpty();          // Antippen klappt dort die Sätze auf (Knopf „Ergebnis korrigieren“)
         node.setOnMouseClicked(e -> {
-            if (e.getClickCount() == 2) {
+            if (toggles ? e.getClickCount() == 2 : TouchSupport.isActivate(e, node)) {                 // 1.5.0 (#117): am Tablet genügt Antippen
                 Window w = root.getScene() == null ? null : root.getScene().getWindow();
                 if (ResultEntry.open(w, tournament, m, status)) onChanged.run();
             }

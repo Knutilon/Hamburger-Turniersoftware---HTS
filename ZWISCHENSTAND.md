@@ -1,4 +1,4 @@
-# Zwischenstand HTS 1.4.0 (22.11.2026)
+# Zwischenstand HTS 1.5.0 (23.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -13,7 +13,7 @@ PFLICHT BEI JEDEM „KOMPILIEREN“ (Nutzer 18.11.2026):
 - Was im Abschnitt „Backlog“ steht, NICHT einbauen.
 - HANDBUCH (Nutzer 18.11.2026, 21:53: „kompilieren inklusive Handbuch“): bei jedem „kompilieren“ das Handbuch
   mitziehen – Claude-Dokument „HTS-Dokumentation“ (Docs-Artifact 5b0b78d4-…, volle Ids mit Präfix mc3yk00qn9b) UND
-  docs/HTS-Dokumentation.md (kommt in alle drei Pakete). Stand 22.11.2026: beide auf 1.4.0 (Docs-Dokument
+  docs/HTS-Dokumentation.md (kommt in alle drei Pakete). Stand 23.11.2026: beide auf 1.5.0 (Docs-Dokument
   https://claude.ai/artifact/CF57Uw5Z3LoTJc9kK3R972, Knoten dc7b8f6f-8478) → bei jedem „kompilieren“ die neue Version
   nachtragen (Versionsverlauf, Stand-Zeile, Kapitel).
   Ersetzt die alte Regel „Dokumentation nur auf Zuruf“.
@@ -50,88 +50,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 - click-TT-Upload der Ergebnisdatei: Praxistest erfolgreich (Nutzer 15.11.2026); Einschränkung unter „Bekannte
   Grenzen“ in der Doku gestrichen (mit 1.1.0 ausgeliefert).
 
-## Feature-Sammlung für 1.5.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 1.6.0 (NICHT kompilieren – bis „… kompilieren“)
 
-(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.4.x)
+(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.5.x)
 
-1. ZAHLENFELDER OHNE KASTEN (Nutzer 22.11.2026, Issue #114, Fehler aus 1.4.0): Spinner zeigten ein rundes graues
-   Textfeld in einem eckigen Kasten. ERLEDIGT im Code (hts.css: .spinner als ein graues Pill-Feld, Textfeld und Pfeile
-   transparent, Dialoge weiß mit Rahmen) – kommt mit dem nächsten „kompilieren“ (1.4.1).
-2. URKUNDEN JE BEENDETER KLASSE (Nutzer 22.11.2026, Issue #115, Ablauf vom Nutzer bestätigt 22:52): Frage „Urkundendruck starten?“ nicht erst bei
-   Turnierende, sondern sobald eine Klasse über „Klasse beenden“ abgeschlossen ist – einmal je Klasse. „Zur
-   Druckansicht“ = Reiter mit Plätzen 1–3 DIESER Klasse; „Abbrechen“ = Reiter erscheint, nichts ausgewählt (man bleibt
-   auf der aktuellen Seite). Reiter ab der ersten beendeten Klasse; Liste nur beendete Klassen. ERLEDIGT im Code
-   (Tournament.certAsked/finishedRootClasses, Datei „cert-asked“, WorkspaceView.offerCertificates,
-   CertificatesDialog.ask(owner, Klasse), CertificatesView.selectTop3/selectNone(Klasse); Test
-   urkundenJeBeendeterKlasseUndFrageGemerkt). Beim „kompilieren“ README/Handbuch (1.4.0-Text „Ist das Turnier beendet“)
-   anpassen.
-3. URKUNDEN SCHON NACH EINER PHASE (Nutzer 22.11.2026, Issue #116; Regel bestätigt 23:16): Platz steht fest, wenn die
-   Partei in keiner späteren Phase mehr spielt und ihre Phase komplett gespielt ist (Folgephase angelegt); bei offenem
-   Korrektur-Reiter keine festen Plätze. Frage „Urkundendruck starten?“ NUR nach Abschluss einer Phase (bzw. „Klasse
-   beenden“), einmal je abgeschlossener Phase; Reiter „Urkunden drucken“ ab Turnierstart sichtbar (manueller Druck).
-   ERLEDIGT im Code: Tournament.fixedEntrants/certificateClasses/certAskKey („Klasse · Phase n“ bzw. Klassenname),
-   certificateEntries mit festen Plätzen laufender Klassen; Dialog-Text je nach Phase/Klasse; Test
-   urkundenFuerFestePlaetzeNachPhase1.
-4. BELASTUNGSTEST 30 × 200 (22.11.2026, ERLEDIGT im Code): Urkundenliste war ein GridPane mit 2 Eingabefeldern je
-   Urkunde → bei 6000 Urkunden OutOfMemory (1 GB). Jetzt virtualisierte TableView (Doppelklick ändert Name/Verein,
-   Spalte „Druckanpassung“ mit Knopf). certName über playerById statt linearer Suche; Bearbeiten berechnet das
-   Endergebnis nicht neu (Tournament.currentCertEntry). Messwerte: Turnier öffnen 3,3 s, Urkunden-Reiter mit 6000
-   Zeilen 1,3 s, läuft auch mit -Xmx256m; Urkunden-PDF 6000 Seiten 1,7 s (3 MB); Turnierdatei 5,9 MB speichern 0,6 s /
-   laden 1,3 s; keine Fehler gefunden. Test: /home/claude/work/stress140/Stress140.java, uikeep/ShotBig.java.
-   Offen: finalResult über alle 30 Klassen ca. 0,8 s (bestehender Code) – bei Bedarf zwischenspeichern.
-5. URKUNDEN-REITER BREITE NUTZEN (Nutzer 22.11.2026, 23:16; Entwurf bestätigt 23:20, ERLEDIGT im Code: CertificatesView.layoutFor ab 1420 px drei Spalten, sonst Vorschau links unter den Einstellungen; Suche in der Tabelle; Druckknopf „n Urkunden drucken“) – Canvas
-   https://claude.ai/artifact/M7mfRNQTzhrogA8Ls6mhQQ, Boards „Breite“ (drei Spalten: links „Welche Urkunden?“ +
-   Urkundentexte untereinander, Mitte Tabelle mit Suche über volle Höhe, rechts Vorschau größer und stehend mit
-   Blättern und „Als PDF speichern“ / „n Urkunden drucken“) und „Schmal“ (1093 px: Vorschau unter den Einstellungen).
-6. TABLET: KNOPF ZUSÄTZLICH ZUM DOPPELKLICK (Nutzer 23.11.2026, Issue #117): Überall, wo bisher ein Doppelklick nötig
-   ist (Turnier öffnen, Zeile bearbeiten, Name/Verein bei Urkunden ändern), zusätzlich einen sichtbaren Knopf anbieten
-   – Doppeltippen ist am Tablet unzuverlässig.
-7. TABLET: HINWEISE ZU GESPERRTEN KNÖPFEN PER ANTIPPEN (Nutzer 23.11.2026, Issue #118): Erklärungen, die bisher nur
-   beim Darüberfahren mit der Maus erscheinen (z. B. warum „Gesamtergebnis als PDF“ gesperrt ist), auch per Antippen
-   zeigen.
-8. TABLET: BILDSCHIRMTASTATUR BEI EINGABEFELDERN ÖFFNEN (Nutzer 23.11.2026, Issue #119): Die Windows-
-   Bildschirmtastatur gezielt öffnen, wenn ein Eingabefeld mit dem Finger angetippt wird (JavaFX macht das nicht
-   zuverlässig von selbst).
-9. TABLET: GRÖSSERE ZIELE IM KO-BAUM (Nutzer 23.11.2026, Issue #120): Spielkarten im KO-Baum und Blätter-Pfeile im
-   Touch-Modus größer, damit sie mit dem Finger sicher treffbar sind.
-10. TABLET: EIGENES ZAHLENFELD IM ERGEBNISDIALOG (Nutzer 23.11.2026, Issue #121): Große Tasten 0–9, „Weiter“ und
-   „Löschen“ im Ergebnisdialog, damit die Bildschirmtastatur nicht gebraucht wird.
-11. ERGEBNIS: SCHNELLEINGABE DER SÄTZE (Nutzer 23.11.2026, Issue #122): Knöpfe für häufige Satzergebnisse (z. B. 11:7)
-   mit einem Tipp; nur Ausnahmen wie 13:11 von Hand.
-12. ERGEBNIS DIREKT VON DER TISCHKARTE (Nutzer 23.11.2026, Issue #123): Ein Tipp auf einen belegten Tisch öffnet
-   sofort die Ergebniseingabe für dieses Spiel.
-13. TABLET-MODUS ZUM EINSCHALTEN (Nutzer 23.11.2026, Issue #124): Dauerhafter Schalter (z. B. in der Info) für den
-   Tablet-Modus statt nur automatischer Umschaltung beim ersten Fingertipp – auch für Touch-Laptops.
-14. DIALOGE: WICHTIGE KNÖPFE UNTEN FEST (Nutzer 23.11.2026, Issue #125): „Speichern“, „Weiter“, „Drucken“ in Dialogen
-   größer und immer sichtbar am unteren Rand, ohne Scrollen.
-15. TABLET: SICHTBARES „⋮“-MENÜ STATT LANGEM ANTIPPEN (Nutzer 23.11.2026, Issue #126): An Zeilen und Karten ein
-   „⋮“-Symbol, das dieselben Aktionen wie das Kontextmenü anbietet.
-16. AUSLOSUNG: TAUSCHEN PER ANTIPPEN (Nutzer 23.11.2026, Issue #127): Beim Tauschen in der Auslosung zusätzlich
-   „Antippen, dann Ziel antippen“ statt nur Ziehen.
-17. TABLET: HOCH- UND QUERFORMAT (Nutzer 23.11.2026, Issue #128): Tische, Warteschlange und Spiele so anordnen, dass
-   auch ein hochkant gehaltenes Tablet sinnvoll aussieht.
-18. TABLET: ZOOM MIT ZWEI FINGERN (Nutzer 23.11.2026, Issue #129): KO-Baum und Gruppenansicht mit zwei Fingern
-   vergrößern und verkleinern.
-19. WARTEZUSTAND SICHTBAR (Nutzer 23.11.2026, Issue #130): Bei längeren Vorgängen (Phase anlegen, großes PDF) ein
-   deutlicher Hinweis, damit niemand mehrfach tippt bzw. klickt.
-20. LETZTES ERGEBNIS ZURÜCKNEHMEN (Nutzer 23.11.2026, Issue #131): Knopf „Letztes Ergebnis zurücknehmen“ für
-   Tippfehler, ohne den Weg über die Korrektur.
-21. URKUNDEN: GEDRUCKTE URKUNDEN MERKEN (Nutzer 23.11.2026, Issue #132): Bereits gedruckte Urkunden markieren, damit
-   nach einer weiteren Phase nur die neuen ausgewählt werden.
-22. TABLET: TEST AUF ECHTEM GERÄT (Nutzer 23.11.2026, Issue #133): Nach den Tablet-Verbesserungen einmal auf einem
-   echten Windows-Tablet testen (bisher nur nachgebildete Fingereingaben).
-23. WEBSERVER: EINSTELLUNGEN SERVERADRESSE, SCHLÜSSEL, VERÖFFENTLICHEN EIN/AUS (Nutzer 23.11.2026, Issue #135):
-   Einstellungen für die Ergebnisse auf dem Webserver: Serveradresse und geheimer Schlüssel (je Turnier oder als
-   Programmeinstellung) sowie „Veröffentlichen ein/aus“. Teil von #101 auf HTS-Seite; der Server selbst bleibt im
-   Backlog.
-24. WEBSERVER: TURNIERSTAND HOCHLADEN (Nutzer 23.11.2026, Issue #136): Nach jeder Änderung (Ergebnis, neue Phase,
-   Tischvergabe) schickt HTS den Turnierstand verschlüsselt (HTTPS) an den Server, gedrosselt auf höchstens alle paar
-   Sekunden; Grundlage ist die Turnierdatei. Nur Einsehen – vom Server fließt nichts zurück.
-25. WEBSERVER: PUFFER BEI FUNKLOCH UND STATUSANZEIGE (Nutzer 23.11.2026, Issue #137): Ist der Server nicht erreichbar,
-   merkt sich HTS den letzten Stand und schickt ihn nach, sobald die Verbindung wieder steht. Kleine Anzeige
-   „veröffentlicht vor 5 s“ bzw. „keine Verbindung“.
-26. WEBSERVER: DATENSCHUTZ-KNÖPFE (Nutzer 23.11.2026, Issue #138): Knöpfe „Live-Daten löschen“ und „nur Endergebnis
-   behalten“ sowie optional abgekürzte Vornamen für die veröffentlichten Daten.
+1. TABLET: TEST AUF ECHTEM GERÄT (Issue #133, offen aus 1.5.0): Die Tablet-Funktionen von 1.5.0 auf einem echten
+   Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
+   Gerät; Ergebnisse als Bug/Feature melden.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
@@ -174,6 +99,37 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 
 ## Umgesetzt
+
+1.5.0 (23.11.2026, Commit „HTS 1.5.0“, Closes #114–#132, #135–#139; #133 bleibt offen). README „Neu in 1.5.0“,
+   Handbuch (md + Claude-Docs), docs/WEBSERVER-PROTOKOLL.md neu.
+   - #114 hts.css .spinner als ein graues Feld. #115/#116 Urkunden je abgeschlossener Phase: Tournament.fixedEntrants
+     (keine spätere Phase + Phase komplett, ohne offenen Korrektur-Reiter), certificateClasses, certAskKey („Klasse ·
+     Phase n“ bzw. Klassenname, Datei „cert-asked“), Reiter ab Turnierstart; Dialog-Text je Phase/Klasse.
+   - Belastungstest 30 × 200 (stress140/Stress140.java, uikeep/ShotBig.java): Urkundenliste jetzt TableView (vorher
+     OutOfMemory), certName über playerById, Tournament.currentCertEntry. Urkunden-Reiter dreispaltig ab 1420 px
+     (CertificatesView.layoutFor), Suche, „n Urkunden drucken“.
+   - #117 TouchSupport.isActivate (Antippen = Doppelklick) an allen Öffnen-Stellen, Knopf „Ergebnis korrigieren“ in
+     Gruppenzeilen. #118 Szenenfilter zeigt Tooltip des Rahmens gesperrter Knöpfe beim Antippen/Klick. #119 TabTip.exe
+     (sonst osk.exe) beim Antippen eines Eingabefelds (nur Windows, ungetestet). #120/#129 Zoom (Scale auf overviewBox,
+     ZoomEvent, Strg+Mausrad, Knopf „Zoom n % – zurücksetzen“), größere Blätter-Pfeile. #121/#122 Zahlenfeld (nur
+     Tablet-Modus/Touch) und Schnelleingabe im ResultDialog. #123 Tischkarte: Klick auf die Partie = Ergebnis.
+     #124 TouchSupport.setTabletMode (Preferences), Schalter in der Info. #125 größere Dialogknöpfe (.touch).
+     #126 Spalte „Aktionen“ mit „⋮“ in PlayerTableView. #127 DrawView: Tauschen per Antippen (TAP_SOURCE/TAP_TARGET
+     an startDrag/dropTarget, Stil .tap-picked). #128 TablesView hochkant (StackPane wide/tall). #130 Ui.busy
+     („Bitte warten“, alle Reports-PDFs, Phase abschließen, Urkunden drucken). #131 Tournament.undoableResult/
+     undoLastResult, Knopf auf Tische/Spiele. #132 certPrinted (Datei „cert-printed“), Spalte „Gedruckt“, Auswahl
+     „Noch nicht gedruckte“, Reports.printWithDialog(…, onPrinted).
+   - #135–#138 de.hts.web.Publisher (HTTP-Client, Drosselung 5 s, Puffer/Retry 10 s, Status), WebSettings
+     (Preferences), Tournament.publish/publishAbbrev (Datei „publish“, „publish-abbrev“), TournamentFile.publishBytes/
+     abbreviateFirstNames; Overview-Reiter „Webserver“ (Verbindung testen = GET /api/status), Turnierseite „Live im
+     Internet“, Statusanzeige unten rechts. Getestet gegen Testempfänger (Version150Test). Server (#101) weiter Backlog.
+   - #139 de.hts.persistence.Organizer (ausrichter.properties + ausrichter-logo.png im Ablageordner), Overview-Reiter
+     „Ausrichter“, Logo auf Schiedsrichterzettel (PdfCanvas.image, rechtsbündig 90 × 38 px) und Live-Seiten
+     (/live/logo.png). Standard-Logo HaTTV (de/hts/report/hattv-logo.png, vom Nutzer im Zettel-Entwurf eingefügt;
+     Hinweis in Lizenzen/LIESMICH und ABHAENGIGKEITEN).
+   - Schiedsrichterzettel nach Nutzer-Entwurf: Logo oben rechts, HTS-Marke unten rechts in der Legendenzeile (genau A6).
+   Tests: Version150Test (8), Version140Test (9), Fixture turnierdatei-1.5.0; alle Tests grün.
+
 
 1.4.0 (22.11.2026, Commit „HTS 1.4.0“, Closes #108–#113). README „Neu in 1.4.0“, Handbuch (md + Claude-Docs) nachgetragen.
    #108 Enum SlipDesign (PLAYER/REFEREE), Tournament.slipDesign, Turnierdatei „slip-design“ (auch in der Leseliste von

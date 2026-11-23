@@ -175,4 +175,40 @@ public final class Ui {
         double w = Math.max(min, Math.min(SEARCH_MAX_WIDTH, Math.floor(free)));
         if (Math.abs(f.getPrefWidth() - w) > 0.5) f.setPrefWidth(w);
     }
+
+    /**
+     * 1.5.0 (#130): Längere Vorgänge (Phase anlegen, großes PDF): zuerst einen deutlichen Hinweis „Bitte warten“ über dem
+     * Fenster zeigen (und die Sanduhr), dann die Arbeit erledigen – damit niemand mehrfach klickt bzw. tippt.
+     */
+    public static void busy(javafx.stage.Window owner, String text, Runnable work) {
+        if (owner == null || owner.getScene() == null || !owner.isShowing()) {
+            work.run();
+            return;
+        }
+        javafx.scene.Scene sc = owner.getScene();
+        javafx.scene.Cursor old = sc.getCursor();
+        sc.setCursor(javafx.scene.Cursor.WAIT);
+        javafx.scene.control.Label l = new javafx.scene.control.Label("Bitte warten – " + text);
+        l.getStyleClass().add("busy-hint");
+        l.setWrapText(true);
+        l.setMaxWidth(420);
+        javafx.stage.Popup pop = new javafx.stage.Popup();
+        pop.getContent().add(l);
+        if (sc.getStylesheets() != null) l.getStylesheets().addAll(sc.getStylesheets());
+        pop.show(owner);
+        pop.setX(owner.getX() + (owner.getWidth() - l.prefWidth(-1)) / 2);
+        pop.setY(owner.getY() + owner.getHeight() / 3);
+        sc.getRoot().setDisable(true);
+        javafx.animation.PauseTransition p = new javafx.animation.PauseTransition(javafx.util.Duration.millis(60));
+        p.setOnFinished(e -> {
+            try {
+                work.run();
+            } finally {
+                sc.getRoot().setDisable(false);
+                sc.setCursor(old);
+                pop.hide();
+            }
+        });
+        p.play();
+    }
 }

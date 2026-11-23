@@ -22,6 +22,7 @@ als 6 Monate ist (Regel und Ablauf: `CLAUDE.md` im Projektwurzelverzeichnis).
 | Apache PDFBox (pdfbox, pdfbox-io, fontbox) | 3.0.8 – seit HTS 0.32.0 (vorher 3.0.5) | Fat-Jar `hts.jar`; `pom.xml` (Jars vom Nutzer von Maven Central geladen) | Apache 2.0 | 3.0.8 (11.07.2026) | Keine bekannte CVE für den Kern von 3.0.5 (Snyk). CVE-2026-33929 betrifft nur das Beispiel „ExtractEmbeddedFiles“ (nicht in HTS). CVE-2026-23907 (Pfad-Traversal beim Auslesen eingebetteter Dateien über `PDComplexFileSpecification.getFilename()`) betrifft das Lesen/Extrahieren von Anhängen – HTS erzeugt PDFs nur und liest keine fremden PDFs. Mit 0.32.0 auf 3.0.8 aktualisiert. |
 | Apache Commons Logging | 1.3.5 | Fat-Jar `hts.jar` (von PDFBox benötigt) | Apache 2.0 | 1.3.5 aktuell | Keine bekannte CVE. |
 | Schrift Comic Neue Bold (für Urkunden) | 2.51 (Debian-Paket `fonts-comic-neue` 2.51-4), für die PDF-Einbettung von OpenType/CFF in TrueType-Kurven umgerechnet – seit HTS 1.4.0 | Fat-Jar `hts.jar` (`de/hts/fonts/ComicNeue-Bold.ttf`); Lizenztext `OFL-ComicNeue.txt` daneben und im Ordner `Lizenzen` | SIL Open Font License 1.1 (kein reservierter Schriftname) | 2.51 | Schriftdatei, kein ausführbarer Code; HTS lädt nur die mitgelieferte Datei (keine fremden Schriften). Bei der nächsten Prüfung mit bewerten. |
+| Logo Hamburger Tisch-Tennis-Verband (Standard-Logo des Ausrichters) | PNG 294 × 300 – seit HTS 1.5.0 | Fat-Jar `hts.jar` (`de/hts/report/hattv-logo.png`) | Rechte beim HaTTV, auf Wunsch des Projektinhabers eingebunden; nicht AGPL | – | Bilddatei, kein ausführbarer Code. Eigene Logos (Reiter „Ausrichter“) werden beim Hochladen eingelesen (ImageIO) und als PNG neu geschrieben. |
 
 ## Nur zum Bauen (nicht ausgeliefert)
 
@@ -57,6 +58,7 @@ als 6 Monate ist (Regel und Ablauf: `CLAUDE.md` im Projektwurzelverzeichnis).
 | 07.11.2026 | Claude (HTS 0.35.0, keine neue Prüfung) | Neu: optionaler Handy-Zugang (lokaler Webserver, JDK-Modul `jdk.httpserver`, im ausgelieferten JRE enthalten) – keine neue Bibliothek | Angriffsflächen-Abschnitt ergänzt; bei der nächsten Prüfung CVEs zu `jdk.httpserver` (Teil der Java-Laufzeit) mit bewerten |
 | 06.11.2026 | Claude (HTS 0.32.0, keine neue Prüfung) | JavaFX 21.0.8 und PDFBox/pdfbox-io/fontbox 3.0.8 eingebaut (Jars vom Nutzer, Herkunft Maven Central; Archive und Manifest-Versionen geprüft) | Issue #12 erledigt |
 | 22.11.2026 | Claude (HTS 1.4.0, keine neue Prüfung) | Neu: Schrift Comic Neue Bold (OFL 1.1) für den Urkundendruck, in `hts.jar` eingebettet | Lizenztext in „Lizenzen“ und in der Info; Tabelle ergänzt |
+| 23.11.2026 | Claude (HTS 1.5.0, keine neue Prüfung) | Neu: Logo des HaTTV (Bild), HTTP-Client der Java-Laufzeit (`java.net.http`) für „Live im Internet“ – keine neue Bibliothek | Angriffsfläche: HTS sendet nur (HTTPS, Schlüssel), nimmt nichts an; bei der nächsten Prüfung `java.net.http` mit bewerten |
 
 ## Quellen der Prüfung 04.11.2026
 

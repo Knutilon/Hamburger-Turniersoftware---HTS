@@ -184,7 +184,7 @@ public final class ClassesView {
             if (b != null && b != a) openDefaultTab(b);
         });
         classList.setOnMouseClicked(e -> {
-            if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) editClass();
+            if (TouchSupport.isActivate(e, classList) && e.getClickCount() == 2) editClass();   // Antippen wählt nur aus
         });
         // 0.38 (#52): Taste „Entf“ in der Klassenliste löscht die markierte Klasse – mit denselben Rückfragen
         classList.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, e -> {
@@ -1411,7 +1411,7 @@ public final class ClassesView {
                 }
             };
             row.setOnMouseClicked(e -> {
-                if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2 && !row.isEmpty()) {
+                if (TouchSupport.isActivate(e, row) && !row.isEmpty()) {
                     PlayingClass c = selectedClass();
                     if (c == null || c.isDoubles()) return;
                     table.getSelectionModel().clearAndSelect(row.getIndex());

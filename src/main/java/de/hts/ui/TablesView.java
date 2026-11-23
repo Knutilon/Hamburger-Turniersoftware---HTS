@@ -44,7 +44,12 @@ public final class TablesView {
     private final Consumer<String> status;
     private final Runnable onChanged;
 
-    private final HBox root = new HBox(16);
+    /** 1.5.0 (#128): quer = Tische links, Warteschlange rechts; hochkant = Warteschlange unter den Tischen. */
+    private final javafx.scene.layout.StackPane root = new javafx.scene.layout.StackPane();
+    private final HBox wide = new HBox(16);
+    private final VBox tall = new VBox(16);
+    private Node leftPart, rightPart;
+    private Boolean portrait;
     private final javafx.scene.layout.GridPane tables = new javafx.scene.layout.GridPane();
     private final List<Node> cards = new java.util.ArrayList<>();
     private ScrollPane tablesScroll;
@@ -85,16 +90,24 @@ public final class TablesView {
         countLabel.setMinWidth(Region.USE_PREF_SIZE);
         tableCount.setMinWidth(Region.USE_PREF_SIZE);
         assign.setMinWidth(Region.USE_PREF_SIZE);
-        autoPrint.setWrapText(true);
-        autoPrint.setMinHeight(Region.USE_PREF_SIZE);
+        // 1.5.0: Häkchen ohne eigenen Text + umbrechendes Label (der Text ragte bei schmalem Fenster über die Karte)
+        String apText = autoPrint.getText();
+        autoPrint.setText(null);
+        Label apLabel = new Label(apText);
+        apLabel.setWrapText(true);
+        apLabel.setMinHeight(Region.USE_PREF_SIZE);
+        apLabel.setOnMouseClicked(e -> autoPrint.setSelected(!autoPrint.isSelected()));
+        HBox apRow = new HBox(6, autoPrint, apLabel);
+        apRow.setAlignment(Pos.TOP_LEFT);
         HBox countBox = new HBox(10, countLabel, tableCount);
         countBox.setAlignment(Pos.CENTER_LEFT);
         countBox.setMinWidth(Region.USE_PREF_SIZE);
-        javafx.scene.layout.FlowPane countRow = new javafx.scene.layout.FlowPane(12, 8, countBox, assign, autoPrint);
+        javafx.scene.layout.FlowPane countRow = new javafx.scene.layout.FlowPane(12, 8, countBox, assign, apRow);
         countRow.setAlignment(Pos.CENTER_LEFT);
         countRow.setMinWidth(0);
         Ui.oneLineWhenPossible(countRow);
-        autoPrint.maxWidthProperty().bind(countRow.widthProperty());
+        apLabel.maxWidthProperty().bind(countRow.widthProperty().subtract(30));
+        apRow.maxWidthProperty().bind(countRow.widthProperty());
 
         tables.setHgap(CARD_GAP);
         tables.setVgap(CARD_GAP);
@@ -119,12 +132,42 @@ public final class TablesView {
         right.setPrefWidth(380);
         right.setMinWidth(320);
 
-        root.getChildren().addAll(left, right);
+        leftPart = left;
+        rightPart = right;
+        wide.getChildren().addAll(left, right);
+        root.getChildren().setAll(wide);
         root.setPadding(new Insets(0, 40, 16, 40));
+        root.sceneProperty().addListener((o, a, sc) -> {
+            if (sc == null) return;
+            javafx.beans.InvalidationListener orient = x -> applyOrientation(sc.getWidth(), sc.getHeight());
+            sc.widthProperty().addListener(orient);
+            sc.heightProperty().addListener(orient);
+            applyOrientation(sc.getWidth(), sc.getHeight());
+        });
     }
 
     public Node getRoot() {
         return root;
+    }
+
+    private void applyOrientation(double w, double h) {
+        boolean p = h > w * 1.05;                       // Tablet hochkant
+        if (portrait != null && portrait == p) return;
+        portrait = p;
+        if (p) {
+            wide.getChildren().clear();
+            VBox.setVgrow(leftPart, Priority.ALWAYS);
+            ((Region) rightPart).setPrefHeight(320);
+            ((Region) rightPart).setMaxWidth(Double.MAX_VALUE);
+            tall.getChildren().setAll(leftPart, rightPart);
+            root.getChildren().setAll(tall);
+        } else {
+            tall.getChildren().clear();
+            ((Region) rightPart).setPrefHeight(Region.USE_COMPUTED_SIZE);
+            wide.getChildren().setAll(leftPart, rightPart);
+            root.getChildren().setAll(wide);
+        }
+        layoutCards();
     }
 
     public void refresh() {
@@ -329,6 +372,14 @@ public final class TablesView {
         // links die Partie, rechts daneben die Aktionen
         VBox info = new VBox(6, what, a, vs, b, time);
         info.setMinWidth(0);
+        if (m.getStatus() != de.hts.tournament.MatchStatus.PAUSED) {
+            // 1.5.0 (#123): Antippen bzw. Klick auf die Partie öffnet direkt die Ergebniseingabe
+            info.getStyleClass().add("clickable");
+            Tooltip.install(info, new Tooltip("Antippen bzw. Klicken: Ergebnis eintragen"));
+            info.setOnMouseClicked(e -> {
+                if (e.getButton() == javafx.scene.input.MouseButton.PRIMARY && e.getClickCount() == 1) enterResult(m);
+            });
+        }
         HBox.setHgrow(info, Priority.ALWAYS);
         actions.setMinWidth(Region.USE_PREF_SIZE);
         actions.setAlignment(Pos.TOP_RIGHT);

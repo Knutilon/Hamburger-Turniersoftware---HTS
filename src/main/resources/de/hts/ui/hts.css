@@ -705,8 +705,38 @@
 .lock-banner .label {
     -fx-text-fill: #7a4b00;
 }
-.spinner .text-field {
-    -fx-background-radius: 999 0 0 999;
+/* 1.4.1: Zahlenfelder als EIN graues Feld wie Text- und Auswahlfelder – kein Kasten um ein rundes Feld */
+.spinner {
+    -fx-background-color: -hts-row;
+    -fx-background-radius: 999;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-border-radius: 999;
+    -fx-padding: 0 4 0 0;
+}
+.spinner:focused, .spinner:contains-focus {
+    -fx-background-color: white;
+    -fx-border-color: -hts-turquoise;
+}
+.dialog-pane .spinner { -fx-background-color: white; -fx-border-color: -hts-line; }
+.dialog-pane .spinner:contains-focus { -fx-border-color: -hts-turquoise; }
+.spinner .text-field, .spinner .text-field:focused {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-background-radius: 0;
+}
+.spinner .increment-arrow-button, .spinner .decrement-arrow-button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0.2em 0.6em 0.2em 0.6em;
+}
+.spinner .increment-arrow-button:hover, .spinner .decrement-arrow-button:hover {
+    -fx-background-color: rgba(23, 58, 108, 0.10);
+    -fx-background-radius: 6;
+}
+.spinner .increment-arrow-button .increment-arrow, .spinner .decrement-arrow-button .decrement-arrow {
+    -fx-background-color: -hts-navy;
 }
 
 /* --- Spielstatus --- */
@@ -1052,3 +1082,22 @@
 .touch .scroll-bar:vertical { -fx-pref-width: 22px; }
 .touch .scroll-bar:horizontal { -fx-pref-height: 22px; }
 .touch .spinner .increment-arrow-button, .touch .spinner .decrement-arrow-button { -fx-padding: 0.7em 0.9em 0.7em 0.9em; }
+
+/* 1.5.0 (#121/#122): Zahlenfeld und Schnelleingabe im Ergebnisdialog */
+.button.pad-key { -fx-font-size: 18px; -fx-padding: 6 0 6 0; }
+.keypad { -fx-background-color: #f4f6f9; -fx-background-radius: 12; -fx-padding: 10; }
+.button.quick-set { -fx-padding: 5 12 5 12; }
+.touch .button.quick-set { -fx-padding: 10 16 10 16; }
+/* 1.5.0 (#120): größere Ziele am Tablet */
+.touch .tab-page-arrow { -fx-padding: 10 16 10 16; -fx-font-size: 18px; }
+.touch .match-card { -fx-cursor: hand; }
+/* 1.5.0 (#127): per Antippen zum Tauschen ausgewählt */
+.tap-picked { -fx-background-color: #ffe9a8; -fx-background-radius: 6; -fx-border-color: #d18a00; -fx-border-radius: 6; }
+.button.row-menu { -fx-padding: 0 10 0 10; -fx-font-size: 15px; -fx-font-weight: bold; }
+/* 1.5.0 (#130): Hinweis bei längeren Vorgängen; (#125) Dialogknöpfe am Tablet größer */
+.busy-hint { -fx-background-color: #173a6c; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 16 26 16 26; -fx-background-radius: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 18, 0.2, 0, 4); }
+.touch .dialog-pane > .button-bar > .container > .button { -fx-min-height: 48px; -fx-font-size: 15px; -fx-padding: 10 24 10 24; }
+/* 1.5.0 (#137): Statusanzeige „Live im Internet“ */
+.publish-state { -fx-text-fill: -hts-muted; }
+.publish-state.publish-ok { -fx-text-fill: #1e7a3c; }
+.publish-state.publish-error { -fx-text-fill: #b42318; -fx-font-weight: bold; }

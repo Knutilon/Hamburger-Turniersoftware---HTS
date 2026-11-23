@@ -186,7 +186,19 @@ public final class LiveServer {
                 case "/live/spieler.json" -> null;
                 default -> "";
             };
-            if (path.equals("/live/spieler.json")) {
+            if (path.equals("/live/logo.png")) {                 // 1.5.0 (#139): Logo des Ausrichters
+                byte[] png = de.hts.persistence.Organizer.get().logoPng();
+                if (png == null) {
+                    send(ex, 404, "text/plain", "");
+                } else {
+                    ex.getResponseHeaders().set("Content-Type", "image/png");
+                    ex.getResponseHeaders().set("Cache-Control", "max-age=300");
+                    ex.sendResponseHeaders(200, png.length);
+                    try (OutputStream os = ex.getResponseBody()) {
+                        os.write(png);
+                    }
+                }
+            } else if (path.equals("/live/spieler.json")) {
                 send(ex, 200, "application/json", call(this::playersJson));
             } else if (html == null || html.isEmpty()) {
                 send(ex, 404, "text/html", page("Nicht gefunden", "<p>Diese Seite gibt es nicht. <a href=\"/live\">Zur Übersicht</a></p>", false));
@@ -276,7 +288,7 @@ public final class LiveServer {
 
     private static final String CSS = """
             body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;margin:0;background:#f4f5f7;color:#222;font-size:16px}
-            header{background:#173a6c;color:#fff;padding:12px 14px}header a{color:#fff;text-decoration:none}
+            header{background:#173a6c;color:#fff;padding:12px 14px}header .org{float:right;display:flex;align-items:center;gap:8px;margin-left:10px}header .org img{height:44px;width:auto;background:#fff;border-radius:50%;padding:2px}header .org span{font-size:11px;max-width:140px;text-align:right}header a{color:#fff;text-decoration:none}
             header h1{font-size:18px;margin:0}header .sub{font-size:13px;opacity:.85;margin-top:2px}
             main{padding:10px 12px 40px;max-width:900px;margin:0 auto}
             h2{font-size:17px;color:#173a6c;margin:18px 0 8px}h3{font-size:15px;color:#173a6c;margin:14px 0 6px}
@@ -307,12 +319,21 @@ public final class LiveServer {
     static final String SOURCE_FOOTER = "<footer class=\"src\">HTS " + de.hts.HtsApp.VERSION + " · freie Software · <a href=\""
             + de.hts.HtsApp.REPO_URL + "\" target=\"_blank\" rel=\"noopener\">Quellcode (AGPL-3.0)</a></footer>";
 
+    /** 1.5.0 (#139): Logo und Name des Ausrichters rechts im Seitenkopf (weißer Hintergrund, damit farbige Logos wirken). */
+    private static String organizerBadge() {
+        de.hts.persistence.Organizer o = de.hts.persistence.Organizer.get();
+        boolean logo = o.logoPng() != null;
+        if (!logo && o.getName().isBlank()) return "";
+        return "<div class=\"org\">" + (logo ? "<img src=\"/live/logo.png\" alt=\"Logo " + esc(o.getName()) + "\">" : "")
+                + (o.getName().isBlank() ? "" : "<span>" + esc(o.getName()) + "</span>") + "</div>";
+    }
+
     private String page(String title, String body, boolean reload) {
         String name = t.getName() == null || t.getName().isBlank() ? "Turnier" : t.getName();
         return "<!doctype html><html lang=\"de\"><head><meta charset=\"utf-8\">"
                 + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>" + esc(title) + " – " + esc(name)
-                + "</title><style>" + CSS + "</style></head><body><header><a href=\"/live\"><h1>" + esc(name) + "</h1></a><div class=\"sub\">"
-                + esc(title) + "</div></header><main>" + body + "</main>" + SOURCE_FOOTER + (reload ? RELOAD : "") + "</body></html>";
+                + "</title><style>" + CSS + "</style></head><body><header>" + organizerBadge() + "<a href=\"/live\"><h1>" + esc(name)
+                + "</h1></a><div class=\"sub\">" + esc(title) + "</div></header><main>" + body + "</main>" + SOURCE_FOOTER + (reload ? RELOAD : "") + "</body></html>";
     }
 
     // --- Live-Anzeige ----------------------------------------------------------------------------

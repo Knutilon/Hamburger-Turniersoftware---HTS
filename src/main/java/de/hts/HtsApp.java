@@ -25,7 +25,7 @@ public class HtsApp extends Application {
 
     public static final String NAME = "Hamburger Turniersoftware";
     public static final String SHORT_NAME = "HTS";
-    public static final String VERSION = "1.4.0";
+    public static final String VERSION = "1.5.0";
 
     /** Repository auf GitHub (Quellcode, Feature- und Bug-Sammlung) */
     public static final String REPO_URL = "https://github.com/Knutilon/Hamburger-Turniersoftware---HTS";
@@ -62,6 +62,7 @@ public class HtsApp extends Application {
     public void start(Stage stage) {
         this.stage = stage;
         hostServices = getHostServices();
+        de.hts.persistence.Organizer.load(store.getDirectory());     // 1.5.0 (#139): Ausrichter (Name, Logo)
         overview = new OverviewView(stage, store, this::openTournament);
 
         Scene scene = new Scene(root, 1200, 760);

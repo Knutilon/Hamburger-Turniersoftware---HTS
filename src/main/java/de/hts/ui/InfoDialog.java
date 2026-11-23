@@ -99,6 +99,20 @@ public final class InfoDialog extends Dialog<ButtonType> {
                 new HBox(10, link("Feature-Sammlung (Wünsche ansehen)", FEATURES), link("neuen Wunsch melden", NEW_FEATURE)),
                 new HBox(10, link("Bug-Sammlung (Fehler ansehen)", BUGS), link("neuen Fehler melden", NEW_BUG)));
 
+        // 1.5.0 (#124): Tablet-Modus
+        Label useHead = new Label("Bedienung");
+        useHead.getStyleClass().add("class-name");
+        javafx.scene.control.CheckBox tablet = new javafx.scene.control.CheckBox();
+        tablet.setSelected(TouchSupport.isTabletMode());
+        tablet.selectedProperty().addListener((o, a, b) -> TouchSupport.setTabletMode(b));
+        Label tabletText = new Label("Tablet-Modus: große Bedienelemente und Zahlenfeld bei der Ergebniseingabe – immer, nicht erst "
+                + "nach dem ersten Antippen (gilt für diesen Rechner)");
+        tabletText.setWrapText(true);
+        tabletText.setMinHeight(Region.USE_PREF_SIZE);
+        tabletText.setOnMouseClicked(e -> tablet.setSelected(!tablet.isSelected()));
+        HBox.setHgrow(tabletText, javafx.scene.layout.Priority.ALWAYS);
+        HBox tabletRow = new HBox(6, tablet, tabletText);
+
         // 1.4.0 (#109): Danksagung
         Label thanksHead = new Label("Danke an:");
         thanksHead.getStyleClass().add("class-name");
@@ -119,7 +133,7 @@ public final class InfoDialog extends Dialog<ButtonType> {
         libs.getStyleClass().add("hint");
         libs.setWrapText(true);
 
-        VBox content = new VBox(12, top, license, notice, new HBox(10, licenseLink, source), feedbackHead, feedback, thanksHead, thanks, libsHead, libs);
+        VBox content = new VBox(12, top, license, notice, new HBox(10, licenseLink, source), feedbackHead, feedback, useHead, tabletRow, thanksHead, thanks, libsHead, libs);
         content.setPadding(new Insets(8, 6, 4, 6));
         content.setPrefWidth(560);
         getDialogPane().setContent(content);

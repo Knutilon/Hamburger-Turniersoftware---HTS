@@ -101,7 +101,7 @@ public final class PlayerTableView {
                 }
             };
             row.setOnMouseClicked(e -> {
-                if (e.getButton() == javafx.scene.input.MouseButton.PRIMARY && e.getClickCount() == 2
+                if (TouchSupport.isActivate(e, row)
                         && !row.isEmpty() && onEdit != null) {
                     onEdit.accept(row.getItem());
                 }
@@ -266,7 +266,32 @@ public final class PlayerTableView {
         // 1.1: Spalte zeigt eine Person (kein Text) – Breite nach dem längsten möglichen Eintrag, nie „Überweis…“
         paidCol.getProperties().put("fit-min", Ui.textWidth("Überweisung (Verein)", true, 13) + 24);
 
-        table.getColumns().addAll(List.of(registered, paidCol, feeCol, reserve, seedCol, lastname, firstname, birth, sex, club, ttr,
+        // 1.5.0 (#126): sichtbares „⋮“ je Zeile – öffnet dieselben Aktionen wie das Kontextmenü (Tablet: statt langem Antippen)
+        TableColumn<Player, Player> menuCol = new TableColumn<>("Aktionen");
+        menuCol.setSortable(false);
+        menuCol.setCellValueFactory(c -> new javafx.beans.property.SimpleObjectProperty<>(c.getValue()));
+        menuCol.setCellFactory(col -> new javafx.scene.control.TableCell<>() {
+            private final javafx.scene.control.Button dots = new javafx.scene.control.Button("⋮");
+            {
+                dots.getStyleClass().addAll("pill", "row-menu");
+                dots.setFocusTraversable(false);
+                dots.setOnAction(e -> {
+                    if (getTableRow() == null || getTableRow().isEmpty()) return;
+                    int i = getTableRow().getIndex();
+                    if (!table.getSelectionModel().isSelected(i)) table.getSelectionModel().clearAndSelect(i);
+                    javafx.scene.control.ContextMenu cm = table.getContextMenu();
+                    if (cm != null) cm.show(dots, javafx.geometry.Side.BOTTOM, 0, 0);
+                });
+            }
+
+            @Override
+            protected void updateItem(Player p, boolean empty) {
+                super.updateItem(p, empty);
+                setGraphic(empty || p == null || table.getContextMenu() == null ? null : dots);
+            }
+        });
+        menuCol.getProperties().put("fit-header-only", true);
+        table.getColumns().addAll(List.of(menuCol, registered, paidCol, feeCol, reserve, seedCol, lastname, firstname, birth, sex, club, ttr,
                 entries, licence));
         table.getSortOrder().addAll(List.of(lastname, firstname));
 

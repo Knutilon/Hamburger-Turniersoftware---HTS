@@ -17,7 +17,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
 /**
- * 1.4.0 (#113): Frage „Urkundendruck starten?“ beim Turnierende. Links „Abbrechen“, rechts „Zur Druckansicht“.
+ * 1.4.0 (#113), 1.4.1: Frage „Urkundendruck starten?“, sobald eine Klasse beendet ist. Links „Abbrechen“, rechts „Zur Druckansicht“.
  */
 final class CertificatesDialog {
 
@@ -25,7 +25,7 @@ final class CertificatesDialog {
     }
 
     /** {@code true} = „Zur Druckansicht“ (Plätze 1 bis 3 vorausgewählt), {@code false} = „Abbrechen“. */
-    static boolean ask(Window owner) {
+    static boolean ask(Window owner, String className, boolean finished) {
         Dialog<ButtonType> d = new Dialog<>();
         if (owner != null) d.initOwner(owner);
         d.setTitle("Urkundendruck starten?");
@@ -33,9 +33,11 @@ final class CertificatesDialog {
         ButtonType cancel = new ButtonType("Abbrechen", ButtonBar.ButtonData.CANCEL_CLOSE);
         ButtonType go = new ButtonType("Zur Druckansicht", ButtonBar.ButtonData.OK_DONE);
         d.getDialogPane().getButtonTypes().addAll(cancel, go);
-        Label text = new Label("Das Turnier ist beendet. Mit „Zur Druckansicht“ öffnet HTS den Reiter „Urkunden drucken“; "
-                + "die Plätze 1 bis 3 sind schon ausgewählt.\n\nMit „Abbrechen“ erscheint der Reiter ebenfalls, aber es ist "
-                + "noch keine Urkunde zum Druck ausgewählt. Der Reiter bleibt danach erhalten.");
+        Label text = new Label((finished ? "Die Klasse „" + className + "“ ist beendet."
+                : "In der Klasse „" + className + "“ ist eine Phase abgeschlossen – die Plätze der Ausgeschiedenen stehen fest.")
+                + " Mit „Zur Druckansicht“ öffnet HTS den Reiter „Urkunden drucken“; die Plätze 1 bis 3 dieser Klasse "
+                + "(soweit sie feststehen) sind schon ausgewählt.\n\nMit „Abbrechen“ erscheint "
+                + "der Reiter ebenfalls, aber es ist noch keine Urkunde zum Druck ausgewählt. Der Reiter bleibt danach erhalten.");
         text.setWrapText(true);
         text.setPrefWidth(440);
         VBox box = new VBox(text);

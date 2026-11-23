@@ -249,7 +249,7 @@ public final class MatchesView {
                 }
             };
             row.setOnMouseClicked(e -> {
-                if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2 && !row.isEmpty()
+                if (TouchSupport.isActivate(e, row) && !row.isEmpty()
                         && ResultEntry.isEditable(row.getItem()) && !tournament.isInactiveMatch(row.getItem())) {
                     enterResult(row.getItem());
                 }

@@ -14,6 +14,7 @@ import de.hts.persistence.TournamentStore;
 import de.hts.player.Player;
 import de.hts.tournament.ClassType;
 import de.hts.tournament.Discipline;
+import de.hts.tournament.Match;
 import de.hts.tournament.PlayingClass;
 import de.hts.tournament.Tournament;
 import javafx.application.Platform;
@@ -60,7 +61,7 @@ public final class WorkspaceView {
     private static final String PREF_LAST_IMPORT_DIR = "lastImportDir";
     private static final DateTimeFormatter START_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm 'Uhr'");
 
-    private enum Page { PARTICIPANTS, HANDICAP, CLASSES, TABLES, MATCHES, PRESENTATION, MOBILE, CERTIFICATES }
+    private enum Page { PARTICIPANTS, HANDICAP, CLASSES, TABLES, MATCHES, PRESENTATION, MOBILE, CERTIFICATES, PUBLISH }
 
     private final Stage stage;
     private final TournamentStore store;
@@ -76,7 +77,6 @@ public final class WorkspaceView {
     private final PresentationView presentationView;
     private final CertificatesView certificatesView;                 // 1.4.0 (#113)
     private javafx.scene.control.Button certMenu;
-    private boolean wasFinished;
     private final HandicapView handicapView;
     private Button matchesMenu;
     /** Menüpunkte, die ein Vorgabeturnier erst nach dem Speichern der Vorgaberegeln zeigt */
@@ -108,7 +108,11 @@ public final class WorkspaceView {
         this.matchesView = new MatchesView(tournament, this::setStatus, this::onRunningChanged);
         this.presentationView = new PresentationView(tournament, this::setStatus);
         this.certificatesView = new CertificatesView(tournament, this::setStatus);
-        this.wasFinished = tournament.isStarted() && tournament.isCompletelyFinished();
+        // 1.4.1: Klassen, die beim Öffnen schon beendet sind (auch aus älteren Dateien), lösen keine Frage mehr aus
+        for (PlayingClass c : tournament.rootClasses()) {
+            String k = tournament.certAskKey(c);
+            if (k != null) tournament.restoreCertAsked(k);
+        }
         this.handicapView = new HandicapView(tournament, this::setStatus, this::onHandicapSaved, () -> stage);
         // Spielzettel drucken, sobald ein Spiel an einen Tisch geht
         tournament.addActivationListener(m -> {
@@ -143,8 +147,10 @@ public final class WorkspaceView {
         tournament.modifiedProperty().addListener((o, was, isModified) -> {
             updateSaveState();
             if (isModified) scheduleAutosave();
+            if (isModified && publisher != null) publisher.changed();      // 1.5.0 (#136)
         });
         updateSaveState();
+        updatePublisher();
 
         // 1.0 (#77): Zeitplan – Rückfragen „vor dem Zeitplan“ stellen, fällige Runden einreihen
         scheduleTimer = new javafx.animation.Timeline(new javafx.animation.KeyFrame(javafx.util.Duration.seconds(2), e -> scheduleTick()));
@@ -174,6 +180,11 @@ public final class WorkspaceView {
         if (currentPage == Page.HANDICAP && !handicapView.confirmLeave()) return false;
         presentationView.stop();
         scheduleTimer.stop();
+        if (publisher != null) {                         // letzter Stand: nach dem Speichern noch einmal (gedrosselt) – hier beenden
+            publisher.close();
+            publisher = null;
+        }
+        if (publishTimer != null) publishTimer.stop();
         if (liveServer != null) {
             liveServer.stop();
             liveServer = null;
@@ -199,10 +210,11 @@ public final class WorkspaceView {
         matchesMenu = header.addMenuItem("matches", "Spiele", null, () -> showPage(Page.MATCHES));
         afterHandicapMenus.add(matchesMenu);
         afterHandicapMenus.add(header.addMenuItem("presentation", "Präsentationsansicht", null, () -> showPage(Page.PRESENTATION)));
+        afterHandicapMenus.add(header.addMenuItem("publish", "Live im Internet", null, () -> showPage(Page.PUBLISH)));   // 1.5.0 (#135)
         if (de.hts.HtsApp.MOBILE_ENABLED) {                // 1.0 (#80): ausgeblendet, Code bleibt
             afterHandicapMenus.add(header.addMenuItem("mobile", "Mobile Einstellungen", null, () -> showPage(Page.MOBILE)));
         }
-        if (tournament.isCertTabShown() || wasFinished) showCertMenu();       // 1.4.0 (#113): erst nach Turnierende
+        if (tournament.isCertTabShown() || tournament.isStarted()) showCertMenu();   // 1.4.1: ab Turnierstart (Urkunden manuell)
         updateHandicapMenus();
         matchesMenu.setDisable(!tournament.isRunning());
         matchesMenu.setTooltip(new javafx.scene.control.Tooltip("Verfügbar, sobald das Turnier oder eine Klasse gestartet ist"));
@@ -369,7 +381,10 @@ public final class WorkspaceView {
         HBox.setHgrow(sbSpacer, Priority.ALWAYS);
         Label count = new Label();
         count.textProperty().bind(participants.countTextProperty());
-        HBox statusBar = new HBox(8, statusLabel, sbSpacer, count);
+        publishState.getStyleClass().add("publish-state");
+        publishState.managedProperty().bind(publishState.visibleProperty());
+        publishState.setVisible(false);
+        HBox statusBar = new HBox(8, statusLabel, sbSpacer, publishState, count);
         statusBar.setPadding(new Insets(6, 24, 6, 24));
         statusBar.getStyleClass().add("status-bar");
 
@@ -389,6 +404,234 @@ public final class WorkspaceView {
 
     private HBox slipDesignBox;
 
+    // --- 1.5.0 (#135–#138): Live im Internet -------------------------------------------------------------
+
+    private de.hts.web.Publisher publisher;
+    private javafx.animation.Timeline publishTimer;
+    private final Label publishState = new Label();
+
+    /** Startet bzw. beendet das Hochladen je nach Schalter des Turniers und Programmeinstellung. */
+    private void updatePublisher() {
+        boolean on = tournament.isPublish() && de.hts.web.WebSettings.configured();
+        if (on && publisher == null) {
+            publisher = new de.hts.web.Publisher(de.hts.web.WebSettings.server(), de.hts.web.WebSettings.key(), tournament.getId(),
+                    Platform::runLater, () -> de.hts.persistence.TournamentFile.publishBytes(tournament),
+                    () -> de.hts.persistence.Organizer.get().logoPng());
+            publisher.setTransform(tournament.isPublishAbbrev() ? de.hts.persistence.TournamentFile::abbreviateFirstNames : null);
+            if (publishTimer == null) {
+                publishTimer = new javafx.animation.Timeline(new javafx.animation.KeyFrame(javafx.util.Duration.seconds(1), e -> showPublishState()));
+                publishTimer.setCycleCount(javafx.animation.Animation.INDEFINITE);
+            }
+            publishTimer.play();
+        } else if (!on && publisher != null) {
+            publisher.close();
+            publisher = null;
+            if (publishTimer != null) publishTimer.stop();
+        }
+        showPublishState();
+    }
+
+    /** Statusanzeige unten rechts: „Live: veröffentlicht vor 5 s“ bzw. „Live: keine Verbindung – wird nachgeholt“. */
+    private void showPublishState() {
+        if (publisher == null) {
+            publishState.setVisible(false);
+            return;
+        }
+        de.hts.web.Publisher.Status st = publisher.status();
+        publishState.setVisible(true);
+        publishState.getStyleClass().removeAll("publish-ok", "publish-error");
+        String ago = st.lastSuccessMillis() == 0 ? "" : agoText(System.currentTimeMillis() - st.lastSuccessMillis());
+        switch (st.state()) {
+            case OK -> {
+                publishState.setText("Live: veröffentlicht " + ago);
+                publishState.getStyleClass().add("publish-ok");
+            }
+            case ERROR -> {
+                publishState.setText("Live: " + st.message() + (ago.isEmpty() ? "" : " (zuletzt " + ago + ")"));
+                publishState.getStyleClass().add("publish-error");
+            }
+            default -> publishState.setText("Live: " + st.message());
+        }
+    }
+
+    static String agoText(long ms) {
+        long s = Math.max(0, ms / 1000);
+        if (s < 60) return "vor " + s + " s";
+        long m = s / 60;
+        if (m < 60) return "vor " + m + " min";
+        return "vor " + (m / 60) + " h";
+    }
+
+    private Node publishPage() {
+        VBox box = new VBox(12);
+        box.getStyleClass().add("card");
+        box.setPadding(new Insets(18, 20, 18, 20));
+        box.setMaxWidth(820);
+        Label intro = new Label("Zuschauer und Spieler sehen Tische, Gruppen, KO-Baum und Ergebnisse dieses Turniers im Internet. HTS lädt "
+                + "nach jeder Änderung den Stand hoch (höchstens alle 5 Sekunden) – vom Server kommt nichts zurück.");
+        intro.setWrapText(true);
+        intro.setMinHeight(Region.USE_PREF_SIZE);
+        if (!de.hts.web.WebSettings.configured()) {
+            Label need = new Label("Noch kein Webserver eingetragen: in der Turnierübersicht unter „Webserver“ Adresse und Schlüssel eintragen.");
+            need.getStyleClass().add("warning");
+            need.setWrapText(true);
+            need.setMinHeight(Region.USE_PREF_SIZE);
+            box.getChildren().addAll(intro, need);
+        } else {
+            box.getChildren().add(intro);
+        }
+        javafx.scene.control.CheckBox on = new javafx.scene.control.CheckBox();
+        on.setSelected(tournament.isPublish());
+        on.setDisable(!de.hts.web.WebSettings.configured());
+        Label onText = new Label("Dieses Turnier veröffentlichen");
+        onText.getStyleClass().add("class-name");
+        on.selectedProperty().addListener((o, a, b) -> {
+            tournament.setPublish(b);
+            updatePublisher();
+            setStatus(b ? "Veröffentlichen eingeschaltet." : "Veröffentlichen ausgeschaltet – die Daten bleiben auf dem Server, bis sie gelöscht werden.");
+        });
+        javafx.scene.control.CheckBox abbr = new javafx.scene.control.CheckBox();
+        abbr.setSelected(tournament.isPublishAbbrev());
+        Label abbrText = new Label("Vornamen abkürzen (z. B. „M. Mustermann“) – Datenschutz");
+        abbrText.setWrapText(true);
+        abbr.selectedProperty().addListener((o, a, b) -> {
+            tournament.setPublishAbbrev(b);
+            if (publisher != null) publisher.setTransform(b ? de.hts.persistence.TournamentFile::abbreviateFirstNames : null);
+        });
+        box.getChildren().addAll(new HBox(6, on, onText), new HBox(6, abbr, abbrText));
+        if (de.hts.web.WebSettings.configured()) {
+            String url = de.hts.web.Publisher.publicUrl(de.hts.web.WebSettings.server(), tournament.getId());
+            Label urlLbl = new Label("Adresse für Zuschauer: " + url);
+            urlLbl.setWrapText(true);
+            urlLbl.setMinHeight(Region.USE_PREF_SIZE);
+            Button copy = new Button("Adresse kopieren");
+            copy.getStyleClass().add("pill");
+            copy.setMinWidth(Region.USE_PREF_SIZE);
+            copy.setOnAction(e -> {
+                javafx.scene.input.ClipboardContent cc = new javafx.scene.input.ClipboardContent();
+                cc.putString(url);
+                javafx.scene.input.Clipboard.getSystemClipboard().setContent(cc);
+                setStatus("Adresse kopiert.");
+            });
+            HBox urlRow = new HBox(10, urlLbl, copy);
+            urlRow.setAlignment(Pos.CENTER_LEFT);
+            box.getChildren().add(urlRow);
+        }
+        Label privHead = new Label("Datenschutz");
+        privHead.getStyleClass().add("class-name");
+        Button del = new Button("Live-Daten löschen");
+        del.getStyleClass().add("pill");
+        del.setMinWidth(Region.USE_PREF_SIZE);
+        Button fin = new Button("Nur Endergebnis behalten");
+        fin.getStyleClass().add("pill");
+        fin.setMinWidth(Region.USE_PREF_SIZE);
+        del.setDisable(!de.hts.web.WebSettings.configured());
+        fin.setDisable(!de.hts.web.WebSettings.configured());
+        del.setOnAction(e -> serverCommand(true));
+        fin.setOnAction(e -> serverCommand(false));
+        Label privHint = new Label("„Live-Daten löschen“ entfernt das Turnier vom Server (das Veröffentlichen wird ausgeschaltet). „Nur Endergebnis "
+                + "behalten“ lässt auf dem Server nur die Endergebnisse stehen. Die Turnierdatei auf diesem Rechner bleibt immer unverändert.");
+        privHint.getStyleClass().add("hint");
+        privHint.setWrapText(true);
+        privHint.setMinHeight(Region.USE_PREF_SIZE);
+        javafx.scene.layout.FlowPane privButtons = new javafx.scene.layout.FlowPane(8, 8, del, fin);
+        box.getChildren().addAll(privHead, privButtons, privHint);
+        VBox page = new VBox(box);
+        page.setPadding(new Insets(0, 40, 16, 40));
+        javafx.scene.control.ScrollPane sp = new javafx.scene.control.ScrollPane(page);
+        sp.setFitToWidth(true);
+        sp.getStyleClass().add("page-scroll");
+        return sp;
+    }
+
+    /** „Live-Daten löschen“ bzw. „Nur Endergebnis behalten“ – mit Rückfrage, im Hintergrund gesendet. */
+    private void serverCommand(boolean delete) {
+        Alert a = new Alert(Alert.AlertType.CONFIRMATION);
+        a.initOwner(stage);
+        a.setTitle(delete ? "Live-Daten löschen" : "Nur Endergebnis behalten");
+        a.setHeaderText(delete ? "Dieses Turnier vom Webserver löschen?" : "Auf dem Webserver nur die Endergebnisse behalten?");
+        a.setContentText(delete ? "Zuschauer sehen das Turnier danach nicht mehr. Das Veröffentlichen wird ausgeschaltet."
+                : "Tische, Gruppen, KO-Baum und Spiele verschwinden vom Server; die Endergebnisse bleiben. Das Veröffentlichen wird ausgeschaltet, "
+                + "damit nichts neu hochgeladen wird.");
+        ButtonType yes = new ButtonType(delete ? "Löschen" : "Nur Endergebnis behalten", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        a.getButtonTypes().setAll(ButtonType.CANCEL, yes);
+        DialogSizing.fit(a);
+        if (a.showAndWait().orElse(null) != yes) return;
+        tournament.setPublish(false);
+        updatePublisher();
+        de.hts.web.Publisher p = new de.hts.web.Publisher(de.hts.web.WebSettings.server(), de.hts.web.WebSettings.key(), tournament.getId(),
+                r -> { }, () -> new byte[0], () -> null, Long.MAX_VALUE, Long.MAX_VALUE);
+        Thread th = new Thread(() -> {
+            String msg;
+            try {
+                if (delete) p.deleteOnServer();
+                else p.keepOnlyFinalResults();
+                msg = delete ? "Live-Daten auf dem Webserver gelöscht." : "Auf dem Webserver stehen nur noch die Endergebnisse.";
+            } catch (java.io.IOException | InterruptedException ex) {
+                msg = "Webserver: " + (ex.getMessage() == null ? "nicht erreichbar" : ex.getMessage());
+            } finally {
+                p.close();
+            }
+            String fm = msg;
+            Platform.runLater(() -> {
+                setStatus(fm);
+                if (currentPage == Page.PUBLISH) showPage(Page.PUBLISH);
+            });
+        }, "HTS-Webserver-Befehl");
+        th.setDaemon(true);
+        th.start();
+    }
+
+    /**
+     * 1.5.0 (#131): „Letztes Ergebnis zurücknehmen“ (Tische und Spiele) – für Tippfehler, ohne den Weg über die
+     * Korrektur; gesperrt mit Hinweis, wenn es nicht mehr gefahrlos geht.
+     */
+    private final javafx.scene.layout.StackPane undoHolder = new javafx.scene.layout.StackPane();
+
+    private Node undoResultButton() {
+        refreshUndo();
+        return undoHolder;
+    }
+
+    private void refreshUndo() {
+        undoHolder.getChildren().setAll(buildUndoButton());
+    }
+
+    private Node buildUndoButton() {
+        Button b = new Button("Letztes Ergebnis zurücknehmen");
+        b.getStyleClass().add("pill");
+        b.setMinWidth(Region.USE_PREF_SIZE);
+        Match m = tournament.undoableResult();
+        if (m != null) {
+            b.setTooltip(new Tooltip("Spiel " + m.getNumber() + " (" + m.getClassName() + "): " + tournament.entrantName(m, m.getA()) + " – "
+                    + tournament.entrantName(m, m.getB()) + " " + m.getResultText()));
+        }
+        b.setOnAction(e -> {
+            Match u = tournament.undoableResult();
+            if (u == null) return;
+            Alert a = new Alert(Alert.AlertType.CONFIRMATION);
+            a.initOwner(stage);
+            a.setTitle("Letztes Ergebnis zurücknehmen");
+            a.setHeaderText("Ergebnis von Spiel " + u.getNumber() + " zurücknehmen?");
+            a.setContentText(tournament.entrantName(u, u.getA()) + " – " + tournament.entrantName(u, u.getB()) + "  " + u.getResultText()
+                    + "\n\nDas Spiel läuft danach wieder (am bisherigen Tisch, wenn er frei ist, sonst in der Warteschlange).");
+            ButtonType yes = new ButtonType("Zurücknehmen", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+            a.getButtonTypes().setAll(ButtonType.CANCEL, yes);
+            DialogSizing.fit(a);
+            if (a.showAndWait().orElse(null) != yes) return;
+            try {
+                Match back = tournament.undoLastResult();
+                setStatus("Ergebnis von Spiel " + back.getNumber() + " zurückgenommen.");
+            } catch (IllegalStateException ex) {
+                setStatus(ex.getMessage());
+            }
+            onRunningChanged();
+            showPage(currentPage);
+        });
+        return withDisabledHint(b, m == null ? "Kein Ergebnis zum Zurücknehmen – seit dem Öffnen wurde noch keins eingetragen, oder es "
+                + "hängt schon etwas davon ab (dann über „Ergebnis korrigieren“)." : null);
+    }
+
     /**
      * 1.4.0 (#108): Auswahl „Zettel-Design“ (Spielerzettel oder Schiedsrichterzettel) oben rechts im Reiter „Tische“;
      * gilt für alle Spielzettel (Einzel und Doppel) dieses Turniers.
@@ -401,7 +644,8 @@ public final class WorkspaceView {
         javafx.scene.control.ComboBox<de.hts.tournament.SlipDesign> box = new javafx.scene.control.ComboBox<>();
         box.getItems().setAll(de.hts.tournament.SlipDesign.values());
         box.setValue(tournament.getSlipDesign());
-        box.setMinWidth(Region.USE_PREF_SIZE);
+        box.setPrefWidth(210);                          // 1.5.0: feste Breite (Beschreibungen nur in der Liste) – passt auch hochkant
+        box.setMinWidth(210);
         box.setCellFactory(lv -> new javafx.scene.control.ListCell<>() {
             @Override
             protected void updateItem(de.hts.tournament.SlipDesign d, boolean empty) {
@@ -501,7 +745,7 @@ public final class WorkspaceView {
         } else if (page == Page.TABLES) {
             header.select("tables");
             pageTitle.setText("Tische");
-            topActions.getChildren().add(slipDesignControl());
+            topActions.getChildren().addAll(undoResultButton(), slipDesignControl());
             pageContent.getChildren().setAll(tablesView.getRoot());
             tablesView.refresh();
         } else if (page == Page.PRESENTATION) {
@@ -514,6 +758,10 @@ public final class WorkspaceView {
             pageTitle.setText("Urkunden drucken");
             pageContent.getChildren().setAll(certificatesView.getRoot());
             certificatesView.refresh();
+        } else if (page == Page.PUBLISH) {
+            header.select("publish");
+            pageTitle.setText("Live im Internet");
+            pageContent.getChildren().setAll(publishPage());
         } else if (page == Page.MOBILE) {
             header.select("mobile");
             pageTitle.setText("Mobile Einstellungen");
@@ -521,6 +769,7 @@ public final class WorkspaceView {
         } else if (page == Page.MATCHES) {
             header.select("matches");
             pageTitle.setText("Spiele");
+            topActions.getChildren().add(undoResultButton());
             pageContent.getChildren().setAll(matchesView.getRoot());
             matchesView.refresh();
         } else {
@@ -541,21 +790,31 @@ public final class WorkspaceView {
         certMenu = header.addMenuItem("certs", "Urkunden drucken", null, () -> showPage(Page.CERTIFICATES));
     }
 
-    /** 1.4.0 (#113): Beim Turnierende fragt HTS einmal, ob der Urkundendruck gestartet werden soll. */
+    /**
+     * 1.4.1: Sobald eine Phase abgeschlossen ist (Folgephase angelegt oder „Klasse beenden“) und dadurch Plätze
+     * feststehen, fragt HTS einmal je abgeschlossener Phase, ob der Urkundendruck gestartet werden soll. „Zur
+     * Druckansicht“ öffnet den Reiter mit den Plätzen 1 bis 3 dieser Klasse (soweit fest); „Abbrechen“
+     * lässt den Reiter erscheinen, ohne Urkunde auszuwählen (man bleibt auf der aktuellen Seite).
+     */
     private void offerCertificates() {
-        boolean finished = tournament.isStarted() && tournament.isCompletelyFinished();
-        boolean justFinished = finished && !wasFinished && !tournament.isCertTabShown();
-        wasFinished = finished;
-        if (finished) showCertMenu();
-        if (!justFinished) return;
+        if (tournament.isStarted()) showCertMenu();
+        List<PlayingClass> fresh = new java.util.ArrayList<>();
+        for (PlayingClass c : tournament.rootClasses()) {
+            String k = tournament.certAskKey(c);       // billig: erst bei neu abgeschlossener Phase rechnen
+            if (k == null || tournament.isCertAsked(k)) continue;
+            tournament.markCertAsked(k);
+            if (c.isFinished() || !tournament.fixedEntrants(c).isEmpty()) fresh.add(c);
+        }
+        if (fresh.isEmpty()) return;
         tournament.setCertTabShown(true);
         javafx.application.Platform.runLater(() -> {
-            if (CertificatesDialog.ask(stage)) {
-                showPage(Page.CERTIFICATES);
-                certificatesView.selectTop3();
-            } else {
-                showPage(Page.CERTIFICATES);
-                certificatesView.selectNone();
+            for (PlayingClass c : fresh) {
+                if (CertificatesDialog.ask(stage, c.getName(), c.isFinished())) {
+                    showPage(Page.CERTIFICATES);
+                    certificatesView.selectTop3(c.getName());
+                    return;
+                }
+                if (currentPage == Page.CERTIFICATES) certificatesView.selectNone(c.getName());
             }
         });
     }
@@ -563,6 +822,7 @@ public final class WorkspaceView {
     /** Nach Starts und Ergebnissen: Menü, Startanzeige und offene Seiten aktualisieren. */
     private void onRunningChanged() {
         offerCertificates();
+        refreshUndo();
         participants.refresh();
         if (matchesMenu != null) matchesMenu.setDisable(!tournament.isRunning());
         updateStartBox();

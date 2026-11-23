@@ -78,6 +78,8 @@ public final class OverviewView {
         // Kopfleiste
         appHeader.addMenuItem("tournaments", "Turniere", null, () -> showArchive(false));
         appHeader.addMenuItem("archive", "Archivierte Turniere", null, () -> showArchive(true));
+        appHeader.addMenuItem("organizer", "Ausrichter", null, this::showOrganizer);      // 1.5.0 (#139)
+        appHeader.addMenuItem("webserver", "Webserver", null, this::showWebserver);       // 1.5.0 (#135)
         appHeader.select("tournaments");
         InfoDialog.install(appHeader, () -> stage);
 
@@ -109,7 +111,7 @@ public final class OverviewView {
         empty.getStyleClass().add("hint");
         list.setPlaceholder(empty);
         list.setOnMouseClicked(e -> {
-            if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2
+            if (TouchSupport.isActivate(e, list)
                     && list.getSelectionModel().getSelectedItem() != null) {
                 open(list.getSelectionModel().getSelectedItem());
             }
@@ -166,7 +168,178 @@ public final class OverviewView {
     }
 
     /** 1.4.0 (#112): zwischen „Turniere“ und „Archivierte Turniere“ wechseln. */
+    private Node listCenter;
+
+    /** 1.5.0 (#139): Seite „Ausrichter“ – Name und Logo des ausrichtenden Verbands bzw. Vereins (für alle Turniere). */
+    private void showOrganizer() {
+        if (listCenter == null) listCenter = root.getCenter();
+        appHeader.select("organizer");
+        title.setText("Ausrichter");
+        subtitle.setText("Gilt für alle Turniere – Logo auf dem Schiedsrichterzettel und auf den Live-Seiten");
+        for (Button b : new Button[]{create, importFile, importResults}) {
+            b.setVisible(false);
+            b.setManaged(false);
+        }
+        de.hts.persistence.Organizer org = de.hts.persistence.Organizer.get();
+        Label nameLbl = new Label("Name des Ausrichters (Verband oder Verein)");
+        nameLbl.getStyleClass().add("class-name");
+        javafx.scene.control.TextField name = new javafx.scene.control.TextField(org.getName());
+        name.setPrefColumnCount(30);
+        name.setMaxWidth(520);
+        name.textProperty().addListener((o, a, b) -> org.setName(b));
+        Label logoLbl = new Label("Logo");
+        logoLbl.getStyleClass().add("class-name");
+        javafx.scene.image.ImageView preview = new javafx.scene.image.ImageView();
+        preview.setPreserveRatio(true);
+        preview.setFitWidth(150);
+        preview.setFitHeight(150);
+        Label noLogo = new Label("Kein Logo");
+        noLogo.getStyleClass().add("hint");
+        javafx.scene.layout.StackPane frame = new javafx.scene.layout.StackPane(preview, noLogo);
+        frame.setMinSize(170, 170);
+        frame.setMaxSize(170, 170);
+        frame.getStyleClass().add("card");
+        Label source = new Label();
+        source.getStyleClass().add("hint");
+        source.setWrapText(true);
+        Runnable show = () -> {
+            byte[] png = org.logoPng();
+            preview.setImage(png == null ? null : new javafx.scene.image.Image(new java.io.ByteArrayInputStream(png)));
+            noLogo.setVisible(png == null);
+            source.setText(switch (org.getLogoSource()) {
+                case DEFAULT -> "Standard: Logo des Hamburger Tisch-Tennis-Verbands";
+                case CUSTOM -> "Eigenes Logo (gespeichert im Ablageordner der Turniere)";
+                case NONE -> "Ohne Logo";
+            });
+        };
+        Button upload = new Button("Logo hochladen …", Icons.of(Icons.UPLOAD, 16));
+        upload.getStyleClass().add("navy-pill");
+        upload.setOnAction(e -> {
+            javafx.stage.FileChooser fc = new javafx.stage.FileChooser();
+            fc.setTitle("Logo des Ausrichters wählen");
+            fc.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("Bild (PNG, JPG)", "*.png", "*.jpg", "*.jpeg"));
+            java.io.File f = fc.showOpenDialog(stage);
+            if (f == null) return;
+            try {
+                java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(f);
+                if (img == null) throw new java.io.IOException("Das Bild lässt sich nicht lesen (bitte PNG oder JPG).");
+                // auf höchstens 600 Bildpunkte verkleinern und als PNG speichern (reicht für A6 und Bildschirm)
+                double k = Math.min(1, 600.0 / Math.max(img.getWidth(), img.getHeight()));
+                int w = (int) Math.round(img.getWidth() * k), h = (int) Math.round(img.getHeight() * k);
+                java.awt.image.BufferedImage out = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                java.awt.Graphics2D g = out.createGraphics();
+                g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                g.drawImage(img, 0, 0, w, h, null);
+                g.dispose();
+                java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+                javax.imageio.ImageIO.write(out, "png", bo);
+                org.setCustomLogo(bo.toByteArray());
+                show.run();
+            } catch (java.io.IOException | RuntimeException ex) {
+                showError("Logo konnte nicht übernommen werden: " + ex.getMessage());
+            }
+        });
+        Button std = new Button("Standard-Logo (HaTTV)");
+        std.getStyleClass().add("pill");
+        std.setOnAction(e -> {
+            org.useDefaultLogo();
+            show.run();
+        });
+        Button none = new Button("Kein Logo");
+        none.getStyleClass().add("pill");
+        none.setOnAction(e -> {
+            org.useNoLogo();
+            show.run();
+        });
+        for (Button b : new Button[]{upload, std, none}) b.setMinWidth(Region.USE_PREF_SIZE);
+        javafx.scene.layout.FlowPane buttons = new javafx.scene.layout.FlowPane(8, 8, upload, std, none);
+        Label hint = new Label("Das Logo erscheint auf dem Schiedsrichterzettel oben rechts und auf den Live-Seiten. Name und "
+                + "Logo gelten für alle Turniere auf diesem Rechner und liegen im Ablageordner der Turniere.");
+        hint.getStyleClass().add("hint");
+        hint.setWrapText(true);
+        hint.setMaxWidth(620);
+        hint.setMinHeight(Region.USE_PREF_SIZE);
+        VBox logoInfo = new VBox(10, source, buttons);
+        HBox logoRow = new HBox(18, frame, logoInfo);
+        VBox form = new VBox(12, nameLbl, name, logoLbl, logoRow, hint);
+        form.getStyleClass().add("card");
+        form.setPadding(new Insets(18, 20, 18, 20));
+        form.setMaxWidth(760);
+        VBox page = new VBox(form);
+        page.setPadding(new Insets(0, 40, 16, 40));
+        javafx.scene.control.ScrollPane sp = new javafx.scene.control.ScrollPane(page);
+        sp.setFitToWidth(true);
+        sp.getStyleClass().add("page-scroll");
+        show.run();
+        root.setCenter(sp);
+    }
+
+    /** 1.5.0 (#135): Seite „Webserver“ – Adresse und Schlüssel (Programmeinstellung), Verbindung testen. */
+    private void showWebserver() {
+        if (listCenter == null) listCenter = root.getCenter();
+        appHeader.select("webserver");
+        title.setText("Webserver");
+        subtitle.setText("Ergebnisse im Internet einsehen – Adresse und Schlüssel gelten für alle Turniere auf diesem Rechner");
+        for (Button b : new Button[]{create, importFile, importResults}) {
+            b.setVisible(false);
+            b.setManaged(false);
+        }
+        Label aLbl = new Label("Adresse des Webservers");
+        aLbl.getStyleClass().add("class-name");
+        javafx.scene.control.TextField addr = new javafx.scene.control.TextField(de.hts.web.WebSettings.server());
+        addr.setPromptText("z. B. live.mein-verband.de");
+        addr.setMaxWidth(520);
+        Label kLbl = new Label("Geheimer Schlüssel");
+        kLbl.getStyleClass().add("class-name");
+        javafx.scene.control.PasswordField key = new javafx.scene.control.PasswordField();
+        key.setText(de.hts.web.WebSettings.key());
+        key.setMaxWidth(520);
+        Runnable save = () -> de.hts.web.WebSettings.set(addr.getText(), key.getText());
+        addr.textProperty().addListener((o, x, y) -> save.run());
+        key.textProperty().addListener((o, x, y) -> save.run());
+        Label result = new Label();
+        result.setWrapText(true);
+        Button test = new Button("Verbindung testen");
+        test.getStyleClass().add("navy-pill");
+        test.setMinWidth(Region.USE_PREF_SIZE);
+        test.setOnAction(e -> {
+            result.setText("Prüfe …");
+            String a = addr.getText(), k = key.getText();
+            Thread th = new Thread(() -> {
+                String err = de.hts.web.Publisher.test(a, k);
+                javafx.application.Platform.runLater(() -> result.setText(err == null ? "Verbindung in Ordnung." : err));
+            }, "HTS-Verbindungstest");
+            th.setDaemon(true);
+            th.start();
+        });
+        Label hint = new Label("Veröffentlicht wird je Turnier auf der Seite „Live im Internet“ des Turniers. HTS lädt nur hoch – "
+                + "vom Server kommt nichts zurück. Der Schlüssel bleibt auf diesem Rechner und steht nicht in der Turnierdatei.");
+        hint.getStyleClass().add("hint");
+        hint.setWrapText(true);
+        hint.setMaxWidth(620);
+        hint.setMinHeight(Region.USE_PREF_SIZE);
+        VBox form = new VBox(10, aLbl, addr, kLbl, key, new HBox(12, test, result), hint);
+        form.getStyleClass().add("card");
+        form.setPadding(new Insets(18, 20, 18, 20));
+        form.setMaxWidth(760);
+        VBox page = new VBox(form);
+        page.setPadding(new Insets(0, 40, 16, 40));
+        javafx.scene.control.ScrollPane sp = new javafx.scene.control.ScrollPane(page);
+        sp.setFitToWidth(true);
+        sp.getStyleClass().add("page-scroll");
+        root.setCenter(sp);
+    }
+
+    private void showError(String text) {
+        javafx.scene.control.Alert a = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR, text);
+        a.initOwner(stage);
+        a.setHeaderText(null);
+        DialogSizing.fit(a);
+        a.showAndWait();
+    }
+
     private void showArchive(boolean on) {
+        if (listCenter != null) root.setCenter(listCenter);
         archive = on;
         appHeader.select(on ? "archive" : "tournaments");
         title.setText(on ? "Archivierte Turniere" : "Meine Turniere");

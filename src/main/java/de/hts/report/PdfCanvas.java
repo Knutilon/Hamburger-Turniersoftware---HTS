@@ -195,6 +195,40 @@ final class PdfCanvas {
         }
     }
 
+    /** 1.5.0: Bild aus den Programm-Ressourcen (PNG) in den Kasten x/top/w/h zeichnen; fehlt es, bleibt die Stelle leer. */
+    void image(String resource, float x, float top, float w, float h) {
+        try (java.io.InputStream in = PdfCanvas.class.getResourceAsStream(resource)) {
+            if (in == null) return;
+            image(in.readAllBytes(), x, top, w, h);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * 1.5.0 (#139): Bild (PNG/JPEG-Bytes) in den Kasten zeichnen – Seitenverhältnis bleibt, rechts oben ausgerichtet;
+     * {@code null} oder unlesbar = nichts.
+     */
+    void image(byte[] data, float x, float top, float w, float h) {
+        if (data == null) return;
+        try {
+            java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(data));
+            if (img == null) return;
+            float ratio = (float) img.getWidth() / img.getHeight();
+            float dw = w, dh = w / ratio;
+            if (dh > h) {
+                dh = h;
+                dw = h * ratio;
+            }
+            x += w - dw;                                  // rechtsbündig im Kasten
+            org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject xo =
+                    org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory.createFromImage(doc, img);
+            cs.drawImage(xo, x, size.getHeight() - top - dh, dw, dh);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     /** 1.4.0 (#108): Linie in Farbe (RGB 0–1). */
     void line(float x1, float y1, float x2, float y2, float width, float r, float g, float b) {
         try {

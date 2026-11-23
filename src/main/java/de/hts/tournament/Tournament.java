@@ -4513,6 +4513,10 @@ public final class Tournament {
             throw new IllegalStateException("Ein Ergebnis kann nur für ein aktives oder eingereihtes Spiel erfasst werden.");
         }
         if (!m.isReady()) throw new IllegalStateException("Die Gegner dieses Spiels stehen noch nicht fest.");
+        undoMatch = m;                                   // 1.5.0 (#131): für „Letztes Ergebnis zurücknehmen“
+        undoTable = m.getTable();
+        undoStarted = m.getStartedAt();
+        undoQueueOrder = m.getQueueOrder();
         applyScore(m, sets, retired);
         m.setStatus(MatchStatus.DONE);
         m.setTable(null);
@@ -4529,6 +4533,66 @@ public final class Tournament {
         });
         dispatch();
         markModified();
+    }
+
+    // --- 1.5.0 (#131): Letztes Ergebnis zurücknehmen -------------------------------------------------
+
+    private Match undoMatch;
+    private Integer undoTable;
+    private LocalDateTime undoStarted;
+    private long undoQueueOrder;
+
+    /**
+     * Das zuletzt eingetragene Ergebnis (seit dem Öffnen), wenn es sich noch gefahrlos zurücknehmen lässt: ohne
+     * Aufgabe, Klasse nicht beendet, keine spätere Phase, danach in der Klasse nichts weiter gespielt, im KO-System das
+     * Folgespiel noch nicht am Tisch; Schweizer System, Qualifikation und Platzierungspläne nur, solange keine neue
+     * Runde daraus entstanden ist. Sonst {@code null} (dann über „Ergebnis korrigieren“).
+     */
+    public Match undoableResult() {
+        Match m = undoMatch;
+        if (m == null || !matches.contains(m) || m.getStatus() != MatchStatus.DONE || m.getRetired() != 0) return null;
+        PlayingClass c = findClass(m.getClassName()).orElse(null);
+        if (c == null || rootOf(c).isFinished()) return null;
+        List<PlayingClass> phases = phasesOf(c);
+        if (phases.get(phases.size() - 1) != c) return null;
+        if (correctionOf(c) != null) return null;
+        for (Match x : matchesOf(c)) {
+            if (x == m) continue;
+            if (x.getFinishedAt() != null && m.getFinishedAt() != null && x.getFinishedAt().isAfter(m.getFinishedAt())) return null;
+        }
+        if (c.getMode() == TournamentMode.SWISS || c.getMode() == TournamentMode.QUALIFICATION || c.getMode() == TournamentMode.PLAN) {
+            int maxRound = matchesOf(c).stream().mapToInt(Match::getRound).max().orElse(0);
+            if (m.getRound() < maxRound) return null;
+            if (c.getMode() != TournamentMode.SWISS) return null;   // Qualifikation/Plan: Folgespiele hängen vom Ergebnis ab
+        }
+        if (m.isKnockout()) {
+            Match next = koMatch(c, m.getKoRound() + 1, m.getKoIndex() / 2);
+            if (next != null && (next.getStatus() == MatchStatus.DONE || next.getStatus().atTable())) return null;
+            Match third = thirdPlaceMatch(c);
+            if (third != null && third != m && (third.getStatus() == MatchStatus.DONE || third.getStatus().atTable())) return null;
+        }
+        return m;
+    }
+
+    /** Nimmt das letzte Ergebnis zurück: das Spiel läuft wieder (am alten Tisch, wenn er frei ist, sonst eingereiht). */
+    public Match undoLastResult() {
+        Match m = undoableResult();
+        if (m == null) throw new IllegalStateException("Das letzte Ergebnis lässt sich nicht mehr zurücknehmen – bitte über „Ergebnis korrigieren“.");
+        PlayingClass c = findClass(m.getClassName()).orElseThrow();
+        m.clearScore();
+        if (m.isKnockout()) resolveKnockout(c);
+        if (undoTable != null && activeMatchAt(undoTable).isEmpty() && !isTableDisabled(undoTable)) {
+            m.setStatus(MatchStatus.ACTIVE);
+            m.setTable(undoTable);
+            m.setStartedAt(undoStarted);
+        } else {
+            m.setStatus(MatchStatus.QUEUED);
+            m.setQueueOrder(undoQueueOrder == 0 ? ++queueCounter : undoQueueOrder);
+        }
+        undoMatch = null;
+        dispatch();
+        markModified();
+        return m;
     }
 
     // --- 2er/3er Turnier: Begegnung Team gegen Team = ein Spiel ------------------------------------
@@ -5569,6 +5633,29 @@ public final class Tournament {
         return String.format(Locale.GERMAN, "%d,%02d €", cents / 100, cents % 100);
     }
 
+    // --- 1.5.0 (#135/#138): Veröffentlichen auf dem Webserver ------------------------------------------
+
+    private boolean publish;
+    private boolean publishAbbrev;
+
+    /** Wird dieses Turnier auf dem Webserver veröffentlicht? (Adresse und Schlüssel: Programmeinstellung) */
+    public boolean isPublish() { return publish; }
+
+    public void setPublish(boolean b) {
+        if (b == publish) return;
+        publish = b;
+        markModified();
+    }
+
+    /** Datenschutz: Vornamen beim Veröffentlichen abkürzen („M. Mustermann“). */
+    public boolean isPublishAbbrev() { return publishAbbrev; }
+
+    public void setPublishAbbrev(boolean b) {
+        if (b == publishAbbrev) return;
+        publishAbbrev = b;
+        markModified();
+    }
+
     /** 1.4.0 (#108): Aussehen der Spielzettel (A6), Standard: Spielerzettel. */
     private SlipDesign slipDesign = SlipDesign.PLAYER;
 
@@ -5620,7 +5707,85 @@ public final class Tournament {
         markModified();
     }
 
-    /** Wurde der Reiter „Urkunden drucken“ (nach Turnierende) schon freigeschaltet? Bleibt dauerhaft. */
+    /** 1.5.0 (#132): bereits gedruckte bzw. als PDF gespeicherte Urkunden (Schlüssel wie {@link CertEntry#key()}). */
+    private final java.util.Set<String> certPrinted = new java.util.LinkedHashSet<>();
+
+    public java.util.Set<String> getCertPrinted() { return java.util.Collections.unmodifiableSet(certPrinted); }
+
+    public boolean isCertPrinted(String key) { return certPrinted.contains(key); }
+
+    public void markCertPrinted(java.util.Collection<String> keys) {
+        if (certPrinted.addAll(keys)) markModified();
+    }
+
+    public void restoreCertPrinted(String key) {
+        certPrinted.add(key);
+    }
+
+    /** 1.4.1: Klassen, für die HTS nach „Klasse beenden“ schon nach dem Urkundendruck gefragt hat. */
+    private final java.util.Set<String> certAsked = new java.util.LinkedHashSet<>();
+
+    public java.util.Set<String> getCertAsked() { return java.util.Collections.unmodifiableSet(certAsked); }
+
+    public boolean isCertAsked(String className) { return certAsked.contains(className); }
+
+    /** Merkt die Frage für eine Klasse (gespeichert in der Turnierdatei). */
+    public void markCertAsked(String className) {
+        if (certAsked.add(className)) markModified();
+    }
+
+    /** Laden bzw. ältere Dateien: ohne „geändert“-Markierung. */
+    public void restoreCertAsked(String className) {
+        certAsked.add(className);
+    }
+
+    /**
+     * 1.4.1: Parteien einer laufenden Klasse, deren Platz schon feststeht: Sie spielen in keiner späteren Phase mehr und
+     * ihre Phase ist komplett gespielt (eine Folgephase ist angelegt). Solange ein Korrektur-Reiter offen ist, keine.
+     */
+    public java.util.Set<String> fixedEntrants(PlayingClass root) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        List<PlayingClass> phases = phasesOf(root);
+        if (phases.size() < 2) return out;
+        for (PlayingClass ph : phases) if (correctionOf(ph) != null) return out;
+        java.util.Map<String, Integer> lastPhase = new java.util.HashMap<>();
+        for (int i = 0; i < phases.size(); i++) {
+            for (Match m : matchesOf(phases.get(i))) {
+                if (m.getA() != null) lastPhase.put(m.getA(), i);
+                if (m.getB() != null) lastPhase.put(m.getB(), i);
+            }
+        }
+        for (java.util.Map.Entry<String, Integer> en : lastPhase.entrySet()) {
+            int i = en.getValue();
+            if (i < phases.size() - 1 && isPhaseComplete(phases.get(i))) out.add(en.getKey());
+        }
+        return out;
+    }
+
+    /** 1.4.1: Klassen, für die es schon Urkunden gibt (beendet oder mit festen Plätzen nach einer Phase). */
+    public List<PlayingClass> certificateClasses() {
+        return rootClasses().stream().filter(c -> c.isDrawn() && (c.isFinished() || !fixedEntrants(c).isEmpty())).toList();
+    }
+
+    /**
+     * 1.4.1: Schlüssel für die Frage „Urkundendruck starten?“: beendete Klasse = ihr Name, sonst Name + abgeschlossene
+     * Phase (z. B. „Herren A · Phase 1“); {@code null}, solange noch keine Phase abgeschlossen ist.
+     */
+    public String certAskKey(PlayingClass root) {
+        if (!root.isDrawn()) return null;
+        if (root.isFinished()) return root.getName();
+        List<PlayingClass> phases = phasesOf(root);
+        if (phases.size() < 2) return null;
+        int closed = phases.size() - 1;
+        return isPhaseComplete(phases.get(closed - 1)) ? root.getName() + " · Phase " + closed : null;
+    }
+
+    /** Beendete Klassen (Endergebnis steht). */
+    public List<PlayingClass> finishedRootClasses() {
+        return rootClasses().stream().filter(c -> c.isDrawn() && c.isFinished()).toList();
+    }
+
+    /** Wurde der Reiter „Urkunden drucken“ schon freigeschaltet? Bleibt dauerhaft. */
     public boolean isCertTabShown() { return certTabShown; }
 
     public void setCertTabShown(boolean b) {
@@ -5649,6 +5814,13 @@ public final class Tournament {
         }
     }
 
+    /** 1.4.1: eine Urkunde mit dem aktuellen Stand ihrer Druckanpassung – ohne das Endergebnis neu zu berechnen. */
+    public CertEntry currentCertEntry(CertEntry e) {
+        String[] ov = certOverrides.get(e.key());
+        return new CertEntry(e.className(), e.entrantId(), e.place(), ov == null ? e.originalName() : ov[0],
+                ov == null ? e.originalClub() : ov[1], e.originalName(), e.originalClub());
+    }
+
     /** Name und Verein nur für den Druck ändern; stimmen beide mit dem Original überein, entfällt die Anpassung. */
     public void setCertOverride(CertEntry e, String name, String club) {
         String n = name == null ? "" : name.strip(), c = club == null ? "" : club.strip();
@@ -5664,16 +5836,20 @@ public final class Tournament {
     }
 
     /**
-     * Urkunden für alle Klassen mit abgeschlossener Auslosung: je Platzierung eine (Spanne 5.–8. = Platz 5), sortiert nach
+     * Urkunden für alle beendeten Klassen: je Platzierung eine (Spanne 5.–8. = Platz 5), sortiert nach
      * Klasse (Reihenfolge der Klassen) und Platz. Einzel „Vorname Nachname“, Doppel beide Personen, Mannschaft der Teamname.
      */
     public List<CertEntry> certificateEntries() {
         List<CertEntry> out = new java.util.ArrayList<>();
         for (PlayingClass root : rootClasses()) {
             if (!root.isDrawn()) continue;
+            boolean finished = root.isFinished();
+            java.util.Set<String> fixed = finished ? null : fixedEntrants(root);   // 1.4.1: laufende Klasse – nur feste Plätze
+            if (!finished && fixed.isEmpty()) continue;
             for (Placing pl : finalResult(root).rows()) {
                 Entrant e = pl.entrant();
                 if (e == null) continue;
+                if (fixed != null && !fixed.contains(e.id())) continue;
                 String name = certName(e), club = e.detail() == null ? "" : e.detail();
                 String[] ov = certOverrides.get(root.getName() + '\u0001' + e.id());
                 out.add(new CertEntry(root.getName(), e.id(), pl.from(), ov == null ? name : ov[0], ov == null ? club : ov[1], name, club));
@@ -5694,8 +5870,8 @@ public final class Tournament {
             }
             return e.name();
         }
-        for (Player p : players) if (p.getId().equals(e.id())) return fullName(p);
-        return e.name();
+        Player p = playerById(e.id());                    // 1.4.1: Index statt linearer Suche (6000 Personen)
+        return p != null ? fullName(p) : e.name();
     }
 
     private static String fullName(Player p) {

@@ -29,7 +29,7 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * HTS 1.4.0 – Zettel-Design je Turnier (#108), Archiv (#112) und Urkunden (#113).
+ * HTS 1.4.0/1.4.1 – Zettel-Design je Turnier (#108), Archiv (#112) und Urkunden (#113).
  */
 class Version140Test {
 
@@ -174,6 +174,55 @@ class Version140Test {
         back.setCertOverride(loaded, loaded.originalName(), loaded.originalClub());
         assertFalse(back.certificateEntries().get(0).changed());
         assertTrue(back.getCertOverrides().isEmpty());
+    }
+
+    @Test
+    void urkundenJeBeendeterKlasseUndFrageGemerkt() throws Exception {
+        Tournament t = new Tournament();
+        t.setTableCount(8);
+        finishedKo(t, "Jungen 19", 4);
+        PlayingClass open = t.addClass(new PlayingClass("Mädchen 15"));
+        List<Player> ps = new ArrayList<>();
+        for (int i = 1; i <= 4; i++) {
+            Player p = new Player("M" + i, "Offen" + i);
+            p.setInternalNr("M15-" + i);
+            p.setSex(Sex.FEMALE);
+            p.setTtr(1200 + i);
+            ps.add(p);
+        }
+        t.merge(ps);
+        ps.forEach(p -> t.assign(p, open));
+        t.drawKnockout(open, true, new Random(2));
+        t.startClass(open);
+        assertFalse(t.isCompletelyFinished(), "Turnier läuft noch");
+        assertEquals(List.of("Jungen 19"), t.finishedRootClasses().stream().map(PlayingClass::getName).toList());
+        assertTrue(t.certificateEntries().stream().allMatch(e -> e.className().equals("Jungen 19")),
+                "nur die beendete Klasse hat Urkunden");
+        assertFalse(t.isCertAsked("Jungen 19"));
+        t.markCertAsked("Jungen 19");
+        Tournament back = roundTrip(t);
+        assertTrue(back.isCertAsked("Jungen 19"));
+        assertFalse(back.isCertAsked("Mädchen 15"));
+    }
+
+    @Test
+    void urkundenFuerFestePlaetzeNachPhase1() {
+        Tournament t = new Tournament();
+        t.setTableCount(12);
+        PlayingClass c = PhaseFixtures.groupsClass(t, "Herren A", 16, 4);
+        t.startClass(c);
+        assertNull(t.certAskKey(c), "vor Phase 2 keine Frage");
+        PhaseFixtures.playAll(t, c);
+        assertTrue(t.certificateEntries().isEmpty(), "Phase 1 gespielt, aber noch nicht abgeschlossen");
+        PlayingClass ko = t.createNextPhase(c, TournamentMode.KNOCKOUT, 2, 4, new Random(1));
+        assertEquals("Herren A · Phase 1", t.certAskKey(c));
+        List<Tournament.CertEntry> es = t.certificateEntries();
+        assertEquals(8, es.size(), "die 8 in der Gruppenphase Ausgeschiedenen");
+        java.util.Set<String> inKo = new java.util.HashSet<>();
+        for (Match m : t.matchesOf(ko)) { inKo.add(m.getA()); inKo.add(m.getB()); }
+        assertTrue(es.stream().noneMatch(e -> inKo.contains(e.entrantId())), "wer in Phase 2 spielt, hat noch keinen festen Platz");
+        assertTrue(es.stream().allMatch(e -> e.place() >= 9), "Plätze ab 9");
+        assertEquals(List.of("Herren A"), t.certificateClasses().stream().map(PlayingClass::getName).toList());
     }
 
     @Test

@@ -25,6 +25,35 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.5.0
+
+- **Urkunden nach jeder Phase:** Der Reiter „Urkunden drucken“ ist ab Turnierstart da. Er zeigt die Plätze, die schon
+  feststehen: Wer in keiner späteren Phase mehr spielt und dessen Phase komplett gespielt ist (Folgephase angelegt),
+  hat seinen festen Platz (z. B. die in der Gruppenphase Ausgeschiedenen), dazu alle Plätze beendeter Klassen. Die Frage
+  „Urkundendruck starten?“ kommt einmal je abgeschlossener Phase bzw. bei „Klasse beenden“ – nicht erst am Turnierende.
+  Neu: Spalte „Gedruckt“ und Auswahl „Noch nicht gedruckte“; der Reiter nutzt die Breite (Einstellungen links, Tabelle
+  mit Suche in der Mitte, Vorschau rechts) und kommt auch mit Tausenden Urkunden zurecht.
+- **Ausrichter:** Neuer Reiter in der Turnierübersicht – Name des Verbands bzw. Vereins und Logo (hochladen, Standard =
+  Logo des Hamburger Tisch-Tennis-Verbands, oder kein Logo). Das Logo steht oben rechts auf dem Schiedsrichterzettel
+  und auf den Live-Seiten.
+- **Live im Internet (HTS-Seite):** Turnierübersicht → „Webserver“: Adresse und geheimer Schlüssel, „Verbindung
+  testen“. Je Turnier „Live im Internet“: „Dieses Turnier veröffentlichen“, „Vornamen abkürzen“, Adresse für Zuschauer,
+  „Live-Daten löschen“ und „Nur Endergebnis behalten“. HTS lädt nach Änderungen höchstens alle 5 Sekunden hoch,
+  holt nach einem Funkloch nach und zeigt unten rechts „Live: veröffentlicht vor 5 s“ bzw. „keine Verbindung“. Nur
+  Einsehen – vom Server fließt nichts zurück. Der Server selbst folgt später (Protokoll: docs/WEBSERVER-PROTOKOLL.md).
+- **Tablet:** Schalter „Tablet-Modus“ in der Info; Zahlenfeld und Schnelleingabe (11:3 bis 11:9 je Seite) im
+  Ergebnisdialog; Antippen der Partie auf der Tischkarte öffnet die Ergebniseingabe; Antippen statt Doppelklick zum
+  Öffnen; Knopf „Ergebnis korrigieren“ in den Gruppenspielen; Hinweise gesperrter Knöpfe per Antippen;
+  Bildschirmtastatur beim Antippen eines Eingabefelds (Windows); „⋮“ je Zeile in der Teilnehmerliste; Tauschen in der
+  Auslosung per Antippen (erst auswählen, dann Ziel); Zoom mit zwei Fingern bzw. Strg + Mausrad in Gruppen- und
+  KO-Ansicht; Tische-Seite hochkant mit der Warteschlange darunter; größere Dialogknöpfe.
+- **Letztes Ergebnis zurücknehmen** (Tische und Spiele), solange noch nichts davon abhängt.
+- **Bitte warten:** Bei längeren Vorgängen (PDF, Phase anlegen) erscheint ein deutlicher Hinweis.
+- **Schiedsrichterzettel:** Logo des Ausrichters oben rechts, HTS-Marke unten rechts (genau A6).
+- **Zahlenfelder:** ein graues Feld ohne Kasten.
+- **Behoben:** Urkunden-Reiter bei sehr großen Turnieren (30 Klassen × 200: zu wenig Speicher); Texte im Urkunden-
+  und Tische-Reiter, die bei schmalem Fenster abgeschnitten wurden.
+
 ## Neu in 1.4.0
 
 - **Urkunden drucken:** Ist das Turnier beendet (alle Klassen über „Klasse beenden“ abgeschlossen), fragt HTS einmal

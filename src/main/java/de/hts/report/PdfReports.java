@@ -239,8 +239,9 @@ public final class PdfReports {
         // Kopf
         c.text(px(16), px(14), "Spielzettel", BOLD, px(25), px(260), PdfCanvas.Align.LEFT, NAVY[0], NAVY[1], NAVY[2]);
         c.text(px(16), px(44), "Tischtennis · " + (single ? "Einzel" : "Doppel"), REGULAR, px(9), px(260), PdfCanvas.Align.LEFT, 0.17f);
-        c.text(px(281), px(19), "HTS", BOLD, px(17), px(100), PdfCanvas.Align.RIGHT, NAVY[0], NAVY[1], NAVY[2]);
-        c.text(px(281), px(38), "Hamburger Turniersoftware", REGULAR, px(6.5f), px(100), PdfCanvas.Align.RIGHT, NAVY[0], NAVY[1], NAVY[2]);
+        // 1.5.0: oben rechts das Logo des Hamburger Tisch-Tennis-Verbands (Entwurf des Nutzers), die HTS-Marke steht unten
+        // 1.5.0 (#139): Logo des Ausrichters (Reiter „Ausrichter“; Vorgabe: Hamburger Tisch-Tennis-Verband)
+        c.image(de.hts.persistence.Organizer.get().logoPng(), px(381 - 90), px(14), px(90), px(38));
         // Spiel-Nr., Zeit, Tisch
         String time = m.getStartedAt() != null ? m.getStartedAt().format(HM) : LocalDateTime.now().format(HM);
         String tn = m.getTable() == null ? "Tisch ____" : t.tableName(m.getTable());
@@ -332,8 +333,10 @@ public final class PdfReports {
             c.text(px(16), px(ty + 12 + bh + 5), "Aufschlag: " + server + " (ohne Vorsprung)", REGULAR, px(7.5f), px(365), PdfCanvas.Align.LEFT, 0.17f);
         }
         // Fußzeile
-        c.text(px(16), px(540), "Auf = Aufschlag · Rück = Rückschlag · T = Auszeit", REGULAR, px(7.5f), px(250), PdfCanvas.Align.LEFT, 0.17f);
-        c.text(px(181), px(540), "HTS · Hamburger Turniersoftware", REGULAR, px(7.5f), px(200), PdfCanvas.Align.RIGHT, 0.17f);
+        // Fußzeile: links die Legende, rechts die HTS-Marke (passt auch beim Doppel noch auf A6)
+        c.text(px(16), px(538), "Auf = Aufschlag · Rück = Rückschlag · T = Auszeit", REGULAR, px(7.5f), px(250), PdfCanvas.Align.LEFT, 0.17f);
+        c.text(px(281), px(521), "HTS", BOLD, px(15), px(100), PdfCanvas.Align.RIGHT, NAVY[0], NAVY[1], NAVY[2]);
+        c.text(px(261), px(539), "Hamburger Turniersoftware", REGULAR, px(6.5f), px(120), PdfCanvas.Align.RIGHT, NAVY[0], NAVY[1], NAVY[2]);
         c.finish();
         return doc;
     }
