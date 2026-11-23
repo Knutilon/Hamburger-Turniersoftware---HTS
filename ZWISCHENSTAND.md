@@ -58,6 +58,19 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
    Gerät; Ergebnisse als Bug/Feature melden.
 
+2. ABSTURZ-PROTOKOLL (LOGGING) UND FEHLERBERICHT (Nutzer 23.11.2026, Issue #140):
+   - Protokolldatei je Tag im Ablageordner der Turniere unter „Protokoll“ (hts-JJJJ-MM-TT.log), Aufbewahrung 30 Tage,
+     höchstens wenige MB je Datei; java.util.logging, keine neue Bibliothek.
+   - Inhalt: Programmstart (Version, Betriebssystem, Java, Bildschirmauflösung/Skalierung, Arbeitsspeicher), wichtige
+     Schritte ohne Details (Turnier geöffnet, Phase angelegt, PDF erstellt, Webserver-Status), jeder unerwartete Fehler mit
+     Stacktrace – auch aus Hintergrund-Threads (Drucken, Hochladen) und dem JavaFX-Thread (UncaughtExceptionHandler).
+   - Datenschutz: keine Namen, Vereine oder Ergebnisse, nur Kennungen (Spiel-Nr., Klassenname).
+   - Unerwarteter Fehler: Turnier vorher speichern, Fenster „Es ist ein Fehler aufgetreten“ mit „Fehlerbericht speichern“
+     (ZIP der Protokolle der letzten Tage, z. B. für ein GitHub-Issue) und „Weiter“.
+   - Startdateien (bat/sh/command): Absturzbericht der Java-Laufzeit (-XX:ErrorFile) und Hinweis bei Speichermangel
+     (-XX:+ExitOnOutOfMemoryError o. Ä. + Protokolleintrag) in den Protokollordner.
+   - Info: Knöpfe „Protokollordner öffnen“ und „Fehlerbericht erstellen“. Texte nie abkürzen, DialogSizing.fit.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) LIVE-SCORING ÜBER GEMIETETEN HETZNER-SERVER CX23 (Nutzer 18.11.2026, Issue #101, ZURÜCKGESTELLT; ersetzt #92 App und
