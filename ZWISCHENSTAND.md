@@ -71,6 +71,17 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      (-XX:+ExitOnOutOfMemoryError o. Ä. + Protokolleintrag) in den Protokollordner.
    - Info: Knöpfe „Protokollordner öffnen“ und „Fehlerbericht erstellen“. Texte nie abkürzen, DialogSizing.fit.
 
+3. WEBSERVER-EINSTELLUNGEN NUR MIT ADMIN-PASSWORT (Nutzer 23.11.2026, Issue #141):
+   - Reiter „Webserver“ (Turnierübersicht): ohne Admin-Passwort nur Anzeige, Adresse und Schlüssel MASKIERT (nicht voll
+     einsehbar, z. B. „http•••••.de“ bzw. nur „••••••••“), Felder und „Verbindung testen“ gesperrt; Knopf „Entsperren“ →
+     Dialog Passwort (40 Zeichen). Richtig → Felder bearbeitbar (Werte weiter verdeckt, Auge-Knopf zum Zeigen nur
+     entsperrt) bis zum Verlassen des Reiters. Falsch → Hinweis, kurze Wartezeit nach mehreren Fehlversuchen.
+   - Das Passwort NIE im Quellcode, in Doku, Issues oder Commits (Repo ist öffentlich) – nur gesalzener Prüfwert:
+     PBKDF2WithHmacSHA256, 310000 Iterationen, Salt (Base64) 5JmOyoZF68LcCHc+AkXMfw==,
+     Prüfwert (Base64) 3OtUkAagHuJ0D58v5sOQfP5S4wj78l6FFD54U0yCrsg= (Länge 40 wird vorher geprüft; Vergleich zeitkonstant).
+   - Hinweis an den Nutzer: Schutz gilt für die Oberfläche; Adresse/Schlüssel liegen weiter in den Java-Einstellungen des
+     Rechners (Windows-Registrierung) – ggf. später verschlüsselt ablegen.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) LIVE-SCORING ÜBER GEMIETETEN HETZNER-SERVER CX23 (Nutzer 18.11.2026, Issue #101, ZURÜCKGESTELLT; ersetzt #92 App und
