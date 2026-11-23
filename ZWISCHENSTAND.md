@@ -103,6 +103,15 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      liefern, falls Maven Central aus der Arbeitsumgebung gesperrt ist.
    - Unlesbare SVG (z. B. mit externen Verweisen/Skripten): verständliche Fehlermeldung; externe Verweise nicht laden.
 
+6. FREISTELLUNG: FESTE KO-PAARUNGEN BEI 6 GRUPPEN × PLÄTZE 1–2 (Nutzer 23.11.2026, Issue #145):
+   Gruppenphase mit Freistellung, 6 Gruppen A–F, „Weiter je Gruppe“ Plätze 1–2 → 16er-KO ohne Freilose. Feste Paarungen
+   (wie EXEMPT_4X3 bei 4 Gruppen × 3), Reihenfolge im Baum von oben nach unten:
+     obere Hälfte:  S1–D2 · F1–E1 · A1–B2 · C2–S4
+     untere Hälfte: S3–E2 · A2–B1 · C1–D1 · F2–S2
+   (Sieger Spiel 1/2 → Viertelfinale 1, 3/4 → VF 2, 5/6 → VF 3, 7/8 → VF 4; Halbfinale obere gegen untere Hälfte erst im
+   Finale.) Vereinsgleichheit/Gruppenduell-Prüfung entfällt bei diesem festen Schema wie bei 4 × 3. Handbuch-Tabelle
+   „Gruppenphase mit Freistellung“ und Modus-Dialog-Hinweis ergänzen; Test mit 6 × 2.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) LIVE-SCORING ÜBER GEMIETETEN HETZNER-SERVER CX23 (Nutzer 18.11.2026, Issue #101, ZURÜCKGESTELLT; ersetzt #92 App und
