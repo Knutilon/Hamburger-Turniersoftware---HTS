@@ -25,6 +25,16 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.5.1
+
+- **Behoben – Einfrieren nach dem Auslosen und beim Klassenwechsel:** Seit 1.5.0 dauerten Auslosen und Anzeigen großer
+  Gruppenphasen bis zu 18 Sekunden (16 Gruppen; 1.4.0: 0,8 s), das Fenster reagierte so lange nicht. Ursache war die
+  Zoom-Funktion; sie greift jetzt nur noch, solange tatsächlich gezoomt ist.
+- **Behoben – Dauerlast in der Gruppenansicht:** Bei geöffneter Gruppenphase rechnete HTS im Leerlauf ständig die
+  Darstellung neu (etwa die Hälfte eines Prozessorkerns, seit 0.34). Jetzt nur noch, wenn sich die Fensterbreite ändert.
+- **Ergebnis eintragen:** Die Schnelleingabe (Knöpfe 11:3 bis 11:9) ist wieder entfernt; das Zahlenfeld für Tablets
+  bleibt.
+
 ## Neu in 1.5.0
 
 - **Urkunden nach jeder Phase:** Der Reiter „Urkunden drucken“ ist ab Turnierstart da. Er zeigt die Plätze, die schon

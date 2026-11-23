@@ -8,12 +8,13 @@
 
 # HTS – Hamburger Turniersoftware: Dokumentation
 
-Stand: 23.11.2026 · Programmversion **1.5.0**
+Stand: 23.11.2026 · Programmversion **1.5.1**
 
 ## Versionsverlauf der Dokumentation
 
 | Datum | Programmversion | Änderung |
 | --- | --- | --- |
+| 23.11.2026 | 1.5.1 | Behoben: Einfrieren nach dem Auslosen bzw. beim Klassenwechsel großer Gruppenphasen und Dauerlast in der Gruppenansicht; Schnelleingabe im Ergebnisdialog wieder entfernt |
 | 23.11.2026 | 1.5.0 | Urkunden nach jeder abgeschlossenen Phase (feste Plätze), Spalte „Gedruckt“, Urkunden-Reiter dreispaltig mit Suche; Reiter „Ausrichter“ (Name, Logo auf Schiedsrichterzettel und Live-Seiten) und „Webserver“; Turnierseite „Live im Internet“ (Veröffentlichen, Vornamen abkürzen, Live-Daten löschen, nur Endergebnis); Tablet-Modus, Zahlenfeld und Schnelleingabe im Ergebnisdialog, Antippen statt Doppelklick, Tauschen per Antippen, Zoom, Tische hochkant; letztes Ergebnis zurücknehmen; „Bitte warten“-Hinweis |
 | 22.11.2026 | 1.4.0 | Urkunden drucken (Frage „Urkundendruck starten?“ beim Turnierende, Reiter „Urkunden drucken“ mit Auswahl, Vorschau, Urkundentexten je Turnier und Druckanpassung von Name und Verein), Zettel-Design je Turnier (Spielerzettel neu, Schiedsrichterzettel nach DTTB), Reiter „Archivierte Turniere“, Anzahl der Spiele als eigene Zeile in der Präsentationsansicht, „Danke an:“ in der Info, Dialoggröße bleibt nach Ändern mit der Maus |
 | 20.11.2026 | 1.3.0 | Gruppenphase mit Freistellung (S1–S4 direkt ins KO ohne Freilose), Korrektur-Reiter „Phase n – Korrektur“ mit „Unveränderte Ergebnisse übernehmen“ und „Phase n weiterführen“ (alte Phase „deaktiviert“), Reiterleiste mit Blättern (6 je Seite), Zusatzspiel in der Qualifikation, feste Leiste und aktuelle Runde zuerst im Schweizer System, Gold/Silber/Bronze und Aufsteiger-Chips, Badeni ohne BHZ/FBHZ |
@@ -539,7 +540,7 @@ Ergebnisse werden Satz für Satz eingetragen („1. Satz“, „2. Satz“ …, 
 
 ### Eingabe
 
-Seit 1.5.0 im Ergebnisdialog zusätzlich: **Schnelleingabe** (Knöpfe 11:3 bis 11:9 bzw. 3:11 bis 9:11 für den aktuellen Satz, springt danach weiter) und – im Tablet-Modus bzw. nach dem ersten Antippen – ein **Zahlenfeld** (0–9, „−“, „:“, ⌫, Weiter). Auf der Seite **Tische** öffnet ein Klick bzw. Antippen auf die Partie einer Tischkarte die Ergebniseingabe. **Letztes Ergebnis zurücknehmen** (Tische und Spiele) nimmt das zuletzt eingetragene Ergebnis zurück, solange noch nichts davon abhängt (das Spiel läuft dann wieder, am alten Tisch, wenn er frei ist); sonst gilt „Ergebnis korrigieren“.
+Seit 1.5.0 zeigt der Ergebnisdialog im Tablet-Modus bzw. nach dem ersten Antippen ein **Zahlenfeld** (0–9, „−“, „:“, ⌫, Weiter). Auf der Seite **Tische** öffnet ein Klick bzw. Antippen auf die Partie einer Tischkarte die Ergebniseingabe. **Letztes Ergebnis zurücknehmen** (Tische und Spiele) nimmt das zuletzt eingetragene Ergebnis zurück, solange noch nichts davon abhängt (das Spiel läuft dann wieder, am alten Tisch, wenn er frei ist); sonst gilt „Ergebnis korrigieren“.
 
 | Eingabe | ergibt |
 | --- | --- |

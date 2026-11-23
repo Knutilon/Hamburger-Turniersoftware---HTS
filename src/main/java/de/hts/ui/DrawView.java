@@ -133,12 +133,52 @@ public final class DrawView {
     private final Button zoomReset = new Button();
     private double zoom = 1;
 
+    private javafx.scene.Group zoomGroup;
+
+    private javafx.beans.value.ChangeListener<javafx.geometry.Bounds> minWidthWatch;
+
+    /**
+     * Inhalt mindestens so breit wie der sichtbare Bereich (0.34). 1.5.1: als ChangeListener mit Schwelle statt Bindung –
+     * die Bindung wurde bei jedem Layout ungültig (der Scrollbereich setzt seine Ansichtsgrenzen jedes Mal neu), forderte
+     * dadurch erneut Layout an und hielt die Gruppenansicht im Leerlauf bei 40–50 % Last.
+     */
+    private void bindMinWidth(ScrollPane scroll) {
+        overviewBox.minWidthProperty().unbind();
+        if (minWidthWatch == null) {
+            minWidthWatch = (o, a, b) -> {
+                double w = Math.max(0, b.getWidth() - 2);
+                if (zoom == 1 && Math.abs(overviewBox.getMinWidth() - w) > 0.5) overviewBox.setMinWidth(w);
+            };
+            scroll.viewportBoundsProperty().addListener(minWidthWatch);
+        }
+        overviewBox.setMinWidth(Math.max(0, scroll.getViewportBounds().getWidth() - 2));
+    }
+
     /** 1.5.0 (#129): Zoomstufe 50–250 %; „Zoom n % – zurücksetzen“ erscheint, solange nicht 100 %. */
     private void setZoom(double z) {
+        double before = zoom;
         zoom = Math.max(0.5, Math.min(2.5, z));
         if (Math.abs(zoom - 1) < 0.03) zoom = 1;
         zoomScale.setX(zoom);
         zoomScale.setY(zoom);
+        ScrollPane scroll = bracketScroll;
+        if (scroll != null && (before == 1) != (zoom == 1)) {
+            if (zoom == 1) {                              // zurück: Inhalt direkt, ohne Hülle und ohne Skalierung
+                overviewBox.getTransforms().clear();
+                if (zoomGroup != null) zoomGroup.getChildren().clear();
+                scroll.setContent(overviewBox);
+                bindMinWidth(scroll);
+            } else {                                      // zoomen: Hülle mit Skalierung, feste Mindestbreite (keine Rückkopplung)
+                double vw = scroll.getViewportBounds().getWidth();
+                overviewBox.minWidthProperty().unbind();
+                overviewBox.setMinWidth(Math.max(0, vw - 2));
+                overviewBox.getTransforms().setAll(zoomScale);
+                if (zoomGroup == null) zoomGroup = new javafx.scene.Group();
+                scroll.setContent(null);
+                zoomGroup.getChildren().setAll(overviewBox);
+                scroll.setContent(zoomGroup);
+            }
+        }
         zoomReset.setText("Zoom " + Math.round(zoom * 100) + " % – zurücksetzen");
         zoomReset.setVisible(zoom != 1);
         runSticky();
@@ -448,9 +488,9 @@ public final class DrawView {
         warning.managedProperty().bind(warning.visibleProperty());
 
         // 1.5.0 (#129/#120): Zoom mit zwei Fingern bzw. Strg + Mausrad – Gruppen und KO-Baum größer (größere Ziele am Tablet)
-        javafx.scene.Group zoomGroup = new javafx.scene.Group(overviewBox);
-        overviewBox.getTransforms().setAll(zoomScale);
-        ScrollPane scroll = new ScrollPane(zoomGroup);
+        // 1.5.1: bei 100 % liegt der Inhalt wieder direkt im Scrollbereich – die Gruppe als Hülle machte das Auslosen und
+        // Umschalten großer Gruppenphasen sehr langsam (16 Gruppen: 0,8 s → 18 s); nur beim Zoomen wird sie eingesetzt
+        ScrollPane scroll = new ScrollPane(overviewBox);
         bracketScroll = scroll;
         scroll.addEventFilter(javafx.scene.input.ZoomEvent.ZOOM, e -> {
             setZoom(zoom * e.getZoomFactor());
@@ -475,9 +515,7 @@ public final class DrawView {
         scroll.setFitToWidth(false);
         overviewBox.setPadding(new Insets(4));
         // 0.34: mindestens so breit wie der sichtbare Bereich (breitere Inhalte wie der KO-Baum scrollen weiterhin)
-        overviewBox.minWidthProperty().bind(javafx.beans.binding.Bindings.createDoubleBinding(
-                () -> Math.max(0, scroll.getViewportBounds().getWidth() / zoomScale.getX() - 2), scroll.viewportBoundsProperty(),
-                zoomScale.xProperty()));
+        bindMinWidth(scroll);
         VBox.setVgrow(scroll, Priority.ALWAYS);
         stickyHolder.setVisible(false);
         stickyHolder.setManaged(false);

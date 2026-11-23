@@ -1,4 +1,4 @@
-# Zwischenstand HTS 1.5.0 (23.11.2026)
+# Zwischenstand HTS 1.5.1 (23.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -13,7 +13,7 @@ PFLICHT BEI JEDEM „KOMPILIEREN“ (Nutzer 18.11.2026):
 - Was im Abschnitt „Backlog“ steht, NICHT einbauen.
 - HANDBUCH (Nutzer 18.11.2026, 21:53: „kompilieren inklusive Handbuch“): bei jedem „kompilieren“ das Handbuch
   mitziehen – Claude-Dokument „HTS-Dokumentation“ (Docs-Artifact 5b0b78d4-…, volle Ids mit Präfix mc3yk00qn9b) UND
-  docs/HTS-Dokumentation.md (kommt in alle drei Pakete). Stand 23.11.2026: beide auf 1.5.0 (Docs-Dokument
+  docs/HTS-Dokumentation.md (kommt in alle drei Pakete). Stand 23.11.2026: beide auf 1.5.1 (Docs-Dokument
   https://claude.ai/artifact/CF57Uw5Z3LoTJc9kK3R972, Knoten dc7b8f6f-8478) → bei jedem „kompilieren“ die neue Version
   nachtragen (Versionsverlauf, Stand-Zeile, Kapitel).
   Ersetzt die alte Regel „Dokumentation nur auf Zuruf“.
@@ -144,6 +144,22 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 
 ## Umgesetzt
+
+1.5.1 (23.11.2026, Commit „HTS 1.5.1“, Closes #144; nur Fehlerbehebungen – auf Zuruf „kompilieren“ als 1.5.1
+   gebaut, die Punkte #140–#143 der Feature-Sammlung bleiben für 1.6.0):
+   0. FEHLER 1.5.0 – LANGSAM NACH DEM AUSLOSEN / BEIM KLASSENWECHSEL (Nutzer 23.11.2026, Issue #144, ERLEDIGT im Code,
+   für 1.5.1): Ursache die Zoom-Hülle (Group) um overviewBox in DrawView (#129) – 16 Gruppen: Auslosen + Anzeige 17,8 s statt
+   0,8 s. Jetzt Hülle nur bei Zoom ≠ 100 % (setZoom tauscht den Inhalt des Scrollbereichs, Mindestbreite dann fest statt
+   gebunden). Messung mit /home/claude/work/uikeep/ShotLag.java (1.4.0-Vergleich in /home/claude/work/old140).
+   Daneben (schon seit 0.34): Gruppenansicht im Leerlauf ca. 40–50 % Last im Programm-Thread. Ursache gefunden: die
+   Bindung overviewBox.minWidth an scroll.viewportBounds (createDoubleBinding) wurde bei jedem Layout ungültig (der
+   Scrollbereich setzt die Ansichtsgrenzen jedes Mal neu) und forderte erneut Layout an → Endlosschleife je Bild.
+   ERLEDIGT: DrawView.bindMinWidth als ChangeListener mit Schwelle 0,5 px – Leerlauf 2,0 s → 0,5 s CPU je 4 s (wie KO-Ansicht).
+   Absturz selbst nicht nachvollziehbar (kein Protokoll) – vermutlich das lange Einfrieren; Protokoll (Punkt 2) hilft künftig.
+   0b. SCHNELLEINGABE IM ERGEBNISDIALOG ENTFERNEN (Nutzer 23.11.2026, betrifft #122, ERLEDIGT im Code, für 1.5.1): Die
+   Knöpfe „11:3 … 11:9“ / „3:11 … 9:11“ sind aus „Ergebnis eintragen“ entfernt; das Zahlenfeld (Tablet) bleibt.
+   README/Handbuch beim nächsten „kompilieren“ anpassen.
+
 
 1.5.0 (23.11.2026, Commit „HTS 1.5.0“, Closes #114–#132, #135–#139; #133 bleibt offen). README „Neu in 1.5.0“,
    Handbuch (md + Claude-Docs), docs/WEBSERVER-PROTOKOLL.md neu.

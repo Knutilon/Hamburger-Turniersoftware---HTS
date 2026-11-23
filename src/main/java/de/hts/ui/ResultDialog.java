@@ -58,7 +58,7 @@ public final class ResultDialog extends Dialog<ResultDialog.Result> {
     private Scoring.Evaluation evaluation;
     private javafx.scene.control.Button okButton;
     private boolean adjusting;
-    /** 1.5.0 (#121/#122): zuletzt bearbeitetes Satzfeld – Ziel von Zahlenfeld und Schnelleingabe. */
+    /** 1.5.0 (#121): zuletzt bearbeitetes Satzfeld – Ziel des Zahlenfelds (Schnelleingabe #122 auf Wunsch wieder entfernt). */
     private TextField lastField;
 
     public ResultDialog(Window owner, Tournament t, Match m) {
@@ -151,11 +151,10 @@ public final class ResultDialog extends Dialog<ResultDialog.Result> {
         hint.getStyleClass().add("hint");
         hint.setWrapText(true);
 
-        VBox quick = quickEntry();
         VBox pad = keypad();
         HBox top = new HBox(28, grid, retireBox);
         javafx.scene.layout.FlowPane inputs = new javafx.scene.layout.FlowPane(28, 12, top, pad);
-        VBox content = new VBox(12, inputs, quick, summary, error, hint);
+        VBox content = new VBox(12, inputs, summary, error, hint);
         content.setPadding(new Insets(10));
         content.setAlignment(Pos.TOP_LEFT);
         content.setPrefWidth(doublesMatch ? 760 : 660);
@@ -207,43 +206,6 @@ public final class ResultDialog extends Dialog<ResultDialog.Result> {
             lastField = fields.get(idx + 1);
             lastField.requestFocus();
         }
-    }
-
-    /**
-     * 1.5.0 (#122): Schnelleingabe – häufige Satzergebnisse mit einem Klick bzw. Tipp (11:3 bis 11:9 je Seite); trägt in
-     * den aktuellen Satz ein und springt weiter. Seltenes wie 13:11 von Hand.
-     */
-    private VBox quickEntry() {
-        Label head = new Label("Schnelleingabe (aktueller Satz):");
-        head.getStyleClass().add("class-name");
-        javafx.scene.layout.FlowPane a = new javafx.scene.layout.FlowPane(6, 6);
-        javafx.scene.layout.FlowPane b = new javafx.scene.layout.FlowPane(6, 6);
-        Label la = new Label("Satz für " + nameA + ":");
-        Label lb = new Label("Satz für " + nameB + ":");
-        la.setMinWidth(Region.USE_PREF_SIZE);
-        lb.setMinWidth(Region.USE_PREF_SIZE);
-        a.getChildren().add(la);
-        b.getChildren().add(lb);
-        for (int l = 3; l <= 9; l++) {
-            a.getChildren().add(quickButton(11 + ":" + l));
-            b.getChildren().add(quickButton(l + ":" + 11));
-        }
-        a.setAlignment(Pos.CENTER_LEFT);
-        b.setAlignment(Pos.CENTER_LEFT);
-        return new VBox(6, head, a, b);
-    }
-
-    private javafx.scene.control.Button quickButton(String text) {
-        javafx.scene.control.Button q = new javafx.scene.control.Button(text);
-        q.getStyleClass().addAll("pill", "quick-set");
-        q.setFocusTraversable(false);
-        q.setMinWidth(Region.USE_PREF_SIZE);
-        q.setOnAction(e -> {
-            TextField f = target();
-            f.setText(text);
-            advance(f);
-        });
-        return q;
     }
 
     /**
