@@ -138,6 +138,14 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    - Kosten CX23 ca. 5,99 € netto/Monat inkl. IPv4 (≈ 7,13 € brutto); Verfügbarkeit vor Umsetzung prüfen (laut Artikel
      10/2026 zeitweise nicht bestellbar → nächstgrößeres Modell). Domain optional.
    - Schritt-für-Schritt-Anleitung, Update-Skript für neue HTS-Versionen.
+   - ENTSCHEIDUNG (Nutzer 23.11.2026): Live-Scoring NUR über den Internetserver – KEIN Handy-Zugang im Hallen-WLAN
+     (Reiter „Mobile Einstellungen“ bleibt ausgeblendet, LiveServer-Code nur als Grundlage für den Server). #101 bleibt
+     im Backlog (Nutzer 23.11.2026: „im Backlog lassen“).
+- (#134) PUNKTGENAUES LIVE-SCORING AM TISCH (Nutzer 23.11.2026, Issue #134, baut auf #101 auf, Backlog): Zählseite je
+   Tisch (Punkt links/rechts, letzten Punkt zurücknehmen, Seiten- und Aufschlagwechsel, Auszeit, Karten), laufender
+   Satz-/Punktestand im Datenmodell (zwischengespeichert), Satz- und Spielende automatisch erkennen und Ergebnis
+   eintragen (wahlweise mit Bestätigung), laufender Stand in Präsentationsansicht und Live-Seiten, Regel bei gleichzeitiger
+   Eingabe am Laptop, Zugang je Tisch. Nur über den Internetserver.
 
 ## Entfallen (Nutzer 18.11.2026: Ansatz über gemieteten Hetzner-Server CX23 statt dessen)
 
