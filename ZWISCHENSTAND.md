@@ -141,11 +141,8 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    - ENTSCHEIDUNG (Nutzer 23.11.2026): Live-Scoring NUR über den Internetserver – KEIN Handy-Zugang im Hallen-WLAN
      (Reiter „Mobile Einstellungen“ bleibt ausgeblendet, LiveServer-Code nur als Grundlage für den Server). #101 bleibt
      im Backlog (Nutzer 23.11.2026: „im Backlog lassen“).
-- (#134) PUNKTGENAUES LIVE-SCORING AM TISCH (Nutzer 23.11.2026, Issue #134, baut auf #101 auf, Backlog): Zählseite je
-   Tisch (Punkt links/rechts, letzten Punkt zurücknehmen, Seiten- und Aufschlagwechsel, Auszeit, Karten), laufender
-   Satz-/Punktestand im Datenmodell (zwischengespeichert), Satz- und Spielende automatisch erkennen und Ergebnis
-   eintragen (wahlweise mit Bestätigung), laufender Stand in Präsentationsansicht und Live-Seiten, Regel bei gleichzeitiger
-   Eingabe am Laptop, Zugang je Tisch. Nur über den Internetserver.
+     Live-Scoring NUR je Partie/Satz (Satzergebnisse), KEIN punktgenaues Zählen am Tisch (Nutzer 23.11.2026, 16:43;
+     Issue #134 geschlossen „not planned“).
 
 ## Entfallen (Nutzer 18.11.2026: Ansatz über gemieteten Hetzner-Server CX23 statt dessen)
 
