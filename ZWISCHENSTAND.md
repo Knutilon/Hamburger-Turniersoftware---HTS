@@ -89,6 +89,11 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    PDF Export|XML Export“) – Übernahme/Weiterverwendung bestehender Turniere klären (offene Fragen an den Nutzer gestellt:
    je Turnier eigener Unterordner? bestehende Turniere verschieben oder am alten Ort lassen? Ausrichter-Logo und Protokoll
    wohin?). Texte nie abkürzen, DialogSizing.fit.
+   ENTSCHIEDEN (Nutzer 24.11.2026, 22:27): KEINE Unterordner je Turnier – alle .hts-Dateien direkt in „Dokumente\HTS“, alle
+   PDF- und XML-Dateien gemeinsam in „Dokumente\HTS\Export files“. Damit sie unterscheidbar bleiben, beginnen alle
+   Exportdateien mit dem Turniernamen (und Datum), z. B. „Herbstturnier 2026-11-28 – Endergebnis Herren C.pdf“; gleiche
+   Namen → Zusatz „(2)“. Noch offen: Übernahme bestehender Turniere aus „HTS Turniere“; Ort von Ausrichter-Logo und
+   Protokoll (Vorschlag: Dokumente\HTS).
 
 6. LIVE-SERVER: SEITE „SPENDEN“ (Nutzer 24.11.2026, Issue #153): Auf allen Seiten von HTS-Livescoring in der Fußzeile ein
    Link „Spenden“ (neben Alle Turniere · Impressum · Datenschutz) zu /spenden. Dort der Text: „Unterstützt als Dankeschön
