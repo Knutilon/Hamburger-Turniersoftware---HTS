@@ -1102,9 +1102,9 @@
 .publish-state.publish-ok { -fx-text-fill: #1e7a3c; }
 .publish-state.publish-error { -fx-text-fill: #b42318; -fx-font-weight: bold; }
 
-.app-header { -fx-background-color: white; -fx-border-color: transparent transparent #0f5038 transparent; -fx-border-width: 0 0 2 0; }
+.app-header { -fx-background-color: white; -fx-border-color: transparent transparent #187250 transparent; -fx-border-width: 0 0 2 0; }
 .logo-text, .header-context { -fx-text-fill: #1f2933; -fx-border-color: transparent transparent transparent #5fd3a8; }
-.logo-sub { -fx-text-fill: #0f5038; }
+.logo-sub { -fx-text-fill: #187250; }
 .button.menu-item { -fx-text-fill: #4a5560; }
 .button.menu-item .icon { -fx-stroke: #4a5560; }
 .button.menu-item:hover { -fx-text-fill: #1f2933; }
@@ -1112,10 +1112,10 @@
 .button.menu-item.active .icon { -fx-stroke: #1f2933; }
 .button.round-tool .icon, .button.round-button .icon, .arrow-circle .icon { -fx-stroke: #0b3d2c; }
 .button.round-button, .chip-ready, .chip.status-active { -fx-text-fill: #0b3d2c; }
-.save-state.clean { -fx-text-fill: #0f5038; }
+.save-state.clean { -fx-text-fill: #187250; }
 .save-state.dirty { -fx-text-fill: #b45309; }
-.button.navy-pill, .button.accent, .dialog-pane .button:default { -fx-background-color: #0f5038; -fx-border-color: #0f5038; -fx-text-fill: white; }
-.button.navy-pill:hover, .button.accent:hover { -fx-background-color: #0a3526; }
+.button.navy-pill, .button.accent, .dialog-pane .button:default { -fx-background-color: #187250; -fx-border-color: #187250; -fx-text-fill: white; }
+.button.navy-pill:hover, .button.accent:hover { -fx-background-color: #125c40; }
 .button { -fx-border-color: #d0d5db; -fx-text-fill: #1f2933; }
 .button:hover { -fx-background-color: #e4f7ef; }
 .button:disabled { -fx-opacity: 0.45; }

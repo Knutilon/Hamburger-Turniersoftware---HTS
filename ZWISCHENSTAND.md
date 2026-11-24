@@ -121,28 +121,28 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    „Neu auslosen“ lost erneut; Tausch per Ziehen/Antippen vor dem Start wie bisher. Handbuch und Modus-Dialog-Hinweis
    ergänzen; Test mit 6 × 2 (Hälften-Zugehörigkeit, Platzarten, Zufall mit festem Startwert).
 
-7. NEUE FARBGEBUNG „NEUTRAL MIT LOGO-GRÜN UND MINT“ UND NEUES HTS-LOGO (Nutzer 24.11.2026, Issue #146;
+7. NEUE FARBGEBUNG „NEUTRAL MIT GRÜN #187250 UND MINT“ UND NEUES HTS-LOGO (Nutzer 24.11.2026, Issue #146;
    Ablauf: Vorschlag #00965F → Varianten D1–D3 → „zu dominant“ → neutrale Grundlage t1 → Partnerfarbe Mint →
-   Primärfarbe dunkler im Grün des Logos. Vorschau-Stildatei: docs/entwuerfe/hts-farbschema-vorschau.css):
+   Primärfarbe dunkler im Grün des Logos → auf Wunsch #187250 statt #0F5038, Logo angeglichen. Vorschau-Stildatei: docs/entwuerfe/hts-farbschema-vorschau.css):
    - GRUNDLAGE NEUTRAL: Schrift und Überschriften dunkelgrau #1F2933 (bisher Marineblau), Seitenhintergrund #F6F7F8,
      Karten weiß ohne farbigen Rand. Nebenknöpfe weiß mit grauem Rand #D0D5DB und Schrift #1F2933.
-   - PRIMÄRFARBE = LOGO-GRÜN #0F5038 (Hover #0A3526), weiße Schrift (Kontrast ca. 10 : 1): Hauptknöpfe („Öffnen“,
+   - PRIMÄRFARBE = GRÜN #187250 (Hover #125C40), weiße Schrift (Kontrast ca. 5,9 : 1): Hauptknöpfe („Öffnen“,
      „Neues Turnier“, „Ergebnis“, Standardknopf in Dialogen, „Weiter“ im Zahlenfeld), Schriftzug „Hamburger
-     Turniersoftware“, Linie unter der Kopfzeile (2 px). Das zuerst vorgeschlagene #00965F entfällt.
+     Turniersoftware“, Linie unter der Kopfzeile (2 px). Die zuvor vorgeschlagenen #00965F und #0F5038 entfallen.
    - PARTNERFARBE MINT #5FD3A8 an ALLEN Stellen, an denen bisher Türkis war: runde Knöpfe oben rechts, Pfeilkreise in der
      Turnierliste, Unterstrich des aktiven Reiters, Abzeichen „aktiv“/„bereit“, Kartenrand „läuft“ (wie bisher Türkis),
      Ablagefelder beim Ziehen, Fokusrahmen von Eingabefeldern, Trennstrich vor dem Turniernamen. Schrift/Symbole auf Mint
      dunkelgrün #0B3D2C. Helle Tönung Mint #E4F7EF statt Türkis-hell: markierte Zeilen, Hover, „Weiter“-Abzeichen.
    - KOPFZEILE WEISS: Menüpunkte #4A5560, aktiver Reiter Schrift #1F2933 mit Mint-Unterstrich (3 px).
    - Ausgegraute Knöpfe deutlich blasser (Deckkraft ca. 45 %), damit „nicht verfügbar“ klar erkennbar ist.
-   - Gelb bleibt „Testturnier“/„pausiert“/„Ergebnis fehlt“, Rot = Fehler; Punkt „gestartet/live“ Grün des Logo-Balls #19B877.
+   - Gelb bleibt „Testturnier“/„pausiert“/„Ergebnis fehlt“, Rot = Fehler; Punkt „gestartet/live“ Grün des Logo-Balls #3FD394.
    - Umsetzung: Variablen in hts.css (-hts-navy, -hts-turquoise … umbenennen, z. B. -hts-text, -hts-primary, -hts-accent,
      -hts-accent-light), fest eingetragene Farben in hts.css und Java (Color.web …, z. B. Abzeichen „beendet“ in der
      Präsentationsansicht, Kartenränder) auf die Variablen umstellen; Präsentationsanzeige, Live-Seiten (LiveServer) und
      Info-Dialog mitziehen. Druck (Schiedsrichterzettel, Urkunden, Listen) bleibt hell; Marineblau/Türkis dort durch
-     Logo-Grün/Mint ersetzen, soweit farbig gedruckt wird.
-   - NEUES LOGO (Variante 3 „Dunkelgrün“, Entwurf docs/entwuerfe/hts-logo-dunkelgruen.png): dunkelgrüner Hintergrund
-     (#0F5038 → #0A3526), „HTS“ weiß, Ball, Flugbahn und Unterstrich hellgrün (#19B877); das „T“ ist eine kleine
+     Grün #187250/Mint ersetzen, soweit farbig gedruckt wird.
+   - NEUES LOGO (Variante 3 „Dunkelgrün“, Entwurf docs/entwuerfe/hts-logo-gruen187250.png): grüner Hintergrund im
+     Verlauf um die Primärfarbe (#1D7D58 → #125C40), „HTS“ weiß, Ball, Flugbahn und Unterstrich hellgrün (#3FD394); das „T“ ist eine kleine
      Tischtennisplatte (Plattenkante = Querbalken mit grüner Oberfläche, Netz quer, Mittellinie; Mittelfuß mit Fußplatte
      = Stamm). Ersetzt src/main/resources/de/hts/ui/hts-logo.png (Fenster-Symbol, Kopfzeile, Präsentation, Live-Seiten,
      HTS-Kennzeichen auf dem Schiedsrichterzettel) sowie die Symbole in den Paketen (.ico 16/32/48/256, .icns, .png).
