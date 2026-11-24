@@ -149,28 +149,33 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      Lesbarkeit bei 16 und 32 px prüfen.
    - Prüfen bei 1093 × 614 und 911 × 512; Handbuch-Bildschirmfotos neu.
 
+8. LIVE-SERVER AUF DEM GEMIETETEN NETCUP-SERVER (#101, Nutzer 24.11.2026 aus dem Backlog geholt: Server gebucht –
+   netcup VPS nano G11.5s, Nürnberg, 2 Kerne/2 GB/60 GB, IPv4+IPv6; Ubuntu 24.04.5 LTS UEFI Minimal installiert; Domain
+   beim Domain-Anbieter per A/AAAA-Eintrag auf den Server gelegt). HTS bleibt führend, der Server hält nur eine Kopie.
+   - SERVER-PROGRAMM ohne Bildschirm (eigenes Jar, z. B. hts-server.jar, nur Java 21, ohne JavaFX): nimmt das Protokoll
+     aus docs/WEBSERVER-PROTOKOLL.md an (GET /api/status, PUT /api/turniere/<ID>, PUT …/logo, DELETE, POST
+     …/nur-endergebnis; Schlüssel als Bearer, Vergleich in konstanter Zeit), liest die .hts-Datei sicher (Größengrenze,
+     kein XXE) und zeigt unter /live/<ID> die LiveServer-Seiten: Tische, Gruppen, KO-Baum, Ergebnisse, „Meine Spiele“,
+     Ausrichter-Logo. Aktualisierung ohne Neuladen (kurzes Polling bzw. SSE). Startseite /live listet laufende Turniere.
+     Fußzeile mit Links „Impressum“ und „Datenschutz“ (Adressen in der Server-Konfiguration).
+     Live-Scoring nur je Partie/Satz; KEINE Ergebniseingabe über das Internet in dieser Stufe (#93 bleibt Backlog).
+   - Daten auf dem Server: je Turnier ein Ordner (letzter Stand + Logo); „Live-Daten löschen“ löscht, „Nur Endergebnis
+     behalten“ entfernt Tische/Spiele; Aufbewahrung automatisch begrenzen (z. B. 90 Tage nach letzter Änderung).
+   - EINRICHTUNGSSKRIPT für Ubuntu 24.04 (ein Befehl als root, fragt nur nach der Domain und den Impressum/Datenschutz-
+     Links): Benutzer „hts“ ohne Anmeldung, Java 21 (openjdk-21-jre-headless), Caddy aus dem offiziellen Paketquellen-
+     Eintrag (automatisches HTTPS, Weiterleitung http → https), Firewall ufw (nur 22, 80, 443), unattended-upgrades,
+     systemd-Dienst hts-server (Autostart, Neustart bei Absturz, nur auf 127.0.0.1 hinter Caddy), erzeugt den geheimen
+     Schlüssel (zufällig, 40+ Zeichen) und zeigt ihn am Ende EINMAL an. Optional SSH nur mit Schlüssel.
+     UPDATE-SKRIPT für neue Versionen (lädt hts-server.jar aus dem GitHub-Release, prüft SHA-256, startet neu).
+   - Release: hts-server.jar + Skripte als zusätzliche Dateien beim Release.
+   - ANLEITUNG docs/LIVE-SERVER-ANLEITUNG.md Schritt für Schritt für genau diesen Server (SSH-Anmeldung, Skript, Prüfen,
+     Schlüssel in HTS eintragen, Verbindung testen, Testturnier, Fehlerbehebung), dazu AV-Vertrag netcup, Impressum/
+     Datenschutz, Hinweis in der Ausschreibung.
+   - Tests: Protokoll (Schlüssel falsch → 401, Größe, Löschen), Seiten mit Belastungs-Turnier, Last (viele Zuschauer).
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
-- (#101) LIVE-SCORING ÜBER GEMIETETEN HETZNER-SERVER CX23 (Nutzer 18.11.2026, Issue #101, ZURÜCKGESTELLT; ersetzt #92 App und
-   #34 WLAN-QR-Code, beide geschlossen „not planned“): HTS bleibt führend, der Server hält eine Kopie.
-   - Server: Ubuntu, Einrichtungsskript (Java, Caddy mit automatischem HTTPS, Firewall, unattended-upgrades),
-     HTS-Live-Server ohne Bildschirm (LiveServer-Seiten wiederverwenden: Tische, Gruppen, KO, Ergebnisse, „Meine
-     Spiele“).
-   - HTS: Einstellungen Server-Adresse + Schlüssel (nur auf dem Laptop); sendet nach Änderungen den Stand (HTTPS,
-     gedrosselt auf einige Sekunden), Puffer bei Funkloch.
-   - Zuschauer: Aktualisierung nach Sekunden ohne Neuladen (SSE/WebSocket oder kurzes Polling); mehrere Turniere je
-     eigener Adresse.
-   - Ergebnisse per Handy über das Internet (#93): Tisch-QR → Server sammelt → HTS holt ab, „Übernehmen/Verwerfen“.
-   - Datenschutz: „Live-Daten löschen“ / „nur Endergebnis behalten“, optional Vornamen abkürzen; Hinweise Impressum/
-     Datenschutzerklärung, AV-Vertrag Hetzner.
-   - Kosten CX23 ca. 5,99 € netto/Monat inkl. IPv4 (≈ 7,13 € brutto); Verfügbarkeit vor Umsetzung prüfen (laut Artikel
-     10/2026 zeitweise nicht bestellbar → nächstgrößeres Modell). Domain optional.
-   - Schritt-für-Schritt-Anleitung, Update-Skript für neue HTS-Versionen.
-   - ENTSCHEIDUNG (Nutzer 23.11.2026): Live-Scoring NUR über den Internetserver – KEIN Handy-Zugang im Hallen-WLAN
-     (Reiter „Mobile Einstellungen“ bleibt ausgeblendet, LiveServer-Code nur als Grundlage für den Server). #101 bleibt
-     im Backlog (Nutzer 23.11.2026: „im Backlog lassen“).
-     Live-Scoring NUR je Partie/Satz (Satzergebnisse), KEIN punktgenaues Zählen am Tisch (Nutzer 23.11.2026, 16:43;
-     Issue #134 geschlossen „not planned“).
+- (#101) → am 24.11.2026 in die Feature-Sammlung 1.6.0 übernommen (Punkt 8).
 
 ## Entfallen (Nutzer 18.11.2026: Ansatz über gemieteten Hetzner-Server CX23 statt dessen)
 
