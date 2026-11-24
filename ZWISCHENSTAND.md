@@ -92,8 +92,15 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    ENTSCHIEDEN (Nutzer 24.11.2026, 22:27): KEINE Unterordner je Turnier – alle .hts-Dateien direkt in „Dokumente\HTS“, alle
    PDF- und XML-Dateien gemeinsam in „Dokumente\HTS\Export files“. Damit sie unterscheidbar bleiben, beginnen alle
    Exportdateien mit dem Turniernamen (und Datum), z. B. „Herbstturnier 2026-11-28 – Endergebnis Herren C.pdf“; gleiche
-   Namen → Zusatz „(2)“. Noch offen: Übernahme bestehender Turniere aus „HTS Turniere“; Ort von Ausrichter-Logo und
-   Protokoll (Vorschlag: Dokumente\HTS).
+   Namen → Zusatz „(2)“. Noch offen: Übernahme bestehender Turniere aus „HTS Turniere“.
+   ENTSCHIEDEN (Nutzer 24.11.2026, 22:28): Ausrichter (ausrichter.properties + ausrichter-logo.png) und der Ordner
+   „Protokoll“ liegen im PROGRAMMORDNER (dort, wo „HTS starten.bat“ bzw. hts.jar liegt), nicht unter Dokumente\HTS.
+   Umsetzung: Programmordner aus dem Ort von hts.jar ermitteln; beim ersten Start vorhandene Dateien aus dem alten
+   Ablageordner übernehmen; Startdateien legen die Absturzberichte der Java-Laufzeit ebenfalls dort ab
+   (%~dp0Protokoll bzw. „$(dirname "$0")/Protokoll“). Ist der Programmordner nicht beschreibbar (z. B. unter
+   „C:\Programme“), Ersatzort im Benutzerprofil (~/.hts) und Hinweis. Beim Update auf eine neue Version (neuer Ordner)
+   Ausrichter und Protokoll aus dem vorigen Programmordner übernehmen können (Hinweis in der Anleitung bzw. Knopf
+   „Einstellungen aus älterer Version übernehmen“ im Reiter „Programm“).
 
 6. LIVE-SERVER: SEITE „SPENDEN“ (Nutzer 24.11.2026, Issue #153): Auf allen Seiten von HTS-Livescoring in der Fußzeile ein
    Link „Spenden“ (neben Alle Turniere · Impressum · Datenschutz) zu /spenden. Dort der Text: „Unterstützt als Dankeschön
