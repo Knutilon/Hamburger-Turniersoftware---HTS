@@ -58,6 +58,46 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
    Gerät; Ergebnisse als Bug/Feature melden.
 
+2. LIVE-SERVER: STARTSEITE MIT NEUEM LOGO (Nutzer 24.11.2026, 22:23, Issue #149): Auf https://hts-livescoring.de/ erscheint
+   noch das alte (blaue) Logo, obwohl Design und Version 1.7.0 schon neu sind. Ursache vermutlich der Browser-Zwischenspeicher:
+   /favicon.png und /live/…/hts-logo.png werden 24 h gecacht und haben denselben Namen wie vorher. Lösung: Logo-Adresse mit
+   Version (z. B. /hts-logo-1.7.png bzw. ?v=<Version>), kürzere Cache-Zeit; Startseite, Rechtsseiten und Turnierseiten
+   einheitlich mit neuem Logo und Design prüfen.
+
+3. LIVE-SERVER: AUSRICHTER IN DER TURNIERÜBERSICHT (Nutzer 24.11.2026, Issue #150): Auf der Startseite steht je Turnier,
+   wer es ausrichtet – Name und Logo aus dem Reiter „Ausrichter“ (kleines Logo links oder rechts in der Turnierkarte). Dafür
+   muss HTS den Namen mitsenden (bisher nur das Logo): z. B. Kopfzeile X-HTS-Ausrichter (URL-kodiert) bei PUT …/logo bzw.
+   PUT /api/turniere/<ID> oder eigener Aufruf PUT …/ausrichter; der Server speichert Name in meta.properties. Auch im Kopf
+   der Turnierseite den Namen neben dem Logo zeigen. Protokoll-Dokument ergänzen.
+
+4. LINK ZUR MYTISCHTENNIS-TURNIERWELT (Nutzer 24.11.2026, Issue #151): Beim Anlegen/Bearbeiten eines Turniers optionales
+   Feld „Link zur Turnierwelt (myTischtennis)“, z. B. https://www.mytischtennis.de/turnierwelt/… – gespeichert in der
+   Turnierdatei. Auf den Live-Seiten (Startseiten-Karte des Turniers und Kopf der Turnierseite) ein Link „zur Turnierwelt“
+   (öffnet in neuem Tab, rel=noopener). Nur https-Adressen; Prüfung, dass es eine gültige Adresse ist (Hinweis, wenn nicht
+   mytischtennis.de). Auch in HTS selbst (Turnierübersicht/Bearbeiten) anklickbar.
+
+5. REITER „PROGRAMM“ IN DER TURNIERÜBERSICHT: DUNKELMODUS UND SPEICHERORTE (Nutzer 24.11.2026, Issue #152): neuer 5. Reiter
+   „Programm“ (nach Turniere, Archivierte Turniere, Ausrichter, Webserver) mit:
+   1. „Dunkelmodus aktivieren“ (Schalter): dunkles Farbschema für die ganze Oberfläche (eigene Stildatei bzw. Variablen in
+      hts.css: Hintergrund dunkelgrau, Karten etwas heller, Schrift hell, Grün/Mint als Akzente, gut lesbare Kontraste;
+      Dialoge, Tabellen, PDF-Ansicht-Rahmen). Gilt sofort und wird gemerkt. Druck/PDFs bleiben hell.
+   2. Ordnerauswahl „Speicherort der HTS-Turnierdateien“ (speichern und laden).
+   3. Ordnerauswahl „Speicherort der PDF-Exporte“.
+   4. Ordnerauswahl „Speicherort der XML-Exporte (click-TT)“.
+   VORGABE, wenn nichts gewählt ist (Nutzerwunsch): unter „Dokumente“ ein Ordner „HTS“ mit den HTS-Dateien und einem
+   Unterordner „Export files“ für PDF- und XML-Dateien. Bisherige Ablage („Dokumente\HTS Turniere\<Turnier>\Turnierdatei|
+   PDF Export|XML Export“) – Übernahme/Weiterverwendung bestehender Turniere klären (offene Fragen an den Nutzer gestellt:
+   je Turnier eigener Unterordner? bestehende Turniere verschieben oder am alten Ort lassen? Ausrichter-Logo und Protokoll
+   wohin?). Texte nie abkürzen, DialogSizing.fit.
+
+6. LIVE-SERVER: SEITE „SPENDEN“ (Nutzer 24.11.2026, Issue #153): Auf allen Seiten von HTS-Livescoring in der Fußzeile ein
+   Link „Spenden“ (neben Alle Turniere · Impressum · Datenschutz) zu /spenden. Dort der Text: „Unterstützt als Dankeschön
+   für das Projekt gerne ein Herzensprojekt von mir.“ und der Link
+   https://www.gofundme.com/f/eine-sportliche-heimat-fur-hamburgs-tischtennistalente?lang=de_DE&ts=1791899912
+   (öffnet in neuem Tab, rel=noopener; Linktext z. B. „Eine sportliche Heimat für Hamburgs Tischtennistalente
+   (GoFundMe)“). Text und Link in einer Datei im Konfigurationsordner (spenden.html, Vorlage durch install/update.sh),
+   damit sie ohne neue Version änderbar sind.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
