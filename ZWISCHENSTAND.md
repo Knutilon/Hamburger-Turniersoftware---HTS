@@ -139,14 +139,23 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 9. VERÖFFENTLICHEN ALS STANDARD, VORNAMEN IMMER ABGEKÜRZT (Nutzer 24.11.2026, 22:51, Issue #156):
    - Neu angelegte Turniere (auch kopierte und aus click-TT importierte) haben „Dieses Turnier veröffentlichen“
      eingeschaltet; hochgeladen wird nur, wenn der Webserver eingerichtet ist (sonst ohne Wirkung, Hinweis wie bisher).
-     Testturniere: Vorschlag NICHT automatisch veröffentlichen (beim Nutzer nachgefragt). Bestehende Turniere behalten
-     ihre Einstellung.
+     TESTTURNIERE werden NICHT automatisch veröffentlicht (Nutzer 24.11.2026, 22:53; von Hand einschaltbar). Bestehende
+     Turniere behalten ihre Einstellung.
    - Vornamen werden in der hochgeladenen Kopie IMMER abgekürzt („M. Mustermann“); der Schalter „Vornamen abkürzen
      (z. B. „M. Mustermann“) – Datenschutz“ auf der Seite „Live im Internet“ entfällt (Turnierdatei-Feld publish-abbrev
      wird ignoriert bzw. beim Laden auf ja gesetzt). Hinweistext auf der Seite entsprechend: „Auf dem Webserver erscheinen
      die Vornamen nur abgekürzt (z. B. „M. Mustermann“).“
    - Datenschutz-Vorlage Abschnitt 3 anpassen: „Vorname nur als Anfangsbuchstabe“ statt „je nach Turnier“; Handbuch,
      Anleitung und Protokoll-Dokument mitziehen; Tests (Hochladen immer abgekürzt, neues Turnier veröffentlicht).
+
+10. LIVE-STARTSEITE GETEILT: „AKTUELLE TURNIERE“ UND „VERGANGENE TURNIERE“ (Nutzer 24.11.2026, 22:53, Issue #157):
+   - Startseite https://<Server>/ mit zwei Bereichen, oben umschaltbar (Reiter „Aktuelle Turniere“ | „Vergangene Turniere“,
+     Vorwahl „Aktuelle“; eigene Adressen / und /vergangen, damit verlinkbar).
+   - Aktuell = noch nicht beendet UND Turnierdatum heute oder später (bzw. ohne Datum); sortiert: laufende zuerst, dann
+     nach Datum aufsteigend; Status-Chip „läuft“/„demnächst“.
+   - Vergangen = beendet ODER Turnierdatum vor heute; sortiert nach Datum absteigend (neueste zuerst); Chip „beendet“ bzw.
+     „Endergebnis“ (bei „Nur Endergebnis behalten“). Leerer Bereich: kurzer Hinweis („Gerade keine aktuellen Turniere“).
+   - Je Karte wie bisher Name, Datum, Stand; dazu Ausrichter (Punkt 3) und Link „zur Turnierwelt“ (Punkt 4).
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
