@@ -25,6 +25,22 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.6.0
+
+- **Live-Server für das Internet (neu):** Zu HTS gehört jetzt ein eigener Live-Server für einen gemieteten Linux-Server
+  (Paket `hts-server-1.6.0.tar.gz`, Java 21, ohne Bildschirm). Er nimmt den Turnierstand an, den HTS seit 1.5.0 über
+  „Live im Internet“ hochlädt, und zeigt ihn Zuschauern: Startseite mit allen laufenden, kommenden und abgeschlossenen
+  Turnieren, je Turnier Tische, Klassen (Gruppen, KO-Runden, Ergebnisse) und „Meine Spiele“ – Aktualisierung alle
+  10 Sekunden. „Nur Endergebnis behalten“ und „Live-Daten löschen“ wirken auf dem Server; nach 90 Tagen ohne Änderung
+  löscht er ein Turnier von selbst.
+- **Einrichtung mit einem Befehl:** `install.sh` richtet einen frischen Ubuntu-24.04-Server ein – Java, Caddy mit
+  automatischem HTTPS-Zertifikat (Weiterleitung von http und www), Firewall, automatische Sicherheitsupdates, Dienst mit
+  Autostart – und zeigt am Ende den geheimen Schlüssel für HTS. `update.sh` spielt neue Versionen ein und stellt bei
+  Problemen die vorige wieder her. Schritt-für-Schritt-Anleitung: `docs/LIVE-SERVER-ANLEITUNG.md`.
+- **Datenschutz eingebaut:** keine Cookies, keine Zugriffsprotokolle, keine Inhalte von Drittanbietern; eigene Seiten
+  „Impressum“ und „Datenschutz“ mit Vorlagen, die auf HTS zugeschnitten sind; Suchmaschinen bleiben draußen. Der Server
+  kennt den Schlüssel nur als Prüfwert.
+
 ## Neu in 1.5.1
 
 - **Behoben – Einfrieren nach dem Auslosen und beim Klassenwechsel:** Seit 1.5.0 dauerten Auslosen und Anzeigen großer

@@ -71,6 +71,14 @@ public final class LiveServer {
     private HttpServer server;
     private ExecutorService pool;
 
+    // 1.6.0 (#101): Einsatz im Live-Server auf dem Internetserver (LiveHost) – mehrere Turniere unter /live/<ID>
+    private String base = "/live";
+    private java.util.function.Supplier<byte[]> logoSource = () -> de.hts.persistence.Organizer.get().logoPng();
+    private java.util.function.Supplier<String> orgName = () -> de.hts.persistence.Organizer.get().getName();
+    private String extraHead = "";
+    private String extraFooter = "";
+    private boolean finalOnly;
+
     /**
      * @param ui       führt Zugriffe auf das Turnier aus (HTS: {@code Platform::runLater})
      * @param onChange nach einer Anmeldung per Handy (auf {@code ui}) – Ansichten aktualisieren
@@ -84,6 +92,28 @@ public final class LiveServer {
         this.ui = ui;
         this.onChange = onChange == null ? () -> { } : onChange;
         this.port = port;
+    }
+
+    /**
+     * 1.6.0 (#101): Ansicht für den Live-Server im Internet. Nur lesend (keine Anmeldung, keine Ergebnisse per Handy),
+     * Adressen unter {@code base} (z. B. „/live/5c0c83c510be“), Logo und Fußzeile vom Server.
+     */
+    static LiveServer forHost(Tournament t, Executor lock, String base, java.util.function.Supplier<byte[]> logo,
+                              String extraHead, String extraFooter, boolean finalOnly) {
+        LiveServer v = new LiveServer(t, lock, null, 0);
+        v.base = base;
+        v.logoSource = logo;
+        v.orgName = () -> "";
+        v.extraHead = extraHead == null ? "" : extraHead;
+        v.extraFooter = extraFooter == null ? "" : extraFooter;
+        v.finalOnly = finalOnly;
+        return v;
+    }
+
+    /** Pfade „/live…“ in der fertigen Seite auf {@code base} umschreiben (Live-Server: „/live/<ID>…“). */
+    String rebase(String html) {
+        if (html == null || base.equals("/live")) return html;
+        return html.replace("\"/live", "\"" + base).replace("'/live", "'" + base);
     }
 
     public synchronized void start() throws IOException {
@@ -176,6 +206,26 @@ public final class LiveServer {
                 send(ex, 405, "text/plain", "Nur lesend");
                 return;
             }
+            serveLive(ex, path, q);
+        } catch (Exception e) {
+            try {
+                send(ex, 500, "text/plain", "Fehler: " + e.getMessage());
+            } catch (IOException ignored) {
+                // Verbindung schon zu
+            }
+        }
+    }
+
+    /**
+     * Die Live-Anzeige (nur lesend). {@code path} in der Form „/live…“; im Live-Server bereits ohne Turnier-Kennung.
+     */
+    void serveLive(HttpExchange ex, String path, Map<String, String> q) throws Exception {
+        {
+            if (finalOnly && !(path.equals("/live") || path.equals("/live/ergebnis") || path.equals("/live/logo.png"))) {
+                ex.getResponseHeaders().add("Location", rebase("\"/live").substring(1));
+                send(ex, 302, "text/plain", "");
+                return;
+            }
             String html = switch (path) {
                 case "/live" -> call(this::overview);
                 case "/live/tische" -> call(this::tablesPage);
@@ -187,7 +237,7 @@ public final class LiveServer {
                 default -> "";
             };
             if (path.equals("/live/logo.png")) {                 // 1.5.0 (#139): Logo des Ausrichters
-                byte[] png = de.hts.persistence.Organizer.get().logoPng();
+                byte[] png = logoSource.get();
                 if (png == null) {
                     send(ex, 404, "text/plain", "");
                 } else {
@@ -204,12 +254,6 @@ public final class LiveServer {
                 send(ex, 404, "text/html", page("Nicht gefunden", "<p>Diese Seite gibt es nicht. <a href=\"/live\">Zur Übersicht</a></p>", false));
             } else {
                 send(ex, 200, "text/html", html);
-            }
-        } catch (Exception e) {
-            try {
-                send(ex, 500, "text/plain", "Fehler: " + e.getMessage());
-            } catch (IOException ignored) {
-                // Verbindung schon zu
             }
         }
     }
@@ -286,7 +330,7 @@ public final class LiveServer {
         return URLEncoder.encode(s == null ? "" : s, StandardCharsets.UTF_8);
     }
 
-    private static final String CSS = """
+    static final String CSS = """
             body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;margin:0;background:#f4f5f7;color:#222;font-size:16px}
             header{background:#173a6c;color:#fff;padding:12px 14px}header .org{float:right;display:flex;align-items:center;gap:8px;margin-left:10px}header .org img{height:44px;width:auto;background:#fff;border-radius:50%;padding:2px}header .org span{font-size:11px;max-width:140px;text-align:right}header a{color:#fff;text-decoration:none}
             header h1{font-size:18px;margin:0}header .sub{font-size:13px;opacity:.85;margin-top:2px}
@@ -320,26 +364,34 @@ public final class LiveServer {
             + de.hts.HtsApp.REPO_URL + "\" target=\"_blank\" rel=\"noopener\">Quellcode (AGPL-3.0)</a></footer>";
 
     /** 1.5.0 (#139): Logo und Name des Ausrichters rechts im Seitenkopf (weißer Hintergrund, damit farbige Logos wirken). */
-    private static String organizerBadge() {
-        de.hts.persistence.Organizer o = de.hts.persistence.Organizer.get();
-        boolean logo = o.logoPng() != null;
-        if (!logo && o.getName().isBlank()) return "";
-        return "<div class=\"org\">" + (logo ? "<img src=\"/live/logo.png\" alt=\"Logo " + esc(o.getName()) + "\">" : "")
-                + (o.getName().isBlank() ? "" : "<span>" + esc(o.getName()) + "</span>") + "</div>";
+    private String organizerBadge() {
+        String name = orgName.get() == null ? "" : orgName.get();
+        boolean logo = logoSource.get() != null;
+        if (!logo && name.isBlank()) return "";
+        return "<div class=\"org\">" + (logo ? "<img src=\"/live/logo.png\" alt=\"Logo " + (name.isBlank() ? "des Ausrichters" : esc(name)) + "\">" : "")
+                + (name.isBlank() ? "" : "<span>" + esc(name) + "</span>") + "</div>";
     }
 
     private String page(String title, String body, boolean reload) {
         String name = t.getName() == null || t.getName().isBlank() ? "Turnier" : t.getName();
-        return "<!doctype html><html lang=\"de\"><head><meta charset=\"utf-8\">"
+        return rebase("<!doctype html><html lang=\"de\"><head><meta charset=\"utf-8\">"
                 + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>" + esc(title) + " – " + esc(name)
-                + "</title><style>" + CSS + "</style></head><body><header>" + organizerBadge() + "<a href=\"/live\"><h1>" + esc(name)
-                + "</h1></a><div class=\"sub\">" + esc(title) + "</div></header><main>" + body + "</main>" + SOURCE_FOOTER + (reload ? RELOAD : "") + "</body></html>";
+                + "</title>" + extraHead + "<style>" + CSS + "</style></head><body><header>" + organizerBadge() + "<a href=\"/live\"><h1>" + esc(name)
+                + "</h1></a><div class=\"sub\">" + esc(title) + "</div></header><main>" + body + "</main>" + extraFooter + SOURCE_FOOTER
+                + (reload ? RELOAD : "") + "</body></html>");
     }
 
     // --- Live-Anzeige ----------------------------------------------------------------------------
 
     private String overview() {
         StringBuilder b = new StringBuilder();
+        if (finalOnly) {                                       // 1.6.0 (#101): „Nur Endergebnis behalten“
+            b.append("<p class=\"muted\">Das Turnier ist abgeschlossen. Hier stehen nur noch die Endergebnisse.</p><h2>Endergebnisse</h2>");
+            for (PlayingClass c : t.rootClasses()) {
+                b.append("<a class=\"card\" href=\"/live/ergebnis?k=").append(enc(c.getName())).append("\"><b>").append(esc(c.getName())).append("</b></a>");
+            }
+            return page("Endergebnisse", b.toString(), false);
+        }
         b.append("<div id=\"me\"></div>");
         b.append("<a class=\"card\" href=\"/live/tische\"><b>Tische und laufende Spiele</b><div class=\"muted\">")
                 .append(t.getMatches().stream().filter(m -> m.getStatus().atTable()).count()).append(" Spiele an den Tischen · ")

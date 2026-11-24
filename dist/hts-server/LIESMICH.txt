@@ -1,0 +1,39 @@
+HTS – Hamburger Turniersoftware · Live-Server
+=============================================
+
+Dieses Paket richtet auf einem gemieteten Linux-Server (Ubuntu 24.04, z. B. netcup VPS) die
+Live-Ergebnisse von HTS ein. HTS auf dem Turnier-Laptop lädt den Turnierstand hoch, Zuschauer
+sehen ihn auf https://<Ihre Domain> – Tische, Gruppen, KO-Runden, Ergebnisse, „Meine Spiele“.
+
+Inhalt
+  hts-server.jar     das Server-Programm (benötigt Java 21, wird von install.sh installiert)
+  install.sh         Einrichtung (einmalig; erneut ausführen ist gefahrlos)
+  update.sh          neue Version einspielen (aus dem Ordner der neuen Version starten)
+  vorlagen/          Vorlagen für Impressum und Datenschutzerklärung
+  SHA256SUMS         Prüfsummen
+  LICENSE, Lizenzen/ Lizenztexte (HTS: AGPL-3.0; OpenJFX-Basis: GPL-2.0 mit Classpath-Ausnahme; Schrift Comic Neue: OFL)
+
+Kurzfassung (Einzelheiten: docs/LIVE-SERVER-ANLEITUNG.md im HTS-Repository)
+
+  1. Domain per A-/AAAA-Eintrag auf den Server zeigen lassen.
+  2. Paket auf den Server kopieren (auf dem eigenen Rechner):
+         scp hts-server-VERSION.tar.gz root@hts-livescoring.de:
+  3. Auf dem Server anmelden und einrichten:
+         ssh root@hts-livescoring.de
+         tar xzf hts-server-VERSION.tar.gz
+         cd hts-server
+         ./install.sh hts-livescoring.de
+  4. Den angezeigten GEHEIMEN SCHLÜSSEL notieren und in HTS eintragen:
+     Turnierübersicht → Reiter „Webserver“ → Adresse https://hts-livescoring.de + Schlüssel
+     → „Verbindung testen“.
+  5. Impressum und Datenschutz ausfüllen:
+         nano /etc/hts-server/impressum.html
+         nano /etc/hts-server/datenschutz.html
+
+Nützliche Befehle auf dem Server
+  systemctl status hts-server          läuft der Live-Server?
+  journalctl -u hts-server -n 50       letzte Meldungen
+  systemctl restart hts-server         neu starten (nach Änderungen an server.properties)
+  ./install.sh --neuer-schluessel      neuen geheimen Schlüssel erzeugen (alter wird ungültig)
+
+Quellcode: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS (AGPL-3.0)

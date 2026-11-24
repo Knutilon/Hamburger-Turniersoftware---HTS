@@ -1,4 +1,4 @@
-# Zwischenstand HTS 1.5.1 (23.11.2026)
+# Zwischenstand HTS 1.6.0 (24.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -50,7 +50,7 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 - click-TT-Upload der Ergebnisdatei: Praxistest erfolgreich (Nutzer 15.11.2026); Einschränkung unter „Bekannte
   Grenzen“ in der Doku gestrichen (mit 1.1.0 ausgeliefert).
 
-## Feature-Sammlung für 1.6.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 1.7.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.5.x)
 
@@ -149,41 +149,9 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      Lesbarkeit bei 16 und 32 px prüfen.
    - Prüfen bei 1093 × 614 und 911 × 512; Handbuch-Bildschirmfotos neu.
 
-8. LIVE-SERVER AUF DEM GEMIETETEN NETCUP-SERVER (#101, Nutzer 24.11.2026 aus dem Backlog geholt: Server gebucht –
-   netcup VPS nano G11.5s, Nürnberg, 2 Kerne/2 GB/60 GB, IPv4+IPv6; Ubuntu 24.04.5 LTS UEFI Minimal installiert; eigene
-   Domain hts-livescoring.de (KEINE Subdomain, Domain dient nur dem Live-Scoring) per A/AAAA-Eintrag auf den Server).
-   HTS bleibt führend, der Server hält nur eine Kopie.
-   - ADRESSEN: https://hts-livescoring.de ist die Startseite = Liste der laufenden/letzten Turniere (statt /live);
-     https://www.hts-livescoring.de und http:// leiten dorthin weiter (Caddy). Turnierseiten https://hts-livescoring.de/live/<ID>
-     (alte Form bleibt gültig). In HTS als Vorgabe-Adresse im Reiter „Webserver“ anbieten.
-   - IMPRESSUM/DATENSCHUTZ liegen auf dem Server selbst (eigene Domain → eigenes Impressum nötig): /impressum und
-     /datenschutz aus zwei Textdateien in der Server-Konfiguration; das Einrichtungsskript legt Vorlagen an (Datenschutz-
-     Vorlage passend zu HTS: Namen, Verein, Ergebnisse; Zweck; Speicherdauer; keine Cookies/kein Tracking; Server netcup
-     Nürnberg mit AV-Vertrag), die der Betreiber ausfüllt. Ohne ausgefülltes Impressum zeigt der Server einen deutlichen
-     Hinweis in der Anleitung/Statusausgabe.
-   - SERVER-PROGRAMM ohne Bildschirm (eigenes Jar, z. B. hts-server.jar, nur Java 21, ohne JavaFX): nimmt das Protokoll
-     aus docs/WEBSERVER-PROTOKOLL.md an (GET /api/status, PUT /api/turniere/<ID>, PUT …/logo, DELETE, POST
-     …/nur-endergebnis; Schlüssel als Bearer, Vergleich in konstanter Zeit), liest die .hts-Datei sicher (Größengrenze,
-     kein XXE) und zeigt unter /live/<ID> die LiveServer-Seiten: Tische, Gruppen, KO-Baum, Ergebnisse, „Meine Spiele“,
-     Ausrichter-Logo. Aktualisierung ohne Neuladen (kurzes Polling bzw. SSE). Startseite /live listet laufende Turniere.
-     Fußzeile mit Links „Impressum“ und „Datenschutz“ auf jeder Seite. Keine Cookies, keine externen Schriften/Skripte.
-     Live-Scoring nur je Partie/Satz; KEINE Ergebniseingabe über das Internet in dieser Stufe (#93 bleibt Backlog).
-   - Daten auf dem Server: je Turnier ein Ordner (letzter Stand + Logo); „Live-Daten löschen“ löscht, „Nur Endergebnis
-     behalten“ entfernt Tische/Spiele; Aufbewahrung automatisch begrenzen (z. B. 90 Tage nach letzter Änderung).
-   - EINRICHTUNGSSKRIPT für Ubuntu 24.04 (ein Befehl als root; Domain hts-livescoring.de vorbelegt, zusätzlich www.): Benutzer „hts“ ohne Anmeldung, Java 21 (openjdk-21-jre-headless), Caddy aus dem offiziellen Paketquellen-
-     Eintrag (automatisches HTTPS, Weiterleitung http → https), Firewall ufw (nur 22, 80, 443), unattended-upgrades,
-     systemd-Dienst hts-server (Autostart, Neustart bei Absturz, nur auf 127.0.0.1 hinter Caddy), erzeugt den geheimen
-     Schlüssel (zufällig, 40+ Zeichen) und zeigt ihn am Ende EINMAL an. Optional SSH nur mit Schlüssel.
-     UPDATE-SKRIPT für neue Versionen (lädt hts-server.jar aus dem GitHub-Release, prüft SHA-256, startet neu).
-   - Release: hts-server.jar + Skripte als zusätzliche Dateien beim Release.
-   - ANLEITUNG docs/LIVE-SERVER-ANLEITUNG.md Schritt für Schritt für genau diesen Server (SSH-Anmeldung, Skript, Prüfen,
-     Schlüssel in HTS eintragen, Verbindung testen, Testturnier, Fehlerbehebung), dazu AV-Vertrag netcup, Impressum/
-     Datenschutz, Hinweis in der Ausschreibung.
-   - Tests: Protokoll (Schlüssel falsch → 401, Größe, Löschen), Seiten mit Belastungs-Turnier, Last (viele Zuschauer).
-
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
-- (#101) → am 24.11.2026 in die Feature-Sammlung 1.6.0 übernommen (Punkt 8).
+- (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
 
 ## Entfallen (Nutzer 18.11.2026: Ansatz über gemieteten Hetzner-Server CX23 statt dessen)
 
@@ -203,6 +171,66 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 
 ## Umgesetzt
+
+1.6.0 (24.11.2026, Commit „HTS 1.6.0“, Closes #101; auf Zuruf „kompiliere nur alles was mit dem Webserver zu tun
+   hat“ → Nutzer präzisiert „erstmal nur den Live-Server mit Einrichtungsskript (#101)“; #141/#142 und die übrigen
+   Punkte bleiben in der Feature-Sammlung, jetzt für 1.7.0):
+   ERLEDIGT – LIVE-SERVER (#101):
+   - de.hts.web.LiveHost (main): com.sun.net.httpserver auf 127.0.0.1:8090 hinter Caddy; Protokoll aus
+     docs/WEBSERVER-PROTOKOLL.md (Schlüssel nur als SHA-256 in server.properties, MessageDigest.isEqual, Ratenbremse
+     30 Fehlversuche/min → 429; ID-Muster [A-Za-z0-9_-]{1,64}; Upload ≤ max-upload-mb (25), atomar; Logo nur PNG ≤ 2 MB;
+     ungelesene Anfragereste werden verworfen, sonst bricht die Antwort ab). Seiten: / (Turnierliste nach läuft/
+     demnächst/abgeschlossen), /live/<ID>/… über LiveServer, /impressum, /datenschutz (HTML-Fragmente im Konfig-Ordner),
+     /favicon.png (neue Ressource de/hts/ui/hts-logo-klein.png), /robots.txt. Turniere werden bei Bedarf geladen, nach
+     1 h ohne Aufruf aus dem Speicher genommen, nach retention-days (90) gelöscht; meta.properties je Turnier.
+   - LiveServer: forHost(…) mit base „/live/<ID>“ (rebase() schreibt "/live und '/live in der fertigen Seite um),
+     Logo-/Namensquelle und Fußzeile einstellbar, finalOnly („Nur Endergebnis“: nur Endergebnisse, Rest → Umleitung);
+     handle() in serveLive() aufgeteilt. CSS paketweit sichtbar.
+   - dist/hts-server/: install.sh (Ubuntu 24.04: full-upgrade, openjdk-21-jre-headless, Caddy aus cloudsmith,
+     Benutzer hts, /opt/hts-server, /etc/hts-server, /var/lib/hts-server, Schlüssel per openssl rand (48 Zeichen) nur
+     einmal angezeigt, systemd-Dienst abgeschottet, Caddyfile mit www-Weiterleitung und ohne Zugriffsprotokoll, ufw
+     22/80/443, unattended-upgrades mit Neustart 04:30, Prüfung DNS/Dienst; --neuer-schluessel), update.sh (mit
+     Rückfall auf die vorige Version), vorlagen/impressum.html + datenschutz.html (Platzhalter __AUSFUELLEN__),
+     LIESMICH.txt. shellcheck sauber.
+   - docs/LIVE-SERVER-ANLEITUNG.md (Schritt für Schritt für netcup/hts-livescoring.de), WEBSERVER-PROTOKOLL.md ergänzt.
+   - Paket hts-server-1.6.0.tar.gz: Ordner hts-server/ mit hts-server.jar (build/main + javafx-base-Klassen, Main-Class
+     de.hts.web.LiveHost; Bau in $S/srvjar), Skripte, Vorlagen, LICENSE, Lizenzen/ (OpenJFX), SHA256SUMS.
+   - Tests: LiveHostTest (4: Veröffentlichen über Publisher + alle Seiten, Schlüssel/Größe/Kennung/XXE, Löschen/Nur
+     Endergebnis/Neustart/Aufbewahrung, Impressum/Datenschutz). Ende-zu-Ende mit java -jar und curl, Last 3000 Abrufe mit
+     64 parallel ohne Fehler (ca. 160 MB Speicher).
+   - Desktop-Oberfläche unverändert (keine neuen Bildschirmfotos nötig).
+   Wortlaut des Punkts aus der Feature-Sammlung:
+   8. LIVE-SERVER AUF DEM GEMIETETEN NETCUP-SERVER (#101, Nutzer 24.11.2026 aus dem Backlog geholt: Server gebucht –
+      netcup VPS nano G11.5s, Nürnberg, 2 Kerne/2 GB/60 GB, IPv4+IPv6; Ubuntu 24.04.5 LTS UEFI Minimal installiert; eigene
+      Domain hts-livescoring.de (KEINE Subdomain, Domain dient nur dem Live-Scoring) per A/AAAA-Eintrag auf den Server).
+      HTS bleibt führend, der Server hält nur eine Kopie.
+      - ADRESSEN: https://hts-livescoring.de ist die Startseite = Liste der laufenden/letzten Turniere (statt /live);
+        https://www.hts-livescoring.de und http:// leiten dorthin weiter (Caddy). Turnierseiten https://hts-livescoring.de/live/<ID>
+        (alte Form bleibt gültig). In HTS als Vorgabe-Adresse im Reiter „Webserver“ anbieten.
+      - IMPRESSUM/DATENSCHUTZ liegen auf dem Server selbst (eigene Domain → eigenes Impressum nötig): /impressum und
+        /datenschutz aus zwei Textdateien in der Server-Konfiguration; das Einrichtungsskript legt Vorlagen an (Datenschutz-
+        Vorlage passend zu HTS: Namen, Verein, Ergebnisse; Zweck; Speicherdauer; keine Cookies/kein Tracking; Server netcup
+        Nürnberg mit AV-Vertrag), die der Betreiber ausfüllt. Ohne ausgefülltes Impressum zeigt der Server einen deutlichen
+        Hinweis in der Anleitung/Statusausgabe.
+      - SERVER-PROGRAMM ohne Bildschirm (eigenes Jar, z. B. hts-server.jar, nur Java 21, ohne JavaFX): nimmt das Protokoll
+        aus docs/WEBSERVER-PROTOKOLL.md an (GET /api/status, PUT /api/turniere/<ID>, PUT …/logo, DELETE, POST
+        …/nur-endergebnis; Schlüssel als Bearer, Vergleich in konstanter Zeit), liest die .hts-Datei sicher (Größengrenze,
+        kein XXE) und zeigt unter /live/<ID> die LiveServer-Seiten: Tische, Gruppen, KO-Baum, Ergebnisse, „Meine Spiele“,
+        Ausrichter-Logo. Aktualisierung ohne Neuladen (kurzes Polling bzw. SSE). Startseite /live listet laufende Turniere.
+        Fußzeile mit Links „Impressum“ und „Datenschutz“ auf jeder Seite. Keine Cookies, keine externen Schriften/Skripte.
+        Live-Scoring nur je Partie/Satz; KEINE Ergebniseingabe über das Internet in dieser Stufe (#93 bleibt Backlog).
+      - Daten auf dem Server: je Turnier ein Ordner (letzter Stand + Logo); „Live-Daten löschen“ löscht, „Nur Endergebnis
+        behalten“ entfernt Tische/Spiele; Aufbewahrung automatisch begrenzen (z. B. 90 Tage nach letzter Änderung).
+      - EINRICHTUNGSSKRIPT für Ubuntu 24.04 (ein Befehl als root; Domain hts-livescoring.de vorbelegt, zusätzlich www.): Benutzer „hts“ ohne Anmeldung, Java 21 (openjdk-21-jre-headless), Caddy aus dem offiziellen Paketquellen-
+        Eintrag (automatisches HTTPS, Weiterleitung http → https), Firewall ufw (nur 22, 80, 443), unattended-upgrades,
+        systemd-Dienst hts-server (Autostart, Neustart bei Absturz, nur auf 127.0.0.1 hinter Caddy), erzeugt den geheimen
+        Schlüssel (zufällig, 40+ Zeichen) und zeigt ihn am Ende EINMAL an. Optional SSH nur mit Schlüssel.
+        UPDATE-SKRIPT für neue Versionen (lädt hts-server.jar aus dem GitHub-Release, prüft SHA-256, startet neu).
+      - Release: hts-server.jar + Skripte als zusätzliche Dateien beim Release.
+      - ANLEITUNG docs/LIVE-SERVER-ANLEITUNG.md Schritt für Schritt für genau diesen Server (SSH-Anmeldung, Skript, Prüfen,
+        Schlüssel in HTS eintragen, Verbindung testen, Testturnier, Fehlerbehebung), dazu AV-Vertrag netcup, Impressum/
+        Datenschutz, Hinweis in der Ausschreibung.
+      - Tests: Protokoll (Schlüssel falsch → 401, Größe, Löschen), Seiten mit Belastungs-Turnier, Last (viele Zuschauer).
 
 1.5.1 (23.11.2026, Commit „HTS 1.5.1“, Closes #144; nur Fehlerbehebungen – auf Zuruf „kompilieren“ als 1.5.1
    gebaut, die Punkte #140–#143 der Feature-Sammlung bleiben für 1.6.0):

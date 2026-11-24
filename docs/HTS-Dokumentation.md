@@ -8,12 +8,13 @@
 
 # HTS – Hamburger Turniersoftware: Dokumentation
 
-Stand: 23.11.2026 · Programmversion **1.5.1**
+Stand: 24.11.2026 · Programmversion **1.6.0**
 
 ## Versionsverlauf der Dokumentation
 
 | Datum | Programmversion | Änderung |
 | --- | --- | --- |
+| 24.11.2026 | 1.6.0 | Live-Server für das Internet (Paket hts-server, Einrichtung mit install.sh auf Ubuntu 24.04: HTTPS, Firewall, automatische Updates; Startseite mit allen Turnieren, Impressum/Datenschutz, Aufbewahrung 90 Tage) – neuer Abschnitt „Der Live-Server“ in Kapitel 11 |
 | 23.11.2026 | 1.5.1 | Behoben: Einfrieren nach dem Auslosen bzw. beim Klassenwechsel großer Gruppenphasen und Dauerlast in der Gruppenansicht; Schnelleingabe im Ergebnisdialog wieder entfernt |
 | 23.11.2026 | 1.5.0 | Urkunden nach jeder abgeschlossenen Phase (feste Plätze), Spalte „Gedruckt“, Urkunden-Reiter dreispaltig mit Suche; Reiter „Ausrichter“ (Name, Logo auf Schiedsrichterzettel und Live-Seiten) und „Webserver“; Turnierseite „Live im Internet“ (Veröffentlichen, Vornamen abkürzen, Live-Daten löschen, nur Endergebnis); Tablet-Modus, Zahlenfeld und Schnelleingabe im Ergebnisdialog, Antippen statt Doppelklick, Tauschen per Antippen, Zoom, Tische hochkant; letztes Ergebnis zurücknehmen; „Bitte warten“-Hinweis |
 | 22.11.2026 | 1.4.0 | Urkunden drucken (Frage „Urkundendruck starten?“ beim Turnierende, Reiter „Urkunden drucken“ mit Auswahl, Vorschau, Urkundentexten je Turnier und Druckanpassung von Name und Verein), Zettel-Design je Turnier (Spielerzettel neu, Schiedsrichterzettel nach DTTB), Reiter „Archivierte Turniere“, Anzahl der Spiele als eigene Zeile in der Präsentationsansicht, „Danke an:“ in der Info, Dialoggröße bleibt nach Ändern mit der Maus |
@@ -883,13 +884,32 @@ Ergebnisse lassen sich im Internet einsehen – nur Einsehen, vom Server fließt
 
 1. Turnierübersicht → **Webserver**: Adresse und geheimer Schlüssel eintragen, **Verbindung testen**.
 2. Im Turnier → **Live im Internet**: **Dieses Turnier veröffentlichen**. HTS lädt nach jeder Änderung den Stand hoch (höchstens alle 5 Sekunden). Unten rechts steht „Live: veröffentlicht vor 5 s“; bei Funkloch „keine Verbindung – wird nachgeholt“ – der letzte Stand wird alle 10 Sekunden erneut gesendet.
-3. **Adresse für Zuschauer** kopieren und z. B. per QR-Code aushängen.
+3. **Adresse für Zuschauer** kopieren (Knopf **Adresse kopieren**), z. B. für einen Aushang oder die Vereinsseite.
 
-Datenschutz: **Vornamen abkürzen** („M. Mustermann“, nur in der hochgeladenen Kopie), **Live-Daten löschen** (Turnier vom Server entfernen) und **Nur Endergebnis behalten** (alles außer den Endergebnissen entfernen); beide schalten das Veröffentlichen aus. Der Webserver selbst ist noch nicht Teil von HTS (geplant); was er annehmen muss, steht in docs/WEBSERVER-PROTOKOLL.md.
+Datenschutz: **Vornamen abkürzen** („M. Mustermann“, nur in der hochgeladenen Kopie), **Live-Daten löschen** (Turnier vom Server entfernen) und **Nur Endergebnis behalten** (alles außer den Endergebnissen entfernen); beide schalten das Veröffentlichen aus.
+
+### Der Live-Server (seit 1.6.0)
+
+Den passenden Server liefert HTS mit: das Paket **hts-server-1.6.0.tar.gz** für einen gemieteten Linux-Server (Ubuntu 24.04, z. B. netcup VPS; 1–2 Kerne und 1–2 GB RAM genügen) und eine eigene Domain (z. B. hts-livescoring.de). Die vollständige Schritt-für-Schritt-Anleitung steht in **docs/LIVE-SERVER-ANLEITUNG.md**, in Kürze:
+
+1. Domain per A-/AAAA-Eintrag auf den Server zeigen lassen.
+2. Paket auf den Server kopieren (`scp hts-server-1.6.0.tar.gz root@hts-livescoring.de:`), anmelden (`ssh root@hts-livescoring.de`), entpacken und **`./install.sh hts-livescoring.de`** starten.
+3. Das Skript richtet alles ein – Java 21, Caddy mit automatischem HTTPS-Zertifikat (http und www leiten auf https://hts-livescoring.de um), Firewall (nur SSH, 80, 443), automatische Sicherheitsupdates (Neustart bei Bedarf um 4:30 Uhr), den Dienst **hts-server** mit Autostart – und zeigt am Ende **einmalig den geheimen Schlüssel**. Diesen sicher notieren und in HTS unter **Webserver** eintragen. Neuer Schlüssel: `./install.sh --neuer-schluessel`.
+4. **Impressum** und **Datenschutzerklärung** ausfüllen (`/etc/hts-server/impressum.html` und `datenschutz.html`; Vorlagen sind auf HTS zugeschnitten), AV-Vertrag mit dem Anbieter abschließen, in der Ausschreibung auf die Veröffentlichung hinweisen.
+
+Was Zuschauer sehen:
+
+| Adresse | Inhalt |
+| --- | --- |
+| https://hts-livescoring.de | alle veröffentlichten Turniere: laufend, demnächst, abgeschlossen (mit Datum und Stand) |
+| …/live/<Kennung> | ein Turnier: Tische und laufende Spiele, Klassen mit Gruppen, KO-Runden und Ergebnissen, „Meine Spiele“; Logo des Ausrichters |
+| …/impressum, …/datenschutz | Impressum und Datenschutzerklärung (auf jeder Seite verlinkt) |
+
+Die Seiten aktualisieren sich alle 10 Sekunden. Nach **Nur Endergebnis behalten** zeigt die Turnierseite nur noch die Endergebnisse; **Live-Daten löschen** entfernt das Turnier sofort. Spätestens 90 Tage nach der letzten Änderung löscht der Server ein Turnier von selbst. Keine Cookies, keine Zugriffsprotokolle, keine Inhalte von Drittanbietern; Suchmaschinen werden von den Turnierseiten ferngehalten. Neue Versionen spielt **`./update.sh`** aus dem Ordner des neuen Pakets ein (bei Problemen automatisch zurück zur vorigen Version). Die Schnittstelle beschreibt docs/WEBSERVER-PROTOKOLL.md.
 
 ## 12. Handy-Zugang (Mobile Einstellungen, ausgeblendet)
 
-> **Hinweis (ab 1.0.0):** Die Seite „Mobile Einstellungen“ und damit der Handy-Zugang sind derzeit ausgeblendet; die Funktionen bleiben im Programm und kommen später wieder. Vorbereitet (seit 1.1.0, ebenfalls ausgeblendet): **Ergebnisse per Handy eintragen** mit einem QR-Code je Tisch; gemeldete Ergebnisse bestätigt die Turnierleitung. Für eine Live-Anzeige im Internet ist ein gemieteter Server geplant (Backlog).
+> **Hinweis (ab 1.0.0):** Die Seite „Mobile Einstellungen“ und damit der Handy-Zugang sind derzeit ausgeblendet; die Funktionen bleiben im Programm und kommen später wieder. Vorbereitet (seit 1.1.0, ebenfalls ausgeblendet): **Ergebnisse per Handy eintragen** mit einem QR-Code je Tisch; gemeldete Ergebnisse bestätigt die Turnierleitung. Für die Live-Anzeige im Internet gibt es seit 1.6.0 den Live-Server (Abschnitt 11).
 
 Über das lokale WLAN können Teilnehmende und Betreuende mit dem Handy die **Live-Anzeige** ansehen und sich **am Turniertag anmelden**. HTS stellt dafür auf dem Laptop eine kleine Webseite bereit (fester Port 8080); ein Internetanschluss ist nicht nötig.
 
