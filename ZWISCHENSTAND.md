@@ -103,6 +103,16 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    (GoFundMe)“). Text und Link in einer Datei im Konfigurationsordner (spenden.html, Vorlage durch install/update.sh),
    damit sie ohne neue Version änderbar sind.
 
+7. LIVE-DATEN BEIM LÖSCHEN/ARCHIVIEREN VOM WEBSERVER ENTFERNEN (Nutzer 24.11.2026, 22:27, Issue #154; Anlass: in HTS
+   gelöschtes Turnier „Testing Logo“ stand weiter auf hts-livescoring.de – HTS sendet beim Löschen bisher nichts):
+   - Wird ein Turnier gelöscht oder archiviert, das schon veröffentlicht wurde (Merkmal in der Turnierdatei, z. B.
+     „published-once“ bzw. „publish“ = ja oder je erfolgreichem Hochladen gesetzt), fragt HTS: „Live-Daten auch vom
+     Webserver löschen?“ – Ja: DELETE /api/turniere/<ID> sofort (mit „Bitte warten“); Nein: bleibt (Hinweis auf die
+     automatische Löschung nach 90 Tagen).
+   - Server nicht erreichbar bzw. Webserver nicht eingerichtet/entschlüsselbar: Hinweis, Turnier trotzdem löschen bzw.
+     archivieren; Löschauftrag merken und beim nächsten Start bzw. beim nächsten Veröffentlichen nachholen.
+   - Gleiches beim „Turnier wiederherstellen“ aus dem Archiv nicht nötig (dann wieder veröffentlichen, wenn eingeschaltet).
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
