@@ -92,7 +92,10 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    ENTSCHIEDEN (Nutzer 24.11.2026, 22:27): KEINE Unterordner je Turnier – alle .hts-Dateien direkt in „Dokumente\HTS“, alle
    PDF- und XML-Dateien gemeinsam in „Dokumente\HTS\Export files“. Damit sie unterscheidbar bleiben, beginnen alle
    Exportdateien mit dem Turniernamen (und Datum), z. B. „Herbstturnier 2026-11-28 – Endergebnis Herren C.pdf“; gleiche
-   Namen → Zusatz „(2)“. Noch offen: Übernahme bestehender Turniere aus „HTS Turniere“.
+   Namen → Zusatz „(2)“.
+   ENTSCHIEDEN (Nutzer 24.11.2026, 22:28): BESTEHENDE TURNIERE BLEIBEN im alten Ordner „Dokumente\HTS Turniere\<Turnier>\…“
+   (nicht verschieben); HTS zeigt sie weiter in der Übersicht und speichert sie dort. Nur NEUE Turniere kommen nach der
+   neuen Ablage (Dokumente\HTS bzw. gewählter Ordner); deren Exporte nach „Export files“ bzw. in die gewählten Ordner.
    ENTSCHIEDEN (Nutzer 24.11.2026, 22:28): Ausrichter (ausrichter.properties + ausrichter-logo.png) und der Ordner
    „Protokoll“ liegen im PROGRAMMORDNER (dort, wo „HTS starten.bat“ bzw. hts.jar liegt), nicht unter Dokumente\HTS.
    Umsetzung: Programmordner aus dem Ort von hts.jar ermitteln; beim ersten Start vorhandene Dateien aus dem alten
