@@ -103,15 +103,19 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      liefern, falls Maven Central aus der Arbeitsumgebung gesperrt ist.
    - Unlesbare SVG (z. B. mit externen Verweisen/Skripten): verständliche Fehlermeldung; externe Verweise nicht laden.
 
-6. FREISTELLUNG: FESTE KO-PAARUNGEN BEI 6 GRUPPEN × PLÄTZE 1–2 (Nutzer 23.11.2026, Issue #145):
-   Gruppenphase mit Freistellung, 6 Gruppen A–F, „Weiter je Gruppe“ Plätze 1–2 → 16er-KO ohne Freilose. Feste Paarungen
-   (wie EXEMPT_4X3 bei 4 Gruppen × 3), Reihenfolge im Baum von oben nach unten:
+6. FREISTELLUNG: KO-PAARUNGEN BEI 6 GRUPPEN × PLÄTZE 1–2 – SCHEMA MIT AUSLOSUNG JE HÄLFTE (Nutzer 23./24.11.2026,
+   Issue #145): Gruppenphase mit Freistellung, 6 Gruppen A–F, „Weiter je Gruppe“ Plätze 1–2 → 16er-KO ohne Freilose.
+   Grundschema (Reihenfolge im Baum von oben nach unten):
      obere Hälfte:  S1–D2 · F1–E1 · A1–B2 · C2–S4
      untere Hälfte: S3–E2 · A2–B1 · C1–D1 · F2–S2
-   (Sieger Spiel 1/2 → Viertelfinale 1, 3/4 → VF 2, 5/6 → VF 3, 7/8 → VF 4; Halbfinale obere gegen untere Hälfte erst im
-   Finale.) F1–E1 (zwei Gruppenerste) ist gewollt: Durch die 4 Freigestellten gibt es nicht genug Gruppenzweite (Nutzer
-   23.11.2026). Vereinsgleichheit/Gruppenduell-Prüfung entfällt bei diesem festen Schema wie bei 4 × 3. Handbuch-Tabelle
-   „Gruppenphase mit Freistellung“ und Modus-Dialog-Hinweis ergänzen; Test mit 6 × 2.
+   NEU 24.11.2026: Die Hälften werden FREI AUSGELOST – innerhalb jeder Hälfte werden die Freigestellten (S) untereinander,
+   die Gruppenersten untereinander und die Gruppenzweiten untereinander zufällig auf die Plätze ihrer Art verteilt.
+   Fest bleiben: welche Spieler in welche Hälfte kommen (oben S1, S4, A1, E1, F1, B2, C2, D2; unten S2, S3, B1, C1, D1,
+   A2, E2, F2) und die Platzarten je Spiel (oben S–2 · 1–1 · 1–2 · 2–S; unten S–2 · 2–1 · 1–1 · 2–S). Beispiel oben:
+   S4–C2 · A1–F1 · E1–D2 · B2–S1. Jeder Gruppenbuchstabe kommt je Hälfte nur einmal vor → kein Gruppenduell in Runde 1.
+   Zwei Gruppenerste gegeneinander (oben 1–1, unten 1–1) ist gewollt (zu wenig Gruppenzweite wegen der Freistellung).
+   „Neu auslosen“ lost erneut; Tausch per Ziehen/Antippen vor dem Start wie bisher. Handbuch und Modus-Dialog-Hinweis
+   ergänzen; Test mit 6 × 2 (Hälften-Zugehörigkeit, Platzarten, Zufall mit festem Startwert).
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
