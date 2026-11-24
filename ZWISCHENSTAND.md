@@ -123,6 +123,19 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      archivieren; Löschauftrag merken und beim nächsten Start bzw. beim nächsten Veröffentlichen nachholen.
    - Gleiches beim „Turnier wiederherstellen“ aus dem Archiv nicht nötig (dann wieder veröffentlichen, wenn eingeschaltet).
 
+8. LIVE-SEITEN OHNE SPEICHERUNG IM BROWSER (Nutzer 24.11.2026, 22:44, Issue #155; Ziel: keine Cookies und keine Daten der
+   Besucher – Cookies gibt es schon keine):
+   - LOCAL STORAGE ENTFÄLLT: Statt sich die Person zu merken („Als ‚Meine Spiele‘ merken“, Schlüssel hts-me), gibt es einen
+     Link „Meine Spiele“ (…/live/<Turnier>/ich?id=<Kennung>), den man als Lesezeichen speichert – in der Suche je Treffer
+     und oben auf der Seite „Meine Spiele“ mit kurzem Hinweis („als Lesezeichen speichern bzw. zum Startbildschirm
+     hinzufügen“). Der Kasten „Meine Spiele“ auf der Turnier-Startseite entfällt.
+   - SESSION STORAGE ENTFÄLLT: aufgeklappte Kacheln/„Spiele anzeigen“ und Scrollposition bleiben nur, solange die Seite offen
+     ist (Zustand in JavaScript-Variablen; beim Aktualisieren alle 10 s bleibt er seit 1.7.0 ohnehin erhalten). Der alte
+     RELOAD-Code der lokalen Handy-Seiten (Scrollposition in sessionStorage) ebenso ersetzen.
+   - Danach Datenschutz-Vorlage (dist/hts-server/vorlagen/datenschutz.html, Abschnitt 5) kürzen: keine Cookies, keine
+     Speicherung im Browser; dem Nutzer den geänderten Abschnitt für seine Datei schicken. Test: keine Vorkommen von
+     localStorage/sessionStorage/document.cookie in den ausgelieferten Seiten.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
