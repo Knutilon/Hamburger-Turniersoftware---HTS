@@ -25,7 +25,7 @@ public class HtsApp extends Application {
 
     public static final String NAME = "Hamburger Turniersoftware";
     public static final String SHORT_NAME = "HTS";
-    public static final String VERSION = "1.6.0";
+    public static final String VERSION = "1.7.0";
 
     /** Repository auf GitHub (Quellcode, Feature- und Bug-Sammlung) */
     public static final String REPO_URL = "https://github.com/Knutilon/Hamburger-Turniersoftware---HTS";
@@ -62,6 +62,16 @@ public class HtsApp extends Application {
     public void start(Stage stage) {
         this.stage = stage;
         hostServices = getHostServices();
+        // 1.7.0 (#140): Protokoll und Behandlung unerwarteter Fehler (auch im Programm-Thread)
+        Log.init(store.getDirectory());
+        javafx.stage.Screen scr = javafx.stage.Screen.getPrimary();
+        Log.startup((int) scr.getBounds().getWidth() + " × " + (int) scr.getBounds().getHeight() + " bei "
+                + Math.round(scr.getOutputScaleX() * 100) + " %");
+        Thread.setDefaultUncaughtExceptionHandler((th, ex) -> unexpected(ex));
+        Thread.currentThread().setUncaughtExceptionHandler((th, ex) -> unexpected(ex));
+        Thread pre = new Thread(de.hts.web.WebSettings::preload, "HTS-Einstellungen");   // 1.7.0 (#142): DPAPI im Hintergrund
+        pre.setDaemon(true);
+        pre.start();
         de.hts.persistence.Organizer.load(store.getDirectory());     // 1.5.0 (#139): Ausrichter (Name, Logo)
         overview = new OverviewView(stage, store, this::openTournament);
 
@@ -82,7 +92,22 @@ public class HtsApp extends Application {
         stage.show();
     }
 
+    private static volatile long lastErrorDialog;
+
+    /** 1.7.0 (#140): unerwarteter Fehler – protokollieren, Turnier sichern, Hinweis mit „Fehlerbericht speichern“. */
+    private void unexpected(Throwable ex) {
+        Log.error("Unerwarteter Fehler", ex);
+        javafx.application.Platform.runLater(() -> {
+            if (workspace != null) workspace.saveAfterError();
+            long now = System.currentTimeMillis();
+            if (now - lastErrorDialog < 10_000) return;             // kein Fensterregen bei Folgefehlern
+            lastErrorDialog = now;
+            de.hts.ui.ErrorReport.showUnexpected(stage, ex);
+        });
+    }
+
     private void showOverview() {
+        Log.info("Turnierübersicht geöffnet");
         workspace = null;
         overview.refresh();
         root.getChildren().setAll(overview.getRoot());
@@ -91,6 +116,7 @@ public class HtsApp extends Application {
     }
 
     private void openTournament(Tournament t) {
+        Log.info("Turnier geöffnet: Kennung " + t.getId() + ", " + t.rootClasses().size() + " Klassen, " + t.getMatches().size() + " Spiele");
         workspace = new WorkspaceView(stage, store, t, this::showOverview);
         root.getChildren().setAll(workspace.getRoot());
         stage.titleProperty().bind(t.nameProperty().concat(" – " + SHORT_NAME));

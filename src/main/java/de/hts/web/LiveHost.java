@@ -99,6 +99,7 @@ public final class LiveHost {
         volatile String state = "";
         volatile long updated;
         volatile boolean finalOnly;
+        volatile String slug = "";                           // 1.7.0 (#147): lesbare Adresse, z. B. Herbstturnier_28_11_2026
         volatile LiveServer view;                            // geladen bei Bedarf
         volatile long lastAccess;
 
@@ -221,6 +222,12 @@ public final class LiveHost {
                 String id = slash < 0 ? rest : rest.substring(0, slash);
                 String sub = slash < 0 ? "" : rest.substring(slash);
                 Entry e = ID.matcher(id).matches() ? entries.get(id) : null;
+                if (e != null && !e.slug.isEmpty() && !e.slug.equals(id) && bySlug(e.slug) == e) {   // Kennung → lesbare Adresse
+                    String query = ex.getRequestURI().getRawQuery();
+                    redirect(ex, "/live/" + e.slug + sub + (query == null ? "" : "?" + query));
+                    return;
+                }
+                if (e == null && ID.matcher(id).matches()) e = bySlug(id);
                 LiveServer v = e == null ? null : view(e);
                 if (v == null) {
                     html(ex, 404, frame("Nicht gefunden", "<p>Dieses Turnier gibt es hier (nicht mehr). <a href=\"/\">Zur Übersicht</a></p>"));
@@ -338,6 +345,7 @@ public final class LiveHost {
             writeAtomic(dir.resolve("turnier.hts"), body);
             e.name = t.getName() == null || t.getName().isBlank() ? "Turnier" : t.getName();
             e.date = t.getDate();
+            e.slug = LiveSlug.of(t.getName(), t.getDate());
             e.state = stateOf(t);
             e.updated = System.currentTimeMillis();
             e.finalOnly = false;                              // neuer Stand: wieder alles zeigen
@@ -345,6 +353,7 @@ public final class LiveHost {
             e.lastAccess = e.updated;
             writeMeta(e);
         }
+        for (Entry o : entries.values()) if (o != e && o.slug.equals(e.slug)) o.view = null;   // gleiche Adresse: Verweise neu berechnen
         json(ex, 200, "{\"ok\":true}");
     }
 
@@ -401,6 +410,18 @@ public final class LiveHost {
 
     // --- Turniere laden, Metadaten, Aufräumen ------------------------------------------------------
 
+    /** Turnier zur lesbaren Adresse (bei gleicher Adresse das zuletzt aktualisierte). */
+    private Entry bySlug(String slug) {
+        Entry best = null;
+        for (Entry e : entries.values()) if (slug.equals(e.slug) && (best == null || e.updated > best.updated)) best = e;
+        return best;
+    }
+
+    /** Adresse eines Turniers: lesbar, außer ein anderes (neueres) Turnier hat dieselbe lesbare Adresse. */
+    private String path(Entry e) {
+        return "/live/" + (e.slug.isEmpty() || bySlug(e.slug) != e ? e.id : e.slug);
+    }
+
     private LiveServer view(Entry e) {
         LiveServer v = e.view;
         e.lastAccess = System.currentTimeMillis();
@@ -424,13 +445,13 @@ public final class LiveHost {
             synchronized (e.lock) {                           // Turnier-Objekte sind nicht für parallele Zugriffe gebaut
                 r.run();
             }
-        }, "/live/" + e.id, () -> {
+        }, path(e), () -> {
             try {
                 return Files.exists(logo) ? Files.readAllBytes(logo) : null;
             } catch (IOException ex) {
                 return null;
             }
-        }, HEAD_EXTRA, footer(), e.finalOnly);
+        }, HEAD_EXTRA, footer(), e.finalOnly, () -> e.updated);
     }
 
     static String stateOf(Tournament t) {
@@ -455,6 +476,7 @@ public final class LiveHost {
             e.state = p.getProperty("state", "");
             e.updated = Long.parseLong(p.getProperty("updated", String.valueOf(Files.getLastModifiedTime(dir.resolve("turnier.hts")).toMillis())));
             e.finalOnly = Boolean.parseBoolean(p.getProperty("final-only", "false"));
+            e.slug = p.getProperty("slug", LiveSlug.of(e.name, e.date));
         } catch (IOException | RuntimeException ex) {
             System.err.println("Angaben zu Turnier " + e.id + " unvollständig: " + ex.getMessage());
         }
@@ -467,6 +489,7 @@ public final class LiveHost {
         p.setProperty("state", e.state);
         p.setProperty("updated", String.valueOf(e.updated));
         p.setProperty("final-only", String.valueOf(e.finalOnly));
+        p.setProperty("slug", e.slug);
         java.io.StringWriter w = new java.io.StringWriter();
         p.store(w, "HTS-Live-Server");
         writeAtomic(turniere.resolve(e.id).resolve("meta.properties"), w.toString().getBytes(StandardCharsets.UTF_8));
@@ -504,8 +527,8 @@ public final class LiveHost {
 
     private static final String HEAD_EXTRA = "<link rel=\"icon\" href=\"/favicon.png\"><meta name=\"robots\" content=\"noindex\">";
 
-    private static final String HOST_CSS = "footer.legal{text-align:center;font-size:13px;padding:18px 12px 0}footer.legal a{color:#173a6c;margin:0 8px}"
-            + ".info h2:first-child{margin-top:4px}.info{line-height:1.5}";
+    private static final String HOST_CSS = "footer.legal{text-align:center;font-size:13px;padding:18px 12px 0}footer.legal a{color:#187250;margin:0 8px}"
+            + ".info h2:first-child{margin-top:4px}.info{line-height:1.5}main>h2:first-child{margin-top:6px}";
 
     private static String footer() {
         return "<style>" + HOST_CSS + "</style><footer class=\"legal\"><a href=\"/\">Alle Turniere</a><a href=\"/impressum\">Impressum</a>"
@@ -515,8 +538,9 @@ public final class LiveHost {
     String frame(String title, String body) {
         return "<!doctype html><html lang=\"de\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
                 + "<title>" + LiveServer.esc(title) + " – " + LiveServer.esc(cfg.siteTitle()) + "</title>" + HEAD_EXTRA
-                + "<style>" + LiveServer.CSS + HOST_CSS + "</style></head><body><header><a href=\"/\"><h1>" + LiveServer.esc(cfg.siteTitle())
-                + "</h1></a><div class=\"sub\">" + LiveServer.esc(title) + "</div></header><main>" + body + "</main>"
+                + "<style>" + LiveServer.CSS + HOST_CSS + "</style></head><body><header style=\"padding-bottom:10px\"><div class=\"hb\"><a class=\"brand\" href=\"/\">"
+                + "<img src=\"/favicon.png\" alt=\"HTS\"><span><b>" + LiveServer.esc(cfg.siteTitle()) + "</b><small>" + LiveServer.esc(title)
+                + "</small></span></a></div></header><main>" + body + "</main>"
                 + footer().replaceFirst("<style>[^<]*</style>", "") + LiveServer.SOURCE_FOOTER + "</body></html>";
     }
 
@@ -547,7 +571,7 @@ public final class LiveHost {
                 case "beendet" -> "<span class=\"chip done\">beendet</span>";
                 default -> "<span class=\"chip\">angekündigt</span>";
             };
-            b.append("<a class=\"card\" href=\"/live/").append(e.id).append("\"><div class=\"row\"><b>").append(LiveServer.esc(e.name))
+            b.append("<a class=\"card\" href=\"").append(path(e)).append("\"><div class=\"row\"><b>").append(LiveServer.esc(e.name))
                     .append("</b>").append(chip).append("</div><div class=\"muted\">")
                     .append(e.date == null ? "" : DAY.format(e.date) + " · ")
                     .append("Stand ").append(STAMP.format(Instant.ofEpochMilli(e.updated))).append("</div></a>");

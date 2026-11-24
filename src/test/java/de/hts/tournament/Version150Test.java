@@ -152,7 +152,7 @@ class Version150Test {
             assertEquals(1, r.count("DELETE /api/turniere/t9 200"));
             assertEquals(1, r.count("POST /api/turniere/t9/nur-endergebnis 200"));
             assertEquals("https://live.example.de", Publisher.normalize("live.example.de/"));
-            assertEquals("https://live.example.de/live/t9", Publisher.publicUrl("live.example.de", "t9"));
+            assertEquals("https://live.example.de/live/Grosser_Preis_Mueller_28_11_2026", Publisher.publicUrl("live.example.de", "Großer Preis Müller", java.time.LocalDate.of(2026, 11, 28)));
         }
     }
 

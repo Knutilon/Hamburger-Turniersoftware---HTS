@@ -322,6 +322,8 @@ final class ModeDialog extends Dialog<Boolean> {
                             + Tournament.EXEMPT_COUNT + " + " + g + " × " + places + " = " + field + "er-Feld (KO ohne Freilose, ab "
                             + de.hts.tournament.KnockoutDraw.roundName(field) + ")"
                             + (g == 4 && places == 3 ? " · feste Paarungen: S1–D3, B1–D2, A1–C2, S4–C3, S3–A3, C1–B2, D1–A2, S2–B3"
+                            : g == 6 && places == 2 ? " · Auslosung je Hälfte: oben S1 und S4, unten S2 und S3; Erster und Zweiter "
+                            + "einer Gruppe in verschiedenen Hälften (oben S–2 · 1–1 · 1–2 · 2–S, unten S–2 · 2–1 · 1–1 · 2–S)"
                             : " · die Freigestellten spielen gegen die schlechtesten Gruppen" + (places == 3 ? "dritten" : "zweiten")
                             + ", die Gruppenersten untereinander nach Spiel-, Satz- und Punkteverhältnis");
                 }

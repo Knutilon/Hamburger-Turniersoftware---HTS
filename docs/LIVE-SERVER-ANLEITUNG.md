@@ -1,6 +1,6 @@
 # HTS – Live-Server einrichten (Schritt für Schritt)
 
-Stand: HTS 1.6.0 (#101). Diese Anleitung richtet die Live-Ergebnisse von HTS auf einem gemieteten Server ein,
+Stand: HTS 1.7.0 (Live-Server seit 1.6.0, #101; neue Live-Seiten und lesbare Adressen seit 1.7.0, #147). Diese Anleitung richtet die Live-Ergebnisse von HTS auf einem gemieteten Server ein,
 beschrieben am Beispiel **netcup VPS mit Ubuntu 24.04** und der Domain **hts-livescoring.de**. Für eine andere Domain
 überall die eigene einsetzen.
 
@@ -13,7 +13,7 @@ auf den Server (höchstens alle 5 Sekunden). Der Server zeigt ihn Zuschauerinnen
 - einen Server mit Ubuntu 24.04 (Minimal reicht; 1–2 Kerne, 1–2 GB RAM, 10 GB Speicher genügen),
 - eine Domain, deren **A-Eintrag** (IPv4) und **AAAA-Eintrag** (IPv6) auf den Server zeigen – für `@` (die Domain selbst)
   und `www`,
-- das Paket **hts-server-1.6.0.tar.gz** (beim Release auf GitHub bzw. vom Betreuer),
+- das Paket **hts-server-1.7.0.tar.gz** (beim Release auf GitHub bzw. vom Betreuer),
 - auf dem eigenen Rechner ein Terminal: unter Windows die „Eingabeaufforderung“ oder „PowerShell“ (ssh und scp sind
   eingebaut), unter macOS/Linux das „Terminal“.
 
@@ -34,7 +34,7 @@ Einträge brauchen manchmal einige Minuten bis Stunden.
 Im Ordner, in dem das Paket liegt (z. B. „Downloads“):
 
 ```
-scp hts-server-1.6.0.tar.gz root@hts-livescoring.de:
+scp hts-server-1.7.0.tar.gz root@hts-livescoring.de:
 ```
 
 Beim ersten Verbinden fragt ssh, ob dem Server vertraut werden soll: mit `yes` bestätigen. Dann das Root-Passwort (aus
@@ -44,7 +44,7 @@ der netcup-Mail bzw. selbst gesetzt) eingeben – beim Tippen erscheinen keine Z
 
 ```
 ssh root@hts-livescoring.de
-tar xzf hts-server-1.6.0.tar.gz
+tar xzf hts-server-1.7.0.tar.gz
 cd hts-server
 ./install.sh hts-livescoring.de
 ```
@@ -95,12 +95,14 @@ Außerdem:
 ## 5. HTS verbinden
 
 1. HTS öffnen → Turnierübersicht → Reiter **„Webserver“**.
-2. Adresse: `https://hts-livescoring.de`, Schlüssel: der notierte Schlüssel.
+2. **Entsperren** (Admin-Passwort, seit HTS 1.7.0), dann Adresse `https://hts-livescoring.de` und den notierten Schlüssel
+   eintragen → **Speichern**.
 3. **„Verbindung testen“** → „Verbindung in Ordnung.“
 4. Im Turnier → **„Live im Internet“** einschalten. Auf Wunsch „Vornamen abkürzen“ (auf dem Server erscheint dann nur
    „M. Mustermann“).
-5. Die Adresse für Zuschauer (`https://hts-livescoring.de/live/…`) steht darunter, mit dem Knopf „Adresse kopieren“
-   (z. B. für einen Aushang oder die Vereinsseite). Alle Turniere stehen außerdem auf `https://hts-livescoring.de`.
+5. Die Adresse für Zuschauer (z. B. `https://hts-livescoring.de/live/Hamburger_Ranglistenturnier_28_11_2026`) steht
+   darunter, mit „Adresse kopieren“ und **„QR-Code-Aushang drucken“** (A4 zum Aushängen; beim Turnierstart fragt HTS
+   danach). Alle Turniere stehen außerdem auf `https://hts-livescoring.de`.
 
 Unten rechts zeigt HTS den Stand: „veröffentlicht“ bzw. „keine Verbindung – wird nachgeholt“ (bei Funkloch hält HTS
 den letzten Stand und versucht es alle 10 Sekunden erneut).
@@ -113,7 +115,7 @@ das **mobile Netz** (nicht das Hallen-WLAN) öffnen. Die Seiten aktualisieren si
 | Adresse | Inhalt |
 | --- | --- |
 | `https://hts-livescoring.de` | alle veröffentlichten Turniere (laufend, demnächst, abgeschlossen) |
-| `…/live/<Kennung>` | ein Turnier: Tische, Klassen, „Meine Spiele“ |
+| `…/live/<Turniername>_<TT>_<MM>_<JJJJ>` | ein Turnier, z. B. `…/live/Hamburger_Ranglistenturnier_28_11_2026`: Reiter je Phase, Gruppenkacheln, Tische, Spielersuche, „Meine Spiele“ |
 | `…/impressum`, `…/datenschutz` | Impressum und Datenschutzerklärung |
 
 Nach dem Turnier in HTS **„Nur Endergebnis behalten“** (Tische und Spiele verschwinden, Endergebnisse bleiben) oder
@@ -122,7 +124,7 @@ Nach dem Turnier in HTS **„Nur Endergebnis behalten“** (Tische und Spiele ve
 
 ## 7. Neue Version einspielen
 
-Neues Paket kopieren und im neuen Ordner `update.sh` starten:
+Neues Paket kopieren und im neuen Ordner `update.sh` starten (Beispiel 1.6.0 → 1.7.0):
 
 ```
 scp hts-server-1.7.0.tar.gz root@hts-livescoring.de:

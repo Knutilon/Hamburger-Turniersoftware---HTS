@@ -5,6 +5,7 @@ HTS ist freie Software unter der GNU Affero General Public License v3.0 oder sp√
 Quellcode: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS
 
 Mitgelieferte Bestandteile und ihre Lizenzen:
+- JSVG 2.2.0 (SVG-Logos des Ausrichters): MIT-Lizenz (JSVG-LICENSE.txt)
 - Apache PDFBox 3.0.8 und Apache Commons Logging: Apache License 2.0 (PDFBox-LICENSE.txt, PDFBox-NOTICE.txt, commons-logging-NOTICE.txt)
 - JavaFX 21.0.8 (OpenJFX): GNU General Public License v2 mit Classpath Exception (JavaFX-und-Java-Laufzeit-LICENSE.txt)
 - Schrift Comic Neue Bold (f√ºr Urkunden, in hts.jar eingebettet): SIL Open Font License 1.1 (OFL-ComicNeue.txt)

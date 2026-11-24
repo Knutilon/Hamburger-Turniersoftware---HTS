@@ -15,8 +15,9 @@ geheimen Schlüssel als `Authorization: Bearer <Schlüssel>` sowie `X-HTS-Versio
 | `DELETE /api/turniere/<ID>` | – | „Live-Daten löschen“ |
 | `POST /api/turniere/<ID>/nur-endergebnis` | – | „Nur Endergebnis behalten“ |
 
-- `<ID>` ist die Kennung des Turniers aus der Turnierdatei. Zuschauer erreichen die Live-Seiten unter
-  `<Adresse>/live/<ID>`.
+- `<ID>` ist die Kennung des Turniers aus der Turnierdatei. Zuschauer erreichen die Live-Seiten seit 1.7.0 unter der
+  lesbaren Adresse `<Adresse>/live/<Turniername>_<TT>_<MM>_<JJJJ>` (`de.hts.web.LiveSlug`; vorher `<Adresse>/live/<ID>`,
+  die weiter auf die lesbare Adresse umleitet).
 - HTS sendet nach jeder Änderung höchstens alle 5 Sekunden. Ist der Server nicht erreichbar, behält HTS den letzten Stand
   und versucht es alle 10 Sekunden erneut.
 - Mit „Vornamen abkürzen“ enthält die hochgeladene Turnierdatei nur die Anfangsbuchstaben der Vornamen („M.“); die

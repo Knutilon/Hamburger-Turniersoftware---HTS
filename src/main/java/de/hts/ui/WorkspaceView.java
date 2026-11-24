@@ -500,7 +500,7 @@ public final class WorkspaceView {
         });
         box.getChildren().addAll(new HBox(6, on, onText), new HBox(6, abbr, abbrText));
         if (de.hts.web.WebSettings.configured()) {
-            String url = de.hts.web.Publisher.publicUrl(de.hts.web.WebSettings.server(), tournament.getId());
+            String url = de.hts.web.Publisher.publicUrl(de.hts.web.WebSettings.server(), tournament.getName(), tournament.getDate());
             Label urlLbl = new Label("Adresse für Zuschauer: " + url);
             urlLbl.setWrapText(true);
             urlLbl.setMinHeight(Region.USE_PREF_SIZE);
@@ -513,7 +513,11 @@ public final class WorkspaceView {
                 javafx.scene.input.Clipboard.getSystemClipboard().setContent(cc);
                 setStatus("Adresse kopiert.");
             });
-            HBox urlRow = new HBox(10, urlLbl, copy);
+            Button poster = new Button("QR-Code-Aushang drucken");                   // 1.7.0 (#148)
+            poster.getStyleClass().add("pill");
+            poster.setMinWidth(Region.USE_PREF_SIZE);
+            poster.setOnAction(e -> showLivePoster());
+            javafx.scene.layout.FlowPane urlRow = new javafx.scene.layout.FlowPane(10, 8, urlLbl, copy, poster);
             urlRow.setAlignment(Pos.CENTER_LEFT);
             box.getChildren().add(urlRow);
         }
@@ -890,6 +894,15 @@ public final class WorkspaceView {
         });
     }
 
+    /** 1.7.0 (#140): nach einem unerwarteten Fehler den Stand sichern (ohne Rückfragen). */
+    public void saveAfterError() {
+        try {
+            if (tournament.isModified()) store.save(tournament);
+        } catch (IOException | RuntimeException e) {
+            de.hts.Log.error("Speichern nach Fehler fehlgeschlagen", e);
+        }
+    }
+
     /** @return {@code true}, wenn gespeichert wurde */
     private boolean save() {
         try {
@@ -897,6 +910,7 @@ public final class WorkspaceView {
             updateSaveState();
             return true;
         } catch (IOException e) {
+            de.hts.Log.error("Speichern fehlgeschlagen", e);
             setStatus("Speichern fehlgeschlagen.");
             error("Speichern fehlgeschlagen", e.getMessage());
             return false;
@@ -959,6 +973,31 @@ public final class WorkspaceView {
                 + " an den Tischen.");
         onRunningChanged();
         showPage(Page.TABLES);
+        offerLivePoster();
+    }
+
+    /** 1.7.0 (#148): beim Turnierstart mit „Live im Internet“ den QR-Code-Aushang anbieten. */
+    private void offerLivePoster() {
+        if (!tournament.isPublish() || !de.hts.web.WebSettings.configured()) return;
+        Alert a = new Alert(Alert.AlertType.CONFIRMATION, "Für die Halle: ein A4-Aushang mit QR-Code zur Live-Seite dieses Turniers.",
+                ButtonType.YES, ButtonType.NO);
+        a.initOwner(stage);
+        a.setTitle("QR-Code-Aushang");
+        a.setHeaderText("QR-Code-Aushang drucken?");
+        DialogSizing.fit(a);
+        if (a.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) showLivePoster();
+    }
+
+    /** 1.7.0 (#148): Aushang mit QR-Code zur Live-Seite als PDF (Druck über die PDF-Ansicht). */
+    private void showLivePoster() {
+        if (!de.hts.web.WebSettings.configured()) {
+            error("QR-Code-Aushang", "Der Webserver ist noch nicht eingerichtet (Turnierübersicht → Webserver).");
+            return;
+        }
+        String url = de.hts.web.Publisher.publicUrl(de.hts.web.WebSettings.server(), tournament.getName(), tournament.getDate());
+        String name = "Live-Aushang " + (tournament.getName() == null ? "Turnier" : tournament.getName());
+        PdfViewer.show(stage, tournament, name, de.hts.report.PdfReports.liveQrPoster(tournament, url,
+                de.hts.persistence.Organizer.get().logoPng()), name.replaceAll("[\\\\/:*?\"<>|]", "_") + ".pdf", this::setStatus);
     }
 
     private static String names(List<PlayingClass> list) {
@@ -1445,7 +1484,7 @@ public final class WorkspaceView {
         fees.getStyleClass().add("action-menu");
         fees.setMinWidth(Region.USE_PREF_SIZE);
         fees.managedProperty().bind(fees.visibleProperty());
-        MenuItem club = new MenuItem("Verein abrechnen …");
+        MenuItem club = new MenuItem("Verein abrechnen");
         club.setOnAction(e -> settleClub());
         MenuItem cash = new MenuItem("Kassenübersicht (PDF)");
         cash.setOnAction(e -> Reports.showCashReport(getRoot().getScene() == null ? null : getRoot().getScene().getWindow(), tournament, this::setStatus));

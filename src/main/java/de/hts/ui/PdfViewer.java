@@ -53,6 +53,7 @@ final class PdfViewer {
 
     /** Zeigt das Dokument in einem eigenen Fenster; es wird beim Schließen freigegeben. */
     static void show(Window owner, de.hts.tournament.Tournament t, String title, PDDocument doc, String fileName, Consumer<String> status) {
+        de.hts.Log.info("PDF erstellt: " + (doc == null ? 0 : doc.getNumberOfPages()) + " Seiten");
         byte[] bytes;
         List<WritableImage> pages = new ArrayList<>();
         List<Float> widthsPt = new ArrayList<>();

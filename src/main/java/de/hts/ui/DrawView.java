@@ -2431,7 +2431,7 @@ public final class DrawView {
                 l.getStrokeDashArray().setAll(3.0, 5.0);
             }
             case "bracket-path-hit" -> {        // Pfad eines Suchtreffers
-                l.setStroke(javafx.scene.paint.Color.web("#00a5a8"));
+                l.setStroke(javafx.scene.paint.Color.web("#2fae7e"));   // 1.7.0 (#146): Mint statt Türkis
                 l.setStrokeWidth(2.4);
             }
             default -> {                        // Turnierpfad: durchgezogen, dünn, grau

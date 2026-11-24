@@ -684,11 +684,53 @@ public final class Tournament {
      */
     private static final String[] EXEMPT_4X3 = {"S1", "D3", "B1", "D2", "A1", "C2", "S4", "C3", "S3", "A3", "C1", "B2", "D1", "A2", "S2", "B3"};
 
+    private static final java.util.Set<String> EXEMPT_6X2_LABELS = java.util.Set.of("S1", "S2", "S3", "S4",
+            "A1", "B1", "C1", "D1", "E1", "F1", "A2", "B2", "C2", "D2", "E2", "F2");
+
+    /**
+     * 1.7.0 (#145): 6 Gruppen × Plätze 1–2 → 16er-KO ohne Freilose, Auslosung je Hälfte (Reihenfolge im Baum von oben):
+     * <pre>
+     * obere Hälfte:  S–2 · 1–1 · 1–2 · 2–S   (S1 und S4, Platz innerhalb der Hälfte ausgelost)
+     * untere Hälfte: S–2 · 2–1 · 1–1 · 2–S   (S2 und S3, ebenso)
+     * </pre>
+     * Drei ausgeloste Gruppen haben ihren Ersten oben und den Zweiten unten, die anderen drei umgekehrt – Erster und
+     * Zweiter derselben Gruppe treffen erst im Finale aufeinander; je Hälfte kommt jeder Gruppenbuchstabe einmal vor.
+     * Innerhalb der Hälfte werden Erste bzw. Zweite zufällig auf die Plätze ihrer Art verteilt. Ein mögliches Ergebnis:
+     * S1–D2 · F1–E1 · A1–B2 · C2–S4 | S3–E2 · A2–B1 · C1–D1 · F2–S2.
+     */
+    static String[] drawExempt6x2(java.util.Random random) {
+        List<String> groups = new java.util.ArrayList<>(List.of("A", "B", "C", "D", "E", "F"));
+        java.util.Collections.shuffle(groups, random);
+        List<String> firstsTop = new java.util.ArrayList<>(), secondsTop = new java.util.ArrayList<>();
+        List<String> firstsBottom = new java.util.ArrayList<>(), secondsBottom = new java.util.ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            String g = groups.get(i);
+            if (i < 3) {
+                firstsTop.add(g + "1");
+                secondsBottom.add(g + "2");
+            } else {
+                firstsBottom.add(g + "1");
+                secondsTop.add(g + "2");
+            }
+        }
+        java.util.Collections.shuffle(firstsTop, random);
+        java.util.Collections.shuffle(secondsTop, random);
+        java.util.Collections.shuffle(firstsBottom, random);
+        java.util.Collections.shuffle(secondsBottom, random);
+        boolean s1First = random.nextBoolean(), s3First = random.nextBoolean();
+        return new String[]{
+                s1First ? "S1" : "S4", secondsTop.get(0), firstsTop.get(0), firstsTop.get(1), firstsTop.get(2), secondsTop.get(1),
+                secondsTop.get(2), s1First ? "S4" : "S1",
+                s3First ? "S3" : "S2", secondsBottom.get(0), secondsBottom.get(1), firstsBottom.get(0), firstsBottom.get(1),
+                firstsBottom.get(2), secondsBottom.get(2), s3First ? "S2" : "S3"};
+    }
+
     /**
      * Phase 2 nach der Gruppenphase mit Freistellung: KO ohne Freilose. Setzliste: S1–S4, dann die Gruppenersten, dann
      * die Zweiten (ggf. Dritten), jeweils nach Spiel-, Satz- und Punkteverhältnis (Gleichstand: Los); Setzplatz k spielt
      * gegen F+1−k (die Freigestellten gegen die schlechtesten Gruppenzweiten bzw. -dritten). Gleiche Gruppe in Runde 1
-     * wird durch Tausch mit dem Nächstplatzierten vermieden. 4 Gruppen × 3: festes Schema {@link #EXEMPT_4X3}.
+     * wird durch Tausch mit dem Nächstplatzierten vermieden. 4 Gruppen × 3: festes Schema {@link #EXEMPT_4X3};
+     * 6 Gruppen × 2: Auslosung je Hälfte ({@link #drawExempt6x2}).
      */
     private void buildExemptKnockout(PlayingClass c, PlayingClass next, List<List<GroupStanding.Row>> tables,
                                      java.util.Map<String, String> idMap, java.util.Random random) {
@@ -726,6 +768,8 @@ public final class Tournament {
         boolean fixed = tables.size() == 4 && q == 3 && f == 16 && java.util.Arrays.stream(EXEMPT_4X3).allMatch(byLabel::containsKey);
         if (fixed) {
             for (String l : EXEMPT_4X3) slots.add(byLabel.get(l));
+        } else if (tables.size() == 6 && q == 2 && f == 16 && byLabel.keySet().containsAll(EXEMPT_6X2_LABELS)) {
+            for (String l : drawExempt6x2(random)) slots.add(byLabel.get(l));
         } else {
             int[] order = KnockoutDraw.seedOrder(f);
             for (int i = 0; i < f; i++) slots.add(seeds.get(order[i] - 1));
@@ -1301,6 +1345,7 @@ public final class Tournament {
      * reiht die Spiele ein und belegt freie Tische.
      */
     public void startClass(PlayingClass c) {
+        de.hts.Log.info("Klasse gestartet: " + c.getName());   // 1.7.0 (#140)
         if (!c.isDrawn()) throw new IllegalStateException("„" + c.getName() + "“ ist noch nicht ausgelost.");
         requireNotStarted(c);
         requireHandicapStartable(c);
@@ -2035,6 +2080,7 @@ public final class Tournament {
     }
 
     public void finishClass(PlayingClass c) {
+        de.hts.Log.info("Klasse beenden: " + c.getName());
         PlayingClass last = phasesOf(c).get(phasesOf(c).size() - 1);
         if (!isPhaseComplete(last)) {
             throw new IllegalStateException("Die Klasse kann erst beendet werden, wenn alle Spiele abgeschlossen sind.");
@@ -2067,6 +2113,7 @@ public final class Tournament {
      */
     /** 0.38 (#61): KO-Folgephase mit bestimmten Gruppenplätzen (z. B. 2, 3, 4) statt der Besten je Gruppe. */
     public PlayingClass createNextPhase(PlayingClass c, List<Integer> places, java.util.Random random) {
+        de.hts.Log.info("Folgephase anlegen: " + c.getName());
         return withRecipe("places|" + (places == null ? "" : String.join(",", places.stream().map(String::valueOf).toList())), random,
                 r -> createNextPhase0(c, places, r));
     }
@@ -2125,6 +2172,7 @@ public final class Tournament {
 
     public PlayingClass createNextPhase(PlayingClass c, TournamentMode kind, int qualifiers, int groupSize,
                                         java.util.Random random) {
+        de.hts.Log.info("Folgephase anlegen: " + c.getName() + " (" + kind + ")");
         return withRecipe("kind|" + (kind == null ? "NONE" : kind.name()) + "|" + qualifiers + "|" + groupSize, random,
                 r -> createNextPhase0(c, kind, qualifiers, groupSize, r));
     }
@@ -2181,6 +2229,7 @@ public final class Tournament {
     }
 
     public PlayingClass createNextPhase(PlayingClass c, java.util.Random random) {
+        de.hts.Log.info("Folgephase anlegen: " + c.getName());
         return withRecipe("next", random, r -> createNextPhase(c, r, false));
     }
 

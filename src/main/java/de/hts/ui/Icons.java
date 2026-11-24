@@ -43,6 +43,8 @@ public final class Icons {
     public static final String INFO = "M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20z M12 11v6 M12 7.2v.6";
     public static final String HOME = "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10";
     public static final String ARROW_RIGHT = "M5 12h14 M12 5l7 7-7 7";
+    public static final String LOCK = "M6 11h12v10H6z M8 11V7a4 4 0 0 1 8 0v4";                           // 1.7.0 (#141)
+    public static final String EYE = "M2 12s3.5-7 10-7s10 7 10 7s-3.5 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z";
     public static final String CLOCK = "M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20z M12 6v6l4 2";
 
     private Icons() {

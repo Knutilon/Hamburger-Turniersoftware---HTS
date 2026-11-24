@@ -7,23 +7,26 @@ rem Dieses Programm ist freie Software unter der GNU Affero General
 rem Public License v3.0; Einzelheiten in der Datei LICENSE.
 rem Hamburger Turniersoftware (HTS) starten
 cd /d "%~dp0"
+rem 1.7.0 (#140): Absturzbericht der Java-Laufzeit nach %USERPROFILE%\.hts (kommt in den Fehlerbericht)
+if not exist "%USERPROFILE%\.hts" mkdir "%USERPROFILE%\.hts"
+set "HTSOPTS=-XX:ErrorFile=%USERPROFILE%\.hts\hs_err_pid%%p.log"
 
 rem 1. Mitgelieferte Java-Laufzeit im Ordner "jre"
 if exist "jre\bin\javaw.exe" (
-  start "" "jre\bin\javaw.exe" -jar hts.jar
+  start "" "jre\bin\javaw.exe" "%HTSOPTS%" -jar hts.jar
   exit /b
 )
 
 rem 2. Installiertes Java ueber JAVA_HOME
 if defined JAVA_HOME if exist "%JAVA_HOME%\bin\javaw.exe" (
-  start "" "%JAVA_HOME%\bin\javaw.exe" -jar hts.jar
+  start "" "%JAVA_HOME%\bin\javaw.exe" "%HTSOPTS%" -jar hts.jar
   exit /b
 )
 
 rem 3. Java im Suchpfad
 where javaw >nul 2>nul
 if %errorlevel%==0 (
-  start "" javaw -jar hts.jar
+  start "" javaw "%HTSOPTS%" -jar hts.jar
   exit /b
 )
 

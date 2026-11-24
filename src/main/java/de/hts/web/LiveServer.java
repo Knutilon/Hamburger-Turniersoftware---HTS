@@ -78,6 +78,7 @@ public final class LiveServer {
     private String extraHead = "";
     private String extraFooter = "";
     private boolean finalOnly;
+    private java.util.function.LongSupplier stampSource = System::currentTimeMillis;
 
     /**
      * @param ui       führt Zugriffe auf das Turnier aus (HTS: {@code Platform::runLater})
@@ -99,8 +100,9 @@ public final class LiveServer {
      * Adressen unter {@code base} (z. B. „/live/5c0c83c510be“), Logo und Fußzeile vom Server.
      */
     static LiveServer forHost(Tournament t, Executor lock, String base, java.util.function.Supplier<byte[]> logo,
-                              String extraHead, String extraFooter, boolean finalOnly) {
+                              String extraHead, String extraFooter, boolean finalOnly, java.util.function.LongSupplier stamp) {
         LiveServer v = new LiveServer(t, lock, null, 0);
+        v.stampSource = stamp;
         v.base = base;
         v.logoSource = logo;
         v.orgName = () -> "";
@@ -221,7 +223,7 @@ public final class LiveServer {
      */
     void serveLive(HttpExchange ex, String path, Map<String, String> q) throws Exception {
         {
-            if (finalOnly && !(path.equals("/live") || path.equals("/live/ergebnis") || path.equals("/live/logo.png"))) {
+            if (finalOnly && !(path.equals("/live") || path.equals("/live/ergebnis") || path.equals("/live/logo.png") || path.equals("/live/hts-logo.png"))) {
                 ex.getResponseHeaders().add("Location", rebase("\"/live").substring(1));
                 send(ex, 302, "text/plain", "");
                 return;
@@ -229,14 +231,26 @@ public final class LiveServer {
             String html = switch (path) {
                 case "/live" -> call(this::overview);
                 case "/live/tische" -> call(this::tablesPage);
-                case "/live/klasse" -> call(() -> classPage(q.get("k")));
-                case "/live/ergebnis" -> call(() -> resultPage(q.get("k")));
+                case "/live/klasse" -> call(() -> classPage(q.get("k"), q.get("p")));
+                case "/live/ergebnis" -> call(() -> classPage(q.get("k"), "e"));
                 case "/live/suche" -> call(this::searchPage);
                 case "/live/ich" -> call(() -> mePage(q.get("id")));
                 case "/live/spieler.json" -> null;
                 default -> "";
             };
-            if (path.equals("/live/logo.png")) {                 // 1.5.0 (#139): Logo des Ausrichters
+            if (path.equals("/live/hts-logo.png")) {             // 1.7.0 (#147): HTS-Logo im Seitenkopf
+                try (InputStream in = LiveServer.class.getResourceAsStream("/de/hts/ui/hts-logo-klein.png")) {
+                    byte[] png = in == null ? new byte[0] : in.readAllBytes();
+                    ex.getResponseHeaders().set("Content-Type", "image/png");
+                    ex.getResponseHeaders().set("Cache-Control", "max-age=86400");
+                    ex.sendResponseHeaders(png.length == 0 ? 404 : 200, png.length == 0 ? -1 : png.length);
+                    if (png.length > 0) {
+                        try (OutputStream os = ex.getResponseBody()) {
+                            os.write(png);
+                        }
+                    }
+                }
+            } else if (path.equals("/live/logo.png")) {          // 1.5.0 (#139): Logo des Ausrichters
                 byte[] png = logoSource.get();
                 if (png == null) {
                     send(ex, 404, "text/plain", "");
@@ -331,39 +345,91 @@ public final class LiveServer {
     }
 
     static final String CSS = """
-            body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;margin:0;background:#f4f5f7;color:#222;font-size:16px}
-            header{background:#173a6c;color:#fff;padding:12px 14px}header .org{float:right;display:flex;align-items:center;gap:8px;margin-left:10px}header .org img{height:44px;width:auto;background:#fff;border-radius:50%;padding:2px}header .org span{font-size:11px;max-width:140px;text-align:right}header a{color:#fff;text-decoration:none}
-            header h1{font-size:18px;margin:0}header .sub{font-size:13px;opacity:.85;margin-top:2px}
-            main{padding:10px 12px 40px;max-width:900px;margin:0 auto}
-            h2{font-size:17px;color:#173a6c;margin:18px 0 8px}h3{font-size:15px;color:#173a6c;margin:14px 0 6px}
-            .card{background:#fff;border-radius:10px;padding:10px 12px;margin:8px 0;box-shadow:0 1px 2px rgba(0,0,0,.06)}
-            a.card{display:block;color:inherit;text-decoration:none}a.card:active{background:#e8f6f6}
+            *{box-sizing:border-box}body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;margin:0;background:#f6f7f8;color:#1f2933;font-size:15px}
+            a{color:#187250}
+            header{background:#fff;border-bottom:2px solid #187250;padding:10px 12px 0}
+            header .hb{display:flex;align-items:center;gap:10px;max-width:1000px;margin:0 auto}
+            header .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:#1f2933;flex:1;min-width:0}
+            header .brand img{width:34px;height:34px;border-radius:8px;flex:none}
+            header .brand b{display:block;font-size:16px;line-height:1.2}header .brand small{display:block;color:#6b7280;font-size:12px}
+            header h1{font-size:16px;margin:0}header .sub{font-size:12px;color:#6b7280}
+            header .org{display:flex;align-items:center;gap:6px;flex:none}header .org img{height:40px;width:auto;max-width:90px;object-fit:contain}
+            header .org span{font-size:11px;color:#4a5560;max-width:120px;text-align:right}
+            .sbox{max-width:1000px;margin:10px auto 0}.sbox input{width:100%;font-size:15px;padding:9px 12px;border:1px solid #d0d5db;border-radius:10px;background:#f1f3f4}
+            nav.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 0;max-width:1000px;margin:0 auto;scrollbar-width:none}
+            nav.chips a{flex:none;border:1px solid #d0d5db;border-radius:999px;padding:5px 12px;font-size:13px;color:#1f2933;text-decoration:none;background:#fff}
+            nav.chips a.on{background:#187250;border-color:#187250;color:#fff}
+            main,#sr{padding:10px 12px 30px;max-width:1000px;margin:0 auto}#sr:empty{display:none}
+            h2{font-size:16px;margin:16px 0 8px}h3{font-size:14px;color:#4a5560;margin:14px 0 6px;font-weight:600}
+            .tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid #e4e6ea;margin:0 -12px 10px;padding:0 12px;background:#fff}
+            .tabs a{flex:none;padding:9px 12px 7px;text-decoration:none;color:#4a5560;border-bottom:3px solid transparent;font-size:13px;text-align:center}
+            .tabs a small{display:block;font-size:11px;color:#6b7280}.tabs a.on{color:#1f2933;font-weight:600;border-bottom-color:#5fd3a8}
+            .card,.tile{background:#fff;border:1px solid #e4e6ea;border-radius:12px;padding:10px 12px;margin:8px 0}
+            a.card{display:block;color:inherit;text-decoration:none}
+            .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+            @media(min-width:700px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(min-width:1000px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+            .grid .tile{margin:0;cursor:pointer}.tile.open{grid-column:1/-1;border-color:#5fd3a8;cursor:default}
+            .tile .th{display:flex;justify-content:space-between;align-items:center;gap:6px}.tile .tb,.tile .ml{display:none}
+            .tile.open .tb,.tile.games .ml{display:block}.tile.open .more{display:none}.tile .th b{font-size:14px}
+            .bar{height:4px;background:#e8ebf0;border-radius:2px;margin:8px 0 5px}.bar i{display:block;height:4px;background:#5fd3a8;border-radius:2px}
             .row{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
-            .muted{color:#6b7280;font-size:13px}.chip{display:inline-block;font-size:12px;padding:2px 8px;border-radius:10px;background:#e5e7eb}
-            .run{background:#dff5f6;color:#0b5b5e}.done{background:#173a6c;color:#fff}.queue{background:#fff4d6;color:#7a5200}
-            .me{border-left:4px solid #6fd1d4}.win{font-weight:600}
-            table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:5px 4px;text-align:left;border-bottom:1px solid #eee}
-            th{color:#173a6c;font-size:12px}td.n,th.n{text-align:right}
-            input[type=search],select{width:100%;box-sizing:border-box;font-size:16px;padding:10px;border:1px solid #cfd4da;border-radius:8px}
-            button{font-size:16px;padding:12px 14px;border-radius:22px;border:0;background:#173a6c;color:#fff;margin:6px 6px 0 0}
-            button.light{background:#e5e7eb;color:#173a6c}.ok{color:#0f6e56}.warn{color:#9a3412}
-            label.pl{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eee}
-            label.pl input{width:22px;height:22px}
-            footer.src{padding:16px 12px 24px;text-align:center;font-size:12px;color:#667}
-            footer.src a{color:#667}
+            .muted{color:#6b7280;font-size:12px}.lead{font-size:13px;margin-top:4px;overflow-wrap:anywhere}
+            .chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:#e8ebf0;color:#2d3440;white-space:nowrap}
+            .run{background:#e4f7ef;color:#0b3d2c}.done{background:#e8ebf0;color:#2d3440}.wait,.queue{background:#fff4d6;color:#7a5200}
+            .res{background:#f1f3f4;color:#1f2933;font-weight:600}
+            .m{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #eef0f2;font-size:13px}.m:last-child{border-bottom:0}
+            .m .who{min-width:0;overflow-wrap:anywhere}.m .st{flex:none;text-align:right}
+            .me{border-left:4px solid #5fd3a8;border-radius:0}.mine{background:#e4f7ef}.win{font-weight:600}
+            table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:5px 4px;text-align:left;border-bottom:1px solid #eef0f2}
+            th{color:#6b7280;font-size:11px;font-weight:500}td.n,th.n{text-align:right}
+            .gm,.btn,button{display:inline-block;font-size:14px;padding:8px 14px;border-radius:999px;border:0;background:#187250;color:#fff;margin:8px 6px 0 0;text-decoration:none;cursor:pointer}
+            .gm,.btn.light,button.light{background:#fff;color:#1f2933;border:1px solid #d0d5db}
+            .kl{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
+            input[type=search],select{width:100%;font-size:16px;padding:10px;border:1px solid #d0d5db;border-radius:8px}
+            .ok{color:#187250}.warn{color:#9a3412}
+            label.pl{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eee}label.pl input{width:22px;height:22px}
+            footer.src{padding:16px 12px 24px;text-align:center;font-size:12px;color:#6b7280}footer.src a{color:#6b7280}
             """;
 
-    private static final String RELOAD = """
-            <script>(function(){var k='y'+location.pathname+location.search;
-            addEventListener('load',function(){var y=sessionStorage.getItem(k);if(y)scrollTo(0,+y);});
-            setTimeout(function(){sessionStorage.setItem(k,scrollY);location.reload();},10000);})();</script>
+    /** 1.7.0 (#147): Tabellen und Spiele aufklappen (Zustand je Seite), Aktualisierung alle 10 s ohne Neuladen. */
+    private static final String TILE_JS = """
+            <script>(function(){var k='o'+location.pathname+location.search;
+            function st(){try{return JSON.parse(sessionStorage.getItem(k)||'{}')}catch(e){return{}}}
+            function sv(s){try{sessionStorage.setItem(k,JSON.stringify(s))}catch(e){}}
+            function ap(){var s=st();document.querySelectorAll('.tile[data-key]').forEach(function(t){var v=s[t.dataset.key]||0;
+            t.classList.toggle('open',v>=1);t.classList.toggle('games',v>=2);var b=t.querySelector('.gm');if(b)b.textContent=v>=2?'Spiele ausblenden':b.dataset.l;});}
+            document.addEventListener('click',function(e){var t=e.target.closest('.tile[data-key]');if(!t)return;var s=st(),v=s[t.dataset.key]||0;
+            if(e.target.closest('.gm'))v=v>=2?1:2;else if(e.target.closest('.tb')||e.target.closest('.ml'))return;else v=v>=1?0:1;
+            s[t.dataset.key]=v;sv(s);ap();});window.htsApply=ap;ap();})();</script>
+            """;
+
+    private static final String REFRESH_JS = """
+            <script>setInterval(function(){fetch(location.href,{cache:'no-store'}).then(function(r){return r.ok?r.text():null}).then(function(t){if(!t)return;
+            var d=new DOMParser().parseFromString(t,'text/html'),n=d.getElementById('live'),m=document.getElementById('live');
+            if(n&&m&&n.innerHTML!==m.innerHTML){m.innerHTML=n.innerHTML;if(window.htsApply)htsApply();}
+            var a=d.getElementById('stamp'),b=document.getElementById('stamp');if(a&&b)b.textContent=a.textContent;}).catch(function(){});},10000);</script>
+            """;
+
+    private static final String SEARCH_JS = """
+            <script>(function(){var q=document.getElementById('q');if(!q)return;var all=null,sr=document.getElementById('sr'),mn=document.getElementById('live');
+            function nm(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');}
+            function es(s){return(s||'').replace(/[<>&"]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];});}
+            function cd(p){return '<div class="card"><b>'+es(p.n)+'</b><div class="muted">'+es(p.c)+'</div><div class="kl">'+(p.k||[]).map(function(x){return '<span class="chip">'+es(x)+'</span>';}).join('')
+            +'</div><a class="btn" href="/live/ich?id='+encodeURIComponent(p.id)+'">Spiele anzeigen</a><a class="btn light" href="#" data-me="'+es(p.id)+'" data-n="'+es(p.n)+'">Als „Meine Spiele“ merken</a></div>';}
+            function sh(){var w=nm(q.value).split(/\\s+/).filter(function(x){return x;});if(!w.length){sr.innerHTML='';mn.style.display='';return;}
+            if(!all){fetch('/live/spieler.json').then(function(r){return r.json();}).then(function(d){all=d;sh();});return;}
+            var h=all.filter(function(p){return w.every(function(x){return nm(p.n+' '+p.c).indexOf(x)>=0;});}).slice(0,30);mn.style.display='none';
+            sr.innerHTML='<div class="muted">'+h.length+' Treffer</div>'+(h.length?h.map(cd).join(''):'<div class="card">Niemand gefunden – Vor- oder Nachname bzw. Verein versuchen.</div>');}
+            q.addEventListener('input',sh);if(location.pathname.slice(-6)==='/suche')q.focus();
+            sr.addEventListener('click',function(e){var a=e.target.closest('[data-me]');if(!a)return;e.preventDefault();
+            try{localStorage.setItem('hts-me',JSON.stringify({id:a.dataset.me,name:a.dataset.n}));}catch(x){}a.textContent='Gemerkt ✓';});})();</script>
             """;
 
     /** 0.42 (#73): AGPL § 13 – wer HTS über das Netzwerk nutzt, kommt an den Quellcode. */
     static final String SOURCE_FOOTER = "<footer class=\"src\">HTS " + de.hts.HtsApp.VERSION + " · freie Software · <a href=\""
             + de.hts.HtsApp.REPO_URL + "\" target=\"_blank\" rel=\"noopener\">Quellcode (AGPL-3.0)</a></footer>";
 
-    /** 1.5.0 (#139): Logo und Name des Ausrichters rechts im Seitenkopf (weißer Hintergrund, damit farbige Logos wirken). */
+    /** 1.5.0 (#139): Logo und Name des Ausrichters rechts im Seitenkopf. */
     private String organizerBadge() {
         String name = orgName.get() == null ? "" : orgName.get();
         boolean logo = logoSource.get() != null;
@@ -372,44 +438,65 @@ public final class LiveServer {
                 + (name.isBlank() ? "" : "<span>" + esc(name) + "</span>") + "</div>";
     }
 
+    private static final java.time.format.DateTimeFormatter DAY = java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final java.time.format.DateTimeFormatter HM = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+            .withZone(java.time.ZoneId.of("Europe/Berlin"));
+
+    /** Seiten der Anmeldung und Ergebnis-Eingabe (lokaler Handy-Zugang): ohne Suche und Klassenleiste. */
     private String page(String title, String body, boolean reload) {
+        return page(title, null, body, reload, false);
+    }
+
+    /**
+     * 1.7.0 (#147): Seitengerüst – Kopf mit Logo, Turniername, Datum und Stand, Suche, Leiste „Tische“ + Klassen;
+     * {@code active} = „tische“ oder der Name der gewählten Klasse.
+     */
+    private String page(String title, String active, String body, boolean refresh, boolean nav) {
         String name = t.getName() == null || t.getName().isBlank() ? "Turnier" : t.getName();
-        return rebase("<!doctype html><html lang=\"de\"><head><meta charset=\"utf-8\">"
+        StringBuilder h = new StringBuilder("<!doctype html><html lang=\"de\"><head><meta charset=\"utf-8\">"
                 + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>" + esc(title) + " – " + esc(name)
-                + "</title>" + extraHead + "<style>" + CSS + "</style></head><body><header>" + organizerBadge() + "<a href=\"/live\"><h1>" + esc(name)
-                + "</h1></a><div class=\"sub\">" + esc(title) + "</div></header><main>" + body + "</main>" + extraFooter + SOURCE_FOOTER
-                + (reload ? RELOAD : "") + "</body></html>");
+                + "</title>" + extraHead + "<style>" + CSS + "</style></head><body><header><div class=\"hb\"><a class=\"brand\" href=\"/live\">"
+                + "<img src=\"/live/hts-logo.png\" alt=\"HTS\"><span><b>" + esc(name) + "</b><small>"
+                + (t.getDate() == null ? "" : DAY.format(t.getDate()) + " · ") + "<span id=\"stamp\">Stand "
+                + HM.format(java.time.Instant.ofEpochMilli(stampSource.getAsLong())) + " Uhr</span></small></span></a>" + organizerBadge() + "</div>");
+        if (nav) {
+            if (!finalOnly) h.append("<div class=\"sbox\"><input type=\"search\" id=\"q\" placeholder=\"Spieler oder Verein suchen\" autocomplete=\"off\" aria-label=\"Spieler oder Verein suchen\"></div>");
+            h.append("<nav class=\"chips\">");
+            if (!finalOnly) h.append("<a href=\"/live/tische\"").append("tische".equals(active) ? " class=\"on\"" : "").append(">Tische</a>");
+            for (PlayingClass c : t.rootClasses()) {
+                h.append("<a href=\"/live/").append(finalOnly ? "ergebnis" : "klasse").append("?k=").append(enc(c.getName())).append("\"")
+                        .append(c.getName().equals(active) ? " class=\"on\"" : "").append(">").append(esc(c.getName())).append("</a>");
+            }
+            h.append("</nav>");
+        }
+        h.append("</header><div id=\"sr\"></div><main id=\"live\">").append(body).append("</main>").append(extraFooter).append(SOURCE_FOOTER)
+                .append(TILE_JS);
+        if (nav && !finalOnly) h.append(SEARCH_JS);
+        if (refresh) h.append(REFRESH_JS);
+        return rebase(h.append("</body></html>").toString());
     }
 
     // --- Live-Anzeige ----------------------------------------------------------------------------
 
+    /** Startseite des Turniers: die laufende Klasse (oder die erste), darüber „Meine Spiele“. */
     private String overview() {
-        StringBuilder b = new StringBuilder();
         if (finalOnly) {                                       // 1.6.0 (#101): „Nur Endergebnis behalten“
-            b.append("<p class=\"muted\">Das Turnier ist abgeschlossen. Hier stehen nur noch die Endergebnisse.</p><h2>Endergebnisse</h2>");
+            StringBuilder b = new StringBuilder("<p class=\"muted\">Das Turnier ist abgeschlossen. Hier stehen nur noch die Endergebnisse.</p><h2>Endergebnisse</h2>");
             for (PlayingClass c : t.rootClasses()) {
                 b.append("<a class=\"card\" href=\"/live/ergebnis?k=").append(enc(c.getName())).append("\"><b>").append(esc(c.getName())).append("</b></a>");
             }
-            return page("Endergebnisse", b.toString(), false);
+            return page("Endergebnisse", null, b.toString(), false, true);
         }
-        b.append("<div id=\"me\"></div>");
-        b.append("<a class=\"card\" href=\"/live/tische\"><b>Tische und laufende Spiele</b><div class=\"muted\">")
-                .append(t.getMatches().stream().filter(m -> m.getStatus().atTable()).count()).append(" Spiele an den Tischen · ")
-                .append(t.queue().size()).append(" eingereiht</div></a>");
-        b.append("<a class=\"card\" href=\"/live/suche\"><b>Meine Spiele / Meine Gruppe</b><div class=\"muted\">Eigenen Namen suchen</div></a>");
-        b.append("<h2>Klassen</h2>");
-        for (PlayingClass c : t.rootClasses()) {
-            String state = c.isFinished() ? "<span class=\"chip done\">beendet</span>" : c.isStarted() ? "<span class=\"chip run\">läuft</span>"
-                    : c.isDrawn() ? "<span class=\"chip\">ausgelost</span>" : "<span class=\"chip\">noch nicht ausgelost</span>";
-            b.append("<a class=\"card\" href=\"/live/klasse?k=").append(enc(c.getName())).append("\"><div class=\"row\"><b>")
-                    .append(esc(c.getName())).append("</b>").append(state).append("</div></a>");
-        }
-        b.append("""
-                <script>try{var me=JSON.parse(localStorage.getItem('hts-me')||'null');if(me&&me.id){
+        List<PlayingClass> roots = t.rootClasses();
+        String me = """
+                <div id="me"></div><script>try{var me=JSON.parse(localStorage.getItem('hts-me')||'null');if(me&&me.id){
                 document.getElementById('me').innerHTML='<a class="card me" href="/live/ich?id='+encodeURIComponent(me.id)+'"><b>Meine Spiele: '
-                +me.name.replace(/[<>&]/g,'')+'</b><div class="muted">Spiele, Tisch und Gruppe</div></a>';}}catch(e){}</script>
-                """);
-        return page("Live-Anzeige", b.toString(), true);
+                +me.name.replace(/[<>&]/g,'')+'</b><div class="muted">Spiele, Tische und Gruppe</div></a>';}}catch(e){}</script>
+                """;
+        if (roots.isEmpty()) return page("Live-Anzeige", null, me + "<p class=\"muted\">Noch keine Klassen.</p>", true, true);
+        PlayingClass sel = roots.stream().filter(c -> c.isStarted() && !c.isFinished()).findFirst()
+                .orElse(roots.stream().filter(PlayingClass::isStarted).findFirst().orElse(roots.get(0)));
+        return page("Live-Anzeige", sel.getName(), me + classBody(sel, null), true, true);
     }
 
     private String matchLine(Match m, String highlightPerson) {
@@ -421,16 +508,18 @@ public final class LiveServer {
         if (bb != null && ob != null) nb = "<span class=\"muted\">" + esc(ob) + "</span> " + nb;
         if (w != null && w.equals(m.getA())) na = "<span class=\"win\">" + na + "</span>";
         if (w != null && w.equals(m.getB())) nb = "<span class=\"win\">" + nb + "</span>";
+        // 1.7.0 (#147): laufende Spiele nur als „laufend“ (kein Punktestand)
         String chip = switch (m.getStatus()) {
-            case ACTIVE, PAUSED -> "<span class=\"chip run\">" + esc(m.getTable() != null ? t.tableName(m.getTable()) : m.getStatus().getLabel()) + "</span>";
+            case ACTIVE, PAUSED -> "<span class=\"chip run\">laufend</span>";
             case QUEUED -> "<span class=\"chip queue\">eingereiht</span>";
-            case DONE -> "<span class=\"chip done\">" + esc(m.getResultText()) + "</span>";
+            case DONE -> "<span class=\"chip res\">" + esc(m.getResultText()) + "</span>"
+                    + (m.getSetsText().isEmpty() ? "" : "<div class=\"muted\">" + esc(m.getSetsText()) + "</div>");
+            case CANCELLED -> "<span class=\"chip\">nicht gespielt</span>";
             default -> "<span class=\"chip\">geplant</span>";
         };
         boolean mine = highlightPerson != null && t.personsOf(m).contains(highlightPerson);
-        return "<div class=\"card" + (mine ? " me" : "") + "\"><div class=\"row\"><span>" + na + " – " + nb + "</span>" + chip + "</div>"
-                + "<div class=\"muted\">Spiel " + m.getNumber() + " · " + esc(className(m)) + " · " + esc(m.getStage())
-                + (m.getStatus() == MatchStatus.DONE && !m.getSetsText().isEmpty() ? " · " + esc(m.getSetsText()) : "") + "</div></div>";
+        return "<div class=\"m" + (mine ? " mine" : "") + "\"><div class=\"who\">" + na + " – " + nb + "<div class=\"muted\">Spiel " + m.getNumber()
+                + " · " + esc(className(m)) + " · " + esc(m.getStage()) + "</div></div><div class=\"st\">" + chip + "</div></div>";
     }
 
     private String className(Match m) {
@@ -441,24 +530,32 @@ public final class LiveServer {
     }
 
     private String tablesPage() {
-        StringBuilder b = new StringBuilder("<h2>An den Tischen</h2>");
-        boolean any = false;
+        StringBuilder b = new StringBuilder("<h2>An den Tischen</h2><div class=\"grid\">");
+        int shown = 0;
         for (int nr = 1; nr <= t.getTableCount(); nr++) {
             if (t.isTableDisabled(nr)) continue;
+            shown++;
             Match m = t.activeMatchAt(nr).orElse(null);
-            if (m == null) {
-                b.append("<div class=\"card\"><div class=\"row\"><b>").append(esc(t.tableName(nr))).append("</b><span class=\"muted\">frei</span></div></div>");
-            } else {
-                any = true;
-                b.append(matchLine(m, null));
+            b.append("<div class=\"tile\" style=\"cursor:default\"><div class=\"th\"><b>").append(esc(t.tableName(nr))).append("</b>")
+                    .append(m == null ? "<span class=\"chip\">frei</span>" : "<span class=\"chip run\">laufend</span>").append("</div>");
+            if (m != null) {
+                String a = t.entrantName(m, m.getA()), bb = t.entrantName(m, m.getB());
+                b.append("<div class=\"lead\">").append(esc(a == null ? "–" : a)).append("<br>").append(esc(bb == null ? "–" : bb))
+                        .append("</div><div class=\"muted\">").append(esc(className(m))).append(" · ").append(esc(m.getStage())).append("</div>");
             }
+            b.append("</div>");
         }
-        if (!any && t.getTableCount() == 0) b.append("<p class=\"muted\">Keine Tische.</p>");
+        b.append("</div>");
+        if (shown == 0) b.append("<p class=\"muted\">Keine Tische.</p>");
         List<Match> queue = t.queue();
         b.append("<h2>Als Nächstes</h2>");
         if (queue.isEmpty()) b.append("<p class=\"muted\">Keine eingereihten Spiele.</p>");
-        for (Match m : queue.subList(0, Math.min(20, queue.size()))) b.append(matchLine(m, null));
-        return page("Tische und laufende Spiele", b.toString(), true);
+        else {
+            b.append("<div class=\"card\">");
+            for (Match m : queue.subList(0, Math.min(20, queue.size()))) b.append(matchLine(m, null));
+            b.append("</div>");
+        }
+        return page("Tische", "tische", b.toString(), true, true);
     }
 
     private String standingsTable(PlayingClass c, int g, String highlightPerson) {
@@ -480,25 +577,55 @@ public final class LiveServer {
                 && p.members().stream().anyMatch(x -> x != null && x.getId().equals(personId)));
     }
 
-    private String classPage(String name) {
+    private String classPage(String name, String tab) {
         PlayingClass root = name == null ? null : t.findClass(name).map(t::rootOf).orElse(null);
         if (root == null) return "";
-        StringBuilder b = new StringBuilder();
-        if (!root.isDrawn()) b.append("<p class=\"muted\">Noch nicht ausgelost.</p>");
-        for (PlayingClass phase : t.phasesOf(root)) {
-            if (!phase.isDrawn()) continue;
-            b.append("<h2>Phase ").append(t.phaseNumber(phase)).append(" – ").append(esc(modeName(phase))).append("</h2>");
-            phaseBody(b, phase, null);
+        if (finalOnly) tab = "e";
+        return page(root.getName(), root.getName(), classBody(root, tab), true, true);
+    }
+
+    /** 1.7.0 (#147): Reiter je Phase + „Ergebnis“; {@code tab} = Phasennummer, „e“ oder {@code null} (laufende Phase). */
+    private String classBody(PlayingClass root, String tab) {
+        List<PlayingClass> phases = t.phasesOf(root).stream().filter(PlayingClass::isDrawn).toList();
+        int sel = -1;
+        boolean result = "e".equals(tab) || finalOnly;
+        if (!result) {
+            try {
+                sel = tab == null ? -1 : Integer.parseInt(tab) - 1;
+            } catch (NumberFormatException e) {
+                sel = -1;
+            }
+            if (sel < 0 || sel >= phases.size()) {
+                sel = -1;
+                for (int i = phases.size() - 1; i >= 0 && sel < 0; i--) if (phases.get(i).isStarted()) sel = i;
+                if (sel < 0) sel = phases.size() - 1;
+            }
+            if (sel < 0) result = root.isFinished();
         }
-        b.append("<a class=\"card\" href=\"/live/ergebnis?k=").append(enc(root.getName())).append("\"><b>")
-                .append(root.isFinished() ? "Endergebnis" : "Zwischenstand").append("</b></a>");
-        return page(root.getName(), b.toString(), true);
+        StringBuilder b = new StringBuilder("<div class=\"tabs\">");
+        String base = "/live/klasse?k=" + enc(root.getName());
+        if (!finalOnly) {
+            for (int i = 0; i < phases.size(); i++) {
+                b.append("<a href=\"").append(base).append("&amp;p=").append(i + 1).append("\"").append(!result && i == sel ? " class=\"on\"" : "")
+                        .append(">Phase ").append(i + 1).append("<small>").append(esc(modeName(phases.get(i)))).append("</small></a>");
+            }
+        }
+        b.append("<a href=\"").append(base).append("&amp;p=e\"").append(result ? " class=\"on\"" : "").append(">")
+                .append(root.isFinished() ? "Ergebnis<small>Endergebnis</small>" : "Ergebnis<small>Zwischenstand</small>").append("</a></div>");
+        if (result) {
+            b.append(resultBody(root));
+        } else if (sel < 0) {
+            b.append("<p class=\"muted\">Noch nicht ausgelost.</p>");
+        } else {
+            phaseBody(b, phases.get(sel), null);
+        }
+        return b.toString();
     }
 
     private static String modeName(PlayingClass c) {
         return switch (c.getMode()) {
-            case GROUPS -> "Gruppenphase";
-            case KNOCKOUT -> "KO-System";
+            case GROUPS -> "Gruppen";
+            case KNOCKOUT -> "KO-Runde";
             case SWISS -> c.isBadeni() ? "Schweizer System (Badeni)" : "Schweizer System";
             case PLACEMENT -> "Platzierungsspiele";
             case QUALIFICATION -> "Qualifikation";
@@ -509,33 +636,66 @@ public final class LiveServer {
 
     private void phaseBody(StringBuilder b, PlayingClass phase, String person) {
         List<Match> ms = new ArrayList<>(t.matchesOf(phase));
+        ms.removeIf(t::isInactiveMatch);
         ms.sort(Comparator.comparingInt(Match::getNumber));
-        if (phase.getMode() == TournamentMode.GROUPS || phase.getMode() == TournamentMode.PLACEMENT || phase.getMode() == TournamentMode.SWISS) {
-            for (int g = 0; g < phase.getGroups().size(); g++) {
+        TournamentMode mode = phase.getMode();
+        if (mode == TournamentMode.GROUPS || mode == TournamentMode.PLACEMENT || mode == TournamentMode.SWISS) {
+            b.append("<div class=\"grid\">");
+            int groups = mode == TournamentMode.SWISS ? Math.min(1, phase.getGroups().size()) : phase.getGroups().size();
+            for (int g = 0; g < groups; g++) {
                 final int gi = g;
-                b.append("<h3>").append(phase.getMode() == TournamentMode.SWISS ? "Tabelle" : "Gruppe " + t.groupLabel(phase, g)).append("</h3>");
-                b.append("<div class=\"card\">").append(standingsTable(phase, g, person)).append("</div>");
-                for (Match m : ms) if (m.getGroupIndex() == gi || (phase.getMode() == TournamentMode.SWISS)) b.append(matchLine(m, person));
-                if (phase.getMode() == TournamentMode.SWISS) break;
+                List<Match> gm = mode == TournamentMode.SWISS ? ms : ms.stream().filter(m -> m.getGroupIndex() == gi).toList();
+                b.append(groupTile(phase, g, mode == TournamentMode.SWISS ? "Tabelle" : "Gruppe " + t.groupLabel(phase, g), gm, person));
             }
-            if (phase.getMode() == TournamentMode.PLACEMENT) {
-                for (Match m : ms) if (m.getGroupIndex() < 0) b.append(matchLine(m, person));
+            b.append("</div>");
+            if (mode == TournamentMode.PLACEMENT) {
+                List<Match> rest = ms.stream().filter(m -> m.getGroupIndex() < 0).toList();
+                if (!rest.isEmpty()) {
+                    b.append("<h3>Platzierungsspiele</h3><div class=\"card\">");
+                    for (Match m : rest) b.append(matchLine(m, person));
+                    b.append("</div>");
+                }
             }
         } else {
             Map<String, List<Match>> byStage = new LinkedHashMap<>();
             ms.sort(Comparator.comparingInt((Match m) -> m.getKoRound() >= 0 ? m.getKoRound() : m.getRound()).thenComparingInt(Match::getNumber));
-            for (Match m : ms) byStage.computeIfAbsent(m.getStage(), k -> new ArrayList<>()).add(m);
+            for (Match m : ms) if (m.getA() != null || m.getB() != null) byStage.computeIfAbsent(m.getStage(), k -> new ArrayList<>()).add(m);
+            if (byStage.isEmpty()) b.append("<p class=\"muted\">Noch keine Spiele.</p>");
             byStage.forEach((stage, list) -> {
-                b.append("<h3>").append(esc(stage)).append("</h3>");
-                for (Match m : list) if (m.getA() != null || m.getB() != null) b.append(matchLine(m, person));
+                b.append("<h3>").append(esc(stage)).append("</h3><div class=\"card\">");
+                for (Match m : list) b.append(matchLine(m, person));
+                b.append("</div>");
             });
         }
     }
 
-    private String resultPage(String name) {
-        PlayingClass root = name == null ? null : t.findClass(name).map(t::rootOf).orElse(null);
-        if (root == null) return "";
+    /** Kachel einer Gruppe: zu → Status, Fortschritt, Erster; 1× antippen → Tabelle; „Spiele anzeigen“ → Spiele. */
+    private String groupTile(PlayingClass phase, int g, String title, List<Match> gm, String person) {
+        long counted = gm.stream().filter(m -> m.getStatus() != MatchStatus.CANCELLED).count();
+        long done = gm.stream().filter(m -> m.getStatus() == MatchStatus.DONE).count();
+        boolean running = gm.stream().anyMatch(m -> m.getStatus().atTable());
+        String status = !phase.isStarted() ? "<span class=\"chip wait\">wartet</span>"
+                : counted > 0 && done == counted ? "<span class=\"chip done\">beendet</span>"
+                : running || done > 0 ? "<span class=\"chip run\">läuft</span>" : "<span class=\"chip wait\">wartet</span>";
+        List<GroupStanding.Row> rows = t.standings(phase, g);
+        String lead = rows.isEmpty() || done == 0 ? "noch keine Ergebnisse" : "1. " + esc(rows.get(0).entrant().name());
+        int pct = counted == 0 ? 0 : (int) Math.round(100.0 * done / counted);
+        StringBuilder b = new StringBuilder("<div class=\"tile\" data-key=\"").append(esc(phase.getName())).append('|').append(g).append("\">")
+                .append("<div class=\"th\"><b>").append(esc(title)).append("</b>").append(status).append("</div>")
+                .append("<div class=\"bar\"><i style=\"width:").append(pct).append("%\"></i></div><div class=\"muted\">").append(done)
+                .append(" von ").append(counted).append(" Spielen</div><div class=\"lead\">").append(lead).append("</div>")
+                .append("<div class=\"muted more\">Antippen für die Tabelle</div>")
+                .append("<div class=\"tb\">").append(standingsTable(phase, g, person));
+        String label = "Spiele anzeigen (" + counted + ")";
+        b.append("<button type=\"button\" class=\"gm\" data-l=\"").append(esc(label)).append("\">").append(esc(label)).append("</button></div>");
+        b.append("<div class=\"ml\">");
+        for (Match m : gm) b.append(matchLine(m, person));
+        return b.append("</div></div>").toString();
+    }
+
+    private String resultBody(PlayingClass root) {
         Tournament.FinalResult r = t.finalResult(root);
+        if (r.rows().isEmpty()) return "<p class=\"muted\">Noch keine Platzierungen.</p>";
         StringBuilder b = new StringBuilder();
         List<Tournament.ResultSection> secs = t.finalResultSections(root);
         for (Tournament.ResultSection sec : secs.size() > 1 ? secs : List.of(new Tournament.ResultSection("", r.rows()))) {
@@ -548,11 +708,23 @@ public final class LiveServer {
             }
             b.append("</table></div>");
         }
-        if (r.rows().isEmpty()) b = new StringBuilder("<p class=\"muted\">Noch keine Platzierungen.</p>");
-        return page((r.complete() ? "Endergebnis " : "Zwischenstand ") + root.getName(), b.toString(), true);
+        if (!r.complete()) b.insert(0, "<p class=\"muted\">Zwischenstand – noch nicht alle Plätze stehen fest.</p>");
+        return b.toString();
     }
 
     private String playersJson() {
+        // 1.7.0 (#147): je Person auch die Klassen (für die Suche)
+        Map<String, List<String>> classes = new java.util.HashMap<>();
+        for (PlayingClass c : t.rootClasses()) {
+            for (Entrant e : t.entrantsOf(c)) {
+                if (e.id().startsWith("pair:")) {
+                    t.getPairs().stream().filter(p -> ("pair:" + p.getId()).equals(e.id())).flatMap(p -> p.members().stream())
+                            .filter(java.util.Objects::nonNull).forEach(x -> addClass(classes, x.getId(), c.getName()));
+                } else {
+                    addClass(classes, e.id(), c.getName());
+                }
+            }
+        }
         StringBuilder b = new StringBuilder("[");
         List<Player> list = new ArrayList<>(sortedPlayers());
         list.removeIf(Player::isReserveOnly);                    // 0.38 (#55): Nachrücker melden sich nicht an oder ab
@@ -560,9 +732,17 @@ public final class LiveServer {
             Player p = list.get(i);
             if (i > 0) b.append(',');
             b.append("{\"id\":").append(json(p.getId())).append(",\"n\":").append(json(p.getDisplayName()))
-                    .append(",\"c\":").append(json(p.getClubName())).append(",\"s\":").append(json(p.getAttendance().code())).append('}');
+                    .append(",\"c\":").append(json(p.getClubName())).append(",\"s\":").append(json(p.getAttendance().code())).append(",\"k\":[");
+            List<String> ks = classes.getOrDefault(p.getId(), List.of());
+            for (int j = 0; j < ks.size(); j++) b.append(j > 0 ? "," : "").append(json(ks.get(j)));
+            b.append("]}");
         }
         return b.append(']').toString();
+    }
+
+    private static void addClass(Map<String, List<String>> m, String id, String cls) {
+        List<String> l = m.computeIfAbsent(id, k -> new ArrayList<>());
+        if (!l.contains(cls)) l.add(cls);
     }
 
     private List<Player> sortedPlayers() {
@@ -572,47 +752,39 @@ public final class LiveServer {
         return list;
     }
 
+    /** Alte Adresse „Meine Spiele suchen“: die Startseite mit dem Suchfeld oben. */
     private String searchPage() {
-        String body = """
-                <p class="muted">Eigenen Namen suchen (Vorname, Nachname oder Verein) und antippen – das Handy merkt sich die Auswahl.</p>
-                <input type="search" id="q" placeholder="z. B. Müller Eimsbüttel" autofocus>
-                <div id="list"></div>
-                <script>
-                var all=[];fetch('/live/spieler.json').then(r=>r.json()).then(d=>{all=d;show();});
-                function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');}
-                function esc(s){return (s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
-                function show(){var w=norm(document.getElementById('q').value).split(/\\s+/).filter(x=>x);
-                 var hits=all.filter(p=>w.every(x=>norm(p.n+' '+p.c).includes(x))).slice(0,40);
-                 document.getElementById('list').innerHTML=w.length?hits.map(p=>'<a class="card" href="#" data-id="'+esc(p.id)+'" data-n="'+esc(p.n)+'"><b>'+esc(p.n)+'</b><div class="muted">'+esc(p.c)+'</div></a>').join(''):'';}
-                document.getElementById('q').addEventListener('input',show);
-                document.getElementById('list').addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;e.preventDefault();
-                 localStorage.setItem('hts-me',JSON.stringify({id:a.dataset.id,name:a.dataset.n}));location.href='/live/ich?id='+encodeURIComponent(a.dataset.id);});
-                </script>
-                """;
-        return page("Meine Spiele – Namen suchen", body, false);
+        return overview();
     }
 
     private String mePage(String id) {
         Player p = id == null ? null : t.getPlayers().stream().filter(x -> x.getId().equals(id)).findFirst().orElse(null);
-        if (p == null) return page("Meine Spiele", "<p>Person nicht gefunden. <a href=\"/live/suche\">Neu suchen</a></p>", false);
+        if (p == null) return page("Meine Spiele", null, "<p>Person nicht gefunden. Oben im Suchfeld neu suchen.</p>", false, true);
         List<Match> mine = new ArrayList<>();
         for (Match m : t.getMatches()) if (!t.isInactiveMatch(m) && t.personsOf(m).contains(id)) mine.add(m);
         StringBuilder b = new StringBuilder();
         b.append("<div class=\"card me\"><b>").append(esc(p.getDisplayName())).append("</b><div class=\"muted\">").append(esc(p.getClubName()))
-                .append(" · <a href=\"/live/suche\">andere Person</a></div></div>");
+                .append("</div></div>");
         List<Match> now = mine.stream().filter(m -> m.getStatus().atTable()).toList();
         List<Match> next = mine.stream().filter(m -> m.getStatus() == MatchStatus.QUEUED || m.getStatus() == MatchStatus.PLANNED)
                 .sorted(Comparator.comparingInt((Match m) -> m.getStatus() == MatchStatus.QUEUED ? 0 : 1).thenComparingInt(Match::getNumber)).toList();
         List<Match> done = mine.stream().filter(m -> m.getStatus() == MatchStatus.DONE).sorted(Comparator.comparingInt(Match::getNumber).reversed()).toList();
         if (!now.isEmpty()) {
-            b.append("<h2>Jetzt am Tisch</h2>");
-            for (Match m : now) b.append(matchLine(m, id));
+            b.append("<h2>Jetzt am Tisch</h2><div class=\"card\">");
+            for (Match m : now) {
+                b.append(matchLine(m, id));
+                if (m.getTable() != null) b.append("<div class=\"muted\">").append(esc(t.tableName(m.getTable()))).append("</div>");
+            }
+            b.append("</div>");
         }
         b.append("<h2>Als Nächstes</h2>");
         if (next.isEmpty()) b.append("<p class=\"muted\">Keine offenen Spiele.</p>");
-        for (Match m : next) b.append(matchLine(m, id));
-        // Meine Gruppe(n): Gruppen mit einem Spiel dieser Person
-        Set<String> shown = new TreeSet<>();
+        else {
+            b.append("<div class=\"card\">");
+            for (Match m : next) b.append(matchLine(m, id));
+            b.append("</div>");
+        }
+        java.util.Set<String> shown = new TreeSet<>();
         for (Match m : mine) {
             PlayingClass c = t.findClass(m.getClassName()).orElse(null);
             if (c == null || m.getGroupIndex() < 0 || !(c.getMode() == TournamentMode.GROUPS || c.getMode() == TournamentMode.PLACEMENT)) continue;
@@ -621,12 +793,13 @@ public final class LiveServer {
             b.append("<div class=\"card\">").append(standingsTable(c, m.getGroupIndex(), id)).append("</div>");
         }
         if (!done.isEmpty()) {
-            b.append("<h2>Gespielt</h2>");
+            b.append("<h2>Gespielt</h2><div class=\"card\">");
             for (Match m : done) b.append(matchLine(m, id));
+            b.append("</div>");
         }
         b.append("<script>try{localStorage.setItem('hts-me',JSON.stringify({id:").append(json(p.getId())).append(",name:")
                 .append(json(p.getDisplayName())).append("}));}catch(e){}</script>");
-        return page("Meine Spiele", b.toString(), true);
+        return page("Meine Spiele", null, b.toString(), true, true);
     }
 
     // --- 1.1 (#93): Ergebnis per Handy ----------------------------------------------------------

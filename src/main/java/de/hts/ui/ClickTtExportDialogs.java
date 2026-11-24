@@ -95,8 +95,8 @@ final class ClickTtExportDialogs {
         box.setPrefWidth(620);
         d.getDialogPane().setContent(box);
         ButtonType abort = new ButtonType("Abbrechen", ButtonBar.ButtonData.CANCEL_CLOSE);
-        ButtonType plain = new ButtonType("Ohne Abgleich speichern …", ButtonBar.ButtonData.OTHER);
-        ButtonType match = new ButtonType("Aktualisierte Teilnehmerliste einspielen …", ButtonBar.ButtonData.OK_DONE);
+        ButtonType plain = new ButtonType("Ohne Abgleich speichern", ButtonBar.ButtonData.OTHER);
+        ButtonType match = new ButtonType("Aktualisierte Teilnehmerliste einspielen", ButtonBar.ButtonData.OK_DONE);
         d.getDialogPane().getButtonTypes().addAll(abort, plain, match);
         DialogSizing.fit(d);
         d.setResultConverter(bt -> bt == match ? Choice.MATCH : bt == plain ? Choice.WITHOUT_MATCHING : Choice.ABORT);
@@ -419,7 +419,7 @@ final class ClickTtExportDialogs {
         box.setPrefWidth(860);
         d.getDialogPane().setContent(box);
         ButtonType pdf = new ButtonType("Als PDF", ButtonBar.ButtonData.LEFT);
-        ButtonType match = new ButtonType("Teilnehmerliste abgleichen …", ButtonBar.ButtonData.OTHER);
+        ButtonType match = new ButtonType("Teilnehmerliste abgleichen", ButtonBar.ButtonData.OTHER);
         ButtonType close = new ButtonType("Schließen", ButtonBar.ButtonData.OK_DONE);
         if (!ne.isEmpty()) d.getDialogPane().getButtonTypes().add(pdf);
         if (!rep.withoutId().isEmpty()) d.getDialogPane().getButtonTypes().add(match);

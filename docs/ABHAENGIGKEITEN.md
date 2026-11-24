@@ -22,6 +22,7 @@ als 6 Monate ist (Regel und Ablauf: `CLAUDE.md` im Projektwurzelverzeichnis).
 | Apache PDFBox (pdfbox, pdfbox-io, fontbox) | 3.0.8 – seit HTS 0.32.0 (vorher 3.0.5) | Fat-Jar `hts.jar`; `pom.xml` (Jars vom Nutzer von Maven Central geladen) | Apache 2.0 | 3.0.8 (11.07.2026) | Keine bekannte CVE für den Kern von 3.0.5 (Snyk). CVE-2026-33929 betrifft nur das Beispiel „ExtractEmbeddedFiles“ (nicht in HTS). CVE-2026-23907 (Pfad-Traversal beim Auslesen eingebetteter Dateien über `PDComplexFileSpecification.getFilename()`) betrifft das Lesen/Extrahieren von Anhängen – HTS erzeugt PDFs nur und liest keine fremden PDFs. Mit 0.32.0 auf 3.0.8 aktualisiert. |
 | Apache Commons Logging | 1.3.5 | Fat-Jar `hts.jar` (von PDFBox benötigt) | Apache 2.0 | 1.3.5 aktuell | Keine bekannte CVE. |
 | Schrift Comic Neue Bold (für Urkunden) | 2.51 (Debian-Paket `fonts-comic-neue` 2.51-4), für die PDF-Einbettung von OpenType/CFF in TrueType-Kurven umgerechnet – seit HTS 1.4.0 | Fat-Jar `hts.jar` (`de/hts/fonts/ComicNeue-Bold.ttf`); Lizenztext `OFL-ComicNeue.txt` daneben und im Ordner `Lizenzen` | SIL Open Font License 1.1 (kein reservierter Schriftname) | 2.51 | Schriftdatei, kein ausführbarer Code; HTS lädt nur die mitgelieferte Datei (keine fremden Schriften). Bei der nächsten Prüfung mit bewerten. |
+| JSVG (SVG-Logos des Ausrichters) | 2.2.0 – seit HTS 1.7.0 | Fat-Jar `hts.jar`; aus dem Quellcode des GitHub-Tags v2.2.0 gebaut (Maven Central ist aus der Arbeitsumgebung gesperrt; reine Annotationen nur zum Übersetzen ersetzt), `pom.xml` 2.2.0 | MIT (Lizenztext `Lizenzen/JSVG-LICENSE.txt`, im Jar `META-INF/LICENSE-jsvg.txt`) | 2.2.0 (Release); Hauptzweig 2.2.1 in Arbeit | Keine bekannte CVE gefunden (Suche 24.11.2026). Eingabe nur vom Nutzer gewählte SVG-Dateien beim Hochladen eines Logos; HTS lädt sie mit `ResourcePolicy.DENY_ALL` (keine externen Verweise), Dateigröße ≤ 10 MB; der StAX-Parser von JSVG ist gegen XXE gehärtet (`SUPPORT_DTD=false`, `IS_SUPPORTING_EXTERNAL_ENTITIES=false`). Bei der nächsten Prüfung mit bewerten. |
 | Logo Hamburger Tisch-Tennis-Verband (Standard-Logo des Ausrichters) | PNG 294 × 300 – seit HTS 1.5.0 | Fat-Jar `hts.jar` (`de/hts/report/hattv-logo.png`) | Rechte beim HaTTV, auf Wunsch des Projektinhabers eingebunden; nicht AGPL | – | Bilddatei, kein ausführbarer Code. Eigene Logos (Reiter „Ausrichter“) werden beim Hochladen eingelesen (ImageIO) und als PNG neu geschrieben. |
 
 ## Nur zum Bauen (nicht ausgeliefert)
@@ -47,7 +48,14 @@ als 6 Monate ist (Regel und Ablauf: `CLAUDE.md` im Projektwurzelverzeichnis).
 - Eingaben von außen sind sonst nur Dateien: click-TT-XML (Import), `.hts`-Turnierdateien, Ergebnis-XML.
 - Alle XML-Parser sind gegen XXE gehärtet: `TournamentFile` (`FEATURE_SECURE_PROCESSING`, `disallow-doctype-decl`),
   `ClickTtXmlImporter` und `ClickTtResultExporter` (`ACCESS_EXTERNAL_DTD`/`ACCESS_EXTERNAL_SCHEMA` leer).
+  Seit 1.7.0 zusätzlich: SVG-Logos über JSVG (StAX, `SUPPORT_DTD=false`, externe Entitäten aus).
   Bei jeder Prüfung erneut kontrollieren, dass neue Parser ebenso abgesichert sind.
+- Seit 1.6.0 gibt es den **HTS-Live-Server** (`de.hts.web.LiveHost`, Paket `hts-server`) für einen gemieteten
+  Internetserver: nimmt Turnierdateien nur mit geheimem Schlüssel an (SHA-256-Prüfwert, zeitkonstanter Vergleich,
+  Ratenbremse), Größengrenze, Kennungs-Muster, Lesen über den gehärteten `TournamentFile`-Parser; öffentlich nur lesend;
+  läuft hinter Caddy auf 127.0.0.1 als eigener Benutzer in einem abgeschotteten systemd-Dienst. Ausgeliefert wird dort
+  zusätzlich OpenJFX `javafx-base` (Klassen im `hts-server.jar`); Java und Caddy kommen aus den Ubuntu- bzw.
+  Caddy-Paketquellen und werden über automatische Updates aktuell gehalten.
 
 ## Verlauf der Prüfungen
 
@@ -57,6 +65,7 @@ als 6 Monate ist (Regel und Ablauf: `CLAUDE.md` im Projektwurzelverzeichnis).
 | 06.11.2026 | Claude (Umsetzung Issue #12, keine neue Prüfung) | Temurin 21.0.13+9 eingebaut | JavaFX und PDFBox noch nicht aktualisiert: Maven Central und Gluon/Apache-Downloads sind aus der Arbeitsumgebung gesperrt – Jar-Dateien vom Nutzer nötig (Issue #12 bleibt offen) |
 | 07.11.2026 | Claude (HTS 0.35.0, keine neue Prüfung) | Neu: optionaler Handy-Zugang (lokaler Webserver, JDK-Modul `jdk.httpserver`, im ausgelieferten JRE enthalten) – keine neue Bibliothek | Angriffsflächen-Abschnitt ergänzt; bei der nächsten Prüfung CVEs zu `jdk.httpserver` (Teil der Java-Laufzeit) mit bewerten |
 | 06.11.2026 | Claude (HTS 0.32.0, keine neue Prüfung) | JavaFX 21.0.8 und PDFBox/pdfbox-io/fontbox 3.0.8 eingebaut (Jars vom Nutzer, Herkunft Maven Central; Archive und Manifest-Versionen geprüft) | Issue #12 erledigt |
+| 24.11.2026 | Claude (HTS 1.6.0/1.7.0, keine volle Prüfung) | Neu: HTS-Live-Server (1.6.0); JSVG 2.2.0 für SVG-Logos (1.7.0) – keine bekannte CVE | Tabelle und Angriffsflächen ergänzt |
 | 22.11.2026 | Claude (HTS 1.4.0, keine neue Prüfung) | Neu: Schrift Comic Neue Bold (OFL 1.1) für den Urkundendruck, in `hts.jar` eingebettet | Lizenztext in „Lizenzen“ und in der Info; Tabelle ergänzt |
 | 23.11.2026 | Claude (HTS 1.5.0, keine neue Prüfung) | Neu: Logo des HaTTV (Bild), HTTP-Client der Java-Laufzeit (`java.net.http`) für „Live im Internet“ – keine neue Bibliothek | Angriffsfläche: HTS sendet nur (HTTPS, Schlüssel), nimmt nichts an; bei der nächsten Prüfung `java.net.http` mit bewerten |
 

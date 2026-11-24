@@ -104,9 +104,9 @@ public final class Publisher implements AutoCloseable {
         return b;
     }
 
-    /** Öffentliche Adresse der Live-Seiten dieses Turniers. */
-    public static String publicUrl(String base, String id) {
-        return normalize(base) + "/live/" + id;
+    /** Öffentliche Adresse der Live-Seiten dieses Turniers (1.7.0 #147: lesbar, z. B. „…/live/Herbstturnier_28_11_2026“). */
+    public static String publicUrl(String base, String name, java.time.LocalDate date) {
+        return normalize(base) + "/live/" + LiveSlug.of(name, date);
     }
 
     /** Umwandlung vor dem Hochladen setzen (Datenschutz); löst einen neuen Upload aus. */
@@ -165,10 +165,12 @@ public final class Publisher implements AutoCloseable {
             request("PUT", "", data, "application/octet-stream");
             pending = null;
             lastSuccess = System.currentTimeMillis();
+            if (status.state() != State.OK) de.hts.Log.info("Live im Internet: veröffentlicht");
             status = new Status(State.OK, lastSuccess, "veröffentlicht");
         } catch (IOException | InterruptedException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             pending = data;                                   // letzter Stand bleibt liegen
+            if (status.state() != State.ERROR) de.hts.Log.warn("Live im Internet: keine Verbindung (" + e.getMessage() + ")");
             status = new Status(State.ERROR, lastSuccess, "keine Verbindung – wird nachgeholt");
         }
     }

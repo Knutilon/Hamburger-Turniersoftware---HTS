@@ -8,12 +8,13 @@
 
 # HTS – Hamburger Turniersoftware: Dokumentation
 
-Stand: 24.11.2026 · Programmversion **1.6.0**
+Stand: 24.11.2026 · Programmversion **1.7.0**
 
 ## Versionsverlauf der Dokumentation
 
 | Datum | Programmversion | Änderung |
 | --- | --- | --- |
+| 24.11.2026 | 1.7.0 | Neue Farben (neutral, Grün #187250, Mint) und neues Logo; Live-Seiten neu (Reiter je Phase, Gruppenkacheln, Spielersuche, Knopf „Tische“, Aktualisierung ohne Neuladen, lesbare Adresse Name_TT_MM_JJJJ); QR-Code-Aushang; Webserver-Reiter mit Admin-Passwort, Adresse und Schlüssel verschlüsselt; Protokoll und Fehlerbericht; Logo als SVG; Freistellung 6 × 2 mit Auslosung je Hälfte; Knopftexte ohne „…“ |
 | 24.11.2026 | 1.6.0 | Live-Server für das Internet (Paket hts-server, Einrichtung mit install.sh auf Ubuntu 24.04: HTTPS, Firewall, automatische Updates; Startseite mit allen Turnieren, Impressum/Datenschutz, Aufbewahrung 90 Tage) – neuer Abschnitt „Der Live-Server“ in Kapitel 11 |
 | 23.11.2026 | 1.5.1 | Behoben: Einfrieren nach dem Auslosen bzw. beim Klassenwechsel großer Gruppenphasen und Dauerlast in der Gruppenansicht; Schnelleingabe im Ergebnisdialog wieder entfernt |
 | 23.11.2026 | 1.5.0 | Urkunden nach jeder abgeschlossenen Phase (feste Plätze), Spalte „Gedruckt“, Urkunden-Reiter dreispaltig mit Suche; Reiter „Ausrichter“ (Name, Logo auf Schiedsrichterzettel und Live-Seiten) und „Webserver“; Turnierseite „Live im Internet“ (Veröffentlichen, Vornamen abkürzen, Live-Daten löschen, nur Endergebnis); Tablet-Modus, Zahlenfeld und Schnelleingabe im Ergebnisdialog, Antippen statt Doppelklick, Tauschen per Antippen, Zoom, Tische hochkant; letztes Ergebnis zurücknehmen; „Bitte warten“-Hinweis |
@@ -110,6 +111,13 @@ Dokumente\HTS Turniere\
 - **Exporte woanders:** Im Speichern-Dialog (PDF-Viewer bzw. click-TT-Export) einfach einen anderen Ordner wählen. Dieser Ordner gilt für dieses Turnier, bis wieder ein anderer gewählt wird.
 - Turniere aus der alten Ablage `<Benutzerordner>\HTS\Turniere` werden beim ersten Start ab Version 0.20.0 automatisch in die neue Struktur übernommen; die alten Dateien heißen danach `….hts.uebernommen`.
 
+### Protokoll und Fehlerbericht (seit 1.7.0)
+
+- HTS schreibt je Tag eine Protokolldatei in den Ordner **Protokoll** im Stammordner (`hts-JJJJ-MM-TT.log`, höchstens 5 MB, nach 30 Tagen gelöscht): Programmstart (Version, Betriebssystem, Java, Bildschirm, Speicher), wichtige Schritte (Turnier geöffnet, Klasse gestartet/beendet, Folgephase, PDF, Webserver-Status) und jeder unerwartete Fehler mit technischen Einzelheiten. **Keine Namen, Vereine oder Ergebnisse** – nur Kennungen und Klassennamen.
+- **Unerwarteter Fehler:** HTS speichert das offene Turnier und zeigt „Es ist ein Fehler aufgetreten“ mit **Fehlerbericht speichern** (ZIP der Protokolle der letzten 7 Tage) und **Weiter**. Den Bericht bitte an ein GitHub-Issue anhängen.
+- Die Startdateien legen Absturzberichte der Java-Laufzeit in `<Benutzerordner>\.hts` ab; sie kommen mit in den Fehlerbericht.
+- In der **Info**: **Protokollordner öffnen** und **Fehlerbericht erstellen**.
+
 Gespeichert wird automatisch nach jeder Änderung.
 
 ## 2. Programmaufbau und Bedienung
@@ -118,7 +126,7 @@ HTS hat zwei Ebenen: die Turnierübersicht und die Ansicht eines geöffneten Tur
 
 ### Kopfleiste
 
-Die dunkelblaue Kopfleiste zeigt links das HTS-Logo und daneben das geöffnete Turnier („Turnier: Name · Datum“, bei Testturnieren „TESTTURNIER: …“). Darunter liegt das Menü, rechts oben der runde Knopf zurück zur Turnierübersicht. Bei Testturnieren steht daneben ein Würfel-Knopf (Abschnitt 3). Ganz rechts steht immer der **Info-Knopf (i)**: Er zeigt Version, Signatur, die Lizenz (AGPL 3.0) samt Lizenzhinweis, Links zur Feature- und Bug-Sammlung auf GitHub sowie – seit 1.4.0 – den Bereich „Danke an:“ und die Lizenzen der mitgelieferten Bibliotheken (PDFBox, JavaFX, Java-Laufzeit, Schrift Comic Neue). Lässt sich das Fenster mit der Maus vergrößern, bleibt die gewählte Größe erhalten (seit 1.4.0; vorher sprang es zurück). In der Turnierübersicht gibt es nur den Info-Knopf; neue Turniere legt der Knopf **Neues Turnier** auf der Seite an.
+Die weiße Kopfleiste (seit 1.7.0; vorher dunkelblau) mit grüner Linie zeigt links das HTS-Logo und daneben das geöffnete Turnier („Turnier: Name · Datum“, bei Testturnieren „TESTTURNIER: …“). Darunter liegt das Menü, rechts oben der runde Knopf zurück zur Turnierübersicht. Bei Testturnieren steht daneben ein Würfel-Knopf (Abschnitt 3). Ganz rechts steht immer der **Info-Knopf (i)**: Er zeigt Version, Signatur, die Lizenz (AGPL 3.0) samt Lizenzhinweis, Links zur Feature- und Bug-Sammlung auf GitHub sowie – seit 1.4.0 – den Bereich „Danke an:“ und die Lizenzen der mitgelieferten Bibliotheken (PDFBox, JSVG, JavaFX, Java-Laufzeit, Schrift Comic Neue) – seit 1.7.0 außerdem **Protokollordner öffnen** und **Fehlerbericht erstellen** (Abschnitt 1, „Protokoll und Fehlerbericht“). Lässt sich das Fenster mit der Maus vergrößern, bleibt die gewählte Größe erhalten (seit 1.4.0; vorher sprang es zurück). In der Turnierübersicht gibt es nur den Info-Knopf; neue Turniere legt der Knopf **Neues Turnier** auf der Seite an.
 
 | Menüpunkt | Zweck |
 | --- | --- |
@@ -155,8 +163,8 @@ Die dunkelblaue Kopfleiste zeigt links das HTS-Logo und daneben das geöffnete T
 In der Turnierübersicht legt **Neues Turnier** ein Turnier an. Pflicht sind Name, Datum und die Anzahl der Spieltische; das Turnier ist sofort gespeichert.
 
 - Jede Karte zeigt Datum, Anzahl Teilnehmende und Klassen sowie den Status.
-- **Ausrichter (seit 1.5.0):** Reiter in der Turnierübersicht. Name des Verbands bzw. Vereins und Logo (**Logo hochladen …** als PNG oder JPG, **Standard-Logo (HaTTV)** oder **Kein Logo**). Gilt für alle Turniere auf dem Rechner und liegt im Ablageordner der Turniere. Das Logo steht oben rechts auf dem Schiedsrichterzettel und auf den Live-Seiten.
-- **Webserver (seit 1.5.0):** Reiter in der Turnierübersicht. Adresse und geheimer Schlüssel des Webservers (nur auf diesem Rechner, nicht in der Turnierdatei) und **Verbindung testen** (Abschnitt 11).
+- **Ausrichter (seit 1.5.0):** Reiter in der Turnierübersicht. Name des Verbands bzw. Vereins und Logo (**Logo hochladen** als PNG, JPG oder – seit 1.7.0 – SVG; SVG wird als scharfes PNG mit 1200 Bildpunkten übernommen, externe Verweise in der Datei werden nicht geladen; **Standard-Logo (HaTTV)** oder **Kein Logo**). Gilt für alle Turniere auf dem Rechner und liegt im Ablageordner der Turniere. Das Logo steht oben rechts auf dem Schiedsrichterzettel und auf den Live-Seiten.
+- **Webserver (seit 1.5.0):** Reiter in der Turnierübersicht. Adresse und geheimer Schlüssel des Webservers (nur auf diesem Rechner, nicht in der Turnierdatei) und **Verbindung testen** (Abschnitt 11). Seit 1.7.0 gesperrt: Adresse und Schlüssel erscheinen nur verdeckt („http•••••.de“, „••••••••“); **Entsperren** fragt das Admin-Passwort (40 Zeichen, nach mehreren Fehlversuchen Wartezeit). Entsperrt: Felder bearbeiten (Werte verdeckt, **Anzeigen** zeigt sie), **Speichern**, **Verbindung testen**, **Sperren**; beim Verlassen des Reiters wird wieder gesperrt. Adresse und Schlüssel liegen verschlüsselt auf dem Rechner (AES-256; unter Windows an das Benutzerkonto gebunden) – auf einem anderen Rechner bzw. unter einem anderen Benutzer müssen sie neu eingetragen werden, bis dahin pausiert das Veröffentlichen.
 - **Turniere und Archivierte Turniere (seit 1.4.0):** Der Reiter „Turniere“ zeigt alle Turniere, deren Datum höchstens 14 Tage zurückliegt (auch künftige und solche ohne Datum); ältere stehen nur noch unter **Archivierte Turniere**. Beide Listen sind nach Datum sortiert, das neueste zuerst. Öffnen, Bearbeiten und Löschen funktionieren in beiden Listen gleich; ein manuelles Archivieren gibt es nicht – ändert man das Datum, wandert das Turnier entsprechend.
 - **Öffnen** oder Doppelklick öffnet das Turnier, **Bearbeiten** ändert Name, Datum, Spieltische und den Ort der Turnierdatei, **Löschen** entfernt die Turnierdatei (Exporte bleiben erhalten).
 - Beim Anlegen zeigt der Dialog, wo die Turnierdatei landet (Standard: `Dokumente\HTS Turniere\<Name>\Turnierdatei`); **Durchsuchen** wählt einen anderen Ordner (Abschnitt 1).
@@ -214,7 +222,7 @@ Die Spalte **„Angemeldet“** bedeutet: am Turniertag anwesend. Sie lässt sic
 
 Seit 1.0.0, überarbeitet in 1.1.0. Die Gebühr einer Person ist die Summe der Startgebühren ihrer Einzelklassen (Doppel ohne Gebühr) plus ggf. die Nachmeldegebühr. Die Seite „Teilnehmende“ zeigt die Spalten „Gebühr“ und „Bezahlt“.
 
-- **Bezahlen:** über **Aktion für Markierte wählen ▾** oder Rechtsklick – **Bezahlt – bar**, **Bezahlt – Überweisung**, **Gebühr erlassen** (mit optionalem Grund, erscheint in der Kassenübersicht) und **Zahlung rückgängig** (Anmeldung und Klassen bleiben). Gesammelt je Verein über **Startgebühren ▾ → Verein abrechnen …** mit Quittung als PDF; dazu eine **Kassenübersicht** als PDF.
+- **Bezahlen:** über **Aktion für Markierte wählen ▾** oder Rechtsklick – **Bezahlt – bar**, **Bezahlt – Überweisung**, **Gebühr erlassen** (mit optionalem Grund, erscheint in der Kassenübersicht) und **Zahlung rückgängig** (Anmeldung und Klassen bleiben). Gesammelt je Verein über **Startgebühren ▾ → Verein abrechnen** mit Quittung als PDF; dazu eine **Kassenübersicht** als PDF.
 - **Bezahlt heißt angemeldet:** Wer als bezahlt oder erlassen markiert wird, gilt automatisch als angemeldet – angemeldet heißt aber nicht bezahlt.
 - **In die Klassen kommen nur Bezahlte:** Unter „Verfügbar“ stehen vor dem Turnierstart nur Bezahlte; „Alle anwesenden Gemeldeten übernehmen“ nimmt nur Bezahlte. Nach dem Turnierstart erscheinen Angemeldete ohne Zahlung hellblau markiert (auch in „Teilnehmende“ mit Hinweis und „Nur diese zeigen“) und lassen sich übernehmen – oder gleich mit **Bezahlt – bar und in die Klasse**.
 - Beim Start einer Klasse warnt HTS vor offenen Gebühren; der Start bleibt möglich.
@@ -356,7 +364,7 @@ Seit 1.3.0, nur im Einzel und ab 10 Teilnehmenden. Die Setzplätze **S1–S4** s
 - **Gruppen:** Gruppengröße oder Anzahl Gruppen wie gewohnt (ohne die Freigestellten), dazu **Weiter je Gruppe:** Plätze 1–2 oder Plätze 1–3.
 - **Kein Freilos:** 4 + Gruppen × Weiterkommende muss ein volles KO-Feld ergeben (8, 16, 32, 64 oder 128). Sonst steht im Dialog die Rechnung mit Vorschlägen, z. B. „4 Freigestellte + 5 Gruppen × 2 Weiterkommende = 14 – das ist kein KO-Feld ohne Freilose … Möglich: 6 Gruppen (à 4) × Plätze 1–2 = 12 + 4 = 16er-Feld“, und **Auslosen** bleibt gesperrt.
 - **Ansicht:** Über den Gruppen steht die Leiste **„Freigestellt für das Achtelfinale“** (bzw. Viertel-/Sechzehntelfinale) mit S1–S4, Verein und TTR. Vor dem Start lässt sich eine freigestellte Person per Drag & Drop mit einem Gruppenmitglied tauschen.
-- **Phase 2** ist immer ein KO-System ohne Freilose („Phase abschließen“ bietet nur dieses bzw. das Endergebnis). Bei 4 Gruppen × Plätze 1–3 gelten feste Paarungen von oben nach unten: S1–D3, B1–D2, A1–C2, S4–C3, S3–A3, C1–B2, D1–A2, S2–B3. Sonst ist die Setzliste S1–S4, dann die Gruppenersten, dann die Zweiten (ggf. Dritten), jeweils nach Spiel-, Satz- und Punkteverhältnis (Gleichstand: Los); Setzplatz 1 spielt gegen den letzten, 2 gegen den vorletzten usw. So spielen die Freigestellten gegen die schlechtesten Gruppenzweiten (S1 gegen den schlechtesten), die besten Gruppenersten gegen die übrigen Zweiten und die schlechtesten Gruppenersten gegeneinander (bei 6 × 2: S1–Z6, S2–Z5, S3–Z4, S4–Z3, E1–Z2, E2–Z1, E3–E6, E4–E5). Zwei aus derselben Gruppe treffen in Runde 1 nicht aufeinander (Tausch mit dem Nächstplatzierten).
+- **Phase 2** ist immer ein KO-System ohne Freilose („Phase abschließen“ bietet nur dieses bzw. das Endergebnis). Bei 4 Gruppen × Plätze 1–3 gelten feste Paarungen von oben nach unten: S1–D3, B1–D2, A1–C2, S4–C3, S3–A3, C1–B2, D1–A2, S2–B3. **Bei 6 Gruppen × Plätze 1–2 (seit 1.7.0)** wird je Baumhälfte ausgelost: oben S1 und S4, unten S2 und S3 (wer oben bzw. unten im Viertel steht, entscheidet das Los); drei ausgeloste Gruppen haben ihren Ersten oben und den Zweiten unten, die anderen drei umgekehrt – Erster und Zweiter einer Gruppe treffen also frühestens im Finale aufeinander, und jeder Gruppenbuchstabe kommt je Hälfte nur einmal vor. Die Platzarten von oben nach unten: obere Hälfte S–2 · 1–1 · 1–2 · 2–S, untere Hälfte S–2 · 2–1 · 1–1 · 2–S (Beispiel: S1–D2 · F1–E1 · A1–B2 · C2–S4 | S3–E2 · A2–B1 · C1–D1 · F2–S2). **Neu auslosen** lost erneut; vor dem Start lässt sich wie gewohnt tauschen. In allen anderen Fällen ist die Setzliste S1–S4, dann die Gruppenersten, dann die Zweiten (ggf. Dritten), jeweils nach Spiel-, Satz- und Punkteverhältnis (Gleichstand: Los); Setzplatz 1 spielt gegen den letzten, 2 gegen den vorletzten usw. So spielen die Freigestellten gegen die schlechtesten Gruppenzweiten (S1 gegen den schlechtesten), die besten Gruppenersten gegen die übrigen Zweiten und die schlechtesten Gruppenersten gegeneinander (bei 6 × 2: S1–Z6, S2–Z5, S3–Z4, S4–Z3, E1–Z2, E2–Z1, E3–E6, E4–E5). Zwei aus derselben Gruppe treffen in Runde 1 nicht aufeinander (Tausch mit dem Nächstplatzierten).
 - **Endergebnis:** KO-Platzierungen, dahinter die übrigen nach Gruppenplatz; solange die Gruppenphase läuft, stehen die Freigestellten als „freigestellt (S1)“ usw. oben.
 
 ### Schweizer System
@@ -884,7 +892,8 @@ Ergebnisse lassen sich im Internet einsehen – nur Einsehen, vom Server fließt
 
 1. Turnierübersicht → **Webserver**: Adresse und geheimer Schlüssel eintragen, **Verbindung testen**.
 2. Im Turnier → **Live im Internet**: **Dieses Turnier veröffentlichen**. HTS lädt nach jeder Änderung den Stand hoch (höchstens alle 5 Sekunden). Unten rechts steht „Live: veröffentlicht vor 5 s“; bei Funkloch „keine Verbindung – wird nachgeholt“ – der letzte Stand wird alle 10 Sekunden erneut gesendet.
-3. **Adresse für Zuschauer** kopieren (Knopf **Adresse kopieren**), z. B. für einen Aushang oder die Vereinsseite.
+3. **Adresse für Zuschauer** kopieren (Knopf **Adresse kopieren**), z. B. für die Vereinsseite. Seit 1.7.0 ist sie lesbar: `https://<Server>/live/<Turniername>_<TT>_<MM>_<JJJJ>` (Umlaute ausgeschrieben, Sonderzeichen als „_“).
+4. **QR-Code-Aushang drucken** (seit 1.7.0): A4-PDF mit großem QR-Code zur Live-Seite, Turniername, Datum, Adresse und Logo des Ausrichters – zum Aushängen in der Halle. Beim **Turnier starten** fragt HTS danach, wenn „Live im Internet“ eingeschaltet ist.
 
 Datenschutz: **Vornamen abkürzen** („M. Mustermann“, nur in der hochgeladenen Kopie), **Live-Daten löschen** (Turnier vom Server entfernen) und **Nur Endergebnis behalten** (alles außer den Endergebnissen entfernen); beide schalten das Veröffentlichen aus.
 
@@ -902,10 +911,12 @@ Was Zuschauer sehen:
 | Adresse | Inhalt |
 | --- | --- |
 | https://hts-livescoring.de | alle veröffentlichten Turniere: laufend, demnächst, abgeschlossen (mit Datum und Stand) |
-| …/live/<Kennung> | ein Turnier: Tische und laufende Spiele, Klassen mit Gruppen, KO-Runden und Ergebnissen, „Meine Spiele“; Logo des Ausrichters |
+| …/live/<Turniername>_<TT>_<MM>_<JJJJ> | ein Turnier: Tische, Klassen mit Reitern je Phase, Gruppenkacheln, KO-Runden und Ergebnissen, Spielersuche, „Meine Spiele“; Logo des Ausrichters (seit 1.7.0 lesbare Adresse; die alte Adresse mit Kennung leitet um) |
 | …/impressum, …/datenschutz | Impressum und Datenschutzerklärung (auf jeder Seite verlinkt) |
 
-Die Seiten aktualisieren sich alle 10 Sekunden. Nach **Nur Endergebnis behalten** zeigt die Turnierseite nur noch die Endergebnisse; **Live-Daten löschen** entfernt das Turnier sofort. Spätestens 90 Tage nach der letzten Änderung löscht der Server ein Turnier von selbst. Keine Cookies, keine Zugriffsprotokolle, keine Inhalte von Drittanbietern; Suchmaschinen werden von den Turnierseiten ferngehalten. Neue Versionen spielt **`./update.sh`** aus dem Ordner des neuen Pakets ein (bei Problemen automatisch zurück zur vorigen Version). Die Schnittstelle beschreibt docs/WEBSERVER-PROTOKOLL.md.
+**Aufbau der Live-Seiten (seit 1.7.0):** oben Logo, Turniername, Datum und Stand, darunter das **Suchfeld** (Vor-/Nachname oder Verein über alle Klassen; Treffer mit Klassen, **Spiele anzeigen** und **Als „Meine Spiele“ merken**) und die Leiste **Tische** + je Klasse ein Knopf. Eine Klasse hat je Phase einen Reiter („Phase 1 · Gruppen“, „Phase 2 · KO-Runde“ …; die laufende ist vorgewählt) und den Reiter **Ergebnis** (Zwischenstand bzw. Endergebnis). Gruppen erscheinen als **Kacheln** mit Status (läuft, beendet, wartet), Fortschritt („5 von 6 Spielen“) und aktuellem Ersten – **antippen** zeigt die Tabelle, **Spiele anzeigen** die Spiele der Gruppe. KO-Phasen stehen als Liste je Runde. Laufende Spiele heißen schlicht **„laufend“** (ohne Punktestand), beendete zeigen Ergebnis und Sätze.
+
+Die Seiten aktualisieren sich alle 10 Sekunden ohne Neuladen – aufgeklappte Kacheln, der gewählte Reiter und der Suchtext bleiben. Nach **Nur Endergebnis behalten** zeigt die Turnierseite nur noch die Endergebnisse; **Live-Daten löschen** entfernt das Turnier sofort. Spätestens 90 Tage nach der letzten Änderung löscht der Server ein Turnier von selbst. Keine Cookies, keine Zugriffsprotokolle, keine Inhalte von Drittanbietern; Suchmaschinen werden von den Turnierseiten ferngehalten. Neue Versionen spielt **`./update.sh`** aus dem Ordner des neuen Pakets ein (bei Problemen automatisch zurück zur vorigen Version). Die Schnittstelle beschreibt docs/WEBSERVER-PROTOKOLL.md.
 
 ## 12. Handy-Zugang (Mobile Einstellungen, ausgeblendet)
 

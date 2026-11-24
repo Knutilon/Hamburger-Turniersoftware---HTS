@@ -147,7 +147,7 @@ public final class PdfReports {
 
     // --- Schiedsrichterzettel (A6, 1.4.0 #108) ------------------------------------
 
-    private static final float[] NAVY = {0.09f, 0.227f, 0.424f};
+    private static final float[] NAVY = {0.094f, 0.447f, 0.314f};   // 1.7.0 (#146): Grün #187250 (Name bleibt)
     private static final float[] INK = {0.07f, 0.16f, 0.30f};
 
     /** Entwurfsmaß in Bildpunkten (A6 = 397 × 559) in PDF-Punkte. */
@@ -1095,6 +1095,73 @@ public final class PdfReports {
             throw new java.io.UncheckedIOException(e);
         }
         return doc;
+    }
+
+    /**
+     * 1.7.0 (#148): Aushang (A4) mit großem QR-Code zur Live-Seite des Turniers im Internet – Turniername, Datum, Adresse,
+     * kurzer Hinweis und Logo des Ausrichters.
+     */
+    public static PDDocument liveQrPoster(Tournament t, String url, byte[] organizerLogo) {
+        String name = t.getName() == null || t.getName().isBlank() ? "Turnier" : t.getName();
+        PDDocument doc = newDoc("Live-Ergebnisse " + name);
+        org.apache.pdfbox.pdmodel.PDPage page = new org.apache.pdfbox.pdmodel.PDPage(PDRectangle.A4);
+        doc.addPage(page);
+        float w = PDRectangle.A4.getWidth(), h = PDRectangle.A4.getHeight();
+        try (org.apache.pdfbox.pdmodel.PDPageContentStream cs = new org.apache.pdfbox.pdmodel.PDPageContentStream(doc, page)) {
+            float top = h - 50;
+            if (organizerLogo != null) {
+                try {
+                    var img = org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject.createFromByteArray(doc, organizerLogo, "Ausrichter");
+                    float lh = 70, lw = Math.min(160, lh * img.getWidth() / Math.max(1f, img.getHeight()));
+                    lh = lw * img.getHeight() / Math.max(1f, img.getWidth());
+                    cs.drawImage(img, (w - lw) / 2, top - lh, lw, lh);
+                    top -= lh + 24;
+                } catch (java.io.IOException | RuntimeException ignored) {
+                    // Logo nicht lesbar: ohne Logo weiter
+                }
+            }
+            centered(cs, BOLD, fit(BOLD, name, 26, w - 100), w, top - 20, name, 0.12f, 0.16f, 0.2f);
+            String date = t.getDate() == null ? "" : t.getDate().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+            if (!date.isEmpty()) centered(cs, REGULAR, 14, w, top - 44, date, 0.29f, 0.33f, 0.38f);
+            centered(cs, BOLD, 22, w, top - 92, "Ergebnisse live auf dem Handy", 0.094f, 0.447f, 0.314f);
+            float qr = 300, qx = (w - qr) / 2, qy = top - 120 - qr;
+            de.hts.web.QrCode code = de.hts.web.QrCode.encode(url);
+            int n = code.size(), quiet = 4;
+            float m = qr / (n + 2 * quiet);
+            cs.setNonStrokingColor(java.awt.Color.BLACK);
+            for (int yy = 0; yy < n; yy++) {
+                for (int xx = 0; xx < n; xx++) {
+                    if (code.get(xx, yy)) cs.addRect(qx + (xx + quiet) * m, qy + qr - (yy + quiet + 1) * m, m, m);
+                }
+            }
+            cs.fill();
+            centered(cs, BOLD, fit(BOLD, url, 14, w - 80), w, qy - 22, url, 0.12f, 0.16f, 0.2f);
+            String[] hint = {"Kamera-App öffnen und den Code scannen.",
+                    "Tische, Gruppen, KO-Runden, Ergebnisse und „Meine Spiele“ –",
+                    "die Seite aktualisiert sich von selbst."};
+            float y = qy - 56;
+            for (String l : hint) {
+                centered(cs, REGULAR, 12, w, y, l, 0.29f, 0.33f, 0.38f);
+                y -= 17;
+            }
+            centered(cs, REGULAR, 8, w, 34, "Erstellt mit HTS – Hamburger Turniersoftware", 0.5f, 0.5f, 0.5f);
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+        return doc;
+    }
+
+    private static float fit(PDFont font, String s, float size, float maxWidth) throws java.io.IOException {
+        float wdt = font.getStringWidth(s) / 1000 * size;
+        return wdt <= maxWidth ? size : Math.max(7, size * maxWidth / wdt);
+    }
+
+    private static void centered(org.apache.pdfbox.pdmodel.PDPageContentStream cs, PDFont font, float size, float pageW, float y, String s,
+                                 float r, float g, float b) throws java.io.IOException {
+        float wdt = font.getStringWidth(s) / 1000 * size;
+        cs.setNonStrokingColor(r, g, b);
+        text(cs, font, size, (pageW - wdt) / 2, y, s);
+        cs.setNonStrokingColor(0f, 0f, 0f);
     }
 
     /** 1.1 (#93): QR-Codes „Ergebnis eintragen“ je Tisch, drei je A4-Seite (zum Ausschneiden und Aufstellen). */

@@ -33,7 +33,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class LiveHostTest {
 
     private static final String KEY = "Test-Schluessel-0123456789-abcdefghijklmnop";
-    private final HttpClient http = HttpClient.newHttpClient();
+    private final HttpClient http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+    private final HttpClient raw = HttpClient.newHttpClient();
 
     private static Tournament tournament(String name) {
         Tournament t = new Tournament();
@@ -98,32 +99,41 @@ class LiveHostTest {
             }
             HttpResponse<String> start = get(s.base() + "/");
             assertEquals(200, start.statusCode());
-            assertTrue(start.body().contains("Hamburger Ranglistenturnier") && start.body().contains("/live/5c0c83c510be"), "Startseite listet das Turnier");
+            assertTrue(start.body().contains("Hamburger Ranglistenturnier") && start.body().contains("/live/Hamburger_Ranglistenturnier_28_11_2026"),
+                    "Startseite listet das Turnier mit lesbarer Adresse");
             assertTrue(start.body().contains("Laufende Turniere") && start.body().contains("28.11.2026"));
             assertTrue(start.body().contains("href=\"/impressum\"") && start.body().contains("href=\"/datenschutz\""), "Impressum/Datenschutz verlinkt");
             assertEquals("nosniff", start.headers().firstValue("X-Content-Type-Options").orElse(""));
             assertTrue(start.headers().firstValue("Content-Security-Policy").orElse("").contains("default-src 'self'"));
             assertTrue(start.headers().firstValue("Set-Cookie").isEmpty(), "keine Cookies");
 
-            String live = s.base() + "/live/5c0c83c510be";
+            String live = s.base() + "/live/Hamburger_Ranglistenturnier_28_11_2026";
+            HttpResponse<Void> old = raw.send(HttpRequest.newBuilder(URI.create(s.base() + "/live/5c0c83c510be/tische")).build(), HttpResponse.BodyHandlers.discarding());
+            assertEquals(302, old.statusCode(), "alte Adresse mit Kennung leitet um");
+            assertEquals("/live/Hamburger_Ranglistenturnier_28_11_2026/tische", old.headers().firstValue("Location").orElse(""));
             HttpResponse<String> ov = get(live);
             assertEquals(200, ov.statusCode());
-            assertTrue(ov.body().contains("href=\"/live/5c0c83c510be/tische\""), "Verweise mit Turnier-Kennung");
-            assertTrue(ov.body().contains("/live/5c0c83c510be/klasse?k=Herren+C"));
+            assertTrue(ov.body().contains("href=\"/live/Hamburger_Ranglistenturnier_28_11_2026/tische\""), "Verweise mit Turnier-Kennung");
+            assertTrue(ov.body().contains("/live/Hamburger_Ranglistenturnier_28_11_2026/klasse?k=Herren+C"));
             assertFalse(ov.body().contains("href=\"/live/tische\""), "keine Verweise ohne Kennung");
-            assertTrue(ov.body().contains("/live/5c0c83c510be/logo.png"), "Ausrichter-Logo eingebunden");
+            assertTrue(ov.body().contains("/live/Hamburger_Ranglistenturnier_28_11_2026/logo.png"), "Ausrichter-Logo eingebunden");
             assertTrue(ov.body().contains("href=\"/impressum\""));
             assertTrue(get(live + "/tische").body().contains("Nachname1"), "Tische mit Namen");
             assertTrue(get(live + "/klasse?k=Herren+C").body().contains("Viertelfinale"));
             assertTrue(get(live + "/spieler.json").body().contains("SC \\u003cPoppenb"), "Suche liefert Spieler");
             assertFalse(get(live + "/tische").body().contains("<Poppenb"), "Vereinsname in HTML maskiert");
             String search = get(live + "/suche").body();
-            assertTrue(search.contains("'/live/5c0c83c510be/spieler.json'") && search.contains("'/live/5c0c83c510be/ich?id='"), "Skripte mit Kennung");
+            assertTrue(search.contains("'/live/Hamburger_Ranglistenturnier_28_11_2026/spieler.json'") && search.contains("/live/Hamburger_Ranglistenturnier_28_11_2026/ich?id="), "Skripte mit Kennung");
             HttpResponse<byte[]> lg = http.send(HttpRequest.newBuilder(URI.create(live + "/logo.png")).build(), HttpResponse.BodyHandlers.ofByteArray());
             assertArrayEquals(logo, lg.body());
             assertEquals(404, get(live + "/anmeldung/x").statusCode(), "keine Anmeldung über den Server");
             assertEquals(404, get(s.base() + "/live/unbekannt").statusCode());
-            assertEquals(302, http.send(HttpRequest.newBuilder(URI.create(s.base() + "/live")).build(), HttpResponse.BodyHandlers.discarding()).statusCode());
+            assertEquals(302, raw.send(HttpRequest.newBuilder(URI.create(s.base() + "/live")).build(), HttpResponse.BodyHandlers.discarding()).statusCode());
+            String cls = get(live + "/klasse?k=Herren+C").body();
+            assertTrue(cls.contains("class=\"tabs\"") && cls.contains("Phase 1") && cls.contains("Zwischenstand"), "Reiter je Phase + Ergebnis");
+            assertTrue(cls.contains("setInterval(") && !cls.contains("location.reload()"), "Aktualisierung ohne Neuladen");
+            assertTrue(cls.contains("id=\"q\"") && cls.contains(">Tische</a>"), "Suchfeld und Knopf „Tische“");
+            assertTrue(get(live + "/spieler.json").body().contains("\"k\":[\"Herren C\"]"), "Suche kennt die Klassen");
         }
     }
 
@@ -161,7 +171,7 @@ class LiveHostTest {
             String ov = get(s.base() + "/live/t1").body();
             assertTrue(ov.contains("Endergebnisse") && ov.contains("/live/t1/ergebnis?k=Herren+C"), "nur noch Endergebnisse");
             assertFalse(ov.contains("/live/t1/tische"));
-            assertEquals(302, http.send(HttpRequest.newBuilder(URI.create(s.base() + "/live/t1/tische")).build(),
+            assertEquals(302, raw.send(HttpRequest.newBuilder(URI.create(s.base() + "/live/t1/tische")).build(),
                     HttpResponse.BodyHandlers.discarding()).statusCode(), "Tische nicht mehr erreichbar");
             assertEquals(200, get(s.base() + "/live/t1/ergebnis?k=Herren+C").statusCode());
             assertEquals(200, call("DELETE", s.base() + "/api/turniere/t2", KEY, null).statusCode());
@@ -193,7 +203,7 @@ class LiveHostTest {
             assertTrue(get(s.base() + "/impressum").body().contains("Max Muster"));
             assertTrue(get(s.base() + "/datenschutz").body().contains("Keine Cookies."));
             assertTrue(get(s.base() + "/robots.txt").body().contains("Disallow: /live/"));
-            assertEquals(200, http.send(HttpRequest.newBuilder(URI.create(s.base() + "/favicon.png")).build(),
+            assertEquals(200, raw.send(HttpRequest.newBuilder(URI.create(s.base() + "/favicon.png")).build(),
                     HttpResponse.BodyHandlers.discarding()).statusCode());
         }
     }

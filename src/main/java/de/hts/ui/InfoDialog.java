@@ -11,6 +11,7 @@ package de.hts.ui;
 import de.hts.HtsApp;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Hyperlink;
@@ -126,6 +127,7 @@ public final class InfoDialog extends Dialog<ButtonType> {
         Label libsHead = new Label("Mitgelieferte Bibliotheken");
         libsHead.getStyleClass().add("class-name");
         Label libs = new Label("• Apache PDFBox 3.0.8 – Apache License 2.0\n"
+                + "• JSVG 2.2.0 (SVG-Logos) – MIT-Lizenz\n"
                 + "• JavaFX 21.0.8 (OpenJFX) – GNU GPL v2 mit Classpath Exception\n"
                 + "• Java-Laufzeit Eclipse Temurin 21.0.13 – GNU GPL v2 mit Classpath Exception\n"
                 + "• Schrift Comic Neue (für Urkunden) – SIL Open Font License 1.1\n"
@@ -133,7 +135,25 @@ public final class InfoDialog extends Dialog<ButtonType> {
         libs.getStyleClass().add("hint");
         libs.setWrapText(true);
 
-        VBox content = new VBox(12, top, license, notice, new HBox(10, licenseLink, source), feedbackHead, feedback, useHead, tabletRow, thanksHead, thanks, libsHead, libs);
+        // 1.7.0 (#140): Protokoll und Fehlerbericht
+        Label logHead = new Label("Protokoll für die Fehlersuche");
+        logHead.getStyleClass().add("class-name");
+        Button openLog = new Button("Protokollordner öffnen");
+        openLog.getStyleClass().add("pill");
+        openLog.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        openLog.setOnAction(e -> ErrorReport.openFolder(getOwner()));
+        Button report = new Button("Fehlerbericht erstellen");
+        report.getStyleClass().add("pill");
+        report.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        report.setOnAction(e -> ErrorReport.saveReport(getOwner()));
+        Label logHint = new Label("HTS schreibt je Tag ein Protokoll (30 Tage, nur technische Angaben, keine Namen oder Ergebnisse). "
+                + "Den Fehlerbericht bei Problemen an ein GitHub-Issue anhängen.");
+        logHint.getStyleClass().add("hint");
+        logHint.setWrapText(true);
+        javafx.scene.layout.FlowPane logRow = new javafx.scene.layout.FlowPane(10, 8, openLog, report);
+
+        VBox content = new VBox(12, top, license, notice, new HBox(10, licenseLink, source), feedbackHead, feedback, useHead, tabletRow,
+                logHead, logRow, logHint, thanksHead, thanks, libsHead, libs);
         content.setPadding(new Insets(8, 6, 4, 6));
         content.setPrefWidth(560);
         getDialogPane().setContent(content);

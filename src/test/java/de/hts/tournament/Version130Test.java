@@ -147,9 +147,10 @@ class Version130Test {
         assertEquals(16, ko.getDraw().size());
         assertTrue(ko.getDraw().stream().allMatch(java.util.Objects::nonNull), "keine Freilose");
         Map<String, String> labels = ko.getSeedLabels();
-        assertEquals("S1", labels.get(ko.getDraw().get(0)));
-        assertTrue(labels.get(ko.getDraw().get(1)).endsWith("2"), "S1 gegen einen Gruppenzweiten: " + labels.get(ko.getDraw().get(1)));
-        assertEquals("S2", labels.get(ko.getDraw().get(15)));
+        // 1.7.0 (#145): S1/S4 oben, S2/S3 unten (Platz in der Hälfte ausgelost), jeweils gegen einen Gruppenzweiten
+        assertTrue(java.util.Set.of("S1", "S4").contains(labels.get(ko.getDraw().get(0))), labels.get(ko.getDraw().get(0)));
+        assertTrue(labels.get(ko.getDraw().get(1)).endsWith("2"), "S gegen einen Gruppenzweiten: " + labels.get(ko.getDraw().get(1)));
+        assertTrue(java.util.Set.of("S2", "S3").contains(labels.get(ko.getDraw().get(15))), labels.get(ko.getDraw().get(15)));
         for (int p = 0; p < 8; p++) {
             String a = labels.get(ko.getDraw().get(2 * p)), b = labels.get(ko.getDraw().get(2 * p + 1));
             assertFalse(a.charAt(0) != 'S' && a.charAt(0) == b.charAt(0), "gleiche Gruppe in Runde 1: " + a + "–" + b);

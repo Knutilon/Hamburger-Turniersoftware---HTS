@@ -6,7 +6,7 @@
 
     <groupId>de.hts</groupId>
     <artifactId>hts</artifactId>
-    <version>1.6.0</version>
+    <version>1.7.0</version>
     <name>Hamburger Turniersoftware (HTS)</name>
     <licenses>
         <license>
@@ -32,6 +32,12 @@
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>3.0.8</version>
+        </dependency>
+        <!-- 1.7.0 (#143): SVG-Logos in PNG umrechnen (MIT-Lizenz, keine weiteren Abhängigkeiten) -->
+        <dependency>
+            <groupId>com.github.weisj</groupId>
+            <artifactId>jsvg</artifactId>
+            <version>2.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>

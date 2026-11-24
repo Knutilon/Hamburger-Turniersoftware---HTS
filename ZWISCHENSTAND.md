@@ -1,4 +1,4 @@
-# Zwischenstand HTS 1.6.0 (24.11.2026)
+# Zwischenstand HTS 1.7.0 (24.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -50,104 +50,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 - click-TT-Upload der Ergebnisdatei: Praxistest erfolgreich (Nutzer 15.11.2026); Einschränkung unter „Bekannte
   Grenzen“ in der Doku gestrichen (mit 1.1.0 ausgeliefert).
 
-## Feature-Sammlung für 1.7.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 1.8.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.5.x)
 
 1. TABLET: TEST AUF ECHTEM GERÄT (Issue #133, offen aus 1.5.0): Die Tablet-Funktionen von 1.5.0 auf einem echten
    Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
    Gerät; Ergebnisse als Bug/Feature melden.
-
-2. ABSTURZ-PROTOKOLL (LOGGING) UND FEHLERBERICHT (Nutzer 23.11.2026, Issue #140):
-   - Protokolldatei je Tag im Ablageordner der Turniere unter „Protokoll“ (hts-JJJJ-MM-TT.log), Aufbewahrung 30 Tage,
-     höchstens wenige MB je Datei; java.util.logging, keine neue Bibliothek.
-   - Inhalt: Programmstart (Version, Betriebssystem, Java, Bildschirmauflösung/Skalierung, Arbeitsspeicher), wichtige
-     Schritte ohne Details (Turnier geöffnet, Phase angelegt, PDF erstellt, Webserver-Status), jeder unerwartete Fehler mit
-     Stacktrace – auch aus Hintergrund-Threads (Drucken, Hochladen) und dem JavaFX-Thread (UncaughtExceptionHandler).
-   - Datenschutz: keine Namen, Vereine oder Ergebnisse, nur Kennungen (Spiel-Nr., Klassenname).
-   - Unerwarteter Fehler: Turnier vorher speichern, Fenster „Es ist ein Fehler aufgetreten“ mit „Fehlerbericht speichern“
-     (ZIP der Protokolle der letzten Tage, z. B. für ein GitHub-Issue) und „Weiter“.
-   - Startdateien (bat/sh/command): Absturzbericht der Java-Laufzeit (-XX:ErrorFile) und Hinweis bei Speichermangel
-     (-XX:+ExitOnOutOfMemoryError o. Ä. + Protokolleintrag) in den Protokollordner.
-   - Info: Knöpfe „Protokollordner öffnen“ und „Fehlerbericht erstellen“. Texte nie abkürzen, DialogSizing.fit.
-
-3. WEBSERVER-EINSTELLUNGEN NUR MIT ADMIN-PASSWORT (Nutzer 23.11.2026, Issue #141):
-   - Reiter „Webserver“ (Turnierübersicht): ohne Admin-Passwort nur Anzeige, Adresse und Schlüssel MASKIERT (nicht voll
-     einsehbar, z. B. „http•••••.de“ bzw. nur „••••••••“), Felder und „Verbindung testen“ gesperrt; Knopf „Entsperren“ →
-     Dialog Passwort (40 Zeichen). Richtig → Felder bearbeitbar (Werte weiter verdeckt, Auge-Knopf zum Zeigen nur
-     entsperrt) bis zum Verlassen des Reiters. Falsch → Hinweis, kurze Wartezeit nach mehreren Fehlversuchen.
-   - Das Passwort NIE im Quellcode, in Doku, Issues oder Commits (Repo ist öffentlich) – nur gesalzener Prüfwert:
-     PBKDF2WithHmacSHA256, 310000 Iterationen, Salt (Base64) 5JmOyoZF68LcCHc+AkXMfw==,
-     Prüfwert (Base64) 3OtUkAagHuJ0D58v5sOQfP5S4wj78l6FFD54U0yCrsg= (Länge 40 wird vorher geprüft; Vergleich zeitkonstant).
-   - Hinweis an den Nutzer: Schutz gilt für die Oberfläche; Adresse/Schlüssel liegen weiter in den Java-Einstellungen des
-     Rechners (Windows-Registrierung) – ggf. später verschlüsselt ablegen.
-
-4. WEBSERVER-ADRESSE UND SCHLÜSSEL VERSCHLÜSSELT ABLEGEN (Nutzer 23.11.2026, Issue #142; ergänzt Punkt 3):
-   - Statt Klartext in Preferences: AES-256-GCM (javax.crypto, keine neue Bibliothek), je Wert eigener Zufalls-IV.
-   - Schlüssel zum Entschlüsseln (HTS muss ohne Admin-Passwort hochladen können):
-     Windows → zufälliger AES-Schlüssel, geschützt mit DPAPI (an das Windows-Benutzerkonto gebunden; Aufruf über
-     PowerShell ConvertTo-/ConvertFrom-SecureString bzw. [Security.Cryptography.ProtectedData], keine JNA);
-     Linux/macOS → zufälliger Schlüssel in einer Datei im Benutzerprofil, nur für den Benutzer lesbar (rw-------).
-   - Vorhandene Klartext-Einträge (1.5.0) beim ersten Start verschlüsselt übernehmen und den Klartext löschen.
-   - Lässt sich nicht entschlüsseln (anderer Rechner/Benutzer): Hinweis „Webserver-Einstellungen neu eintragen“ (mit
-     Admin-Passwort), Veröffentlichen pausiert.
-   - Grenze (dem Nutzer gesagt): schützt gegen Mitlesen in der Registrierung und Kopieren auf andere Rechner, nicht gegen
-     jemanden, der unter demselben Benutzerkonto angemeldet ist.
-
-5. AUSRICHTER: „LOGO HOCHLADEN“ OHNE „…“, SVG ERLAUBEN (Nutzer 23.11.2026, Issue #143):
-   - Knopf im Reiter „Ausrichter“ heißt „Logo hochladen“ (ohne „…“; auch sonst keine „…“ in Knopftexten prüfen).
-   - Dateiauswahl: PNG, JPG und SVG. SVG wird beim Hochladen in ein PNG umgerechnet (lange Seite ca. 1200 Bildpunkte,
-     damit es auf dem A6-Zettel scharf druckt; Transparenz bleibt). Dafür neue Bibliothek nötig – Vorschlag JSVG
-     (com.github.weisj:jsvg, MIT-Lizenz, ohne weitere Abhängigkeiten): in pom.xml und Fat-Jar, Lizenztext unter
-     „Lizenzen“, Info „Mitgelieferte Bibliotheken“, docs/ABHAENGIGKEITEN.md (CVE-Prüfung). Jar muss ggf. der Nutzer
-     liefern, falls Maven Central aus der Arbeitsumgebung gesperrt ist.
-   - Unlesbare SVG (z. B. mit externen Verweisen/Skripten): verständliche Fehlermeldung; externe Verweise nicht laden.
-
-6. FREISTELLUNG: KO-PAARUNGEN BEI 6 GRUPPEN × PLÄTZE 1–2 – SCHEMA MIT AUSLOSUNG JE HÄLFTE (Nutzer 23./24.11.2026,
-   Issue #145): Gruppenphase mit Freistellung, 6 Gruppen A–F, „Weiter je Gruppe“ Plätze 1–2 → 16er-KO ohne Freilose.
-   Grundschema (Reihenfolge im Baum von oben nach unten):
-     obere Hälfte:  S1–D2 · F1–E1 · A1–B2 · C2–S4
-     untere Hälfte: S3–E2 · A2–B1 · C1–D1 · F2–S2
-   NEU 24.11.2026 (zweite Klarstellung 09:07): AUSLOSUNG statt festem Schema, mit diesen Regeln:
-   - S1 und S4 immer in der oberen Hälfte, S2 und S3 immer in der unteren (Platz innerhalb der Hälfte – oberstes bzw.
-     unterstes S-Spiel – wird ausgelost).
-   - Gruppenerster und Gruppenzweiter derselben Gruppe NIE in derselben Baumhälfte: es werden 3 Gruppen ausgelost, deren
-     Erste oben und Zweite unten spielen; bei den übrigen 3 Gruppen umgekehrt. So hat jede Hälfte 3 Erste und 3 Zweite.
-   - Platzarten je Spiel bleiben (oben S–2 · 1–1 · 1–2 · 2–S; unten S–2 · 2–1 · 1–1 · 2–S); innerhalb der Hälfte werden die
-     Ersten bzw. Zweiten zufällig auf die Plätze ihrer Art verteilt.
-   - Folge: jeder Gruppenbuchstabe je Hälfte nur einmal → kein Gruppenduell bis zum Finale. Zwei Gruppenerste gegeneinander
-     (je Hälfte ein 1–1-Spiel) ist gewollt.
-   - Das Grundschema oben (S1–D2 · F1–E1 · … ) ist nur EINE mögliche Auslosung.
-   „Neu auslosen“ lost erneut; Tausch per Ziehen/Antippen vor dem Start wie bisher. Handbuch und Modus-Dialog-Hinweis
-   ergänzen; Test mit 6 × 2 (Hälften-Zugehörigkeit, Platzarten, Zufall mit festem Startwert).
-
-7. NEUE FARBGEBUNG „NEUTRAL MIT GRÜN #187250 UND MINT“ UND NEUES HTS-LOGO (Nutzer 24.11.2026, Issue #146;
-   Ablauf: Vorschlag #00965F → Varianten D1–D3 → „zu dominant“ → neutrale Grundlage t1 → Partnerfarbe Mint →
-   Primärfarbe dunkler im Grün des Logos → auf Wunsch #187250 statt #0F5038 für die Oberfläche; das LOGO bleibt bei #0F5038 (Nutzer 18:16). Vorschau-Stildatei: docs/entwuerfe/hts-farbschema-vorschau.css):
-   - GRUNDLAGE NEUTRAL: Schrift und Überschriften dunkelgrau #1F2933 (bisher Marineblau), Seitenhintergrund #F6F7F8,
-     Karten weiß ohne farbigen Rand. Nebenknöpfe weiß mit grauem Rand #D0D5DB und Schrift #1F2933.
-   - PRIMÄRFARBE = GRÜN #187250 (Hover #125C40), weiße Schrift (Kontrast ca. 5,9 : 1): Hauptknöpfe („Öffnen“,
-     „Neues Turnier“, „Ergebnis“, Standardknopf in Dialogen, „Weiter“ im Zahlenfeld), Schriftzug „Hamburger
-     Turniersoftware“, Linie unter der Kopfzeile (2 px). #00965F entfällt; #0F5038 nur im Logo.
-   - PARTNERFARBE MINT #5FD3A8 an ALLEN Stellen, an denen bisher Türkis war: runde Knöpfe oben rechts, Pfeilkreise in der
-     Turnierliste, Unterstrich des aktiven Reiters, Abzeichen „aktiv“/„bereit“, Kartenrand „läuft“ (wie bisher Türkis),
-     Ablagefelder beim Ziehen, Fokusrahmen von Eingabefeldern, Trennstrich vor dem Turniernamen. Schrift/Symbole auf Mint
-     dunkelgrün #0B3D2C. Helle Tönung Mint #E4F7EF statt Türkis-hell: markierte Zeilen, Hover, „Weiter“-Abzeichen.
-   - KOPFZEILE WEISS: Menüpunkte #4A5560, aktiver Reiter Schrift #1F2933 mit Mint-Unterstrich (3 px).
-   - Ausgegraute Knöpfe deutlich blasser (Deckkraft ca. 45 %), damit „nicht verfügbar“ klar erkennbar ist.
-   - Gelb bleibt „Testturnier“/„pausiert“/„Ergebnis fehlt“, Rot = Fehler; Punkt „gestartet/live“ Grün des Logo-Balls #19B877.
-   - Umsetzung: Variablen in hts.css (-hts-navy, -hts-turquoise … umbenennen, z. B. -hts-text, -hts-primary, -hts-accent,
-     -hts-accent-light), fest eingetragene Farben in hts.css und Java (Color.web …, z. B. Abzeichen „beendet“ in der
-     Präsentationsansicht, Kartenränder) auf die Variablen umstellen; Präsentationsanzeige, Live-Seiten (LiveServer) und
-     Info-Dialog mitziehen. Druck (Schiedsrichterzettel, Urkunden, Listen) bleibt hell; Marineblau/Türkis dort durch
-     Grün #187250/Mint ersetzen, soweit farbig gedruckt wird.
-   - NEUES LOGO (Variante 3 „Dunkelgrün“, Entwurf docs/entwuerfe/hts-logo-dunkelgruen.png): dunkelgrüner Hintergrund
-     (#0F5038 → #0A3526, bleibt so – NICHT an #187250 angleichen), „HTS“ weiß, Ball, Flugbahn und Unterstrich hellgrün (#19B877); das „T“ ist eine kleine
-     Tischtennisplatte (Plattenkante = Querbalken mit grüner Oberfläche, Netz quer, Mittellinie; Mittelfuß mit Fußplatte
-     = Stamm). Ersetzt src/main/resources/de/hts/ui/hts-logo.png (Fenster-Symbol, Kopfzeile, Präsentation, Live-Seiten,
-     HTS-Kennzeichen auf dem Schiedsrichterzettel) sowie die Symbole in den Paketen (.ico 16/32/48/256, .icns, .png).
-     Lesbarkeit bei 16 und 32 px prüfen.
-   - Prüfen bei 1093 × 614 und 911 × 512; Handbuch-Bildschirmfotos neu.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
@@ -171,6 +80,159 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 
 ## Umgesetzt
+
+1.7.0 (24.11.2026, Commit „HTS 1.7.0“, Closes #140 #141 #142 #143 #145 #146 #147 #148; auf Zuruf „ansonsten alles
+   kompilieren“ – alle Punkte der Feature-Sammlung außer #133 Tablet-Test, der nur mit Gerät geht):
+   - #146 Farben: hts.css-Variablen umgewertet (-hts-navy = Schrift #1F2933, -hts-turquoise = Mint #5FD3A8, -hts-green =
+     #19B877) + neuer Block „1.7.0 (#146)“ am Ende (weiße Kopfzeile, -hts-primary #187250, Knöpfe, ausgegraut 45 %);
+     PdfReports.NAVY = #187250; DrawView-Linie mint. Logo: hts-logo.png = Entwurf dunkelgrün, hts-logo-klein.png (64 px),
+     dist/symbole/HTS.ico/.png/.icns (in die Pakete).
+   - #143 LogoImport (PNG/JPG ≤ 600 px, SVG über JSVG 2.2.0 → 1200 px, ResourcePolicy.DENY_ALL, ≤ 10 MB); JSVG aus dem
+     GitHub-Quellcode v2.2.0 gebaut (Maven Central gesperrt; reine Annotationen durch Platzhalter ersetzt, $S/../weisj),
+     Jar $S/deps-0.32/jsvg-2.2.0.jar, im Fat-Jar; Lizenz Lizenzen/JSVG-LICENSE.txt, Info, ABHAENGIGKEITEN.md.
+     Knopftexte ohne „…“ (Logo hochladen, Verein abrechnen, click-TT-Abgleich).
+   - #141 AdminPassword (PBKDF2-Prüfwert, Länge 40, zeitkonstant, Wartezeit ab 3 Fehlversuchen 15 s steigend bis 300 s);
+     OverviewView.showWebserverForm: gesperrt = maskiert („http•••••.de“, „••••••••“) + „Entsperren“; entsperrt =
+     verdeckte Felder mit „Anzeigen“, „Speichern“, „Verbindung testen“, „Sperren“; Verlassen des Reiters sperrt.
+   - #142 SecretStore (AES-256-GCM, „v1:“+Base64(IV|Daten)); Windows DPAPI über powershell.exe (Daten über stdin),
+     Linux/macOS ~/.hts/geheimnis.key (rw-------); WebSettings verschlüsselt (server-enc/key-enc), Übernahme des Klartexts,
+     State UNREADABLE → configured()=false + Hinweis; preload beim Start im Hintergrund.
+   - #140 de.hts.Log (Ablageordner/Protokoll/hts-JJJJ-MM-TT.log, 30 Tage, 5 MB), Start-Eintrag, Klassenstart/-ende,
+     Folgephase, PDF, Turnier geöffnet, Webserver-Status, Speichern-Fehler; HtsApp: Default- und FX-UncaughtExceptionHandler
+     → speichern + ErrorReport.showUnexpected (höchstens alle 10 s); Info: „Protokollordner öffnen“, „Fehlerbericht
+     erstellen“ (ZIP 7 Tage + hs_err aus ~/.hts); Startdateien -XX:ErrorFile=~/.hts/hs_err_pid%p.log.
+   - #145 Tournament.drawExempt6x2 (Regeln wie unten), Modus-Dialog-Vorschau ergänzt; Version130Test angepasst.
+   - #147 LiveServer neu: Kopf (Logo /live/hts-logo.png, Name, Datum, „Stand“), Suchfeld (SEARCH_JS, spieler.json mit
+     Klassen „k“), Leiste Tische + Klassen, classBody mit Reitern (p=Nummer/„e“), groupTile (data-key, TILE_JS mit
+     sessionStorage, 1× Tabelle, „Spiele anzeigen“), matchLine „laufend“, REFRESH_JS (fetch + #live ersetzen, 10 s).
+     LiveSlug (Name_TT_MM_JJJJ); LiveHost: slug in meta.properties, /live/<Kennung> → 302 auf lesbare Adresse (wenn
+     eindeutig), bySlug = zuletzt aktualisiertes; Start-/Rechtsseiten im neuen Design. Publisher.publicUrl(base, name, date).
+   - #148 PdfReports.liveQrPoster; WorkspaceView: Knopf „QR-Code-Aushang drucken“ + Frage nach dem Turnierstart.
+   - Tests: Version170Test (8), LiveHostTest erweitert. Bildschirmfotos 1093×614/911×512 ($S/shot170, Harness ohne
+     javafx.swing gegen hts-linux.jar). Live-Seiten mit wkhtmltoimage geprüft.
+   Wortlaut der Punkte aus der Feature-Sammlung:
+   2. ABSTURZ-PROTOKOLL (LOGGING) UND FEHLERBERICHT (Nutzer 23.11.2026, Issue #140):
+      - Protokolldatei je Tag im Ablageordner der Turniere unter „Protokoll“ (hts-JJJJ-MM-TT.log), Aufbewahrung 30 Tage,
+        höchstens wenige MB je Datei; java.util.logging, keine neue Bibliothek.
+      - Inhalt: Programmstart (Version, Betriebssystem, Java, Bildschirmauflösung/Skalierung, Arbeitsspeicher), wichtige
+        Schritte ohne Details (Turnier geöffnet, Phase angelegt, PDF erstellt, Webserver-Status), jeder unerwartete Fehler mit
+        Stacktrace – auch aus Hintergrund-Threads (Drucken, Hochladen) und dem JavaFX-Thread (UncaughtExceptionHandler).
+      - Datenschutz: keine Namen, Vereine oder Ergebnisse, nur Kennungen (Spiel-Nr., Klassenname).
+      - Unerwarteter Fehler: Turnier vorher speichern, Fenster „Es ist ein Fehler aufgetreten“ mit „Fehlerbericht speichern“
+        (ZIP der Protokolle der letzten Tage, z. B. für ein GitHub-Issue) und „Weiter“.
+      - Startdateien (bat/sh/command): Absturzbericht der Java-Laufzeit (-XX:ErrorFile) und Hinweis bei Speichermangel
+        (-XX:+ExitOnOutOfMemoryError o. Ä. + Protokolleintrag) in den Protokollordner.
+      - Info: Knöpfe „Protokollordner öffnen“ und „Fehlerbericht erstellen“. Texte nie abkürzen, DialogSizing.fit.
+   
+   3. WEBSERVER-EINSTELLUNGEN NUR MIT ADMIN-PASSWORT (Nutzer 23.11.2026, Issue #141):
+      - Reiter „Webserver“ (Turnierübersicht): ohne Admin-Passwort nur Anzeige, Adresse und Schlüssel MASKIERT (nicht voll
+        einsehbar, z. B. „http•••••.de“ bzw. nur „••••••••“), Felder und „Verbindung testen“ gesperrt; Knopf „Entsperren“ →
+        Dialog Passwort (40 Zeichen). Richtig → Felder bearbeitbar (Werte weiter verdeckt, Auge-Knopf zum Zeigen nur
+        entsperrt) bis zum Verlassen des Reiters. Falsch → Hinweis, kurze Wartezeit nach mehreren Fehlversuchen.
+      - Das Passwort NIE im Quellcode, in Doku, Issues oder Commits (Repo ist öffentlich) – nur gesalzener Prüfwert:
+        PBKDF2WithHmacSHA256, 310000 Iterationen, Salt (Base64) 5JmOyoZF68LcCHc+AkXMfw==,
+        Prüfwert (Base64) 3OtUkAagHuJ0D58v5sOQfP5S4wj78l6FFD54U0yCrsg= (Länge 40 wird vorher geprüft; Vergleich zeitkonstant).
+      - Hinweis an den Nutzer: Schutz gilt für die Oberfläche; Adresse/Schlüssel liegen weiter in den Java-Einstellungen des
+        Rechners (Windows-Registrierung) – ggf. später verschlüsselt ablegen.
+   
+   4. WEBSERVER-ADRESSE UND SCHLÜSSEL VERSCHLÜSSELT ABLEGEN (Nutzer 23.11.2026, Issue #142; ergänzt Punkt 3):
+      - Statt Klartext in Preferences: AES-256-GCM (javax.crypto, keine neue Bibliothek), je Wert eigener Zufalls-IV.
+      - Schlüssel zum Entschlüsseln (HTS muss ohne Admin-Passwort hochladen können):
+        Windows → zufälliger AES-Schlüssel, geschützt mit DPAPI (an das Windows-Benutzerkonto gebunden; Aufruf über
+        PowerShell ConvertTo-/ConvertFrom-SecureString bzw. [Security.Cryptography.ProtectedData], keine JNA);
+        Linux/macOS → zufälliger Schlüssel in einer Datei im Benutzerprofil, nur für den Benutzer lesbar (rw-------).
+      - Vorhandene Klartext-Einträge (1.5.0) beim ersten Start verschlüsselt übernehmen und den Klartext löschen.
+      - Lässt sich nicht entschlüsseln (anderer Rechner/Benutzer): Hinweis „Webserver-Einstellungen neu eintragen“ (mit
+        Admin-Passwort), Veröffentlichen pausiert.
+      - Grenze (dem Nutzer gesagt): schützt gegen Mitlesen in der Registrierung und Kopieren auf andere Rechner, nicht gegen
+        jemanden, der unter demselben Benutzerkonto angemeldet ist.
+   
+   5. AUSRICHTER: „LOGO HOCHLADEN“ OHNE „…“, SVG ERLAUBEN (Nutzer 23.11.2026, Issue #143):
+      - Knopf im Reiter „Ausrichter“ heißt „Logo hochladen“ (ohne „…“; auch sonst keine „…“ in Knopftexten prüfen).
+      - Dateiauswahl: PNG, JPG und SVG. SVG wird beim Hochladen in ein PNG umgerechnet (lange Seite ca. 1200 Bildpunkte,
+        damit es auf dem A6-Zettel scharf druckt; Transparenz bleibt). Dafür neue Bibliothek nötig – Vorschlag JSVG
+        (com.github.weisj:jsvg, MIT-Lizenz, ohne weitere Abhängigkeiten): in pom.xml und Fat-Jar, Lizenztext unter
+        „Lizenzen“, Info „Mitgelieferte Bibliotheken“, docs/ABHAENGIGKEITEN.md (CVE-Prüfung). Jar muss ggf. der Nutzer
+        liefern, falls Maven Central aus der Arbeitsumgebung gesperrt ist.
+      - Unlesbare SVG (z. B. mit externen Verweisen/Skripten): verständliche Fehlermeldung; externe Verweise nicht laden.
+   
+   6. FREISTELLUNG: KO-PAARUNGEN BEI 6 GRUPPEN × PLÄTZE 1–2 – SCHEMA MIT AUSLOSUNG JE HÄLFTE (Nutzer 23./24.11.2026,
+      Issue #145): Gruppenphase mit Freistellung, 6 Gruppen A–F, „Weiter je Gruppe“ Plätze 1–2 → 16er-KO ohne Freilose.
+      Grundschema (Reihenfolge im Baum von oben nach unten):
+        obere Hälfte:  S1–D2 · F1–E1 · A1–B2 · C2–S4
+        untere Hälfte: S3–E2 · A2–B1 · C1–D1 · F2–S2
+      NEU 24.11.2026 (zweite Klarstellung 09:07): AUSLOSUNG statt festem Schema, mit diesen Regeln:
+      - S1 und S4 immer in der oberen Hälfte, S2 und S3 immer in der unteren (Platz innerhalb der Hälfte – oberstes bzw.
+        unterstes S-Spiel – wird ausgelost).
+      - Gruppenerster und Gruppenzweiter derselben Gruppe NIE in derselben Baumhälfte: es werden 3 Gruppen ausgelost, deren
+        Erste oben und Zweite unten spielen; bei den übrigen 3 Gruppen umgekehrt. So hat jede Hälfte 3 Erste und 3 Zweite.
+      - Platzarten je Spiel bleiben (oben S–2 · 1–1 · 1–2 · 2–S; unten S–2 · 2–1 · 1–1 · 2–S); innerhalb der Hälfte werden die
+        Ersten bzw. Zweiten zufällig auf die Plätze ihrer Art verteilt.
+      - Folge: jeder Gruppenbuchstabe je Hälfte nur einmal → kein Gruppenduell bis zum Finale. Zwei Gruppenerste gegeneinander
+        (je Hälfte ein 1–1-Spiel) ist gewollt.
+      - Das Grundschema oben (S1–D2 · F1–E1 · … ) ist nur EINE mögliche Auslosung.
+      „Neu auslosen“ lost erneut; Tausch per Ziehen/Antippen vor dem Start wie bisher. Handbuch und Modus-Dialog-Hinweis
+      ergänzen; Test mit 6 × 2 (Hälften-Zugehörigkeit, Platzarten, Zufall mit festem Startwert).
+   
+   7. NEUE FARBGEBUNG „NEUTRAL MIT GRÜN #187250 UND MINT“ UND NEUES HTS-LOGO (Nutzer 24.11.2026, Issue #146;
+      Ablauf: Vorschlag #00965F → Varianten D1–D3 → „zu dominant“ → neutrale Grundlage t1 → Partnerfarbe Mint →
+      Primärfarbe dunkler im Grün des Logos → auf Wunsch #187250 statt #0F5038 für die Oberfläche; das LOGO bleibt bei #0F5038 (Nutzer 18:16). Vorschau-Stildatei: docs/entwuerfe/hts-farbschema-vorschau.css):
+      - GRUNDLAGE NEUTRAL: Schrift und Überschriften dunkelgrau #1F2933 (bisher Marineblau), Seitenhintergrund #F6F7F8,
+        Karten weiß ohne farbigen Rand. Nebenknöpfe weiß mit grauem Rand #D0D5DB und Schrift #1F2933.
+      - PRIMÄRFARBE = GRÜN #187250 (Hover #125C40), weiße Schrift (Kontrast ca. 5,9 : 1): Hauptknöpfe („Öffnen“,
+        „Neues Turnier“, „Ergebnis“, Standardknopf in Dialogen, „Weiter“ im Zahlenfeld), Schriftzug „Hamburger
+        Turniersoftware“, Linie unter der Kopfzeile (2 px). #00965F entfällt; #0F5038 nur im Logo.
+      - PARTNERFARBE MINT #5FD3A8 an ALLEN Stellen, an denen bisher Türkis war: runde Knöpfe oben rechts, Pfeilkreise in der
+        Turnierliste, Unterstrich des aktiven Reiters, Abzeichen „aktiv“/„bereit“, Kartenrand „läuft“ (wie bisher Türkis),
+        Ablagefelder beim Ziehen, Fokusrahmen von Eingabefeldern, Trennstrich vor dem Turniernamen. Schrift/Symbole auf Mint
+        dunkelgrün #0B3D2C. Helle Tönung Mint #E4F7EF statt Türkis-hell: markierte Zeilen, Hover, „Weiter“-Abzeichen.
+      - KOPFZEILE WEISS: Menüpunkte #4A5560, aktiver Reiter Schrift #1F2933 mit Mint-Unterstrich (3 px).
+      - Ausgegraute Knöpfe deutlich blasser (Deckkraft ca. 45 %), damit „nicht verfügbar“ klar erkennbar ist.
+      - Gelb bleibt „Testturnier“/„pausiert“/„Ergebnis fehlt“, Rot = Fehler; Punkt „gestartet/live“ Grün des Logo-Balls #19B877.
+      - Umsetzung: Variablen in hts.css (-hts-navy, -hts-turquoise … umbenennen, z. B. -hts-text, -hts-primary, -hts-accent,
+        -hts-accent-light), fest eingetragene Farben in hts.css und Java (Color.web …, z. B. Abzeichen „beendet“ in der
+        Präsentationsansicht, Kartenränder) auf die Variablen umstellen; Präsentationsanzeige, Live-Seiten (LiveServer) und
+        Info-Dialog mitziehen. Druck (Schiedsrichterzettel, Urkunden, Listen) bleibt hell; Marineblau/Türkis dort durch
+        Grün #187250/Mint ersetzen, soweit farbig gedruckt wird.
+      - NEUES LOGO (Variante 3 „Dunkelgrün“, Entwurf docs/entwuerfe/hts-logo-dunkelgruen.png): dunkelgrüner Hintergrund
+        (#0F5038 → #0A3526, bleibt so – NICHT an #187250 angleichen), „HTS“ weiß, Ball, Flugbahn und Unterstrich hellgrün (#19B877); das „T“ ist eine kleine
+        Tischtennisplatte (Plattenkante = Querbalken mit grüner Oberfläche, Netz quer, Mittellinie; Mittelfuß mit Fußplatte
+        = Stamm). Ersetzt src/main/resources/de/hts/ui/hts-logo.png (Fenster-Symbol, Kopfzeile, Präsentation, Live-Seiten,
+        HTS-Kennzeichen auf dem Schiedsrichterzettel) sowie die Symbole in den Paketen (.ico 16/32/48/256, .icns, .png).
+        Lesbarkeit bei 16 und 32 px prüfen.
+      - Prüfen bei 1093 × 614 und 911 × 512; Handbuch-Bildschirmfotos neu.
+   
+   8. LIVE-SEITEN NEU: REITER JE PHASE, GRUPPENKACHELN, SPIELERSUCHE (Nutzer 24.11.2026, Issue #147; Entwurf im Chat
+      „hts_liveseite_entwurf_reiter_kacheln_suche“):
+      - Kopf weiß mit neuem Logo, Turniername, Datum, „Stand hh:mm“, Ausrichter-Logo; darunter SUCHFELD auf jeder Seite
+        (Vor-/Nachname/Verein über alle Klassen, Treffer beim Tippen: Name, Verein, Klassen; „Spiele anzeigen“ und „Als
+        ‚Meine Spiele‘ merken“); darunter wischbare Leiste: Knopf „Tische“ + ein Chip je Klasse.
+      - Klasse: REITER JE PHASE („Phase 1 · Gruppen“, „Phase 2 · KO-Runde“ …, laufende Phase vorgewählt) + Reiter
+        „Ergebnis“ (Zwischenstand/Endergebnis).
+      - Gruppen (auch Platzierungs-/Schweizer Phasen): KACHELN je Gruppe (2 nebeneinander auf dem Handy, 3–4 am Laptop):
+        Status läuft/beendet/wartet, Fortschritt „x von y Spielen“, aktueller Erster. 1× ANTIPPEN → Kachel volle Breite mit
+        Tabelle (Platz, Name, Verein, Spiele S:N, Sätze); WEITERES ANTIPPEN („Spiele anzeigen“) → Spiele der Gruppe.
+        KO-Phasen: Liste je Runde.
+      - Laufende Spiele NUR als „laufend“ markieren (kein Punktestand – echtes Live-Scoring ist erstmal nicht möglich);
+        beendet = Ergebnis + Sätze, sonst „eingereiht“/„geplant“.
+      - Aktualisierung alle 10 s OHNE Neuladen (Inhalt im Hintergrund ersetzen), aufgeklappte Kacheln, Reiter, Suchtext und
+        Scrollposition bleiben.
+      - Neues Design (Punkt 7: Grün #187250, Mint, neutral) auch für Startseite, Endergebnis-Ansicht, Tische, „Meine Spiele“,
+        Impressum und Datenschutz.
+      - LESBARE ADRESSE (Nutzer 24.11.2026, 21:10): Turnierseite https://<Server>/live/<Name>_<TT>_<MM>_<JJJJ>, z. B.
+        /live/Hamburger_Ranglistenturnier_28_11_2026 (Umlaute ausgeschrieben, ß → ss, sonstige Zeichen → „_“, mehrfach „_“
+        zusammengefasst). Gleiche Adresse bei zwei Turnieren → die zuletzt aktualisierte; /live/<Kennung> bleibt gültig und
+        leitet auf die lesbare Adresse um. HTS zeigt dieselbe Adresse („Live im Internet“, QR-Aushang).
+      - ADRESSE DER TURNIERSEITE (Nutzer 24.11.2026, 21:10): Turniername und Datum im Format Name_TT_MM_JJJJ, z. B.
+        https://hts-livescoring.de/live/Hamburger-Ranglistenturnier_28_11_2026 (Umlaute ae/oe/ue/ss, Leer- und Sonderzeichen
+        → „-“; gleicher Name und Tag doppelt → „_2“). Hochladen bleibt intern über die Kennung; die alte Adresse
+        /live/<Kennung> leitet weiter. HTS zeigt unter „Live im Internet“ und auf dem QR-Aushang die neue Adresse.
+   
+   9. QR-CODE FÜR DIE LIVE-SEITE ZUM AUSDRUCKEN (Nutzer 24.11.2026, Issue #148): Beim Turnierstart (und jederzeit auf der
+      Seite „Live im Internet“) einen Aushang als PDF erzeugen: großer QR-Code mit der Adresse der Live-Seite des Turniers
+      (https://<Server>/live/<ID>), Turniername, Datum, Adresse als Text, kurzer Hinweis („Ergebnisse live auf dem Handy“),
+      Ausrichter-Logo; drucken über die vorhandene PDF-Ansicht (A4). Nur wenn Webserver eingerichtet ist; beim Turnierstart
+      mit eingeschaltetem „Live im Internet“ fragen „QR-Code-Aushang drucken?“.
 
 1.6.0 (24.11.2026, Commit „HTS 1.6.0“, Closes #101; auf Zuruf „kompiliere nur alles was mit dem Webserver zu tun
    hat“ → Nutzer präzisiert „erstmal nur den Live-Server mit Einrichtungsskript (#101)“; #141/#142 und die übrigen

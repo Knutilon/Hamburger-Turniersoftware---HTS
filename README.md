@@ -25,6 +25,31 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.7.0
+
+- **Neue Farben und neues Logo:** HTS ist jetzt neutral mit Grün (#187250) für die Hauptknöpfe und Mint an allen Stellen,
+  die bisher Türkis waren; die Kopfzeile ist weiß. Das neue Logo (dunkelgrün, das „T“ ist eine kleine
+  Tischtennisplatte) erscheint als Fenster-Symbol, in der Kopfzeile, auf den Live-Seiten und liegt den Paketen als
+  `HTS.ico`, `HTS.png` und `HTS.icns` bei. Ausgegraute Knöpfe sind deutlicher als „nicht verfügbar“ zu erkennen.
+- **Live-Seiten neu:** Je Klasse ein Reiter pro Phase und einer für das Ergebnis; Gruppen als Kacheln (Status,
+  Fortschritt, Erster) – antippen zeigt die Tabelle, „Spiele anzeigen“ die Spiele. Laufende Spiele heißen schlicht
+  „laufend“. Oben auf jeder Seite eine Spielersuche über alle Klassen und die Leiste „Tische“ + Klassen. Die Seiten
+  aktualisieren sich ohne Neuladen – Aufgeklapptes bleibt offen. Lesbare Adresse je Turnier, z. B.
+  `https://hts-livescoring.de/live/Hamburger_Ranglistenturnier_28_11_2026`.
+- **QR-Code-Aushang:** Auf der Seite „Live im Internet“ (und beim Turnierstart) ein A4-PDF mit großem QR-Code zur
+  Live-Seite, Turniername, Datum und Logo des Ausrichters.
+- **Webserver geschützt:** Der Reiter „Webserver“ zeigt Adresse und Schlüssel nur verdeckt; ändern und testen geht erst
+  nach „Entsperren“ mit dem Admin-Passwort. Adresse und Schlüssel liegen verschlüsselt auf dem Rechner (AES-256,
+  Schlüssel unter Windows an das Benutzerkonto gebunden); alte Einträge werden beim ersten Start übernommen.
+- **Protokoll für die Fehlersuche:** HTS schreibt je Tag ein Protokoll (Ablageordner → „Protokoll“, 30 Tage, ohne Namen
+  oder Ergebnisse). Bei einem unerwarteten Fehler speichert HTS das Turnier und bietet „Fehlerbericht speichern“ an;
+  in der Info gibt es „Protokollordner öffnen“ und „Fehlerbericht erstellen“.
+- **Logo als SVG:** Im Reiter „Ausrichter“ heißt der Knopf jetzt „Logo hochladen“ und nimmt auch SVG-Dateien (als
+  scharfes PNG übernommen, externe Verweise werden nicht geladen). Neue Bibliothek JSVG 2.2.0 (MIT).
+- **Freistellung 6 Gruppen × Plätze 1–2:** Das KO-Feld wird je Hälfte ausgelost – S1 und S4 oben, S2 und S3 unten,
+  Erster und Zweiter einer Gruppe nie in derselben Hälfte (oben S–2 · 1–1 · 1–2 · 2–S, unten S–2 · 2–1 · 1–1 · 2–S).
+- **Knopftexte ohne „…“:** „Verein abrechnen“, „Teilnehmerliste abgleichen“ usw.
+
 ## Neu in 1.6.0
 
 - **Live-Server für das Internet (neu):** Zu HTS gehört jetzt ein eigener Live-Server für einen gemieteten Linux-Server

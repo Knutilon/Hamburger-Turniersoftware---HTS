@@ -212,28 +212,18 @@ public final class OverviewView {
                 case NONE -> "Ohne Logo";
             });
         };
-        Button upload = new Button("Logo hochladen …", Icons.of(Icons.UPLOAD, 16));
+        Button upload = new Button("Logo hochladen", Icons.of(Icons.UPLOAD, 16));
         upload.getStyleClass().add("navy-pill");
         upload.setOnAction(e -> {
             javafx.stage.FileChooser fc = new javafx.stage.FileChooser();
             fc.setTitle("Logo des Ausrichters wählen");
-            fc.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("Bild (PNG, JPG)", "*.png", "*.jpg", "*.jpeg"));
+            fc.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("Bild (PNG, JPG, SVG)", "*.png", "*.jpg", "*.jpeg", "*.svg",
+                    "*.PNG", "*.JPG", "*.JPEG", "*.SVG"));
             java.io.File f = fc.showOpenDialog(stage);
             if (f == null) return;
             try {
-                java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(f);
-                if (img == null) throw new java.io.IOException("Das Bild lässt sich nicht lesen (bitte PNG oder JPG).");
-                // auf höchstens 600 Bildpunkte verkleinern und als PNG speichern (reicht für A6 und Bildschirm)
-                double k = Math.min(1, 600.0 / Math.max(img.getWidth(), img.getHeight()));
-                int w = (int) Math.round(img.getWidth() * k), h = (int) Math.round(img.getHeight() * k);
-                java.awt.image.BufferedImage out = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-                java.awt.Graphics2D g = out.createGraphics();
-                g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-                g.drawImage(img, 0, 0, w, h, null);
-                g.dispose();
-                java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
-                javax.imageio.ImageIO.write(out, "png", bo);
-                org.setCustomLogo(bo.toByteArray());
+                // 1.7.0 (#143): PNG/JPG auf höchstens 600 Bildpunkte, SVG mit 1200 Bildpunkten als PNG (de.hts.persistence.LogoImport)
+                org.setCustomLogo(de.hts.persistence.LogoImport.toPng(f.toPath()));
                 show.run();
             } catch (java.io.IOException | RuntimeException ex) {
                 showError("Logo konnte nicht übernommen werden: " + ex.getMessage());
@@ -284,41 +274,118 @@ public final class OverviewView {
             b.setVisible(false);
             b.setManaged(false);
         }
+        showWebserverForm(false);
+    }
+
+    /** 1.7.0 (#141): ein Admin-Passwort für alle Aufrufe (Wartezeit nach Fehlversuchen bleibt bestehen). */
+    private static final de.hts.web.AdminPassword ADMIN = new de.hts.web.AdminPassword();
+
+    /**
+     * 1.7.0 (#141/#142): Seite „Webserver“. Ohne Admin-Passwort nur verdeckte Anzeige (Adresse „http•••••.de“, Schlüssel
+     * „••••••••“); nach „Entsperren“ bearbeitbar, Werte weiter verdeckt (Auge-Knopf zeigt sie). Verlassen der Seite sperrt.
+     */
+    private void showWebserverForm(boolean unlocked) {
+        de.hts.web.WebSettings.State st = de.hts.web.WebSettings.state();
         Label aLbl = new Label("Adresse des Webservers");
         aLbl.getStyleClass().add("class-name");
-        javafx.scene.control.TextField addr = new javafx.scene.control.TextField(de.hts.web.WebSettings.server());
-        addr.setPromptText("z. B. live.mein-verband.de");
-        addr.setMaxWidth(520);
         Label kLbl = new Label("Geheimer Schlüssel");
         kLbl.getStyleClass().add("class-name");
-        javafx.scene.control.PasswordField key = new javafx.scene.control.PasswordField();
-        key.setText(de.hts.web.WebSettings.key());
-        key.setMaxWidth(520);
-        Runnable save = () -> de.hts.web.WebSettings.set(addr.getText(), key.getText());
-        addr.textProperty().addListener((o, x, y) -> save.run());
-        key.textProperty().addListener((o, x, y) -> save.run());
         Label result = new Label();
         result.setWrapText(true);
-        Button test = new Button("Verbindung testen");
-        test.getStyleClass().add("navy-pill");
-        test.setMinWidth(Region.USE_PREF_SIZE);
-        test.setOnAction(e -> {
-            result.setText("Prüfe …");
-            String a = addr.getText(), k = key.getText();
-            Thread th = new Thread(() -> {
-                String err = de.hts.web.Publisher.test(a, k);
-                javafx.application.Platform.runLater(() -> result.setText(err == null ? "Verbindung in Ordnung." : err));
-            }, "HTS-Verbindungstest");
-            th.setDaemon(true);
-            th.start();
-        });
+        result.setMinHeight(Region.USE_PREF_SIZE);
+        VBox form = new VBox(10);
+        if (st == de.hts.web.WebSettings.State.UNREADABLE) {
+            Label warn = new Label("Die gespeicherten Webserver-Einstellungen lassen sich auf diesem Rechner bzw. unter diesem Benutzer "
+                    + "nicht entschlüsseln. Bitte Adresse und Schlüssel neu eintragen (mit Admin-Passwort). Bis dahin pausiert das Veröffentlichen.");
+            warn.getStyleClass().add("publish-state");
+            warn.getStyleClass().add("publish-error");
+            warn.setWrapText(true);
+            warn.setMinHeight(Region.USE_PREF_SIZE);
+            form.getChildren().add(warn);
+        }
+        if (!unlocked) {
+            Label addr = new Label(de.hts.web.WebSettings.mask(de.hts.web.WebSettings.server()));
+            Label key = new Label(de.hts.web.WebSettings.key().isBlank() ? "–" : "••••••••");
+            Button unlock = new Button("Entsperren", Icons.of(Icons.LOCK, 16));
+            unlock.getStyleClass().add("navy-pill");
+            unlock.setMinWidth(Region.USE_PREF_SIZE);
+            unlock.setOnAction(e -> {
+                if (askAdminPassword()) showWebserverForm(true);
+            });
+            Label lockHint = new Label("Gesperrt: Adresse und Schlüssel ändern und die Verbindung testen geht nur mit dem Admin-Passwort.");
+            lockHint.getStyleClass().add("hint");
+            lockHint.setWrapText(true);
+            lockHint.setMinHeight(Region.USE_PREF_SIZE);
+            form.getChildren().addAll(aLbl, addr, kLbl, key, unlock, lockHint);
+        } else {
+            javafx.scene.control.PasswordField addrHidden = new javafx.scene.control.PasswordField();
+            javafx.scene.control.TextField addrShown = new javafx.scene.control.TextField();
+            javafx.scene.control.PasswordField keyHidden = new javafx.scene.control.PasswordField();
+            javafx.scene.control.TextField keyShown = new javafx.scene.control.TextField();
+            addrShown.textProperty().bindBidirectional(addrHidden.textProperty());
+            keyShown.textProperty().bindBidirectional(keyHidden.textProperty());
+            addrHidden.setText(de.hts.web.WebSettings.server());
+            keyHidden.setText(de.hts.web.WebSettings.key());
+            addrShown.setPromptText("z. B. https://hts-livescoring.de");
+            addrHidden.setPromptText("z. B. https://hts-livescoring.de");
+            for (javafx.scene.control.TextField f : new javafx.scene.control.TextField[]{addrHidden, addrShown, keyHidden, keyShown}) {
+                f.setMaxWidth(520);
+                HBox.setHgrow(f, javafx.scene.layout.Priority.ALWAYS);
+            }
+            javafx.scene.layout.StackPane addrBox = new javafx.scene.layout.StackPane(addrHidden, addrShown);
+            javafx.scene.layout.StackPane keyBox = new javafx.scene.layout.StackPane(keyHidden, keyShown);
+            addrBox.setMaxWidth(520);
+            keyBox.setMaxWidth(520);
+            addrShown.setVisible(false);
+            keyShown.setVisible(false);
+            javafx.scene.control.ToggleButton eye = new javafx.scene.control.ToggleButton("Anzeigen", Icons.of(Icons.EYE, 16));
+            eye.setMinWidth(Region.USE_PREF_SIZE);
+            eye.selectedProperty().addListener((o, was, now) -> {
+                addrShown.setVisible(now);
+                addrHidden.setVisible(!now);
+                keyShown.setVisible(now);
+                keyHidden.setVisible(!now);
+                eye.setText(now ? "Verbergen" : "Anzeigen");
+            });
+            Button saveBtn = new Button("Speichern");
+            saveBtn.getStyleClass().add("navy-pill");
+            saveBtn.setMinWidth(Region.USE_PREF_SIZE);
+            saveBtn.setOnAction(e -> {
+                try {
+                    de.hts.web.WebSettings.set(addrHidden.getText(), keyHidden.getText());
+                    result.setText("Gespeichert (verschlüsselt).");
+                } catch (IllegalStateException ex) {
+                    result.setText(ex.getMessage());
+                }
+            });
+            Button test = new Button("Verbindung testen");
+            test.getStyleClass().add("pill");
+            test.setMinWidth(Region.USE_PREF_SIZE);
+            test.setOnAction(e -> {
+                result.setText("Prüfe …");
+                String a = addrHidden.getText(), k = keyHidden.getText();
+                Thread th = new Thread(() -> {
+                    String err = de.hts.web.Publisher.test(a, k);
+                    javafx.application.Platform.runLater(() -> result.setText(err == null ? "Verbindung in Ordnung." : err));
+                }, "HTS-Verbindungstest");
+                th.setDaemon(true);
+                th.start();
+            });
+            Button lock = new Button("Sperren", Icons.of(Icons.LOCK, 16));
+            lock.getStyleClass().add("pill");
+            lock.setMinWidth(Region.USE_PREF_SIZE);
+            lock.setOnAction(e -> showWebserverForm(false));
+            javafx.scene.layout.FlowPane actions = new javafx.scene.layout.FlowPane(10, 8, saveBtn, test, eye, lock);
+            form.getChildren().addAll(aLbl, addrBox, kLbl, keyBox, actions, result);
+        }
         Label hint = new Label("Veröffentlicht wird je Turnier auf der Seite „Live im Internet“ des Turniers. HTS lädt nur hoch – "
-                + "vom Server kommt nichts zurück. Der Schlüssel bleibt auf diesem Rechner und steht nicht in der Turnierdatei.");
+                + "vom Server kommt nichts zurück. Adresse und Schlüssel bleiben verschlüsselt auf diesem Rechner (an das "
+                + "Benutzerkonto gebunden) und stehen nicht in der Turnierdatei.");
         hint.getStyleClass().add("hint");
         hint.setWrapText(true);
         hint.setMaxWidth(620);
         hint.setMinHeight(Region.USE_PREF_SIZE);
-        VBox form = new VBox(10, aLbl, addr, kLbl, key, new HBox(12, test, result), hint);
+        form.getChildren().add(hint);
         form.getStyleClass().add("card");
         form.setPadding(new Insets(18, 20, 18, 20));
         form.setMaxWidth(760);
@@ -328,6 +395,50 @@ public final class OverviewView {
         sp.setFitToWidth(true);
         sp.getStyleClass().add("page-scroll");
         root.setCenter(sp);
+    }
+
+    /** 1.7.0 (#141): Admin-Passwort abfragen; true = richtig. */
+    private boolean askAdminPassword() {
+        javafx.scene.control.Dialog<char[]> d = new javafx.scene.control.Dialog<>();
+        d.initOwner(stage);
+        d.setTitle("Webserver entsperren");
+        d.setHeaderText(null);
+        javafx.scene.control.PasswordField pw = new javafx.scene.control.PasswordField();
+        pw.setPrefColumnCount(32);
+        Label info = new Label("Admin-Passwort (" + de.hts.web.AdminPassword.LENGTH + " Zeichen)");
+        Label err = new Label();
+        err.getStyleClass().addAll("publish-state", "publish-error");
+        err.setWrapText(true);
+        err.setMinHeight(Region.USE_PREF_SIZE);
+        long wait = ADMIN.secondsLocked();
+        if (wait > 0) err.setText("Zu viele Fehlversuche – bitte " + wait + " Sekunden warten.");
+        VBox box = new VBox(8, info, pw, err);
+        box.setPadding(new Insets(6, 4, 0, 4));
+        d.getDialogPane().setContent(box);
+        ButtonType ok = new ButtonType("Entsperren", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        d.getDialogPane().getButtonTypes().addAll(ok, new ButtonType("Abbrechen", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE));
+        javafx.scene.Node okBtn = d.getDialogPane().lookupButton(ok);
+        final boolean[] passed = {false};
+        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            de.hts.web.AdminPassword.Result r = ADMIN.check(pw.getText().toCharArray());
+            pw.clear();
+            switch (r) {
+                case OK -> passed[0] = true;
+                case WRONG -> {
+                    long s2 = ADMIN.secondsLocked();
+                    err.setText(s2 > 0 ? "Falsches Passwort. Zu viele Fehlversuche – bitte " + s2 + " Sekunden warten." : "Falsches Passwort.");
+                    ev.consume();
+                }
+                case LOCKED -> {
+                    err.setText("Zu viele Fehlversuche – bitte " + ADMIN.secondsLocked() + " Sekunden warten.");
+                    ev.consume();
+                }
+            }
+        });
+        DialogSizing.fit(d);
+        javafx.application.Platform.runLater(pw::requestFocus);
+        d.showAndWait();
+        return passed[0];
     }
 
     private void showError(String text) {
