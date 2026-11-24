@@ -174,6 +174,16 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    - Gilt für den Internet-Server und das lokale WLAN; Tests (Adresse, Klassen mit Sonderzeichen, gleiche Nummer in zwei
      Klassen, „Nur Endergebnis behalten“ sperrt die Spielseiten).
 
+12. NEUE DATENSCHUTZERKLÄRUNG IM SERVER-PAKET (Nutzer 24.11.2026, 23:20, Issue #159):
+   - Text des Nutzers (Ich-Form, Richard Michaelis, netcup/Nürnberg, Abschnitt 4 „Veröffentlichte Daten der Spielerinnen
+     und Spieler“, Abschnitt 5 Seitenaufrufe ohne Protokolle, keine Cookies, nichts im Browser gespeichert, TDDDG) liegt
+     schon fertig in dist/hts-server/vorlagen/datenschutz.html (Fassung ab 1.8.0; Erzeuger /home/claude/work/datenschutz-gen.py).
+     Ersetzt die bisherige Vorlage; die Anpassungen aus Punkt 8 (#155) und 9 (#156) sind darin schon enthalten.
+   - install.sh legt die Datei wie bisher nur an, wenn sie fehlt. update.sh muss sie beim Update auf 1.8.0 EINMALIG
+     installieren (alte Datei als datenschutz.html.bak-<Datum> sichern, Hinweis ausgeben), weil auf dem Server bereits
+     die alte Fassung liegt; impressum.html bleibt unangetastet.
+   - Erst zusammen mit den Punkten 8/9 ausliefern (sonst stimmt der Text „nichts im Browser gespeichert“ nicht).
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
