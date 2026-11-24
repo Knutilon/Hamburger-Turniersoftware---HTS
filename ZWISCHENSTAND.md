@@ -121,27 +121,32 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    „Neu auslosen“ lost erneut; Tausch per Ziehen/Antippen vor dem Start wie bisher. Handbuch und Modus-Dialog-Hinweis
    ergänzen; Test mit 6 × 2 (Hälften-Zugehörigkeit, Platzarten, Zufall mit festem Startwert).
 
-7. NEUE FARBGEBUNG MIT GRÜN #00965F (Variante „D3“) UND NEUES HTS-LOGO (Nutzer 24.11.2026, Issue #146):
-   - Hausfarbe Grün #00965F (vom Nutzer vorgegeben); für grüne SCHRIFT auf hellem Grund dunkleres Grün #00663F
-     (#00965F auf Weiß nur ca. 3,8 : 1 – für Knöpfe/fette Überschriften ok, nicht für kleine Schrift).
-   - Kopfzeile WEISS statt Marineblau, darunter feiner grüner Streifen (2 px). Schriftzug „Hamburger Turniersoftware“
-     in #00663F, Menüpunkte dunkelgrau (#4a5560), aktiver Reiter: grüne Schrift #00663F, hellgrün hinterlegt (#e0f4ec),
-     grün unterstrichen (3 px #00965F). Icon-Knöpfe rechts in der Kopfzeile dunkel statt weiß.
-   - Karten (.card) mit grüner Kante links (4 px #00965F), sonst weiß mit hellgrauem Rand; Seitenhintergrund #f7f8f8.
-   - Hauptknöpfe grün (#00965F, weiße Schrift), Nebenknöpfe weiß mit grünem Rand und Schrift #00663F.
-   - Ausgewählte Zeilen/Markierungen hellgrün (#e0f4ec, Schrift #00663F) statt Türkis.
-   - Statusfarbe „Tisch läuft“ bisher Grün → BLAU (#2f6fd6), damit sie sich von der Hausfarbe abhebt; Rot = Fehler,
-     Gelb = „Ergebnis fehlt“ bleiben.
-   - Umsetzung: Variablen in hts.css (-hts-navy, -hts-turquoise … → neue Namen/Werte), fest eingetragene Farben in
-     hts.css und Java (Color.web …) auf die Variablen umstellen; Präsentationsansicht, Live-Seiten (LiveServer) und
-     Info-Dialog mitziehen. Druck (Schiedsrichterzettel, Urkunden, Listen) bleibt hell; dort Marineblau/Türkis durch
-     Grün ersetzen, soweit farbig gedruckt wird.
-   - NEUES LOGO (Variante 3 „Dunkelgrün“, Entwurf in docs/entwuerfe/hts-logo-dunkelgruen.png): dunkelgrüner Hintergrund
-     (#0f5038 → #0a3526), „HTS“ weiß, Ball, Flugbahn und Unterstrich in hellem Grün (#19b877); das „T“ ist eine kleine
+7. NEUE FARBGEBUNG „NEUTRAL MIT LOGO-GRÜN UND MINT“ UND NEUES HTS-LOGO (Nutzer 24.11.2026, Issue #146;
+   Ablauf: Vorschlag #00965F → Varianten D1–D3 → „zu dominant“ → neutrale Grundlage t1 → Partnerfarbe Mint →
+   Primärfarbe dunkler im Grün des Logos. Vorschau-Stildatei: docs/entwuerfe/hts-farbschema-vorschau.css):
+   - GRUNDLAGE NEUTRAL: Schrift und Überschriften dunkelgrau #1F2933 (bisher Marineblau), Seitenhintergrund #F6F7F8,
+     Karten weiß ohne farbigen Rand. Nebenknöpfe weiß mit grauem Rand #D0D5DB und Schrift #1F2933.
+   - PRIMÄRFARBE = LOGO-GRÜN #0F5038 (Hover #0A3526), weiße Schrift (Kontrast ca. 10 : 1): Hauptknöpfe („Öffnen“,
+     „Neues Turnier“, „Ergebnis“, Standardknopf in Dialogen, „Weiter“ im Zahlenfeld), Schriftzug „Hamburger
+     Turniersoftware“, Linie unter der Kopfzeile (2 px). Das zuerst vorgeschlagene #00965F entfällt.
+   - PARTNERFARBE MINT #5FD3A8 an ALLEN Stellen, an denen bisher Türkis war: runde Knöpfe oben rechts, Pfeilkreise in der
+     Turnierliste, Unterstrich des aktiven Reiters, Abzeichen „aktiv“/„bereit“, Kartenrand „läuft“ (wie bisher Türkis),
+     Ablagefelder beim Ziehen, Fokusrahmen von Eingabefeldern, Trennstrich vor dem Turniernamen. Schrift/Symbole auf Mint
+     dunkelgrün #0B3D2C. Helle Tönung Mint #E4F7EF statt Türkis-hell: markierte Zeilen, Hover, „Weiter“-Abzeichen.
+   - KOPFZEILE WEISS: Menüpunkte #4A5560, aktiver Reiter Schrift #1F2933 mit Mint-Unterstrich (3 px).
+   - Ausgegraute Knöpfe deutlich blasser (Deckkraft ca. 45 %), damit „nicht verfügbar“ klar erkennbar ist.
+   - Gelb bleibt „Testturnier“/„pausiert“/„Ergebnis fehlt“, Rot = Fehler; Punkt „gestartet/live“ Grün des Logo-Balls #19B877.
+   - Umsetzung: Variablen in hts.css (-hts-navy, -hts-turquoise … umbenennen, z. B. -hts-text, -hts-primary, -hts-accent,
+     -hts-accent-light), fest eingetragene Farben in hts.css und Java (Color.web …, z. B. Abzeichen „beendet“ in der
+     Präsentationsansicht, Kartenränder) auf die Variablen umstellen; Präsentationsanzeige, Live-Seiten (LiveServer) und
+     Info-Dialog mitziehen. Druck (Schiedsrichterzettel, Urkunden, Listen) bleibt hell; Marineblau/Türkis dort durch
+     Logo-Grün/Mint ersetzen, soweit farbig gedruckt wird.
+   - NEUES LOGO (Variante 3 „Dunkelgrün“, Entwurf docs/entwuerfe/hts-logo-dunkelgruen.png): dunkelgrüner Hintergrund
+     (#0F5038 → #0A3526), „HTS“ weiß, Ball, Flugbahn und Unterstrich hellgrün (#19B877); das „T“ ist eine kleine
      Tischtennisplatte (Plattenkante = Querbalken mit grüner Oberfläche, Netz quer, Mittellinie; Mittelfuß mit Fußplatte
      = Stamm). Ersetzt src/main/resources/de/hts/ui/hts-logo.png (Fenster-Symbol, Kopfzeile, Präsentation, Live-Seiten,
-     Druck-Kennzeichen „HTS“ auf dem Schiedsrichterzettel) sowie Windows-/macOS-/Linux-Symbole in den Paketen
-     (.ico mit 16/32/48/256, .icns, .png). Auf Lesbarkeit bei 16 und 32 px prüfen.
+     HTS-Kennzeichen auf dem Schiedsrichterzettel) sowie die Symbole in den Paketen (.ico 16/32/48/256, .icns, .png).
+     Lesbarkeit bei 16 und 32 px prüfen.
    - Prüfen bei 1093 × 614 und 911 × 512; Handbuch-Bildschirmfotos neu.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
