@@ -166,8 +166,11 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      wie die übrigen Seiten alle 10 Sekunden.
    - Überall, wo ein Spiel steht (Spiele einer Gruppe, KO-Baum, Tische, „Meine Spiele“, Suche), führt ein Antippen auf
      die Spielseite; dort Knopf „Link kopieren“ (bzw. Teilen-Menü des Handys) – ohne Speichern im Browser.
-   - Ändert sich die Nummer nachträglich (Spiel um Platz 3 vor das Finale gezogen, Umsortieren), zeigt die Adresse das
-     Spiel mit der aktuellen Nummer; unbekannte Nummer → freundliche Seite „Spiel nicht gefunden“ mit Link zur Klasse.
+   - Spielnummern bleiben fest (Nutzer 24.11.2026, 23:07): Das Spiel um Platz 3 bekommt die Nummer NACH dem Finale;
+     HTS tauscht die Nummern nicht mehr (bisher Tausch in Tournament.addThirdPlaceMatch). Die Spielreihenfolge bleibt
+     wie bisher: Platz 3 wird weiterhin vor dem Finale aufgerufen (über die Reihenfolge der Warteschlange, nicht über die
+     Nummer). Alte Turnierdateien mit getauschten Nummern bleiben unverändert.
+   - Unbekannte Nummer (z. B. nach neuer Auslosung der Phase) → Seite „Spiel nicht gefunden“ mit Link zur Klasse.
    - Gilt für den Internet-Server und das lokale WLAN; Tests (Adresse, Klassen mit Sonderzeichen, gleiche Nummer in zwei
      Klassen, „Nur Endergebnis behalten“ sperrt die Spielseiten).
 
