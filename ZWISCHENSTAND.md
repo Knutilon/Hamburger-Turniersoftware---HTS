@@ -121,6 +121,29 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    „Neu auslosen“ lost erneut; Tausch per Ziehen/Antippen vor dem Start wie bisher. Handbuch und Modus-Dialog-Hinweis
    ergänzen; Test mit 6 × 2 (Hälften-Zugehörigkeit, Platzarten, Zufall mit festem Startwert).
 
+7. NEUE FARBGEBUNG MIT GRÜN #00965F (Variante „D3“) UND NEUES HTS-LOGO (Nutzer 24.11.2026, Issue #146):
+   - Hausfarbe Grün #00965F (vom Nutzer vorgegeben); für grüne SCHRIFT auf hellem Grund dunkleres Grün #00663F
+     (#00965F auf Weiß nur ca. 3,8 : 1 – für Knöpfe/fette Überschriften ok, nicht für kleine Schrift).
+   - Kopfzeile WEISS statt Marineblau, darunter feiner grüner Streifen (2 px). Schriftzug „Hamburger Turniersoftware“
+     in #00663F, Menüpunkte dunkelgrau (#4a5560), aktiver Reiter: grüne Schrift #00663F, hellgrün hinterlegt (#e0f4ec),
+     grün unterstrichen (3 px #00965F). Icon-Knöpfe rechts in der Kopfzeile dunkel statt weiß.
+   - Karten (.card) mit grüner Kante links (4 px #00965F), sonst weiß mit hellgrauem Rand; Seitenhintergrund #f7f8f8.
+   - Hauptknöpfe grün (#00965F, weiße Schrift), Nebenknöpfe weiß mit grünem Rand und Schrift #00663F.
+   - Ausgewählte Zeilen/Markierungen hellgrün (#e0f4ec, Schrift #00663F) statt Türkis.
+   - Statusfarbe „Tisch läuft“ bisher Grün → BLAU (#2f6fd6), damit sie sich von der Hausfarbe abhebt; Rot = Fehler,
+     Gelb = „Ergebnis fehlt“ bleiben.
+   - Umsetzung: Variablen in hts.css (-hts-navy, -hts-turquoise … → neue Namen/Werte), fest eingetragene Farben in
+     hts.css und Java (Color.web …) auf die Variablen umstellen; Präsentationsansicht, Live-Seiten (LiveServer) und
+     Info-Dialog mitziehen. Druck (Schiedsrichterzettel, Urkunden, Listen) bleibt hell; dort Marineblau/Türkis durch
+     Grün ersetzen, soweit farbig gedruckt wird.
+   - NEUES LOGO (Variante 3 „Dunkelgrün“, Entwurf in docs/entwuerfe/hts-logo-dunkelgruen.png): dunkelgrüner Hintergrund
+     (#0f5038 → #0a3526), „HTS“ weiß, Ball, Flugbahn und Unterstrich in hellem Grün (#19b877); das „T“ ist eine kleine
+     Tischtennisplatte (Plattenkante = Querbalken mit grüner Oberfläche, Netz quer, Mittellinie; Mittelfuß mit Fußplatte
+     = Stamm). Ersetzt src/main/resources/de/hts/ui/hts-logo.png (Fenster-Symbol, Kopfzeile, Präsentation, Live-Seiten,
+     Druck-Kennzeichen „HTS“ auf dem Schiedsrichterzettel) sowie Windows-/macOS-/Linux-Symbole in den Paketen
+     (.ico mit 16/32/48/256, .icns, .png). Auf Lesbarkeit bei 16 und 32 px prüfen.
+   - Prüfen bei 1093 × 614 und 911 × 512; Handbuch-Bildschirmfotos neu.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) LIVE-SCORING ÜBER GEMIETETEN HETZNER-SERVER CX23 (Nutzer 18.11.2026, Issue #101, ZURÜCKGESTELLT; ersetzt #92 App und
