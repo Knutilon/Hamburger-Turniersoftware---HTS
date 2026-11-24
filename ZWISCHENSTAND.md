@@ -136,6 +136,18 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      Speicherung im Browser; dem Nutzer den geänderten Abschnitt für seine Datei schicken. Test: keine Vorkommen von
      localStorage/sessionStorage/document.cookie in den ausgelieferten Seiten.
 
+9. VERÖFFENTLICHEN ALS STANDARD, VORNAMEN IMMER ABGEKÜRZT (Nutzer 24.11.2026, 22:51, Issue #156):
+   - Neu angelegte Turniere (auch kopierte und aus click-TT importierte) haben „Dieses Turnier veröffentlichen“
+     eingeschaltet; hochgeladen wird nur, wenn der Webserver eingerichtet ist (sonst ohne Wirkung, Hinweis wie bisher).
+     Testturniere: Vorschlag NICHT automatisch veröffentlichen (beim Nutzer nachgefragt). Bestehende Turniere behalten
+     ihre Einstellung.
+   - Vornamen werden in der hochgeladenen Kopie IMMER abgekürzt („M. Mustermann“); der Schalter „Vornamen abkürzen
+     (z. B. „M. Mustermann“) – Datenschutz“ auf der Seite „Live im Internet“ entfällt (Turnierdatei-Feld publish-abbrev
+     wird ignoriert bzw. beim Laden auf ja gesetzt). Hinweistext auf der Seite entsprechend: „Auf dem Webserver erscheinen
+     die Vornamen nur abgekürzt (z. B. „M. Mustermann“).“
+   - Datenschutz-Vorlage Abschnitt 3 anpassen: „Vorname nur als Anfangsbuchstabe“ statt „je nach Turnier“; Handbuch,
+     Anleitung und Protokoll-Dokument mitziehen; Tests (Hochladen immer abgekürzt, neues Turnier veröffentlicht).
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
