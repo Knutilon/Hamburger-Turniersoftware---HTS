@@ -157,6 +157,20 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      „Endergebnis“ (bei „Nur Endergebnis behalten“). Leerer Bereich: kurzer Hinweis („Gerade keine aktuellen Turniere“).
    - Je Karte wie bisher Name, Datum, Stand; dazu Ausrichter (Punkt 3) und Link „zur Turnierwelt“ (Punkt 4).
 
+11. EIGENER LINK FÜR JEDES SPIEL (Nutzer 24.11.2026, 23:05, Issue #158):
+   - Jedes Spiel bekommt eine eigene Seite mit der HTS-Spielnummer in der Adresse. Da die Nummern je Klasse zählen
+     (Spiel 45 gibt es in mehreren Klassen), steht die Klasse davor:
+     https://<Server>/live/<Turnier_TT_MM_JJJJ>/<Klasse>/spiel45 (Klassenname lesbar, Leerzeichen → „_“, z. B. Herren_C).
+   - Inhalt: Klasse, Phase/Gruppe bzw. KO-Runde, Spielnummer, beide Spieler (Vorname abgekürzt) mit Verein, Tisch,
+     Status („eingereiht“/„laufend“/beendet) und Ergebnis mit Sätzen; Link zurück zur Gruppe/Klasse; aktualisiert sich
+     wie die übrigen Seiten alle 10 Sekunden.
+   - Überall, wo ein Spiel steht (Spiele einer Gruppe, KO-Baum, Tische, „Meine Spiele“, Suche), führt ein Antippen auf
+     die Spielseite; dort Knopf „Link kopieren“ (bzw. Teilen-Menü des Handys) – ohne Speichern im Browser.
+   - Ändert sich die Nummer nachträglich (Spiel um Platz 3 vor das Finale gezogen, Umsortieren), zeigt die Adresse das
+     Spiel mit der aktuellen Nummer; unbekannte Nummer → freundliche Seite „Spiel nicht gefunden“ mit Link zur Klasse.
+   - Gilt für den Internet-Server und das lokale WLAN; Tests (Adresse, Klassen mit Sonderzeichen, gleiche Nummer in zwei
+     Klassen, „Nur Endergebnis behalten“ sperrt die Spielseiten).
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
