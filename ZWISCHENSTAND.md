@@ -108,12 +108,16 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Grundschema (Reihenfolge im Baum von oben nach unten):
      obere Hälfte:  S1–D2 · F1–E1 · A1–B2 · C2–S4
      untere Hälfte: S3–E2 · A2–B1 · C1–D1 · F2–S2
-   NEU 24.11.2026: Die Hälften werden FREI AUSGELOST – innerhalb jeder Hälfte werden die Freigestellten (S) untereinander,
-   die Gruppenersten untereinander und die Gruppenzweiten untereinander zufällig auf die Plätze ihrer Art verteilt.
-   Fest bleiben: welche Spieler in welche Hälfte kommen (oben S1, S4, A1, E1, F1, B2, C2, D2; unten S2, S3, B1, C1, D1,
-   A2, E2, F2) und die Platzarten je Spiel (oben S–2 · 1–1 · 1–2 · 2–S; unten S–2 · 2–1 · 1–1 · 2–S). Beispiel oben:
-   S4–C2 · A1–F1 · E1–D2 · B2–S1. Jeder Gruppenbuchstabe kommt je Hälfte nur einmal vor → kein Gruppenduell in Runde 1.
-   Zwei Gruppenerste gegeneinander (oben 1–1, unten 1–1) ist gewollt (zu wenig Gruppenzweite wegen der Freistellung).
+   NEU 24.11.2026 (zweite Klarstellung 09:07): AUSLOSUNG statt festem Schema, mit diesen Regeln:
+   - S1 und S4 immer in der oberen Hälfte, S2 und S3 immer in der unteren (Platz innerhalb der Hälfte – oberstes bzw.
+     unterstes S-Spiel – wird ausgelost).
+   - Gruppenerster und Gruppenzweiter derselben Gruppe NIE in derselben Baumhälfte: es werden 3 Gruppen ausgelost, deren
+     Erste oben und Zweite unten spielen; bei den übrigen 3 Gruppen umgekehrt. So hat jede Hälfte 3 Erste und 3 Zweite.
+   - Platzarten je Spiel bleiben (oben S–2 · 1–1 · 1–2 · 2–S; unten S–2 · 2–1 · 1–1 · 2–S); innerhalb der Hälfte werden die
+     Ersten bzw. Zweiten zufällig auf die Plätze ihrer Art verteilt.
+   - Folge: jeder Gruppenbuchstabe je Hälfte nur einmal → kein Gruppenduell bis zum Finale. Zwei Gruppenerste gegeneinander
+     (je Hälfte ein 1–1-Spiel) ist gewollt.
+   - Das Grundschema oben (S1–D2 · F1–E1 · … ) ist nur EINE mögliche Auslosung.
    „Neu auslosen“ lost erneut; Tausch per Ziehen/Antippen vor dem Start wie bisher. Handbuch und Modus-Dialog-Hinweis
    ergänzen; Test mit 6 × 2 (Hälften-Zugehörigkeit, Platzarten, Zufall mit festem Startwert).
 
