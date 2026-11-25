@@ -60,6 +60,14 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 2. LIVE-SERVER: REITER „DOWNLOAD HTS“ (Issue #168, Nutzer 25.11.2026): Auf hts-livescoring.de einen weiteren Reiter
    „Download HTS“ (wie „Spenden“, in der Fußzeile bzw. Reiterleiste) mit Link zum GitHub-Repository und zum neuesten
    Release https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/latest (neuer Tab).
+   DESIGN FREIGEGEBEN (Nutzer 25.11.2026, Canvas https://claude.ai/artifact/YNoEuWZ4Lkstqk5YzqG1Ao): dritter Reiter
+   „Download HTS“ auf der Startseite (nach „Vergangene Turniere“) plus Link in der Fußzeile (nach „Spenden“); Seite
+   /download: Kopfkarte mit großem Logo, „Hamburger Turniersoftware (HTS)“, ein Satz zu den Funktionen, grüner Knopf
+   „Neueste Version herunterladen ↗“ (releases/latest), heller Knopf „Projekt auf GitHub ↗“ (Repo), darunter
+   „Freie Software (AGPL-3.0) · Java ist im Paket enthalten – keine Installation nötig“; Abschnitt „Welche Datei
+   brauche ich?“ mit drei Karten Windows / macOS (Apple-Chip) / Linux (Dateiname + Startanleitung, auf dem Handy
+   untereinander); grüner Hinweis „Gut zu wissen“ (Dateien unter „Assets“, alte Turnierdateien lesbar, Link Spenden).
+   Keine Versionsnummer auf der Seite. Links target="_blank" rel="noopener"; Knöpfe ≥ 44 px; Texte nie abkürzen.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
