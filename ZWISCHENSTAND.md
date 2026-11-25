@@ -89,8 +89,9 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      HtsApp.MOBILE_ENABLED.
    - (1) Live-Anzeige im Hallen-WLAN – NUR der lokale Server; der Seitenaufbau in LiveServer bleibt für den Live-Server
      im Internet (LiveHost → serveLive) unverändert erhalten.
-   - (2) Anmeldung per Handy: /anmeldung/…, checkinUrl, checkinPage/checkinData/report, Turnier-Schlüssel checkin-token,
-     „Anmeldung per Adresse sperren/öffnen“ (checkin-locked).
+   - (2) Anmeldung per Handy im WLAN: /anmeldung/… im lokalen Server, checkinUrl, „Anmeldung per Adresse sperren/öffnen“
+     (checkin-locked). Die Anmeldeseite (Namen suchen, Verein abhaken) NICHT wegwerfen, sondern für Punkt 6 auf den
+     Live-Server übernehmen.
    - (3) Handyabmeldungen bestätigen: Knopf „Handyabmeldungen“ in der Teilnehmerliste und Dialog. Alte Turnierdateien mit
      dem Zustand „Abmeldung per Handy“ (orange) bleiben lesbar; die Personen lassen sich wie bisher über die normale
      Anwesenheit (Haken/Abmelden) ändern.
@@ -101,6 +102,28 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      grün. Tests zu Handy-Anmeldung und Handy-Ergebnis entfernen bzw. auf den Seitenaufbau umstellen. Doku (Kapitel 12,
      Hinweise in 1, 3, 11, 14), README, Handbuch, Protokoll-Dokument kürzen. Prüfen, dass kein Text mehr „Hallen-WLAN“,
      „Handy-Zugang“, „Turnier-WLAN“ oder Port 8080 nennt.
+
+6. ONLINE-ANMELDUNG AM TURNIERTAG ÜBER DEN LIVE-SERVER (Nutzer 25.11.2026, 18:41/18:44, Issue #164):
+   - Am Turniertag hängt ein QR-Code aus; darüber melden sich Spieler/innen an („Ich bin da“) oder ab („Ich komme nicht“).
+     Betreuer/innen wählen ihren Verein und melden alle Anwesenden auf einmal an bzw. einzelne ab.
+   - Beim ANLEGEN (und Bearbeiten) des Turniers: Feld „Online-Anmeldung bis“ (Uhrzeit am Turniertag, z. B. 10:30; leer =
+     keine Online-Anmeldung). Online offen am Turniertag bis zu dieser Uhrzeit, sofern das Turnier veröffentlicht ist;
+     danach ist ONLINE keine An- oder Abmeldung mehr möglich (Seite „Die Anmeldung ist geschlossen“). In HTS bleibt die
+     Anwesenheit wie bisher änderbar, solange Phase 1 der jeweiligen Klasse nicht gestartet ist.
+   - Link temporär: zufälliger Schlüssel (≥ 128 Bit) je Turnier, …/anmeldung/<Schlüssel>; nur im Zeitraum gültig, danach
+     wertlos; „Neuen Anmelde-Link erzeugen“ macht den alten sofort ungültig. QR-Code-Aushang (A4-PDF) mit Turniername,
+     Datum, „Anmeldung bis 10:30 Uhr“ und Logo des Ausrichters – Knopf auf „Live im Internet“ und beim Anlegen anbieten.
+   - Ablauf: HTS lädt Schlüssel und Uhrzeit mit dem Turnierstand hoch (Feld in der hochgeladenen Kopie bzw. eigener
+     Aufruf); der Server nimmt Meldungen nur mit gültigem Schlüssel im Zeitraum an und speichert nur Kennung,
+     anwesend/abwesend, Zeit (keine IP, keine Cookies). HTS holt die Meldungen alle 5–10 s ab
+     (GET /api/turniere/<ID>/anmeldungen mit dem geheimen Schlüssel, danach quittieren → Server löscht sie) und setzt
+     die Anwesenheit; Herkunft „online“ sichtbar in der Teilnehmerliste (Spalte bzw. Hinweis), Zurücknehmen mit einem Klick.
+   - Online-Abmeldung = „nicht angemeldet“ (keine endgültige Abmeldung; endgültig abmelden bleibt bei der Turnierleitung).
+     Endgültig Abgemeldete und Nachrücker erscheinen nicht. Ratenbremse je Schlüssel; Klassen schon gestartet → für diese
+     Klasse keine Online-Meldung.
+   - Datenschutz-Vorlage um einen Absatz „Anmeldung am Turniertag“ ergänzen (und dem Nutzer den Absatz für seine Fassung
+     schicken); Protokoll-Dokument, Anleitung, Handbuch. Tests: Meldung im Zeitraum, nach Ablauf abgelehnt, falscher/
+     alter Schlüssel abgelehnt, Verein anmelden, Abmeldung, Übernahme in HTS, gestartete Klasse gesperrt.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
