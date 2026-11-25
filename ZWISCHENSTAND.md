@@ -106,8 +106,12 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 6. ONLINE-ANMELDUNG AM TURNIERTAG ÜBER DEN LIVE-SERVER (Nutzer 25.11.2026, 18:41/18:44, Issue #164):
    - Am Turniertag hängt ein QR-Code aus; darüber melden sich Spieler/innen an („Ich bin da“) oder ab („Ich komme nicht“).
      Betreuer/innen wählen ihren Verein und melden alle Anwesenden auf einmal an bzw. einzelne ab.
-   - Beim ANLEGEN (und Bearbeiten) des Turniers: Feld „Online-Anmeldung bis“ (Uhrzeit am Turniertag, z. B. 10:30; leer =
-     keine Online-Anmeldung). Online offen am Turniertag bis zu dieser Uhrzeit, sofern das Turnier veröffentlicht ist;
+   - Beim ANLEGEN (und Bearbeiten) des Turniers: Feld „Online-Anmeldung bis“ (Uhrzeit am Turniertag, z. B. 10:30).
+   - EIN-/AUSSCHALTEN auf der Seite „Live im Internet“ (Nutzer 25.11.2026, 18:54): Schalter „Online-Anmeldung zum Turnier“
+     (Vorgabe aus; ein nur, wenn eine Uhrzeit eingetragen ist – sonst Hinweis bzw. Uhrzeit dort ebenfalls änderbar), dazu
+     Uhrzeit, Anmelde-Link, „QR-Code-Aushang drucken“ und „Neuen Anmelde-Link erzeugen“. Ausschalten schließt die
+     Anmeldung sofort (Server lehnt ab, Seite „geschlossen“); Wiedereinschalten vor Ablauf öffnet sie mit demselben Link.
+     Online offen = Schalter an UND Turniertag bis zur Uhrzeit UND Turnier veröffentlicht;
      danach ist ONLINE keine An- oder Abmeldung mehr möglich (Seite „Die Anmeldung ist geschlossen“). In HTS bleibt die
      Anwesenheit wie bisher änderbar, solange Phase 1 der jeweiligen Klasse nicht gestartet ist.
    - Link temporär: zufälliger Schlüssel (≥ 128 Bit) je Turnier, …/anmeldung/<Schlüssel>; nur im Zeitraum gültig, danach
