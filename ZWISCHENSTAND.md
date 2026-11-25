@@ -82,17 +82,6 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Karte führt auf die Spielseite (…/spiel45). Aktualisierung alle 10 s wie bisher, gescrollte Position bleibt.
    Test: 16er-Feld mit Freilosen, Spiel um Platz 3, Baum enthält alle Spiele.
 
-5. HANDY-ZUGANG IM HALLEN-WLAN ENTFERNEN (Nutzer 25.11.2026, 18:28, Issue #163): Seit dem Live-Server im Internet nicht
-   mehr nötig. Entfernen: der lokale Web-Server in HTS (Port 8080, LiveServer.start/stop, localAddresses, liveUrl), die
-   ausgeblendete Seite „Mobile Einstellungen“ samt QR-Codes (Live-Anzeige, Anmeldung per Handy, WLAN-QR-Code),
-   die Anmeldung per Handy (/anmeldung/…, Schlüssel checkin-token, „Anmeldung sperren“) und die Ergebniseingabe per
-   Handy am Tisch (/ergebnis/…, phone-results, phone-results-direct, Tisch-Schlüssel, QR auf Spielzetteln/PDFs) mit
-   allen Knöpfen, Texten und Hinweisen. LiveServer bleibt nur als Seitenaufbau für den Live-Server (LiveHost) – ohne
-   eigenen Server, ohne POST. Turnierdateien mit den alten Feldern bleiben lesbar (Felder werden ignoriert und nicht mehr
-   geschrieben); Kompatibilitätstest weiter grün. Doku (Kapitel 12 „Handy-Zugang“, Hinweise in 11 und 14, README),
-   Handbuch, Protokoll-Dokument und Tests (Handy-Anmeldung, Ergebnis per Handy) entsprechend kürzen. Prüfen, dass im
-   Programm kein Hinweis auf „WLAN“, „Handy-Zugang“ oder Port 8080 übrig bleibt.
-
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
