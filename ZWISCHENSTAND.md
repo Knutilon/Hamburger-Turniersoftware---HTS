@@ -101,6 +101,9 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Server-Seiten (Start, Vergangene, Spenden, Impressum, Datenschutz, Download) steht unter „HTS Live-Scoring“ immer
    „Hamburger Turniersoftware“ statt des Reiter-/Seitennamens (LiveHost.frame); Browser-Tab-Titel bleibt je Seite.
    Turnierseiten unverändert (Turniername, Datum, Stand). Download-Design entsprechend angepasst.
+10. LIVE-SERVER: REITER „LAUFENDE TURNIERE“ (Issue #176, Nutzer 26.11.2026): Reiter „Aktuelle Turniere“ auf der
+   Startseite in „Laufende Turniere“ umbenennen (auch Leertext „Gerade keine laufenden Turniere.“, Doku, Tests).
+   Inhalt unverändert. Download-Design entsprechend angepasst.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
