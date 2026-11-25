@@ -73,6 +73,16 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    freigestellt – erstes Spiel in der KO-Runde“) und im Suchergebnis. Gilt für den Internet-Server und das lokale WLAN;
    Vornamen wie überall abgekürzt. Test: Gruppenphase mit Freistellung → Karte mit S1–S4 über den Gruppen.
 
+4. LIVE-SEITEN: KO-BAUM STATT NUR SPIELLISTE (Nutzer 25.11.2026, 18:27, Issue #162): In KO-Phasen (KO-System,
+   KO-Qualifikation, Platzierungspläne mit KO-Teil) zeigt die Live-Seite bisher je Runde eine Liste der Spiele. Künftig
+   als Vorgabe ein KO-Baum wie in HTS: Spalten je Runde (z. B. Achtelfinale · Viertelfinale · Halbfinale · Finale, dazu
+   Spiel um Platz 3), je Spiel eine Karte mit beiden Namen (Vorname abgekürzt, Verein klein, Herkunft z. B. „A2“, Sieger
+   fett), Ergebnis bzw. „laufend“/„eingereiht“; Verbindungslinien zwischen den Runden; Freilose als „Freilos“. Waagerecht
+   wischbar auf dem Handy (Rundentitel bleiben oben stehen), Karten so breit wie der längste Name (nie mit „…“ abkürzen).
+   Umschalter „Baum | Liste“ über der Phase (Wahl nur, solange die Seite offen ist – nichts im Browser speichern). Jede
+   Karte führt auf die Spielseite (…/spiel45). Aktualisierung alle 10 s wie bisher, gescrollte Position bleibt.
+   Gilt für Internet-Server und lokales WLAN. Test: 16er-Feld mit Freilosen, Spiel um Platz 3, Baum enthält alle Spiele.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
