@@ -66,6 +66,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Sitzung (solange das Turnier offen ist; nicht in der Turnierdatei). Test: Filter in Klasse A setzen, zu B wechseln
    (Vorgaben), zurück zu A (Filter wieder da).
 
+3. LIVE-SEITEN: FREIGESTELLTE ÜBER DEN GRUPPEN ZEIGEN (Nutzer 25.11.2026, 18:26, Issue #161): In einer Gruppenphase mit
+   Freistellung (S1–S4 direkt ins KO) erscheinen die Freigestellten bisher nirgends auf der Live-Seite. Künftig steht über
+   den Gruppenkacheln eine Karte „Freigestellt“ mit den Freigestellten in Setzreihenfolge (S1 … S4, Name, Verein; bei
+   Doppeln die Paarung) und dem Hinweis „direkt in der KO-Runde“. Ebenso auf der Spielerseite „Meine Spiele“ („Du bist
+   freigestellt – erstes Spiel in der KO-Runde“) und im Suchergebnis. Gilt für den Internet-Server und das lokale WLAN;
+   Vornamen wie überall abgekürzt. Test: Gruppenphase mit Freistellung → Karte mit S1–S4 über den Gruppen.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
