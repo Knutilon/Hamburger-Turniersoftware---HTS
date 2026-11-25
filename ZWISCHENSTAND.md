@@ -70,8 +70,7 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Freistellung (S1–S4 direkt ins KO) erscheinen die Freigestellten bisher nirgends auf der Live-Seite. Künftig steht über
    den Gruppenkacheln eine Karte „Freigestellt“ mit den Freigestellten in Setzreihenfolge (S1 … S4, Name, Verein; bei
    Doppeln die Paarung) und dem Hinweis „direkt in der KO-Runde“. Ebenso auf der Spielerseite „Meine Spiele“ („Du bist
-   freigestellt – erstes Spiel in der KO-Runde“) und im Suchergebnis. Gilt für den Internet-Server und das lokale WLAN;
-   Vornamen wie überall abgekürzt. Test: Gruppenphase mit Freistellung → Karte mit S1–S4 über den Gruppen.
+   freigestellt – erstes Spiel in der KO-Runde“) und im Suchergebnis. Vornamen wie überall abgekürzt. Test: Gruppenphase mit Freistellung → Karte mit S1–S4 über den Gruppen.
 
 4. LIVE-SEITEN: KO-BAUM STATT NUR SPIELLISTE (Nutzer 25.11.2026, 18:27, Issue #162): In KO-Phasen (KO-System,
    KO-Qualifikation, Platzierungspläne mit KO-Teil) zeigt die Live-Seite bisher je Runde eine Liste der Spiele. Künftig
@@ -81,7 +80,18 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    wischbar auf dem Handy (Rundentitel bleiben oben stehen), Karten so breit wie der längste Name (nie mit „…“ abkürzen).
    Umschalter „Baum | Liste“ über der Phase (Wahl nur, solange die Seite offen ist – nichts im Browser speichern). Jede
    Karte führt auf die Spielseite (…/spiel45). Aktualisierung alle 10 s wie bisher, gescrollte Position bleibt.
-   Gilt für Internet-Server und lokales WLAN. Test: 16er-Feld mit Freilosen, Spiel um Platz 3, Baum enthält alle Spiele.
+   Test: 16er-Feld mit Freilosen, Spiel um Platz 3, Baum enthält alle Spiele.
+
+5. HANDY-ZUGANG IM HALLEN-WLAN ENTFERNEN (Nutzer 25.11.2026, 18:28, Issue #163): Seit dem Live-Server im Internet nicht
+   mehr nötig. Entfernen: der lokale Web-Server in HTS (Port 8080, LiveServer.start/stop, localAddresses, liveUrl), die
+   ausgeblendete Seite „Mobile Einstellungen“ samt QR-Codes (Live-Anzeige, Anmeldung per Handy, WLAN-QR-Code),
+   die Anmeldung per Handy (/anmeldung/…, Schlüssel checkin-token, „Anmeldung sperren“) und die Ergebniseingabe per
+   Handy am Tisch (/ergebnis/…, phone-results, phone-results-direct, Tisch-Schlüssel, QR auf Spielzetteln/PDFs) mit
+   allen Knöpfen, Texten und Hinweisen. LiveServer bleibt nur als Seitenaufbau für den Live-Server (LiveHost) – ohne
+   eigenen Server, ohne POST. Turnierdateien mit den alten Feldern bleiben lesbar (Felder werden ignoriert und nicht mehr
+   geschrieben); Kompatibilitätstest weiter grün. Doku (Kapitel 12 „Handy-Zugang“, Hinweise in 11 und 14, README),
+   Handbuch, Protokoll-Dokument und Tests (Handy-Anmeldung, Ergebnis per Handy) entsprechend kürzen. Prüfen, dass im
+   Programm kein Hinweis auf „WLAN“, „Handy-Zugang“ oder Port 8080 übrig bleibt.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
