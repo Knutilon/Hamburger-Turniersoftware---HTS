@@ -89,7 +89,7 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 7. INFO-DIALOG ABGESCHNITTEN (Issue #173, Bug): bei 1093 × 614 Text rechts abgeschnitten.
 8. LIVE-SEITEN: KO-KARTEN MIT SATZSTAND (Issue #174, Nutzer 26.11.2026, Design freigegeben – Canvas
    https://claude.ai/artifact/Dq7HkenhPJYsDP7JGRaZYz): Satzstand (3 / 2) rechts neben dem jeweiligen Namen, 15 px,
-   neutral dunkelgrau (Sieger fett, #1f2933), KEIN Rot; einzelne Sätze klein (11 px) unten rechts neben „Spiel n“
+   im HTS-Grün #187250 (Sieger fett; Nutzer 26.11.2026), KEIN Rot; einzelne Sätze klein (11 px) unten rechts neben „Spiel n“
    („11:7 · 9:11 · …“, bei Aufgabe „· Aufgabe“), Ergebnis-Plakette entfällt; laufend ohne Zwischenstand
    („laufend · Tisch n“); eingereiht/offen unverändert. LiveServer.koCard und CSS .km anpassen.
 
