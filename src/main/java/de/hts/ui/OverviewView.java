@@ -650,9 +650,10 @@ public final class OverviewView {
                 Tournament t = r.copyFrom() != null
                         ? store.copy(r.copyFrom(), r.copyMode(), r.name(), r.date(), r.tables(), r.test(), r.fileDir())
                         : store.create(r.name(), r.date(), r.tables(), r.fileDir(), r.test(), r.handicap());
-                if (dlg.lateFeeCents() > 0 || !dlg.worldUrl().isEmpty()) {
+                if (dlg.lateFeeCents() > 0 || !dlg.worldUrl().isEmpty() || dlg.checkinUntil() != null) {
                     t.setLateFeeCents(dlg.lateFeeCents());               // 1.0 (#82)
                     t.setWorldUrl(dlg.worldUrl());                       // 1.8.0 (#151)
+                    t.setCheckinUntil(dlg.checkinUntil());               // 1.9.0 (#164)
                     store.save(t);
                 }
                 refresh();
@@ -693,12 +694,14 @@ public final class OverviewView {
             return;
         }
         TournamentDialog dlg = new TournamentDialog(stage, s.name(), s.date(), s.tables(), false, s.file(), s.test(), List.of(), s.handicap())
-                .withLateFee(loaded.getLateFeeCents()).withWorldUrl(loaded.getWorldUrl());
+                .withLateFee(loaded.getLateFeeCents()).withWorldUrl(loaded.getWorldUrl())
+                .withCheckinUntil(loaded.getCheckinUntil());
         dlg.showAndWait().ifPresent(r -> {
             try {
                 Tournament t = loaded;
                 t.setLateFeeCents(dlg.lateFeeCents());                   // 1.0 (#82)
                 t.setWorldUrl(dlg.worldUrl());                           // 1.8.0 (#151)
+                t.setCheckinUntil(dlg.checkinUntil());                   // 1.9.0 (#164)
                 t.setTest(r.test());
                 t.setName(r.name());
                 t.setDate(r.date());

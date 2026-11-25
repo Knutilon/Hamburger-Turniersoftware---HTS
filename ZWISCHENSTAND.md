@@ -1,4 +1,4 @@
-# Zwischenstand HTS 1.8.0 (25.11.2026)
+# Zwischenstand HTS 1.9.0 (25.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -50,115 +50,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 - click-TT-Upload der Ergebnisdatei: Praxistest erfolgreich (Nutzer 15.11.2026); Einschränkung unter „Bekannte
   Grenzen“ in der Doku gestrichen (mit 1.1.0 ausgeliefert).
 
-## Feature-Sammlung für 1.9.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 1.10.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.5.x)
 
 1. TABLET: TEST AUF ECHTEM GERÄT (Issue #133, offen aus 1.5.0): Die Tablet-Funktionen von 1.5.0 auf einem echten
    Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
    Gerät; Ergebnisse als Bug/Feature melden.
-
-2. KLASSEN: FILTER „VERFÜGBAR“ JE KLASSE MERKEN (Nutzer 25.11.2026, 18:20, Issue #160): Auf der Seite „Klassen“ gelten die
-   Filter über der Liste „Verfügbar“ (Einzelklasse, Suche, Verein, Auswahl „Alle“/…, „nur passende“) bisher für alle
-   Klassen, sobald sie einmal gewählt sind. Künftig merkt sich HTS die Filter JE KLASSE: Wechsel zu einer anderen Klasse
-   zeigt deren eigene Filter (bei einer noch nie geöffneten Klasse die Vorgaben: „Alle Teilnehmenden“, alle Vereine,
-   „Alle“, „nur passende“ an, Suche leer); zurück zur ersten Klasse stellt deren Filter wieder her. Gemerkt für die
-   Sitzung (solange das Turnier offen ist; nicht in der Turnierdatei). Test: Filter in Klasse A setzen, zu B wechseln
-   (Vorgaben), zurück zu A (Filter wieder da).
-
-3. LIVE-SEITEN: FREIGESTELLTE ÜBER DEN GRUPPEN ZEIGEN (Nutzer 25.11.2026, 18:26, Issue #161): In einer Gruppenphase mit
-   Freistellung (S1–S4 direkt ins KO) erscheinen die Freigestellten bisher nirgends auf der Live-Seite. Künftig steht über
-   den Gruppenkacheln eine Karte „Freigestellt“ mit den Freigestellten in Setzreihenfolge (S1 … S4, Name, Verein; bei
-   Doppeln die Paarung) und dem Hinweis „direkt in der KO-Runde“. Ebenso auf der Spielerseite „Meine Spiele“ („Du bist
-   freigestellt – erstes Spiel in der KO-Runde“) und im Suchergebnis. Vornamen wie überall abgekürzt. Test: Gruppenphase mit Freistellung → Karte mit S1–S4 über den Gruppen.
-
-4. LIVE-SEITEN: KO-BAUM STATT NUR SPIELLISTE (Nutzer 25.11.2026, 18:27, Issue #162): In KO-Phasen (KO-System,
-   KO-Qualifikation, Platzierungspläne mit KO-Teil) zeigt die Live-Seite bisher je Runde eine Liste der Spiele. Künftig
-   als Vorgabe ein KO-Baum wie in HTS: Spalten je Runde (z. B. Achtelfinale · Viertelfinale · Halbfinale · Finale, dazu
-   Spiel um Platz 3), je Spiel eine Karte mit beiden Namen (Vorname abgekürzt, Verein klein, Herkunft z. B. „A2“, Sieger
-   fett), Ergebnis bzw. „laufend“/„eingereiht“; Verbindungslinien zwischen den Runden; Freilose als „Freilos“. Waagerecht
-   wischbar auf dem Handy (Rundentitel bleiben oben stehen), Karten so breit wie der längste Name (nie mit „…“ abkürzen).
-   Umschalter „Baum | Liste“ über der Phase (Wahl nur, solange die Seite offen ist – nichts im Browser speichern). Jede
-   Karte führt auf die Spielseite (…/spiel45). Aktualisierung alle 10 s wie bisher, gescrollte Position bleibt.
-   Test: 16er-Feld mit Freilosen, Spiel um Platz 3, Baum enthält alle Spiele.
-
-5. HANDY-ZUGANG ÜBER DAS HALLEN-WLAN ENTFERNEN (Nutzer 25.11.2026, 18:35, Issue #163 – nach Rückfrage so gemeint):
-   Seit dem Live-Server im Internet nicht mehr nötig. Entfernen (alles seit 1.0.0 hinter HtsApp.MOBILE_ENABLED ausgeblendet):
-   - Web-Server auf dem Laptop (Port 8080): LiveServer.start/stop/isRunning/port, localAddresses, liveUrl, handle();
-     Seite „Mobile Einstellungen“ (Page.MOBILE, Menüpunkt, Zustand, Starten/Beenden, Firewall-/WLAN-Hinweise),
-     HtsApp.MOBILE_ENABLED.
-   - (1) Live-Anzeige im Hallen-WLAN – NUR der lokale Server; der Seitenaufbau in LiveServer bleibt für den Live-Server
-     im Internet (LiveHost → serveLive) unverändert erhalten.
-   - (2) Anmeldung per Handy im WLAN: /anmeldung/… im lokalen Server, checkinUrl, „Anmeldung per Adresse sperren/öffnen“
-     (checkin-locked). Die Anmeldeseite (Namen suchen, Verein abhaken) NICHT wegwerfen, sondern für Punkt 6 auf den
-     Live-Server übernehmen.
-   - (3) Handyabmeldungen bestätigen: Knopf „Handyabmeldungen“ in der Teilnehmerliste und Dialog. Alte Turnierdateien mit
-     dem Zustand „Abmeldung per Handy“ (orange) bleiben lesbar; die Personen lassen sich wie bisher über die normale
-     Anwesenheit (Haken/Abmelden) ändern.
-   - (4) QR-Code-Aushang für das Hallen-WLAN (PdfReports mit WLAN-Name/Passwort) – NICHT der Live-QR-Aushang von 1.7.0.
-   - (5) Ergebnisse per Handy am Tisch: /ergebnis/…, resultUrl, Tisch-Schlüssel, Schalter phone-results und
-     phone-results-direct, Bestätigungsdialog askPhoneResults, pendingPhoneResults, PDF mit Tisch-QR-Codes.
-   - Turnierdateien mit den alten Feldern bleiben lesbar (Felder ignorieren, nicht mehr schreiben); Kompatibilitätstest
-     grün. Tests zu Handy-Anmeldung und Handy-Ergebnis entfernen bzw. auf den Seitenaufbau umstellen. Doku (Kapitel 12,
-     Hinweise in 1, 3, 11, 14), README, Handbuch, Protokoll-Dokument kürzen. Prüfen, dass kein Text mehr „Hallen-WLAN“,
-     „Handy-Zugang“, „Turnier-WLAN“ oder Port 8080 nennt.
-
-6. ONLINE-ANMELDUNG AM TURNIERTAG ÜBER DEN LIVE-SERVER (Nutzer 25.11.2026, 18:41/18:44, Issue #164):
-   - Am Turniertag hängt ein QR-Code aus; darüber melden sich Spieler/innen an („Ich bin da“) oder ab („Ich komme nicht“).
-     Betreuer/innen wählen ihren Verein und melden alle Anwesenden auf einmal an bzw. einzelne ab.
-   - Beim ANLEGEN (und Bearbeiten) des Turniers: Feld „Online-Anmeldung bis“ (Uhrzeit am Turniertag, z. B. 10:30).
-   - EIN-/AUSSCHALTEN auf der Seite „Live im Internet“ (Nutzer 25.11.2026, 18:54): Schalter „Online-Anmeldung zum Turnier“
-     (Vorgabe aus; ein nur, wenn eine Uhrzeit eingetragen ist – sonst Hinweis bzw. Uhrzeit dort ebenfalls änderbar), dazu
-     Uhrzeit, Anmelde-Link, „QR-Code-Aushang drucken“ und „Neuen Anmelde-Link erzeugen“. Ausschalten schließt die
-     Anmeldung sofort (Server lehnt ab, Seite „geschlossen“); Wiedereinschalten vor Ablauf öffnet sie mit demselben Link.
-     Online offen = Schalter an UND Turniertag bis zur Uhrzeit UND Turnier veröffentlicht;
-     danach ist ONLINE keine An- oder Abmeldung mehr möglich (Seite „Die Anmeldung ist geschlossen“). In HTS bleibt die
-     Anwesenheit wie bisher änderbar, solange Phase 1 der jeweiligen Klasse nicht gestartet ist.
-   - Link temporär: zufälliger Schlüssel (≥ 128 Bit) je Turnier, …/anmeldung/<Schlüssel>; nur im Zeitraum gültig, danach
-     wertlos; „Neuen Anmelde-Link erzeugen“ macht den alten sofort ungültig. QR-Code-Aushang (A4-PDF) mit Turniername,
-     Datum, „Anmeldung bis 10:30 Uhr“ und Logo des Ausrichters – Knopf auf „Live im Internet“ und beim Anlegen anbieten.
-   - Ablauf: HTS lädt Schlüssel und Uhrzeit mit dem Turnierstand hoch (Feld in der hochgeladenen Kopie bzw. eigener
-     Aufruf); der Server nimmt Meldungen nur mit gültigem Schlüssel im Zeitraum an und speichert nur Kennung,
-     anwesend/abwesend, Zeit (keine IP, keine Cookies). HTS holt die Meldungen alle 5–10 s ab
-     (GET /api/turniere/<ID>/anmeldungen mit dem geheimen Schlüssel, danach quittieren → Server löscht sie) und setzt
-     die Anwesenheit; Herkunft „online“ sichtbar in der Teilnehmerliste (Spalte bzw. Hinweis), Zurücknehmen mit einem Klick.
-   - Online-Abmeldung = „nicht angemeldet“ (keine endgültige Abmeldung; endgültig abmelden bleibt bei der Turnierleitung).
-     Endgültig Abgemeldete und Nachrücker erscheinen nicht. Ratenbremse je Schlüssel; Klassen schon gestartet → für diese
-     Klasse keine Online-Meldung.
-   - Datenschutz-Vorlage um einen Absatz „Anmeldung am Turniertag“ ergänzen (und dem Nutzer den Absatz für seine Fassung
-     schicken); Protokoll-Dokument, Anleitung, Handbuch. Tests: Meldung im Zeitraum, nach Ablauf abgelehnt, falscher/
-     alter Schlüssel abgelehnt, Verein anmelden, Abmeldung, Übernahme in HTS, gestartete Klasse gesperrt.
-
-7. LIVE-SEITEN: KNOPF „ZURÜCK ZUR TURNIERÜBERSICHT“ (Nutzer 25.11.2026, 19:07, Issue #165): Auf den Turnierseiten gibt es
-   bisher nur den Link „Alle Turniere“ ganz unten in der Fußzeile; Logo und Turniername oben führen zur Startseite DES
-   TURNIERS. Künftig oben im Kopf jeder Turnierseite (über bzw. links neben Logo und Turniername) ein gut sichtbarer Knopf
-   „← Alle Turniere“ zur Startseite https://<Server>/ (bei vergangenen Turnieren zu /vergangen). Auch auf Spielseiten,
-   „Meine Spiele“, Impressum, Datenschutz und Spenden. Nur auf dem Live-Server (nicht nötig, wenn es nur ein Turnier gibt –
-   trotzdem zeigen). Auf dem Handy mit großer Tippfläche (mind. 44 px), Text nie abkürzen.
-
-8. TEILNEHMENDE: „BEZAHLT“ NUR, WENN DAS TURNIER GEBÜHREN HAT (Nutzer 25.11.2026, 19:10, Issue #166): Spalten
-   „Bezahlt“ und „Gebühr“, der Hinweis „Angemeldet, aber noch nicht bezahlt – hellblau markiert“ (mit Zähler), die
-   hellblaue Markierung, die Aktionen „Bezahlt – bar/Überweisung“, „Gebühr erlassen“, „Verein abrechnen“, Quittung und
-   Kassenübersicht erscheinen nur, wenn im Turnier eine Gebühr eingestellt ist (Startgebühr > 0 in mindestens einer
-   Einzelklasse oder Nachmeldegebühr > 0). Ohne Gebühr: nur „Angemeldet“ – Haken genügt, nichts hellblau. Wird später
-   eine Gebühr eingetragen, erscheinen Spalten und Aktionen sofort (bisherige Zahlungsangaben bleiben erhalten).
-   Spaltenbreiten danach wieder mit Ui.fitColumns. Test: Turnier ohne Gebühren → keine Bezahlt-Spalte, kein Hinweis.
-
-9. IMPORTIERTE DOPPEL/MIXED SOFORT ALS DOPPELPAARUNGEN (Nutzer 25.11.2026, 19:13, Issue #167): Bisher merkt sich HTS die
-   Paarungen aus der click-TT-Datei nur (Spalte „Doppelpartner/in“ unter „Verfügbar“, Status „… Doppelpaarungen
-   gemerkt“); Doppelpaarung wird es erst, wenn beide am Turniertag angemeldet sind – im Demo-Turnier stehen deshalb
-   0 Doppel im Mixed. Künftig:
-   - Gemeldete Paarungen erscheinen beim Import sofort unter „Doppelpaarungen“ der Klasse (Doppel und Mixed).
-   - Ist eine/r der beiden noch nicht angemeldet, ist die Paarung markiert (z. B. orange Karte, Chip „nicht angemeldet:
-     Name“); sind beide angemeldet, normal. Endgültig abgemeldet → Paarung rot mit „Partner/in abgemeldet“ und Aktion
-     „Paarung auflösen“ (Übrige/r zurück unter „Verfügbar“ bzw. neu zulosen).
-   - Klasse starten bzw. auslosen ist gesperrt, solange eine Paarung markiert ist – Hinweis mit Liste der betroffenen
-     Paarungen und den Möglichkeiten „anmelden“, „Paarung auflösen“ oder „Paarung entfernen“. Ohne Partner Gemeldete
-     bleiben wie bisher unter „Verfügbar“ (zulosen möglich).
-   - Gilt auch für das Zuordnen von Hand und für kopierte Turniere; Nachrücker-Paarungen (Warteliste) bleiben unter
-     „Verfügbar“. Online-Anmeldung (Punkt 6) aktualisiert die Markierung sofort.
-   - Tests: Import mit Paarungen → Doppel in der Klasse, markiert; beide angemeldet → frei; Start gesperrt mit
-     verständlicher Meldung; Auflösen.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
@@ -182,6 +80,27 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 
 ## Umgesetzt
+
+1.9.0 (25.11.2026, Commit „HTS 1.9.0“, Closes #160 #161 #162 #163 #164 #165 #166 #167; alle Punkte außer #133 Tablet-Test):
+   - #163 Hallen-WLAN entfernt: LiveServer ohne eigenen Server (nur Seitenaufbau, forHost/forTest), WorkspaceView ohne
+     Page.MOBILE/mobilePage/askPhoneResults/„Handyabmeldungen bearbeiten“, HtsApp.MOBILE_ENABLED weg, PdfReports ohne
+     qrSheet/tableQrSheet, Tournament ohne Handy-Ergebnisse und checkinLocked; Dateifelder checkin-locked/phone-results*
+     werden ignoriert. Tests 0.35/0.42/1.0/1.1 entsprechend gekürzt.
+   - #164 Online-Anmeldung: Tournament.onlineCheckin/checkinUntil/checkinToken (26 Zeichen)/onlineMarks (Datei
+     „online-checkin“, „checkin-until“, „online-marks“), isOnlineCheckinOpen, canCheckinOnline, checkinOnline (abwesend =
+     UNKNOWN), undoOnline; LiveHost /anmeldung/<Schlüssel> (Seite, daten.json, POST melden; 120/min), Speicher
+     anmeldungen.txt, API GET/POST /api/turniere/<ID>/anmeldungen; Publisher.setCheckinPoll (alle 5 s, Quittung nach
+     Übernahme); WorkspaceView-Bereich „Online-Anmeldung zum Turnier“ (Schalter, Uhrzeit, Link, QR-Aushang
+     PdfReports.checkinQrPoster, neuer Link); TournamentDialog „Online-Anmeldung bis“; Teilnehmerliste „online“ +
+     „Online-Meldung zurücknehmen“. Datenschutz: neuer Abschnitt 6 (Vorlage + Fassung des Nutzers, separat geliefert).
+   - #167 Tournament.createRegisteredPairs (beim Import), isPairUnconfirmed, pairProblem (in attendanceProblem; DrawView
+     sperrt Auslosen); ClassesView markiert Paarungen (orange/rot mit Chip), Namen auf Paarungskarten nie abgekürzt.
+   - #160 ClassesView merkt Filter „Verfügbar“ je Klasse (Map, Sitzung).
+   - #166 Tournament.hasFees nur bei Gebühr > 0 € (alle Anzeigen hingen schon daran).
+   - #161 Karte „Freigestellt“ über den Gruppen, Hinweis auf „Meine Spiele“, Chip in der Suche (spieler.json „x“).
+   - #162 KO-Baum (koTree/koCard, Umschalter Baum|Liste ohne Speichern, Scrollposition bleibt beim Aktualisieren).
+   - #165 Knopf „← Alle Turniere“ (LiveServer.home, bei vergangenen Turnieren /vergangen; auch Impressum usw.).
+   - Tests: Version190Test (4), Version035Test angepasst; Demo-Datei src/test/resources/demoturnier-jugend-15.xml.
 
 1.8.0 (25.11.2026, Commit „HTS 1.8.0“, Closes #149 #150 #151 #152 #153 #154 #155 #156 #157 #158 #159; alle Punkte der
    Feature-Sammlung außer #133 Tablet-Test, der nur mit Gerät geht):

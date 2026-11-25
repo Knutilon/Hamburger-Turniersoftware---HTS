@@ -133,6 +133,85 @@ public final class Publisher implements AutoCloseable {
         return java.net.URLEncoder.encode(n, java.nio.charset.StandardCharsets.UTF_8);
     }
 
+    // --- 1.9.0 (#164): Online-Anmeldung abholen ----------------------------------------------------
+
+    /** Eine Online-Meldung vom Server. */
+    public record CheckinReport(long seq, String id, boolean present) {
+    }
+
+    public static final long CHECKIN_POLL_MS = 5_000;
+    private volatile java.util.function.BooleanSupplier checkinActive = () -> false;
+    private volatile Consumer<java.util.List<CheckinReport>> checkinSink;
+    private volatile long lastPoll;
+    private volatile boolean polling;
+    private volatile long pollInterval = CHECKIN_POLL_MS;
+
+    /**
+     * Meldungen der Online-Anmeldung abholen, solange {@code active} gilt (Schalter an, Turniertag). {@code sink} läuft
+     * im Programm-Thread; danach quittiert HTS, und der Server löscht die Meldungen.
+     */
+    public void setCheckinPoll(java.util.function.BooleanSupplier active, Consumer<java.util.List<CheckinReport>> sink) {
+        checkinActive = active == null ? () -> false : active;
+        checkinSink = sink;
+    }
+
+    /** Für Tests. */
+    void setCheckinPollInterval(long ms) {
+        pollInterval = ms;
+    }
+
+    private void pollCheckins() {
+        polling = true;
+        lastPoll = System.currentTimeMillis();
+        try {
+            HttpRequest r = HttpRequest.newBuilder(URI.create(base + "/api/turniere/" + id + "/anmeldungen")).timeout(Duration.ofSeconds(15))
+                    .header("Authorization", "Bearer " + key).header("X-HTS-Version", de.hts.HtsApp.VERSION).GET().build();
+            HttpResponse<String> resp = http.send(r, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() / 100 != 2) {
+                polling = false;
+                return;
+            }
+            java.util.List<CheckinReport> list = parseReports(resp.body());
+            if (list.isEmpty()) {
+                polling = false;
+                return;
+            }
+            long max = list.stream().mapToLong(CheckinReport::seq).max().orElse(-1);
+            Consumer<java.util.List<CheckinReport>> sink = checkinSink;
+            uiThread.accept(() -> {
+                try {
+                    if (sink != null) sink.accept(list);
+                } finally {
+                    timer.execute(() -> {
+                        try {
+                            request("POST", "/anmeldungen", ("bis=" + max).getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                                    "application/x-www-form-urlencoded");
+                        } catch (IOException | InterruptedException e) {
+                            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+                            // nicht quittiert: kommt beim nächsten Abholen noch einmal (Übernahme ist wiederholbar)
+                        } finally {
+                            polling = false;
+                        }
+                    });
+                }
+            });
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            polling = false;
+        }
+    }
+
+    private static final java.util.regex.Pattern REPORT = java.util.regex.Pattern.compile(
+            "\\{\"n\":(\\d+),\"id\":\"([A-Za-z0-9_-]{1,64})\",\"a\":([01])");
+
+    static java.util.List<CheckinReport> parseReports(String json) {
+        java.util.List<CheckinReport> out = new java.util.ArrayList<>();
+        if (json == null) return out;
+        java.util.regex.Matcher m = REPORT.matcher(json);
+        while (m.find()) out.add(new CheckinReport(Long.parseLong(m.group(1)), m.group(2), "1".equals(m.group(3))));
+        return out;
+    }
+
     /** Das Turnier hat sich geändert (Ergebnis, neue Phase, Tischvergabe …). */
     public void changed() {
         dirty = true;
@@ -144,6 +223,9 @@ public final class Publisher implements AutoCloseable {
 
     private void tick() {
         long now = System.currentTimeMillis();
+        if (checkinSink != null && !polling && now - lastPoll >= pollInterval && checkinActive.getAsBoolean()) {
+            pollCheckins();
+        }
         if (pending != null) {                                // Funkloch: nachholen
             if (now - lastAttempt >= retry) send(pending);
             return;

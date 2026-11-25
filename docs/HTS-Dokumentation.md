@@ -8,12 +8,13 @@
 
 # HTS – Hamburger Turniersoftware: Dokumentation
 
-Stand: 25.11.2026 · Programmversion **1.8.0**
+Stand: 25.11.2026 · Programmversion **1.9.0**
 
 ## Versionsverlauf der Dokumentation
 
 | Datum | Programmversion | Änderung |
 | --- | --- | --- |
+| 25.11.2026 | 1.9.0 | Online-Anmeldung am Turniertag über den Live-Server (QR-Code, „Online-Anmeldung bis“, Schalter auf „Live im Internet“) – neues Kapitel 12; Handy-Zugang im Hallen-WLAN entfernt (lokaler Server, Mobile Einstellungen, Anmeldung und Ergebnisse per Handy); gemeldete Doppel/Mixed sofort als Paarungen (offene markiert, Auslosen/Start gesperrt); Filter „Verfügbar“ je Klasse; „Bezahlt“ nur mit Gebühr > 0 €; Live-Seiten: KO-Baum, Freigestellte, Knopf „← Alle Turniere“ |
 | 25.11.2026 | 1.8.0 | Reiter „Programm“ (Dunkelmodus, Speicherorte, Einstellungen aus älterer Version übernehmen); neue Ablage „Dokumente\HTS“ mit „Export files“, Ausrichter und Protokoll im Programmordner; Turnierwelt-Link; neue Turniere veröffentlicht, Vornamen immer abgekürzt; Rückfrage „Live-Daten auch vom Webserver löschen?“; Live-Seiten: Startseite „Aktuelle“/„Vergangene Turniere“ mit Ausrichter, eigene Seite je Spiel, nichts im Browser gespeichert (Lesezeichen „Meine Spiele“), Seite „Spenden“; Spiel um Platz 3 nach dem Finale nummeriert; Rechtstexte per update.sh |
 | 24.11.2026 | 1.7.0 | Neue Farben (neutral, Grün #187250, Mint) und neues Logo; Live-Seiten neu (Reiter je Phase, Gruppenkacheln, Spielersuche, Knopf „Tische“, Aktualisierung ohne Neuladen, lesbare Adresse Name_TT_MM_JJJJ); QR-Code-Aushang; Webserver-Reiter mit Admin-Passwort, Adresse und Schlüssel verschlüsselt; Protokoll und Fehlerbericht; Logo als SVG; Freistellung 6 × 2 mit Auslosung je Hälfte; Knopftexte ohne „…“ |
 | 24.11.2026 | 1.6.0 | Live-Server für das Internet (Paket hts-server, Einrichtung mit install.sh auf Ubuntu 24.04: HTTPS, Firewall, automatische Updates; Startseite mit allen Turnieren, Impressum/Datenschutz, Aufbewahrung 90 Tage) – neuer Abschnitt „Der Live-Server“ in Kapitel 11 |
@@ -46,7 +47,7 @@ Das Programm deckt den ganzen Turniertag ab:
 - Qualifikationen nach dem Muster der Hamburger Einzelmeisterschaften (HEM): Vor- und Hauptqualifikation mit Nachrückerrängen
 - zum Üben: Testturniere, in denen alle Spiele per Knopfdruck simuliert werden
 - eine Präsentationsansicht für einen zweiten Bildschirm (Beamer, Fernseher) mit wechselnden Ansichten
-- Anwesenheit am Turniertag erfassen, auch per Handy über einen QR-Code; eine Live-Anzeige für die Handys der Teilnehmenden im lokalen WLAN (Abschnitt 12)
+- Anwesenheit am Turniertag erfassen, seit 1.9.0 auch über die Online-Anmeldung per QR-Code auf dem Live-Server (Abschnitt 12)
 - Vorgabeturniere mit Punktevorsprung nach TTR sowie 2er und 3er Turniere (Mannschaftskämpfe; Abschnitt 13)
 
 ### Systemvoraussetzungen
@@ -62,7 +63,7 @@ Das Programm deckt den ganzen Turniertag ab:
 | Grafik | beliebig; ohne passenden Grafiktreiber (z. B. in einer virtuellen Maschine) zeichnet JavaFX per Software – langsamer, aber lauffähig | aktueller Grafiktreiber (Direct3D) |
 | Drucker | optional; für Spielzettel ein Standarddrucker, ideal mit A6-Papier | – |
 | Internet | nicht nötig, HTS läuft vollständig offline | – |
-| WLAN-Router | nur für den Handy-Zugang (Abschnitt 12): Laptop und Handys im selben WLAN, ohne Internetanschluss | Haupt-WLAN eines Routers, kein Gäste-WLAN |
+| Internet | für „Live im Internet“ und die Online-Anmeldung (Abschnitte 11 und 12): Laptop mit Internet (z. B. über das Handy) | WLAN oder mobiles Netz |
 
 **Tablet-Modus (seit 1.5.0):** Info → „Bedienung“ → Tablet-Modus hält die großen Bedienelemente dauerhaft. Am Tablet öffnet ein Antippen, was mit der Maus ein Doppelklick öffnet; gesperrte Knöpfe zeigen ihren Hinweis per Antippen; beim Antippen eines Eingabefelds öffnet sich unter Windows die Bildschirmtastatur; die Teilnehmerliste hat je Zeile ein „⋮“ für die Aktionen; in der Auslosung tauscht man per Antippen (erst auswählen, dann Ziel antippen); Gruppen und KO-Baum lassen sich mit zwei Fingern (bzw. Strg + Mausrad) zoomen; hochkant steht auf der Seite „Tische“ die Warteschlange unter den Tischen. Bei längeren Vorgängen erscheint „Bitte warten“. Auf einem echten Tablet ist das noch nicht geprüft.
 
@@ -139,7 +140,7 @@ Die weiße Kopfleiste (seit 1.7.0; vorher dunkelblau) mit grüner Linie zeigt li
 | Präsentationsansicht | Anzeige auf einem zweiten Bildschirm starten, Wechselzeit und Ansichten wählen (Abschnitt 6) |
 | Live im Internet | Turnier auf dem Webserver veröffentlichen, Datenschutz (Abschnitt 11, seit 1.5.0) |
 | Urkunden drucken | ab Turnierstart: Urkunden der feststehenden Plätze auswählen, Texte einstellen, Vorschau, PDF und Druck (Abschnitt 9, seit 1.4.0) |
-| Mobile Einstellungen | ausgeblendet seit 1.0.0: Handy-Zugang im WLAN (Abschnitt 12) |
+| Live im Internet | Veröffentlichen, Online-Anmeldung, QR-Code-Aushänge (Abschnitte 11 und 12) |
 | Vorgaberegeln | nur im Vorgabeturnier: Art der Vorgabe und Grenzen (Abschnitt 13) |
 
 „Spiele“ ist ausgegraut, bis das Turnier oder eine Klasse gestartet ist. Wird das Fenster schmal, bricht das Menü in eine zweite Zeile um; unter 1200 Pixeln Breite entfällt der Schriftzug „Hamburger Turniersoftware“, der Turniername bricht notfalls um.
@@ -183,7 +184,7 @@ Auf der Seite „Teilnehmende“ liest **XML der Teilnehmenden importieren** den
 1. XML-Datei wählen; HTS zeigt eine Vorschau mit Teilnehmenden und Konkurrenzen. Jede Konkurrenz hat einen Haken **„Importieren“**: Abgewählte Klassen werden nicht angelegt, und wer nur in abgewählten Klassen gemeldet ist, wird nicht übernommen. Die Zahlen im Dialog passen sich an.
 2. Nach dem Bestätigen werden fehlende Klassen angelegt; sie gelten als **„aus XML importiert“** (wichtig für die Startsperre, Abschnitt 4).
 3. Die Gemeldeten werden als **Meldung** übernommen: „In der Klasse“ beginnt bei 0. Wer am Turniertag anwesend ist (Spalte „Angemeldet“), erscheint in der Klasse unter „Verfügbar“ und wird von dort übernommen (Abschnitt 4).
-4. **Doppel:** Der in click-TT gemeldete Partner wird gemerkt; „Alle anwesenden Gemeldeten übernehmen“ bildet daraus die Paarung. Wer **ohne Partner/in** gemeldet ist, steht in der Doppelklasse unter „Verfügbar“ (zählt bei „Partner zulosen“ mit).
+4. **Doppel:** Der in click-TT gemeldete Partner wird gemerkt; „Alle anwesenden Gemeldeten übernehmen“ bildet daraus die Paarung. Wer **ohne Partner/in** gemeldet ist, steht in der Doppelklasse unter „Verfügbar“ (zählt bei „Partner zulosen“ mit). Seit 1.9.0 stehen gemeldete Paarungen (Doppel und Mixed) schon nach dem Import unter „Doppelpaarungen“; solange eine/r der beiden noch nicht angemeldet ist, ist die Paarung orange markiert („nicht angemeldet: Name“), bei endgültig abgemeldeter Partnerin bzw. abgemeldetem Partner rot („Paarung auflösen“). Auslosen und Starten der Klasse sind so lange gesperrt.
 5. Wartelisten-Meldungen sind **Nachrücker**: Sie kommen nicht in die Klasse, sondern auf die Warteliste (Spalte „Nachrücker“).
 
 Ein erneuter Import ergänzt und aktualisiert, löscht aber niemanden. HTS legt eine Kopie der importierten Datei ab; sie ist die Grundlage für den späteren click-TT-Export (Abschnitt 10).
@@ -202,19 +203,18 @@ Ein erneuter Import ergänzt und aktualisiert, löscht aber niemanden. HTS legt 
 
 ### Anwesenheit am Turniertag
 
-Die Spalte **„Angemeldet“** bedeutet: am Turniertag anwesend. Sie lässt sich per Klick abhaken; per Handy melden sich Teilnehmende bzw. Betreuende über die Anmeldeseite an (Abschnitt 12).
+Die Spalte **„Angemeldet“** bedeutet: am Turniertag anwesend. Sie lässt sich per Klick abhaken; seit 1.9.0 melden sich Teilnehmende bzw. Betreuende auch über die Online-Anmeldung an oder ab (Abschnitt 12) – solche Zeilen zeigen neben dem Haken „online“, und „Aktion für Markierte → Online-Meldung zurücknehmen“ stellt den Stand davor wieder her.
 
 | Zustand | Darstellung | Bedeutung |
 | --- | --- | --- |
 | offen | leeres Kästchen | noch nicht angemeldet |
 | angemeldet | Haken | anwesend |
-| Abmeldung per Handy | Zeile orange, „Abmeldung ?“ | per Handy als „nicht anwesend“ gemeldet – die Turnierleitung muss bestätigen |
+| Abmeldung per Handy | Zeile orange, „Abmeldung ?“ | nur noch in Turnierdateien bis 1.8.0 (Handy-Zugang im Hallen-WLAN) – über „Aktion für Markierte“ ändern |
 | endgültig abgemeldet | Zeile gelb, „abgemeldet“ | spielt nicht; nur die Turnierleitung kann das zurücknehmen |
 
 Über der Liste stehen in einer Zeile:
 
 - **Aktion für Markierte wählen ▾:** angemeldet (anwesend), endgültig abmelden, Abmeldung zurücknehmen – jeweils für die markierten Zeilen.
-- **Handyabmeldungen bearbeiten ▾:** alle bestätigen, Markierte bzw. alle zurück auf offen. Das Menü erscheint nur, solange der Handy-Zugang läuft oder noch Handyabmeldungen offen sind.
 - **Abgemeldete als PDF:** Liste der endgültig Abgemeldeten je Klasse (Abschnitt 9); aktiv, sobald mindestens eine Person endgültig abgemeldet ist.
 - **Rechtsklick** auf eine Zeile bietet dieselben Aktionen für diese Person.
 
@@ -247,7 +247,7 @@ Eine Klasse ist eine Konkurrenz, z. B. „Mädchen U15 Einzel“. Links steht di
 
 Jugendliche dürfen sich zusätzlich bei Erwachsenen bzw. Damen melden. Jahrgangsgrenzen sind optional (z. B. „Jg. 2012 und jünger“). Die Höchstzahl ist nur eine Kontrolle: Wer über der Grenze gemeldet ist, wird hervorgehoben.
 
-**Startgebühr** (seit 1.0.0): Jede Klasse hat eine Startgebühr – aus click-TT vorbelegt, im Dialog änderbar. Gebühren zählen nur für Einzelklassen; Doppel sind gebührenfrei. Die Nachmeldegebühr gilt je Turnier für alle, die nicht in der click-TT-Datei standen (Turnierübersicht → **Bearbeiten**). Zahlung und Kasse: Abschnitt 3, „Startgebühren“.
+**Startgebühr** (seit 1.0.0): Jede Klasse hat eine Startgebühr – aus click-TT vorbelegt, im Dialog änderbar. Gebühren zählen nur für Einzelklassen; Doppel sind gebührenfrei. Die Nachmeldegebühr gilt je Turnier für alle, die nicht in der click-TT-Datei standen (Turnierübersicht → **Bearbeiten**). Zahlung und Kasse: Abschnitt 3, „Startgebühren“. Seit 1.9.0 gibt es Spalten „Bezahlt“ und „Gebühr“, den hellblauen Hinweis und alle Zahlungsaktionen nur, wenn eine Gebühr über 0 € eingestellt ist (Startgebühr einer Einzelklasse oder Nachmeldegebühr) – sonst genügt der Haken „Angemeldet“.
 
 **Zeitplan** (seit 1.0.0): Mit „mit Zeitplan“ und den Minuten je Runde beginnt Runde n frühestens Start + (n − 1) × Rundendauer; die Runden werden nacheinander eingereiht. Ist eine Runde vor dem Zeitplan fertig, fragt HTS je Gruppe bzw. Runde „Jetzt starten“ oder „Warten bis hh:mm Uhr“; wartende Runden stehen im Phasen-Reiter mit **Runde jetzt starten** und werden zur geplanten Zeit automatisch eingereiht. Seit 1.1.0:
 
@@ -277,7 +277,7 @@ Wer eine Klasse in der Liste wählt, landet direkt in der **aktuellsten Phase**;
 - **Verfügbar** (links) = angemeldete (anwesende) Personen, die noch nicht in der Klasse sind; **In der Klasse** (rechts) = spielt mit.
 - **Alle anwesenden Gemeldeten übernehmen** holt alle angemeldeten Gemeldeten dieser Klasse auf einmal herein (Doppel mit dem gemeldeten Partner).
 - Zuordnen per Drag & Drop, Doppelklick oder Pfeilknöpfe; eine Person kann in mehreren Klassen spielen. Nachrücker zieht die Turnierleitung von Hand in die Klasse. Wer zurück nach „Verfügbar“ gezogen wird, bleibt angemeldet und ist wieder gemeldet bzw. Nachrücker (seit 0.42.0).
-- Filter: Suche (Vorname, Nachname, Verein) und Geschlecht; bei „Verfügbar“ zusätzlich „nur passende“ (Alter und Geschlecht der Klasse). Den Vereinsfilter (durchsuchbar) gibt es nur in Doppelklassen – dort hilft er beim Zusammenstellen der Paare.
+- Filter: Suche (Vorname, Nachname, Verein) und Geschlecht; bei „Verfügbar“ zusätzlich „nur passende“ (Alter und Geschlecht der Klasse). Den Vereinsfilter (durchsuchbar) gibt es nur in Doppelklassen – dort hilft er beim Zusammenstellen der Paare. Seit 1.9.0 merkt sich HTS die Filter über „Verfügbar“ je Klasse (solange das Turnier offen ist); eine noch nicht geöffnete Klasse beginnt mit den Vorgaben.
 - Die Nachrücker-Spalte zeigt, wer für diese Klasse auf der Warteliste stand.
 
 **Startsperre für importierte Klassen:** Eine Klasse „aus XML importiert“ kann erst starten, wenn alle Gemeldeten angemeldet oder endgültig abgemeldet sind (Nachrücker zählen nicht). Solange das nicht so ist, trägt der Klassenkopf die Marke „Start gesperrt“, und links neben **Teilnehmende fertig – Modus festlegen** steht der Hinweis „XX Gemeldete noch nicht an- oder abgemeldet.“ mit dem Link **Offene Personen anzeigen** (öffnet „Teilnehmende“ mit dieser Klasse im Filter). „Turnier starten“ startet die übrigen bereiten Klassen und nennt die gesperrten.
@@ -793,7 +793,7 @@ Alle Ausdrucke entstehen als PDF und öffnen sich im eingebauten PDF-Viewer. Nur
 | Gesamtergebnis | Kopfzeile → Ergebnisse exportieren | A4 hoch | Endergebnis aller Klassen, jede Klasse auf neuer Seite |
 | Qualifikation | Phasen-Reiter → PDF / Drucken ▾ | A4 | Listen der Qualifizierten und Nachrücker mit Herkunft („A2 Name (Verein)“), Spielplan der Runden |
 | Abgemeldete | Teilnehmende → Abgemeldete als PDF | A4 hoch | endgültig Abgemeldete je Klasse: Name, Vorname, Verein, TTR, abgemeldet durch Handy oder Turnierleitung; sortiert nach Klasse, dann Name |
-| QR-Code-Aushang | Mobile Einstellungen → QR-Codes drucken | A4 | QR-Codes „Live-Anzeige“ und „Anmeldung am Turniertag“ mit Adressen, Felder für WLAN-Name und Passwort |
+| QR-Code-Aushang Online-Anmeldung | Live im Internet → Online-Anmeldung → QR-Code-Aushang drucken | A4 | QR-Code zum Anmelde-Link, Turniername, Datum, „Hier anmelden bis … Uhr“, Logo des Ausrichters (seit 1.9.0) |
 | Spielzettel 2er/3er Turnier | wie Spielzettel | A4 | Schema der Partien, Felder für die Aufstellung, Teams mit TTR, ggf. Vorgabe-Tabelle |
 
 ### Zettel-Design (seit 1.4.0)
@@ -890,7 +890,7 @@ Die Export-Markierung gibt es nur auf der Seite „Spiele“ und nur für abgesc
 
 ## 11. Live im Internet (seit 1.5.0)
 
-Ergebnisse lassen sich im Internet einsehen – nur Einsehen, vom Server fließt nichts zurück. Der Handy-Zugang im Hallen-WLAN (unten) bleibt ausgeblendet.
+Ergebnisse lassen sich im Internet einsehen. Vom Server fließen nur die Meldungen der Online-Anmeldung zurück (seit 1.9.0, Abschnitt 12). Den früheren Handy-Zugang im Hallen-WLAN gibt es seit 1.9.0 nicht mehr.
 
 1. Turnierübersicht → **Webserver**: Adresse und geheimer Schlüssel eintragen, **Verbindung testen**.
 2. Im Turnier → **Live im Internet**: **Dieses Turnier veröffentlichen** (seit 1.8.0 bei neuen, kopierten und importierten Turnieren schon eingeschaltet, bei Testturnieren nicht). HTS lädt nach jeder Änderung den Stand hoch (höchstens alle 5 Sekunden). Unten rechts steht „Live: veröffentlicht vor 5 s“; bei Funkloch „keine Verbindung – wird nachgeholt“ – der letzte Stand wird alle 10 Sekunden erneut gesendet.
@@ -920,26 +920,22 @@ Was Zuschauer sehen:
 | …/live/<Turnier>/<Klasse>/spiel45 | seit 1.8.0 eine Seite je Spiel (Klassenname mit „_“ statt Leerzeichen; ab Phase 2 `…/<Klasse>/phase2/spiel3`): Spieler mit Verein, Tisch, Status, Ergebnis und Sätze, **Link kopieren** |
 | …/impressum, …/datenschutz, …/spenden | Impressum, Datenschutzerklärung und Seite „Spenden“ (auf jeder Seite verlinkt) |
 
-**Aufbau der Live-Seiten (seit 1.7.0):** oben Logo, Turniername, Datum und Stand, darunter das **Suchfeld** (Vor-/Nachname oder Verein über alle Klassen; Treffer mit Klassen und dem Link **Meine Spiele**, den man seit 1.8.0 als Lesezeichen speichert) und die Leiste **Tische** + je Klasse ein Knopf. Eine Klasse hat je Phase einen Reiter („Phase 1 · Gruppen“, „Phase 2 · KO-Runde“ …; die laufende ist vorgewählt) und den Reiter **Ergebnis** (Zwischenstand bzw. Endergebnis). Gruppen erscheinen als **Kacheln** mit Status (läuft, beendet, wartet), Fortschritt („5 von 6 Spielen“) und aktuellem Ersten – **antippen** zeigt die Tabelle, **Spiele anzeigen** die Spiele der Gruppe. KO-Phasen stehen als Liste je Runde. Laufende Spiele heißen schlicht **„laufend“** (ohne Punktestand), beendete zeigen Ergebnis und Sätze. Jedes Spiel führt beim Antippen auf seine eigene Seite. Spielnummern zählen je Klasse und Phase und bleiben fest: Das Spiel um Platz 3 bekommt seit 1.8.0 die Nummer nach dem Finale, wird aber weiterhin vor dem Finale aufgerufen.
+**Aufbau der Live-Seiten (seit 1.7.0):** oben Logo, Turniername, Datum und Stand, darunter das **Suchfeld** (Vor-/Nachname oder Verein über alle Klassen; Treffer mit Klassen und dem Link **Meine Spiele**, den man seit 1.8.0 als Lesezeichen speichert) und die Leiste **Tische** + je Klasse ein Knopf. Eine Klasse hat je Phase einen Reiter („Phase 1 · Gruppen“, „Phase 2 · KO-Runde“ …; die laufende ist vorgewählt) und den Reiter **Ergebnis** (Zwischenstand bzw. Endergebnis). Gruppen erscheinen als **Kacheln** mit Status (läuft, beendet, wartet), Fortschritt („5 von 6 Spielen“) und aktuellem Ersten – **antippen** zeigt die Tabelle, **Spiele anzeigen** die Spiele der Gruppe. KO-Phasen stehen als Liste je Runde. Laufende Spiele heißen schlicht **„laufend“** (ohne Punktestand), beendete zeigen Ergebnis und Sätze. Jedes Spiel führt beim Antippen auf seine eigene Seite. Spielnummern zählen je Klasse und Phase und bleiben fest: Das Spiel um Platz 3 bekommt seit 1.8.0 die Nummer nach dem Finale, wird aber weiterhin vor dem Finale aufgerufen. Seit 1.9.0: oben auf jeder Turnierseite der Knopf **← Alle Turniere** zur Startseite; KO-Phasen erscheinen als **KO-Baum** (Spalten je Runde, waagerecht wischbar, Spiel um Platz 3 unter dem Finale, Umschalter **Baum | Liste**); in Gruppenphasen mit Freistellung steht über den Gruppen die Karte **Freigestellt** (S1–S4, direkt in der KO-Runde) – auch auf „Meine Spiele“ und in der Suche.
 
 Die Seiten aktualisieren sich alle 10 Sekunden ohne Neuladen – aufgeklappte Kacheln, der gewählte Reiter und der Suchtext bleiben. Nach **Nur Endergebnis behalten** zeigt die Turnierseite nur noch die Endergebnisse; **Live-Daten löschen** entfernt das Turnier sofort. Spätestens 90 Tage nach der letzten Änderung löscht der Server ein Turnier von selbst. Keine Cookies, keine Zugriffsprotokolle, keine Inhalte von Drittanbietern und seit 1.8.0 auch nichts im Browser gespeichert (kein Local oder Session Storage); Suchmaschinen werden von den Turnierseiten ferngehalten. Neue Versionen spielt **`./update.sh`** aus dem Ordner des neuen Pakets ein (bei Problemen automatisch zurück zur vorigen Version). Die Schnittstelle beschreibt docs/WEBSERVER-PROTOKOLL.md.
 
-## 12. Handy-Zugang (Mobile Einstellungen, ausgeblendet)
+## 12. Online-Anmeldung am Turniertag (seit 1.9.0)
 
-> **Hinweis (ab 1.0.0):** Die Seite „Mobile Einstellungen“ und damit der Handy-Zugang sind derzeit ausgeblendet; die Funktionen bleiben im Programm und kommen später wieder. Vorbereitet (seit 1.1.0, ebenfalls ausgeblendet): **Ergebnisse per Handy eintragen** mit einem QR-Code je Tisch; gemeldete Ergebnisse bestätigt die Turnierleitung. Für die Live-Anzeige im Internet gibt es seit 1.6.0 den Live-Server (Abschnitt 11).
+Am Turniertag melden sich Teilnehmende über einen QR-Code selbst an oder ab; Betreuende können ihren ganzen Verein anmelden. Das läuft über den Live-Server (Abschnitt 11) – das Turnier muss veröffentlicht werden.
 
-Über das lokale WLAN können Teilnehmende und Betreuende mit dem Handy die **Live-Anzeige** ansehen und sich **am Turniertag anmelden**. HTS stellt dafür auf dem Laptop eine kleine Webseite bereit (fester Port 8080); ein Internetanschluss ist nicht nötig.
+1. **Uhrzeit festlegen:** beim Anlegen bzw. unter **Bearbeiten** das Feld **Online-Anmeldung bis** (z. B. 10:30) oder auf der Seite **Live im Internet** im Bereich „Online-Anmeldung zum Turnier“.
+2. **Einschalten:** Schalter **Online-Anmeldung einschalten** (Vorgabe aus). Darunter stehen der Anmelde-Link, **Link kopieren**, **QR-Code-Aushang drucken** (A4 mit Turniername, Datum, „Hier anmelden bis 10:30 Uhr“ und Logo des Ausrichters) und **Neuen Anmelde-Link erzeugen** (der alte Link und gedruckte QR-Codes werden sofort ungültig).
+3. **Am Turniertag:** Spieler/innen scannen den Code, suchen ihren Namen und tippen **Ich bin da – anmelden** bzw. **Ich komme nicht – abmelden**. Betreuer/innen wählen ihren Verein, haken die Personen ab und melden sie gemeinsam an oder ab.
+4. **In HTS:** Die Meldungen kommen nach wenigen Sekunden an (HTS holt sie mit dem geheimen Schlüssel ab; danach löscht der Server sie). In der Teilnehmerliste steht neben dem Haken „online“; **Aktion für Markierte → Online-Meldung zurücknehmen** stellt den Stand davor wieder her. Jede Änderung von Hand ersetzt die Online-Meldung.
 
-**Seite „Mobile Einstellungen“:**
+Regeln: Online offen ist die Anmeldung nur, wenn der Schalter an ist, heute der Turniertag ist und die Uhrzeit noch nicht erreicht ist (sowie nicht alle Klassen beendet sind). Ausschalten schließt sie sofort. Eine **Online-Abmeldung** heißt „nicht angemeldet“ – endgültig abmelden bleibt bei der Turnierleitung. Endgültig Abgemeldete, Nachrücker und Personen, deren Klassen schon laufen, können sich online nicht mehr an- oder abmelden. Nach der Uhrzeit bleibt die Anwesenheit in HTS wie bisher änderbar, bis Phase 1 der Klasse gestartet ist. Der Server speichert keine IP-Adressen und setzt keine Cookies; die Datenschutzerklärung hat dafür einen eigenen Abschnitt.
 
-- Zustand, z. B. „Handy-Zugang: läuft (Port 8080) · Anmeldung per Adresse: offen“.
-- **Handy-Zugang starten / beenden**, **QR-Codes drucken**, **Anmeldung per Adresse sperren / wieder öffnen**.
-- Die Adressen der Live-Anzeige und der Anmeldung mit QR-Code-Vorschau.
-- Hinweise: Laptop und Handys müssen im selben WLAN sein – das Haupt-WLAN des Routers nutzen, nicht das Gäste-WLAN (es trennt die Geräte voneinander). Beim ersten Start fragt die Windows-Firewall nach – „Private Netzwerke“ erlauben. Die QR-Codes erst drucken, wenn der Laptop im Turnier-WLAN ist (die Adresse hängt vom Netz ab).
-
-**Live-Anzeige (nur lesend):** Tische und laufende Spiele, Klassen mit Gruppen, KO-Runden und Qualifikation (mit Herkunft „A2“), Endergebnisse sowie „Meine Spiele“ / „Meine Gruppe“ – das Handy merkt sich den gewählten Namen. Die Seite aktualisiert sich alle 10 Sekunden.
-
-**Anmeldung am Turniertag:** Die Adresse enthält einen geheimen Schlüssel (nur über den QR-Code erreichbar). Teilnehmende suchen ihren Namen und melden sich „anwesend“; Betreuende wählen ihren Verein und haken die Anwesenden ab. „Nicht anwesend“ wird zur Handyabmeldung (orange), die die Turnierleitung bestätigt; endgültig Abgemeldete ändert nur die Turnierleitung. Nachrücker erscheinen nicht. Die Anmeldung lässt sich sperren und wieder öffnen; sie endet automatisch, wenn alle Klassen beendet sind.
+> **Entfallen (1.9.0):** Der Handy-Zugang über das Hallen-WLAN (eigener Server auf dem Laptop, Port 8080, Seite „Mobile Einstellungen“, Anmeldung und Ergebnisse per Handy, WLAN-QR-Codes). Turnierdateien mit diesen Einstellungen lassen sich weiter öffnen.
 
 ## 13. Vorgabeturnier sowie 2er und 3er Turnier
 
@@ -986,7 +982,7 @@ Neuere Versionen öffnen ältere Turnierdateien (Zusage seit 0.42.0; jede Datei 
 
 - Java 21 und JavaFX 21.0.8, ausgeliefert mit eigener Java-Laufzeit (Eclipse Temurin 21.0.13) – je ein Paket für Windows (x64), Linux (x86_64) und macOS (Apple M)
 - PDF: Apache PDFBox 3.0.8 (Apache-Lizenz 2.0, Hinweise im Ordner `Lizenzen`)
-- Handy-Zugang: eingebauter Web-Server von Java, nur im lokalen Netz, Port 8080; die Live-Anzeige ist nur lesend, die Anmeldung braucht den Schlüssel aus dem QR-Code
+- Live-Server im Internet: eigenes Paket hts-server (Java 21), Anleitung in docs/LIVE-SERVER-ANLEITUNG.md
 - Abhängigkeiten und Sicherheitslücken werden alle 6 Monate geprüft (Datei `docs/ABHAENGIGKEITEN.md` im Quellcode)
 - Lizenz: GNU Affero General Public License v3.0 oder später (Datei `LICENSE.txt`, Lizenzhinweis in `NOTICE.txt`); die Handy-Seiten verlinken den Quellcode (AGPL § 13); die Lizenzen von JavaFX und der Java-Laufzeit liegen im Ordner `Lizenzen`
 - Quellcode und Issues: GitHub-Projekt „Hamburger-Turniersoftware---HTS“
@@ -996,7 +992,6 @@ Neuere Versionen öffnen ältere Turnierdateien (Zusage seit 0.42.0; jede Datei 
 
 - Eine Aufgabe wirkt nur in der Phase, in der sie passiert; für eine spätere Phase muss die Partei von Hand berücksichtigt werden.
 - Gruppen lassen sich nur vor dem Start der Phase per Drag & Drop ändern.
-- Der Handy-Zugang funktioniert nicht in WLANs, die Geräte voneinander trennen (Gäste-WLAN).
 - „Fertiges Turnier importieren“ übernimmt nur Phase 1 je Konkurrenz.
 - Ein Tisch lässt sich nur deaktivieren, solange kein Spiel an ihm liegt.
 
@@ -1014,10 +1009,10 @@ Neuere Versionen öffnen ältere Turnierdateien (Zusage seit 0.42.0; jede Datei 
 | Nachrücker Rang x | Stufe im Qualifikationsmodus: rückt nach, wenn Qualifizierte absagen |
 | Nachrücker (Warteliste) | in click-TT auf der Warteliste gemeldet; zählt nicht zu den Angemeldeten |
 | Meldung | in click-TT für eine Klasse gemeldet; kommt erst nach der Anmeldung am Turniertag in die Klasse |
-| Angemeldet | am Turniertag anwesend (Haken oder per Handy) |
+| Angemeldet | am Turniertag anwesend (Haken oder Online-Anmeldung) |
 | Startsperre | importierte Klasse startet erst, wenn alle Gemeldeten an- oder abgemeldet sind |
 | Setzplatz | Rangfolge nach TTR in einer importierten Klasse |
-| Handy-Zugang | Live-Anzeige und Anmeldung per Handy im lokalen WLAN |
+| Online-Anmeldung | An- und Abmeldung am Turniertag per QR-Code über den Live-Server (seit 1.9.0) |
 | Vorgabeturnier | Turnier mit Punktevorsprung nach TTR-Unterschied |
 | nicht gespielt | Status offener Spiele nach „Phase vorzeitig beenden“; zählt nicht, kein Export |
 | Testturnier | Übungsturnier, in dem alle offenen Spiele per Würfel-Knopf simuliert werden können |

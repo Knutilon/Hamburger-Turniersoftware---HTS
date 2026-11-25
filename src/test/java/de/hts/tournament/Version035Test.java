@@ -12,7 +12,6 @@ import de.hts.persistence.TournamentFile;
 import de.hts.player.Attendance;
 import de.hts.player.Player;
 import de.hts.player.Sex;
-import de.hts.web.LiveServer;
 import de.hts.web.QrCode;
 import org.junit.jupiter.api.Test;
 
@@ -103,8 +102,16 @@ class Version035Test {
         DoublesPair pair = t.pairOf(byName(t, "S1"), hd).orElseThrow();
         assertTrue(pair.isComplete());
         assertEquals(byName(t, "S2"), pair.partnerOf(byName(t, "S1")), "mit dem gemeldeten Partner");
+        // 1.9.0 (#167): gemeldete Paarungen stehen schon nach dem Import in der Klasse – S4 fehlt noch → markiert
         DoublesPair half = t.pairOf(byName(t, "S3"), hd).orElseThrow();
-        assertFalse(half.isComplete(), "Partner S4 nicht da → ohne Partner");
+        assertTrue(half.isComplete(), "gemeldete Paarung sofort angelegt");
+        assertTrue(t.isPairUnconfirmed(half), "S4 noch nicht angemeldet → markiert");
+        assertFalse(t.isPairUnconfirmed(pair));
+        assertNotNull(t.pairProblem(hd), "Auslosen/Start gesperrt");
+        t.setAttendance(byName(t, "S4"), Attendance.PRESENT);
+        assertNull(t.pairProblem(hd));
+        t.setAttendance(byName(t, "S4"), Attendance.WITHDRAWN);
+        assertTrue(t.pairProblem(hd).contains("Partner/in abgemeldet"));
     }
 
     @Test
@@ -135,20 +142,20 @@ class Version035Test {
     }
 
     @Test
-    void anmeldungPerHandy() {
+    void anmeldungOnline() {
+        // 1.9.0 (#164): Online-Anmeldung statt Anmeldung per Handy im Hallen-WLAN
         Tournament t = imported();
         Player s1 = byName(t, "S1");
-        assertTrue(t.isCheckinOpen());
-        assertTrue(t.checkinFromPhone(s1, true));
+        assertTrue(t.checkinOnline(s1, true));
         assertEquals(Attendance.PRESENT, s1.getAttendance());
-        assertTrue(t.checkinFromPhone(s1, false));
-        assertEquals(Attendance.WITHDRAW_REQUESTED, s1.getAttendance(), "Abmeldung muss die Turnierleitung bestätigen");
+        assertTrue(t.isOnlineMarked(s1));
+        assertTrue(t.checkinOnline(s1, false));
+        assertEquals(Attendance.UNKNOWN, s1.getAttendance(), "Online-Abmeldung = nicht angemeldet");
+        assertTrue(t.undoOnline(s1));
+        assertEquals(Attendance.UNKNOWN, s1.getAttendance(), "zurück auf den Stand vor der ersten Online-Meldung");
         t.setAttendance(s1, Attendance.WITHDRAWN);
-        assertFalse(t.checkinFromPhone(s1, true), "endgültig abgemeldet: nur die Turnierleitung");
-        t.setCheckinLocked(true);
-        assertFalse(t.isCheckinOpen());
-        assertThrows(IllegalStateException.class, () -> t.checkinFromPhone(byName(t, "S2"), true));
-        assertTrue(t.getCheckinToken().matches("[A-Z2-9]{8}"));
+        assertFalse(t.checkinOnline(s1, true), "endgültig abgemeldet: nur die Turnierleitung");
+        assertTrue(t.getCheckinToken().matches("[a-z2-9]{26}"));
     }
 
     @Test
@@ -157,7 +164,9 @@ class Version035Test {
         t.setAttendance(byName(t, "S1"), Attendance.PRESENT);
         t.setAttendance(byName(t, "S2"), Attendance.WITHDRAW_REQUESTED);
         t.setAttendance(byName(t, "S3"), Attendance.WITHDRAWN);
-        t.setCheckinLocked(true);
+        t.setOnlineCheckin(true);
+        t.setCheckinUntil(java.time.LocalTime.of(10, 30));
+        t.checkinOnline(byName(t, "S4"), true);
         String token = t.getCheckinToken();
         Tournament back = roundTrip(t);
         assertEquals(Attendance.PRESENT, byName(back, "S1").getAttendance());
@@ -165,7 +174,9 @@ class Version035Test {
         assertEquals(Attendance.WITHDRAWN, byName(back, "S3").getAttendance());
         assertEquals("id:id-S2", byName(back, "S1").getRegisteredPartner("Herren Doppel"));
         assertTrue(back.findClass("Herren Einzel").orElseThrow().isImportedFromXml());
-        assertTrue(back.isCheckinLocked());
+        assertTrue(back.isOnlineCheckin());
+        assertEquals(java.time.LocalTime.of(10, 30), back.getCheckinUntil());
+        assertTrue(back.isOnlineMarked(byName(back, "S4")));
         assertEquals(token, back.getCheckinToken());
         assertEquals(0, back.countIn(back.findClass("Herren Einzel").orElseThrow()), "keine Umstellung bei neuen Dateien");
     }
@@ -194,72 +205,6 @@ class Version035Test {
         assertEquals(4, back.countIn(back.findClass("Ausgelost").orElseThrow()), "ausgeloste Klassen bleiben");
         assertTrue(back.pairsIn(back.findClass("Doppel").orElseThrow()).isEmpty());
         assertEquals(byName(back, "L2").identityKey(), byName(back, "L1").getRegisteredPartner("Doppel"));
-    }
-
-    @Test
-    void handyZugangLiveUndAnmeldung() throws Exception {
-        Tournament t = imported();
-        t.setName("Test-Turnier");
-        PlayingClass he = t.findClass("Herren Einzel").orElseThrow();
-        for (int i = 1; i <= 6; i++) t.setAttendance(byName(t, "S" + i), Attendance.PRESENT);
-        t.takeOverPresentEntries(he);
-        he.setGroupsBySize(false);
-        he.setGroupCount(1);
-        t.drawGroups(he, true, new Random(2));
-        t.startClass(he);
-        int[] changes = {0};
-        LiveServer server = new LiveServer(t, Runnable::run, () -> changes[0]++, 0);
-        server.start();
-        try {
-            HttpClient http = HttpClient.newBuilder().proxy(HttpClient.Builder.NO_PROXY).build();
-            String base = "http://127.0.0.1:" + server.port();
-            HttpResponse<String> live = http.send(HttpRequest.newBuilder(URI.create(base + "/live")).build(), HttpResponse.BodyHandlers.ofString());
-            assertEquals(200, live.statusCode());
-            assertTrue(live.body().contains("Herren Einzel"));
-            String cls = http.send(HttpRequest.newBuilder(URI.create(base + "/live/klasse?k=Herren%20Einzel")).build(),
-                    HttpResponse.BodyHandlers.ofString()).body();
-            assertTrue(cls.contains("Gruppe A") && cls.contains("NS1") || cls.contains("S1"));
-            Player s1 = byName(t, "S1");
-            String me = http.send(HttpRequest.newBuilder(URI.create(base + "/live/ich?id=" + s1.getId())).build(),
-                    HttpResponse.BodyHandlers.ofString()).body();
-            assertTrue(me.contains("Meine Gruppe"));
-            assertEquals(404, http.send(HttpRequest.newBuilder(URI.create(base + "/anmeldung/FALSCH")).build(),
-                    HttpResponse.BodyHandlers.ofString()).statusCode(), "ohne Schlüssel aus dem QR-Code keine Anmeldung");
-            assertEquals(405, http.send(HttpRequest.newBuilder(URI.create(base + "/live")).POST(HttpRequest.BodyPublishers.ofString("x")).build(),
-                    HttpResponse.BodyHandlers.ofString()).statusCode(), "Live-Anzeige nur lesend");
-            String token = t.getCheckinToken();
-            assertEquals(200, http.send(HttpRequest.newBuilder(URI.create(base + "/anmeldung/" + token)).build(),
-                    HttpResponse.BodyHandlers.ofString()).statusCode());
-            String data = http.send(HttpRequest.newBuilder(URI.create(base + "/anmeldung/" + token + "/daten.json")).build(),
-                    HttpResponse.BodyHandlers.ofString()).body();
-            assertTrue(data.contains("\"open\":true") && data.contains("TSV Nord"));
-            // 0.38 (#55): reine Nachrücker melden sich nicht per Handy an oder ab
-            Player nach = byName(t, "Nach");
-            http.send(HttpRequest.newBuilder(URI.create(base + "/anmeldung/" + token + "/melden"))
-                    .header("Content-Type", "application/x-www-form-urlencoded")
-                    .POST(HttpRequest.BodyPublishers.ofString("ids=" + nach.getId() + "&anwesend=1")).build(), HttpResponse.BodyHandlers.ofString());
-            assertEquals(Attendance.UNKNOWN, nach.getAttendance());
-            assertFalse(data.contains(nach.getId()), "Nachrücker nicht in der Anmeldeliste");
-            changes[0] = 0;
-            Player reserve = byName(t, "S6");
-            t.setAttendance(reserve, Attendance.UNKNOWN);
-            String res = http.send(HttpRequest.newBuilder(URI.create(base + "/anmeldung/" + token + "/melden"))
-                    .header("Content-Type", "application/x-www-form-urlencoded")
-                    .POST(HttpRequest.BodyPublishers.ofString("ids=" + reserve.getId() + "&anwesend=1")).build(), HttpResponse.BodyHandlers.ofString()).body();
-            assertTrue(res.contains("\"ok\":true"), res);
-            assertEquals(Attendance.PRESENT, reserve.getAttendance());
-            assertEquals(1, changes[0]);
-            http.send(HttpRequest.newBuilder(URI.create(base + "/anmeldung/" + token + "/melden"))
-                    .POST(HttpRequest.BodyPublishers.ofString("ids=" + reserve.getId() + "&anwesend=0")).build(), HttpResponse.BodyHandlers.ofString());
-            assertEquals(Attendance.WITHDRAW_REQUESTED, reserve.getAttendance());
-            t.setCheckinLocked(true);
-            String closed = http.send(HttpRequest.newBuilder(URI.create(base + "/anmeldung/" + token + "/melden"))
-                    .POST(HttpRequest.BodyPublishers.ofString("ids=" + reserve.getId() + "&anwesend=1")).build(), HttpResponse.BodyHandlers.ofString()).body();
-            assertTrue(closed.contains("\"ok\":false"));
-        } finally {
-            server.stop();
-        }
-        assertFalse(server.isRunning());
     }
 
     @Test

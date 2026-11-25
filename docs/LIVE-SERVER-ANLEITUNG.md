@@ -119,6 +119,14 @@ Außerdem:
 Unten rechts zeigt HTS den Stand: „veröffentlicht“ bzw. „keine Verbindung – wird nachgeholt“ (bei Funkloch hält HTS
 den letzten Stand und versucht es alle 10 Sekunden erneut).
 
+### Online-Anmeldung am Turniertag (seit HTS 1.9.0)
+
+Im Turnier → „Live im Internet“ → **Online-Anmeldung zum Turnier**: Uhrzeit „Online-Anmeldung bis“ eintragen (geht auch
+schon beim Anlegen), **Online-Anmeldung einschalten** und den **QR-Code-Aushang drucken**. Am Turniertag melden sich
+Spieler/innen über den QR-Code an oder ab, Betreuer/innen auch für ihren Verein. HTS holt die Meldungen alle paar Sekunden
+vom Server ab – dafür muss der Laptop Internet haben und das Turnier veröffentlicht werden. Nach der Uhrzeit oder nach dem
+Ausschalten nimmt der Link nichts mehr an.
+
 ## 6. Ausprobieren
 
 Am besten mit einem **Testturnier**: ein paar Ergebnisse eintragen und `https://hts-livescoring.de` auf dem Handy über
@@ -137,13 +145,13 @@ Nach dem Turnier in HTS **„Nur Endergebnis behalten“** (Tische und Spiele ve
 
 ## 7. Neue Version einspielen
 
-Neues Paket kopieren und im neuen Ordner `update.sh` starten (Beispiel 1.7.0 → 1.8.0; `hts-rechtstexte.tar.gz` nur,
+Neues Paket kopieren und im neuen Ordner `update.sh` starten (Beispiel 1.8.0 → 1.9.0; `hts-rechtstexte.tar.gz` nur,
 wenn Impressum bzw. Datenschutz mit eingespielt werden sollen):
 
 ```
-scp hts-server-1.8.0.tar.gz hts-rechtstexte.tar.gz root@hts-livescoring.de:
+scp hts-server-1.9.0.tar.gz hts-rechtstexte.tar.gz root@hts-livescoring.de:
 ssh root@hts-livescoring.de
-tar xzf hts-server-1.8.0.tar.gz
+tar xzf hts-server-1.9.0.tar.gz
 cd hts-server
 ./update.sh
 ```

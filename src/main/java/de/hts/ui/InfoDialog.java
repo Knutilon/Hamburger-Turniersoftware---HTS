@@ -84,7 +84,7 @@ public final class InfoDialog extends Dialog<ButtonType> {
         Label license = new Label("Copyright © 2026 " + HtsApp.AUTHOR + ". HTS ist freie Software (Open Source) unter "
                 + "der GNU Affero General Public License v3.0 oder später (AGPL-3.0-or-later): Sie dürfen HTS nutzen, "
                 + "verändern und weitergeben. Wer eine veränderte Fassung weitergibt oder anderen über ein Netzwerk zur "
-                + "Nutzung anbietet (z. B. die Handy-Seiten), muss ihnen den Quellcode ebenfalls unter der AGPL zugänglich "
+                + "Nutzung anbietet (z. B. die Live-Seiten im Internet), muss ihnen den Quellcode ebenfalls unter der AGPL zugänglich "
                 + "machen. HTS wird ohne jede Gewährleistung bereitgestellt.");
         license.setWrapText(true);
         Label notice = new Label(NOTICE.strip());

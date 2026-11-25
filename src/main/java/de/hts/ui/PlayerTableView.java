@@ -77,6 +77,15 @@ public final class PlayerTableView {
      * @param players            die Spielerliste
      * @param onPlayerChanged    wird aufgerufen, wenn ein Spieler in der Tabelle geändert wurde
      */
+    /** 1.9.0 (#164): online gemeldet? bzw. Markierung beim Ändern von Hand entfernen */
+    private java.util.function.Predicate<Player> onlineMarked = p -> false;
+    private java.util.function.Consumer<Player> onlineClear = p -> { };
+
+    public void setOnlineInfo(java.util.function.Predicate<Player> marked, java.util.function.Consumer<Player> clear) {
+        onlineMarked = marked == null ? p -> false : marked;
+        onlineClear = clear == null ? p -> { } : clear;
+    }
+
     public PlayerTableView(ObservableList<Player> players, Consumer<Player> onPlayerChanged) {
         this.source = players;
         this.onPlayerChanged = onPlayerChanged;
@@ -131,7 +140,7 @@ public final class PlayerTableView {
         Collator collator = Collator.getInstance(Locale.GERMAN);
         Comparator<String> textCmp = Comparator.nullsLast(collator::compare);
 
-        // 0.35: Angemeldet = am Turniertag anwesend (Haken per Klick; per Handy über die Anmeldeseite)
+        // 0.35: Angemeldet = am Turniertag anwesend (Haken per Klick; seit 1.9.0 auch über die Online-Anmeldung)
         TableColumn<Player, Attendance> registered = new TableColumn<>("Angemeldet");
         registered.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getAttendance()));
         registered.getStyleClass().add("col-center");
@@ -142,6 +151,7 @@ public final class PlayerTableView {
                     Player p = getTableRow() == null ? null : getTableRow().getItem();
                     if (p == null) return;
                     p.setAttendance(box.isSelected() ? Attendance.PRESENT : Attendance.UNKNOWN);
+                    onlineClear.accept(p);                                  // 1.9.0 (#164): von Hand geändert
                     onPlayerChanged.accept(p);
                     refresh();
                 });
@@ -169,12 +179,14 @@ public final class PlayerTableView {
                     setGraphic(null);
                     setText(a == Attendance.WITHDRAWN ? "abgemeldet" : "Abmeldung ?");
                     setTooltip(new Tooltip(a == Attendance.WITHDRAWN ? "Endgültig abgemeldet – über „Anwesenheit“ zurücknehmen"
-                            : "Per Handy als „nicht anwesend“ gemeldet – über „Anwesenheit → Abmeldung bestätigen“ bestätigen"));
+                            : "Abmeldung per Handy (aus einer älteren HTS-Version) – über „Aktion für Markierte“ ändern"));
                 } else {
                     box.setSelected(a == Attendance.PRESENT);
                     setGraphic(box);
-                    setText(null);
-                    setTooltip(new Tooltip("Haken = am Turniertag anwesend (angemeldet)"));
+                    boolean online = rowP != null && onlineMarked.test(rowP);              // 1.9.0 (#164)
+                    setText(online ? "online" : null);
+                    setTooltip(new Tooltip(online ? "Online gemeldet – zurücknehmen über „Aktion für Markierte → Online-Meldung zurücknehmen“"
+                            : "Haken = am Turniertag anwesend (angemeldet)"));
                 }
             }
         });

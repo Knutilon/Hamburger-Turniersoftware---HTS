@@ -180,6 +180,10 @@ public final class ClassesView {
         classList.setCellFactory(lv -> new ClassCell());
         classList.setPlaceholder(new Label("Noch keine Klassen.\n„Klasse anlegen“ legt eine an."));
         classList.getSelectionModel().selectedItemProperty().addListener((o, a, b) -> {
+            if (a != b) {                                                    // 1.9.0 (#160): Filter je Klasse
+                if (a != null) saveFilters(a);
+                restoreFilters(b);
+            }
             showClass(b);
             if (b != null && b != a) openDefaultTab(b);
         });
@@ -666,6 +670,28 @@ public final class ClassesView {
 
     private static final String ALL_CLUBS = "Alle Vereine";
 
+    /** 1.9.0 (#160): Filter der Liste „Verfügbar“ je Klasse (nur solange das Turnier offen ist). */
+    private record Filters(String search, String singles, String club, de.hts.player.Sex sex, boolean onlyMatching) {
+    }
+
+    private final java.util.Map<String, Filters> filtersByClass = new java.util.HashMap<>();
+
+    private void saveFilters(PlayingClass c) {
+        PlayingClass sf = singlesFilter.getValue();
+        filtersByClass.put(c.getName(), new Filters(search.getText(), sf == null ? null : sf.getName(), clubFilter.getValue(),
+                sexFilter.getValue(), onlyMatching.isSelected()));
+    }
+
+    private void restoreFilters(PlayingClass c) {
+        Filters f = c == null ? null : filtersByClass.get(c.getName());
+        search.setText(f == null || f.search() == null ? "" : f.search());
+        singlesFilter.setValue(f == null || f.singles() == null ? null
+                : singlesFilter.getItems().stream().filter(x -> x != null && x.getName().equals(f.singles())).findFirst().orElse(null));
+        clubFilter.setValue(f == null || f.club() == null ? ALL_CLUBS : f.club());
+        sexFilter.setValue(f == null || f.sex() == null ? de.hts.player.Sex.UNKNOWN : f.sex());
+        onlyMatching.setSelected(f == null || f.onlyMatching());
+    }
+
     private void updateClubFilterItems() {
         List<String> clubs = new ArrayList<>();
         clubs.add(ALL_CLUBS);
@@ -1013,6 +1039,27 @@ public final class ClassesView {
         }
         card.getStyleClass().add("pair-card");
         if (!pair.isComplete()) card.getStyleClass().add("incomplete");
+        if (tournament.isPairUnconfirmed(pair)) {                                   // 1.9.0 (#167)
+            List<String> open = new java.util.ArrayList<>();
+            boolean gone = false;
+            for (Player m : pair.members()) {
+                if (m == null || m.getAttendance() == de.hts.player.Attendance.PRESENT) continue;
+                if (m.getAttendance() == de.hts.player.Attendance.WITHDRAWN) gone = true;
+                open.add(m.getDisplayName());
+            }
+            card.getStyleClass().add(gone ? "pair-withdrawn" : "pair-unconfirmed");
+            String text = gone ? "Partner/in abgemeldet: " + String.join(", ", open) + " – Paarung auflösen"
+                    : "nicht angemeldet: " + String.join(", ", open);
+            Label chip = new Label(text);
+            chip.getStyleClass().addAll("chip", gone ? "chip-clash" : "status-queued");
+            chip.setMinWidth(Region.USE_PREF_SIZE);
+            Tooltip.install(card, new Tooltip(gone ? "Eine Person dieser Paarung ist endgültig abgemeldet – Paarung auflösen (✕) und neu zulosen."
+                    : "Die Klasse startet erst, wenn beide unter „Teilnehmende“ angemeldet sind."));
+            VBox wrap = new VBox(4, card, chip);
+            wrap.getStyleClass().add("pair-wrap");
+            installDropTarget(card, players -> dropOnPair(pair, players));
+            return wrap;
+        }
 
         // Ablegen auf der Karte: freien Platz füllen
         installDropTarget(card, players -> dropOnPair(pair, players));
@@ -1030,6 +1077,7 @@ public final class ClassesView {
         Label l = new Label(shown + (p.getTtr() != null ? "  (" + p.getTtr() + ")" : ""));
         l.getStyleClass().add("slot");
         l.setMaxWidth(Double.MAX_VALUE);
+        l.setMinWidth(Region.USE_PREF_SIZE);                 // 1.9.0: Namen nie mit „…“ abkürzen (Liste scrollt waagerecht)
         PlayingClass.Fit fit = tournament.fit(c, p);
         if (fit == PlayingClass.Fit.NO) {
             l.getStyleClass().add("slot-misfit");

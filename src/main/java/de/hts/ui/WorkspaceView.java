@@ -61,7 +61,7 @@ public final class WorkspaceView {
     private static final String PREF_LAST_IMPORT_DIR = "lastImportDir";
     private static final DateTimeFormatter START_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm 'Uhr'");
 
-    private enum Page { PARTICIPANTS, HANDICAP, CLASSES, TABLES, MATCHES, PRESENTATION, MOBILE, CERTIFICATES, PUBLISH }
+    private enum Page { PARTICIPANTS, HANDICAP, CLASSES, TABLES, MATCHES, PRESENTATION, CERTIFICATES, PUBLISH }
 
     private final Stage stage;
     private final TournamentStore store;
@@ -103,6 +103,7 @@ public final class WorkspaceView {
         this.tournament = tournament;
         this.onBack = onBack;
         this.participants = new PlayerTableView(tournament.getPlayers(), p -> tournament.markModified());
+        participants.setOnlineInfo(tournament::isOnlineMarked, tournament::clearOnlineMark);   // 1.9.0 (#164)
         this.classes = new ClassesView(tournament, this::setStatus, participants::refresh, this::onRunningChanged);
         this.tablesView = new TablesView(tournament, this::setStatus, this::onRunningChanged);
         this.matchesView = new MatchesView(tournament, this::setStatus, this::onRunningChanged);
@@ -185,10 +186,6 @@ public final class WorkspaceView {
             publisher = null;
         }
         if (publishTimer != null) publishTimer.stop();
-        if (liveServer != null) {
-            liveServer.stop();
-            liveServer = null;
-        }
         if (!tournament.isModified()) return true;
         if (save()) return true;
         Alert a = new Alert(Alert.AlertType.WARNING,
@@ -211,9 +208,6 @@ public final class WorkspaceView {
         afterHandicapMenus.add(matchesMenu);
         afterHandicapMenus.add(header.addMenuItem("presentation", "Präsentationsansicht", null, () -> showPage(Page.PRESENTATION)));
         afterHandicapMenus.add(header.addMenuItem("publish", "Live im Internet", null, () -> showPage(Page.PUBLISH)));   // 1.5.0 (#135)
-        if (de.hts.HtsApp.MOBILE_ENABLED) {                // 1.0 (#80): ausgeblendet, Code bleibt
-            afterHandicapMenus.add(header.addMenuItem("mobile", "Mobile Einstellungen", null, () -> showPage(Page.MOBILE)));
-        }
         if (tournament.isCertTabShown() || tournament.isStarted()) showCertMenu();   // 1.4.1: ab Turnierstart (Urkunden manuell)
         updateHandicapMenus();
         matchesMenu.setDisable(!tournament.isRunning());
@@ -419,6 +413,7 @@ public final class WorkspaceView {
                     () -> de.hts.persistence.Organizer.get().logoPng());
             publisher.setTransform(de.hts.persistence.TournamentFile::abbreviateFirstNames);     // 1.8.0 (#156): immer abgekürzt
             publisher.setOrganizer(() -> de.hts.persistence.Organizer.get().getName());          // 1.8.0 (#150)
+            publisher.setCheckinPoll(this::checkinPollActive, this::applyOnlineReports);         // 1.9.0 (#164)
             de.hts.web.PendingDeletes.retryLater();                                              // 1.8.0 (#154)
             if (publishTimer == null) {
                 publishTimer = new javafx.animation.Timeline(new javafx.animation.KeyFrame(javafx.util.Duration.seconds(1), e -> showPublishState()));
@@ -431,6 +426,28 @@ public final class WorkspaceView {
             if (publishTimer != null) publishTimer.stop();
         }
         showPublishState();
+    }
+
+    /** 1.9.0 (#164): Meldungen abholen – Schalter an, Turniertag, bis 30 Minuten nach „Online-Anmeldung bis“. */
+    private boolean checkinPollActive() {
+        if (!tournament.isOnlineCheckin() || tournament.getCheckinUntil() == null) return false;
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        return now.toLocalDate().equals(tournament.getDate()) && now.toLocalTime().isBefore(tournament.getCheckinUntil().plusMinutes(30));
+    }
+
+    /** 1.9.0 (#164): online gemeldete An- und Abmeldungen übernehmen (im Programm-Thread). */
+    private void applyOnlineReports(List<de.hts.web.Publisher.CheckinReport> list) {
+        int in = 0, out = 0;
+        for (de.hts.web.Publisher.CheckinReport r : list) {
+            Player p = tournament.getPlayers().stream().filter(x -> x.getId().equals(r.id())).findFirst().orElse(null);
+            if (p == null || !tournament.checkinOnline(p, r.present())) continue;
+            if (r.present()) in++;
+            else out++;
+        }
+        if (in + out == 0) return;
+        de.hts.Log.info("Online-Anmeldung: " + in + " angemeldet, " + out + " abgemeldet");
+        refreshAfterAttendance();
+        setStatus("Online-Anmeldung: " + (in > 0 ? in + " angemeldet" : "") + (in > 0 && out > 0 ? ", " : "") + (out > 0 ? out + " abgemeldet" : "") + ".");
     }
 
     /** Statusanzeige unten rechts: „Live: veröffentlicht vor 5 s“ bzw. „Live: keine Verbindung – wird nachgeholt“. */
@@ -532,6 +549,7 @@ public final class WorkspaceView {
             urlRow.setAlignment(Pos.CENTER_LEFT);
             box.getChildren().add(urlRow);
         }
+        box.getChildren().add(onlineCheckinBox());                         // 1.9.0 (#164)
         Label privHead = new Label("Datenschutz");
         privHead.getStyleClass().add("class-name");
         Button del = new Button("Live-Daten löschen");
@@ -557,6 +575,104 @@ public final class WorkspaceView {
         sp.setFitToWidth(true);
         sp.getStyleClass().add("page-scroll");
         return sp;
+    }
+
+    /**
+     * 1.9.0 (#164): Bereich „Online-Anmeldung zum Turnier“ auf der Seite „Live im Internet“ – Schalter, Uhrzeit, Link,
+     * QR-Code-Aushang und neuer Link.
+     */
+    private Node onlineCheckinBox() {
+        Label head = new Label("Online-Anmeldung zum Turnier");
+        head.getStyleClass().add("class-name");
+        javafx.scene.control.CheckBox on = new javafx.scene.control.CheckBox("Online-Anmeldung einschalten");
+        on.setSelected(tournament.isOnlineCheckin());
+        javafx.scene.control.TextField until = new javafx.scene.control.TextField(tournament.getCheckinUntil() == null ? "" : tournament.getCheckinUntil().toString());
+        until.setPromptText("z. B. 10:30");
+        until.setPrefColumnCount(6);
+        until.setMaxWidth(Region.USE_PREF_SIZE);
+        Label untilLbl = new Label("Online-Anmeldung bis (Uhrzeit am Turniertag):");
+        untilLbl.setWrapText(true);
+        Label info = new Label();
+        info.getStyleClass().add("hint");
+        info.setWrapText(true);
+        info.setMinHeight(Region.USE_PREF_SIZE);
+        Label link = new Label();
+        link.setWrapText(true);
+        link.setMinHeight(Region.USE_PREF_SIZE);
+        Button copy = new Button("Link kopieren");
+        Button poster = new Button("QR-Code-Aushang drucken");
+        Button renew = new Button("Neuen Anmelde-Link erzeugen");
+        for (Button b : new Button[]{copy, poster, renew}) {
+            b.getStyleClass().add("pill");
+            b.setMinWidth(Region.USE_PREF_SIZE);
+        }
+        Runnable show = () -> {
+            boolean web = de.hts.web.WebSettings.configured();
+            String url = web ? de.hts.web.Publisher.normalize(de.hts.web.WebSettings.server()) + "/anmeldung/" + tournament.getCheckinToken() : "";
+            link.setText(web ? "Anmelde-Link: " + url : "Noch kein Webserver eingetragen (Turnierübersicht → „Webserver“).");
+            boolean ready = web && tournament.getCheckinUntil() != null;
+            on.setDisable(!ready && !on.isSelected());
+            copy.setDisable(!web);
+            poster.setDisable(!web);
+            renew.setDisable(!web);
+            String state;
+            if (tournament.getCheckinUntil() == null) state = "Bitte zuerst die Uhrzeit eintragen.";
+            else if (!tournament.isOnlineCheckin()) state = "Ausgeschaltet – online ist keine An- oder Abmeldung möglich.";
+            else if (!tournament.isPublish()) state = "Eingeschaltet, aber das Turnier wird nicht veröffentlicht – bitte oben „Dieses Turnier veröffentlichen“ einschalten.";
+            else if (tournament.isOnlineCheckinOpen(java.time.LocalDateTime.now())) state = "Offen bis " + tournament.getCheckinUntil() + " Uhr.";
+            else state = "Eingeschaltet – offen am Turniertag bis " + tournament.getCheckinUntil() + " Uhr.";
+            info.setText(state + " Spieler/innen melden sich über den QR-Code an oder ab, Betreuer/innen auch für ihren ganzen Verein. "
+                    + "Eine Online-Abmeldung heißt „nicht angemeldet“ (endgültig abmelden bleibt bei der Turnierleitung). Danach ist "
+                    + "die Anwesenheit hier weiter änderbar, bis Phase 1 der Klasse gestartet ist.");
+        };
+        on.selectedProperty().addListener((o, a, b) -> {
+            tournament.setOnlineCheckin(b);
+            if (publisher != null) publisher.changed();
+            show.run();
+            setStatus(b ? "Online-Anmeldung eingeschaltet." : "Online-Anmeldung ausgeschaltet – der Link nimmt keine Meldungen mehr an.");
+        });
+        until.focusedProperty().addListener((o, a, f) -> {
+            if (f) return;
+            String txt = until.getText() == null ? "" : until.getText().strip().replace('.', ':');
+            try {
+                java.time.LocalTime lt = txt.isEmpty() ? null : java.time.LocalTime.parse(txt.length() == 4 ? "0" + txt : txt);
+                tournament.setCheckinUntil(lt);
+                if (lt == null && on.isSelected()) on.setSelected(false);
+                until.setText(lt == null ? "" : lt.toString());
+                if (publisher != null) publisher.changed();
+            } catch (java.time.format.DateTimeParseException ex) {
+                setStatus("Bitte die Uhrzeit als SS:MM eingeben, z. B. 10:30.");
+                until.setText(tournament.getCheckinUntil() == null ? "" : tournament.getCheckinUntil().toString());
+            }
+            show.run();
+        });
+        until.setOnAction(e -> on.requestFocus());
+        copy.setOnAction(e -> {
+            javafx.scene.input.ClipboardContent cc = new javafx.scene.input.ClipboardContent();
+            cc.putString(de.hts.web.Publisher.normalize(de.hts.web.WebSettings.server()) + "/anmeldung/" + tournament.getCheckinToken());
+            javafx.scene.input.Clipboard.getSystemClipboard().setContent(cc);
+            setStatus("Anmelde-Link kopiert.");
+        });
+        poster.setOnAction(e -> {
+            String url = de.hts.web.Publisher.normalize(de.hts.web.WebSettings.server()) + "/anmeldung/" + tournament.getCheckinToken();
+            String name = "Online-Anmeldung " + (tournament.getName() == null ? "Turnier" : tournament.getName());
+            PdfViewer.show(stage, tournament, name, de.hts.report.PdfReports.checkinQrPoster(tournament, url,
+                    de.hts.persistence.Organizer.get().logoPng()), name.replaceAll("[\\\\/:*?\"<>|]", "_") + ".pdf", this::setStatus);
+        });
+        renew.setOnAction(e -> {
+            if (!confirm("Neuen Anmelde-Link erzeugen", "Der bisherige Link und schon ausgedruckte QR-Codes werden sofort ungültig. Weiter?")) return;
+            tournament.newCheckinToken();
+            if (publisher != null) publisher.changed();
+            show.run();
+            setStatus("Neuer Anmelde-Link erzeugt – bitte den QR-Code-Aushang neu drucken.");
+        });
+        show.run();
+        javafx.scene.layout.FlowPane untilRow = new javafx.scene.layout.FlowPane(8, 6, untilLbl, until);
+        untilRow.setAlignment(Pos.CENTER_LEFT);
+        javafx.scene.layout.FlowPane linkRow = new javafx.scene.layout.FlowPane(8, 8, copy, poster, renew);
+        VBox v = new VBox(8, head, on, untilRow, link, linkRow, info);
+        v.setPadding(new Insets(6, 0, 6, 0));
+        return v;
     }
 
     /** „Live-Daten löschen“ bzw. „Nur Endergebnis behalten“ – mit Rückfrage, im Hintergrund gesendet. */
@@ -777,10 +893,6 @@ public final class WorkspaceView {
             header.select("publish");
             pageTitle.setText("Live im Internet");
             pageContent.getChildren().setAll(publishPage());
-        } else if (page == Page.MOBILE) {
-            header.select("mobile");
-            pageTitle.setText("Mobile Einstellungen");
-            pageContent.getChildren().setAll(mobilePage());
         } else if (page == Page.MATCHES) {
             header.select("matches");
             pageTitle.setText("Spiele");
@@ -1405,13 +1517,12 @@ public final class WorkspaceView {
                 + ". Gemeldete kommen erst nach der Anmeldung am Turniertag in die Klasse.");
     }
 
-    // --- 0.35: Anwesenheit und Handy-Zugang ------------------------------------
+    // --- 0.35: Anwesenheit am Turniertag -----------------------------------------
 
-    private de.hts.web.LiveServer liveServer;
 
     /**
      * 0.36: zwei Menüs – „Aktion bezüglich Markierte“ (angemeldet, endgültig abmelden, Abmeldung zurücknehmen) und
-     * „Handyabmeldungen“ (alle bestätigen, Markierte bzw. alle zurück auf offen).
+     * (1.9.0: „Handyabmeldungen“ entfallen mit dem Handy-Zugang im Hallen-WLAN.)
      */
     private javafx.scene.Node attendanceMenu() {
         // 0.39 (#64): Aktionsmenüs im Design der Auswahl „Gleichstand“, Text sagt, wozu sie dienen
@@ -1429,36 +1540,16 @@ public final class WorkspaceView {
             setStatus(sel.isEmpty() ? "Unter den Markierten ist niemand endgültig abgemeldet." : sel.size() + " Abmeldung(en) zurückgenommen.");
             refreshAfterAttendance();
         });
-        marked.getItems().addAll(present, withdraw, new SeparatorMenuItem(), undo);
+        MenuItem undoOnline = new MenuItem("Online-Meldung zurücknehmen");                 // 1.9.0 (#164)
+        undoOnline.setOnAction(e -> {
+            int n = 0;
+            for (Player p : new ArrayList<>(participants.getTable().getSelectionModel().getSelectedItems())) if (tournament.undoOnline(p)) n++;
+            setStatus(n == 0 ? "Unter den Markierten ist keine Online-Meldung." : n + " Online-Meldung(en) zurückgenommen.");
+            refreshAfterAttendance();
+        });
+        marked.getItems().addAll(present, withdraw, new SeparatorMenuItem(), undo, undoOnline);
         marked.setTooltip(new Tooltip("Für die markierten Teilnehmenden – gelb = endgültig abgemeldet"));
 
-        javafx.scene.control.MenuButton phone = new javafx.scene.control.MenuButton("Handyabmeldungen bearbeiten");
-        phone.getStyleClass().add("action-menu");
-        phone.setMinWidth(Region.USE_PREF_SIZE);
-        phone.managedProperty().bind(phone.visibleProperty());
-        MenuItem confirmAll = new MenuItem("alle bestätigen");
-        confirmAll.setOnAction(e -> {
-            List<Player> req = withAttendance(tournament.getPlayers(), de.hts.player.Attendance.WITHDRAW_REQUESTED);
-            req.forEach(p -> tournament.setAttendance(p, de.hts.player.Attendance.WITHDRAWN));
-            setStatus(req.isEmpty() ? "Keine offenen Handyabmeldungen." : req.size() + (req.size() == 1 ? " Abmeldung" : " Abmeldungen") + " bestätigt.");
-            refreshAfterAttendance();
-        });
-        MenuItem markedOpen = new MenuItem("Markierte zurück auf offen");
-        markedOpen.setOnAction(e -> {
-            List<Player> req = selectedWith(de.hts.player.Attendance.WITHDRAW_REQUESTED);
-            req.forEach(p -> tournament.setAttendance(p, de.hts.player.Attendance.UNKNOWN));
-            setStatus(req.isEmpty() ? "Unter den Markierten ist keine Handyabmeldung." : req.size() + " Handyabmeldung(en) verworfen – wieder offen.");
-            refreshAfterAttendance();
-        });
-        MenuItem allOpen = new MenuItem("Alle zurück auf offen");
-        allOpen.setOnAction(e -> {
-            List<Player> req = withAttendance(tournament.getPlayers(), de.hts.player.Attendance.WITHDRAW_REQUESTED);
-            req.forEach(p -> tournament.setAttendance(p, de.hts.player.Attendance.UNKNOWN));
-            setStatus(req.isEmpty() ? "Keine offenen Handyabmeldungen." : req.size() + " Handyabmeldung(en) verworfen – wieder offen.");
-            refreshAfterAttendance();
-        });
-        phone.getItems().addAll(confirmAll, new SeparatorMenuItem(), markedOpen, allOpen);
-        phone.setTooltip(new Tooltip("Per Handy gemeldete Abmeldungen (orange) bestätigen oder verwerfen"));
         // 0.38 (#54): PDF der endgültig Abgemeldeten – nur aktiv, wenn mindestens eine Person abgemeldet ist
         Button pdf = new Button("Abgemeldete als PDF");
         pdf.getStyleClass().add("pill");
@@ -1468,9 +1559,6 @@ public final class WorkspaceView {
         Runnable updatePdf = () -> {
             pdf.setDisable(tournament.getPlayers().stream()
                     .noneMatch(p -> p.getAttendance() == de.hts.player.Attendance.WITHDRAWN && !p.isReserveOnly()));
-            // 0.39 (#66): „Handyabmeldungen“ nur bei laufendem Handy-Zugang oder noch offenen Handyabmeldungen
-            phone.setVisible((liveServer != null && liveServer.isRunning()) || tournament.getPlayers().stream()
-                    .anyMatch(p -> p.getAttendance() == de.hts.player.Attendance.WITHDRAW_REQUESTED));
         };
         updatePdf.run();
         participants.countTextProperty().addListener((o, a, b) -> updatePdf.run());
@@ -1504,7 +1592,7 @@ public final class WorkspaceView {
         fees.setVisible(tournament.hasFees());
         participants.countTextProperty().addListener((o, a, b) -> fees.setVisible(tournament.hasFees()));
         // 0.39 (#64): in einer Zeile, PDF rechts neben den Menüs (Umbruch nur, wenn es wirklich eng wird)
-        javafx.scene.layout.FlowPane box = new javafx.scene.layout.FlowPane(8, 8, marked, phone, fees, pdf);
+        javafx.scene.layout.FlowPane box = new javafx.scene.layout.FlowPane(8, 8, marked, fees, pdf);
         Ui.oneLineWhenPossible(box);
         box.setAlignment(Pos.CENTER_LEFT);
         return box;
@@ -1625,194 +1713,10 @@ public final class WorkspaceView {
         refreshAfterAttendance();
     }
 
-    private boolean askingPhone;
-
-    /** 1.1 (#93): per Handy gemeldete Ergebnisse bestätigen (übernehmen oder verwerfen). */
-    private void askPhoneResults() {
-        if (askingPhone) return;
-        if (tournament.isPhoneResultsDirect()) {
-            onRunningChanged();
-            return;
-        }
-        askingPhone = true;
-        try {
-            for (Tournament.PhoneResult r : tournament.pendingPhoneResults()) {
-                de.hts.tournament.Match m = r.match();
-                ButtonType take = new ButtonType("Übernehmen", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
-                ButtonType drop = new ButtonType("Verwerfen", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
-                javafx.scene.control.Alert a = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION,
-                        tournament.entrantName(m, m.getA()) + "  –  " + tournament.entrantName(m, m.getB()) + "\n" + r.setsText(), take, drop);
-                a.initOwner(stage);
-                a.setTitle("Ergebnis vom Handy");
-                a.setHeaderText("Ergebnis vom Handy: " + tournament.tableName(r.table()) + " · " + m.getClassName() + " · Spiel " + m.getNumber());
-                if (a.showAndWait().orElse(drop) == take) {
-                    try {
-                        tournament.acceptPhoneResult(r);
-                        setStatus("Spiel " + m.getNumber() + ": Ergebnis vom Handy übernommen (" + r.setsText() + ").");
-                    } catch (IllegalArgumentException | IllegalStateException ex) {
-                        error("Ergebnis vom Handy", ex.getMessage());
-                    }
-                } else {
-                    tournament.rejectPhoneResult(r);
-                    setStatus("Spiel " + m.getNumber() + ": Ergebnis vom Handy verworfen.");
-                }
-            }
-        } finally {
-            askingPhone = false;
-        }
-        onRunningChanged();
-    }
-
     private void refreshAfterAttendance() {
         participants.refresh();
         classes.refresh();
         updateStartBox();
-    }
-
-    /**
-     * 0.37: Seite „Mobile Einstellungen“ – Handy-Zugang starten/beenden, QR-Codes drucken, Anmeldung sperren/öffnen,
-     * Zustand, Adressen mit QR-Code-Vorschau und Hinweise.
-     */
-    private javafx.scene.Node mobilePage() {
-        VBox card = new VBox(14);
-        card.getStyleClass().add("card");
-        card.setPadding(new Insets(16, 20, 20, 20));
-        Button live = new Button();
-        live.getStyleClass().add("navy-pill");
-        Button qr = new Button("QR-Codes drucken");
-        qr.getStyleClass().add("pill");
-        Button lock = new Button();
-        lock.getStyleClass().add("pill");
-        javafx.scene.layout.FlowPane buttons = new javafx.scene.layout.FlowPane(10, 8, live, qr, lock);
-        Label state = new Label();
-        state.getStyleClass().add("class-name");
-        state.setWrapText(true);
-        javafx.scene.layout.FlowPane codes = new javafx.scene.layout.FlowPane(30, 16);
-        Label hints = new Label("Hinweise: Laptop und Handys müssen im selben WLAN sein – das Haupt-WLAN des Routers nutzen, nicht das "
-                + "Gäste-WLAN (es trennt die Geräte voneinander). Ein Internetanschluss ist nicht nötig. Beim ersten Start fragt die "
-                + "Windows-Firewall nach – „Private Netzwerke“ erlauben. Die QR-Codes erst drucken, wenn der Laptop im Turnier-WLAN ist "
-                + "(die Adresse hängt vom Netz ab). Abmeldungen per Handy bestätigt die Turnierleitung unter „Teilnehmende“ → "
-                + "„Handyabmeldungen“.");
-        hints.getStyleClass().add("hint");
-        hints.setWrapText(true);
-        hints.setMinHeight(Region.USE_PREF_SIZE);
-        Runnable update = () -> {
-            boolean on = liveServer != null && liveServer.isRunning();
-            live.setText(on ? "Handy-Zugang beenden" : "Handy-Zugang starten");
-            lock.setText(tournament.isCheckinLocked() ? "Anmeldung per Adresse wieder öffnen" : "Anmeldung per Adresse sperren");
-            String host = de.hts.web.LiveServer.localAddresses().stream().findFirst().orElse(null);
-            state.setText("Handy-Zugang: " + (on ? "läuft (Port " + liveServer.port() + ")" : "aus") + " · Anmeldung per Adresse: "
-                    + (tournament.isCheckinOpen() ? "offen" : tournament.isCheckinLocked() ? "gesperrt" : "geschlossen (alle Klassen beendet)")
-                    + (host == null ? " · ⚠ keine Netzwerkverbindung" : ""));
-            codes.getChildren().clear();
-            if (host != null) {
-                int port = on ? liveServer.port() : de.hts.web.LiveServer.PORT;
-                codes.getChildren().addAll(qrPreview("Live-Anzeige", de.hts.web.LiveServer.liveUrl(host, port)),
-                        qrPreview("Anmeldung am Turniertag", de.hts.web.LiveServer.checkinUrl(host, port, tournament.getCheckinToken())));
-            }
-        };
-        live.setOnAction(e -> {
-            if (liveServer != null && liveServer.isRunning()) {
-                liveServer.stop();
-                liveServer = null;
-                setStatus("Handy-Zugang beendet.");
-            } else {
-                try {
-                    liveServer = new de.hts.web.LiveServer(tournament, javafx.application.Platform::runLater, () -> {
-                        refreshAfterAttendance();
-                        askPhoneResults();                       // 1.1 (#93)
-                    });
-                    liveServer.start();
-                    setStatus("Handy-Zugang gestartet.");
-                } catch (java.io.IOException ex) {
-                    liveServer = null;
-                    error("Handy-Zugang", "Der Handy-Zugang konnte nicht gestartet werden (Port " + de.hts.web.LiveServer.PORT
-                            + " belegt?): " + ex.getMessage());
-                }
-            }
-            update.run();
-        });
-        lock.setOnAction(e -> {
-            tournament.setCheckinLocked(!tournament.isCheckinLocked());
-            setStatus(tournament.isCheckinLocked() ? "Anmeldung per Adresse gesperrt." : "Anmeldung per Adresse wieder geöffnet.");
-            update.run();
-        });
-        qr.setOnAction(e -> {
-            String host = de.hts.web.LiveServer.localAddresses().stream().findFirst().orElse(null);
-            if (host == null) {
-                error("QR-Codes", "Dieser Rechner hat keine Netzwerkverbindung – bitte mit dem WLAN-Router verbinden.");
-                return;
-            }
-            int port = liveServer != null ? liveServer.port() : de.hts.web.LiveServer.PORT;
-            String name = "QR-Codes " + (tournament.getName() == null ? "Turnier" : tournament.getName());
-            PdfViewer.show(stage, tournament, name, de.hts.report.PdfReports.qrSheet(tournament,
-                    de.hts.web.LiveServer.liveUrl(host, port), de.hts.web.LiveServer.checkinUrl(host, port, tournament.getCheckinToken())),
-                    name.replaceAll("[\\\\/:*?\"<>|]", "_") + ".pdf", this::setStatus);
-            if (liveServer == null) setStatus("Hinweis: Der Handy-Zugang ist noch nicht gestartet.");
-        });
-        // 1.1 (#93): Ergebnisse per Handy eintragen (Standard aus)
-        javafx.scene.control.CheckBox phone = new javafx.scene.control.CheckBox("Ergebnisse per Handy eintragen (je Tisch ein QR-Code)");
-        phone.setSelected(tournament.isPhoneResults());
-        phone.setWrapText(true);
-        javafx.scene.control.CheckBox direct = new javafx.scene.control.CheckBox("Handy-Ergebnisse direkt übernehmen (ohne Bestätigung)");
-        direct.setSelected(tournament.isPhoneResultsDirect());
-        direct.setWrapText(true);
-        direct.disableProperty().bind(phone.selectedProperty().not());
-        Button tableQr = new Button("QR-Codes für die Tische drucken");
-        tableQr.getStyleClass().add("pill");
-        tableQr.disableProperty().bind(phone.selectedProperty().not());
-        phone.selectedProperty().addListener((o, a, b) -> {
-            tournament.setPhoneResults(b);
-            setStatus(b ? "Ergebnisse per Handy eingeschaltet." : "Ergebnisse per Handy ausgeschaltet.");
-        });
-        direct.selectedProperty().addListener((o, a, b) -> tournament.setPhoneResultsDirect(b));
-        tableQr.setOnAction(e -> {
-            String host = de.hts.web.LiveServer.localAddresses().stream().findFirst().orElse(null);
-            if (host == null) {
-                error("QR-Codes", "Dieser Rechner hat keine Netzwerkverbindung – bitte mit dem WLAN-Router verbinden.");
-                return;
-            }
-            int port = liveServer != null ? liveServer.port() : de.hts.web.LiveServer.PORT;
-            java.util.Map<Integer, String> urls = new java.util.LinkedHashMap<>();
-            for (int tb = 1; tb <= tournament.getTableCount(); tb++) urls.put(tb, de.hts.web.LiveServer.resultUrl(host, port, tournament, tb));
-            String name = "Tisch-QR-Codes " + (tournament.getName() == null ? "Turnier" : tournament.getName());
-            PdfViewer.show(stage, tournament, name, de.hts.report.PdfReports.tableQrSheet(tournament, urls),
-                    name.replaceAll("[\\\\/:*?\"<>|]", "_") + ".pdf", this::setStatus);
-        });
-        Label phoneHint = new Label("Am Tisch den QR-Code scannen: Das Handy zeigt das laufende Spiel, die Sätze werden wie in HTS geprüft. "
-                + "Gemeldete Ergebnisse erscheinen hier im Programm zur Bestätigung (übernehmen oder verwerfen).");
-        phoneHint.getStyleClass().add("hint");
-        phoneHint.setWrapText(true);
-        phoneHint.setMinHeight(Region.USE_PREF_SIZE);
-        VBox phoneBox = new VBox(8, phone, direct, tableQr, phoneHint);
-        update.run();
-        card.getChildren().addAll(state, buttons, codes, phoneBox, hints);
-        javafx.scene.control.ScrollPane sp = new javafx.scene.control.ScrollPane(card);
-        sp.setFitToWidth(true);
-        sp.getStyleClass().add("page-scroll");
-        return sp;
-    }
-
-    /** QR-Code mit Titel und Adresse (Vorschau zum direkten Scannen vom Bildschirm). */
-    private static javafx.scene.Node qrPreview(String title, String url) {
-        de.hts.web.QrCode code = de.hts.web.QrCode.encode(url);
-        int n = code.size(), quiet = 4, scale = 5, size = (n + 2 * quiet) * scale;
-        javafx.scene.image.WritableImage img = new javafx.scene.image.WritableImage(size, size);
-        javafx.scene.image.PixelWriter pw = img.getPixelWriter();
-        for (int y = 0; y < size; y++) {
-            for (int x = 0; x < size; x++) {
-                boolean dark = code.get(x / scale - quiet, y / scale - quiet);
-                pw.setColor(x, y, dark ? javafx.scene.paint.Color.BLACK : javafx.scene.paint.Color.WHITE);
-            }
-        }
-        Label t = new Label(title);
-        t.getStyleClass().add("card-heading");
-        Label u = new Label(url);
-        u.getStyleClass().add("hint");
-        u.setWrapText(true);
-        u.setMaxWidth(size + 40);
-        VBox box = new VBox(6, t, new javafx.scene.image.ImageView(img), u);
-        return box;
     }
 
     // --- Hilfsmethoden -----------------------------------------------------

@@ -62,7 +62,7 @@ public class CompatFixtureGenerator {
     d.setFeeCents(800); t.setLateFeeCents(200); d.setScheduleMinutes(20);
     d.setScheduleStart(java.time.LocalDateTime.of(2026, 11, 15, 14, 30));
     t.markPaid(List.of(ds.get(0)), Player.Payment.CASH, null); t.waiveFee(List.of(ds.get(1)), "Helfer");
-    t.setPhoneResults(true);
+    // 1.9.0: Ergebnisse per Handy entfallen
     // ab 1.2: Haupt- und Trostrunde, Leistungsstufen + Phase 3, Badeni mit Pausierenden, doppeltes KO
     PlayingClass mc = groups(t, "Senioren HT", 16, 4, 14); t.startClass(mc); playAll(t, mc, 9999);
     PlayingClass mc2 = t.createPlanPhase(mc, de.hts.tournament.Plan.Kind.MAIN_CONSOLATION,

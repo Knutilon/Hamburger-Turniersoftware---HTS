@@ -63,6 +63,29 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
         return this;
     }
 
+    // 1.9.0 (#164): Online-Anmeldung bis (Uhrzeit am Turniertag)
+    private final javafx.scene.control.TextField untilField = new javafx.scene.control.TextField();
+
+    public TournamentDialog withCheckinUntil(java.time.LocalTime t) {
+        untilField.setText(t == null ? "" : t.toString());
+        return this;
+    }
+
+    /** Eingetragene Uhrzeit oder {@code null} (leer bzw. ungültig). */
+    public java.time.LocalTime checkinUntil() {
+        return parseTime(untilField.getText());
+    }
+
+    static java.time.LocalTime parseTime(String s) {
+        String txt = s == null ? "" : s.strip().replace('.', ':');
+        if (txt.isEmpty()) return null;
+        try {
+            return java.time.LocalTime.parse(txt.length() == 4 ? "0" + txt : txt);
+        } catch (java.time.format.DateTimeParseException e) {
+            return null;
+        }
+    }
+
     /** Eingetragener Link zur Turnierwelt ({@code ""} = keiner). */
     public String worldUrl() {
         return worldField.getText() == null ? "" : worldField.getText().strip();
@@ -265,7 +288,14 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
         javafx.scene.layout.VBox worldBox = new javafx.scene.layout.VBox(4, worldField, worldHint, worldWarn, worldOpen);
         Label worldLabel = new Label("Turnierwelt-Link:");
         grid.addRow(9, worldLabel, worldBox);
-        grid.add(error, 0, 10, 2, 1);
+        untilField.setPromptText("z. B. 10:30");
+        untilField.setPrefColumnCount(6);
+        untilField.setMaxWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        javafx.scene.layout.HBox untilBox = new javafx.scene.layout.HBox(8, untilField,
+                hintLabel("optional – Uhrzeit am Turniertag, bis zu der die Online-Anmeldung über den QR-Code möglich ist (einschalten unter „Live im Internet“)"));
+        untilBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        grid.addRow(10, new Label("Online-Anmeldung bis:"), untilBox);
+        grid.add(error, 0, 11, 2, 1);
         getDialogPane().setContent(grid);
 
         ButtonType ok = new ButtonType(isNew ? "Anlegen" : "Übernehmen", ButtonBar.ButtonData.OK_DONE);
@@ -287,6 +317,9 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
                 e.consume();
             } else if (tablesField.getText().isBlank() || Integer.parseInt(tablesField.getText()) < 1) {
                 error.setText("Bitte die Anzahl der Spieltische angeben (mindestens 1).");
+                e.consume();
+            } else if (!untilField.getText().isBlank() && checkinUntil() == null) {
+                error.setText("Bitte die Uhrzeit der Online-Anmeldung als SS:MM eingeben, z. B. 10:30 (oder leer lassen).");
                 e.consume();
             } else if (!worldUrl().isEmpty() && de.hts.tournament.Tournament.validWorldUrl(worldUrl()) == null) {
                 error.setText("Der Turnierwelt-Link muss eine vollständige Adresse mit https:// sein (oder leer bleiben).");

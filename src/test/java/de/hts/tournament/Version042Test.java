@@ -13,7 +13,6 @@ import de.hts.persistence.TournamentFile;
 import de.hts.player.Attendance;
 import de.hts.player.Player;
 import de.hts.player.Sex;
-import de.hts.web.LiveServer;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -122,23 +121,6 @@ class Version042Test {
         assertTrue(a.getRegistrations().contains(d.getName()), "aus dem Doppel genommen: wieder gemeldet");
         t.removePair(t.pairOf(b, d).orElseThrow());
         assertTrue(b.getRegistrations().contains(d.getName()));
-    }
-
-    @Test
-    void handySeitenZeigenQuellcodeLink() throws Exception {
-        Tournament t = new Tournament();
-        LiveServer server = new LiveServer(t, Runnable::run, () -> { }, 0);
-        server.start();
-        try {
-            HttpClient http = HttpClient.newBuilder().proxy(HttpClient.Builder.NO_PROXY).build();
-            String base = "http://127.0.0.1:" + server.port();
-            for (String path : new String[]{"/live", "/anmeldung/" + t.getCheckinToken()}) {
-                String body = http.send(HttpRequest.newBuilder(URI.create(base + path)).build(), HttpResponse.BodyHandlers.ofString()).body();
-                assertTrue(body.contains("Quellcode (AGPL-3.0)") && body.contains(de.hts.HtsApp.REPO_URL), path);
-            }
-        } finally {
-            server.stop();
-        }
     }
 
     @Test

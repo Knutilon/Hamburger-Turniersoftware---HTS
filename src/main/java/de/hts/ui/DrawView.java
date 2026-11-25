@@ -3101,6 +3101,11 @@ public final class DrawView {
     private void draw() {
         PlayingClass c = current;
         if (c == null) return;
+        String pairs = c.isPhase() ? null : tournament.pairProblem(c);              // 1.9.0 (#167)
+        if (pairs != null) {
+            showWarning(pairs + " Bitte unter „Teilnehmende“ anmelden bzw. unter „Klassen“ die Paarung auflösen.");
+            return;
+        }
         boolean again = c.isDrawn();
         if (c.isPhase()) {
             long played = tournament.matchesOf(c).stream().filter(m -> m.getStatus() == MatchStatus.DONE && !m.isCarried()).count();

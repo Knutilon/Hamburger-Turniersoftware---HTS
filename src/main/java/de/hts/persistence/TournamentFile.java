@@ -99,7 +99,7 @@ public final class TournamentFile {
 
     private static Map<String, String> readFolders(Element root) {
         Map<String, String> m = new java.util.LinkedHashMap<>();
-        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on", "pres-next", "late-fee-cents", "handicap", "hc", "imported", "model", "checkin-locked", "checkin-token", "phone-results", "phone-results-direct", "slip-design")) {
+        for (String k : List.of("folder", "dir-pdf", "dir-xml", "test", "tables-off", "pres-secs", "pres-off", "pres-on", "pres-next", "late-fee-cents", "handicap", "hc", "imported", "model", "checkin-token", "slip-design", "online-checkin", "checkin-until", "online-marks")) {
             String v = root.getAttribute(k);
             if (v != null && !v.isBlank()) m.put(k, v);
         }
@@ -183,10 +183,13 @@ public final class TournamentFile {
             if (t.isTest()) m.put("test", "true");
             if (t.isImportedFinished()) m.put("imported", "true");
             m.put("model", "35");                       // 0.35: Anwesenheit / „In der Klasse“ erst nach Übernahme
-            if (t.isCheckinLocked()) m.put("checkin-locked", "true");
             m.put("checkin-token", t.getCheckinToken());
-            if (t.isPhoneResults()) m.put("phone-results", "true");                       // 1.1 (#93)
-            if (t.isPhoneResultsDirect()) m.put("phone-results-direct", "true");
+            if (t.isOnlineCheckin()) m.put("online-checkin", "true");                     // 1.9.0 (#164)
+            if (t.getCheckinUntil() != null) m.put("checkin-until", t.getCheckinUntil().toString());
+            if (!t.getOnlineMarks().isEmpty()) {
+                m.put("online-marks", String.join("|", t.getOnlineMarks().entrySet().stream()
+                        .map(e -> Content.enc(e.getKey()) + ":" + e.getValue().code()).toList()));
+            }
             if (t.isHandicap()) {
                 m.put("handicap", "true");
                 m.put("hc", t.getHandicapRules().encode());
@@ -252,9 +255,20 @@ public final class TournamentFile {
                 t.setTest("true".equals(folders.get("test")));
                 t.setHandicap("true".equals(folders.get("handicap")));
                 t.setImportedFinished("true".equals(folders.get("imported")));
-                t.restoreCheckin("true".equals(folders.get("checkin-locked")), folders.get("checkin-token"));
-                t.setPhoneResults("true".equals(folders.get("phone-results")));          // 1.1 (#93)
-                t.setPhoneResultsDirect("true".equals(folders.get("phone-results-direct")));
+                java.time.LocalTime until = null;                                         // 1.9.0 (#164)
+                try {
+                    if (folders.get("checkin-until") != null) until = java.time.LocalTime.parse(folders.get("checkin-until"));
+                } catch (java.time.format.DateTimeParseException ignored) {
+                    // ungültige Uhrzeit: keine Online-Anmeldung
+                }
+                t.restoreCheckin("true".equals(folders.get("online-checkin")), until, folders.get("checkin-token"));
+                if (folders.get("online-marks") != null) {
+                    for (String mk : folders.get("online-marks").split("\\|")) {
+                        int c = mk.lastIndexOf(':');
+                        if (c > 0) t.restoreOnlineMark(Content.dec(mk.substring(0, c)), de.hts.player.Attendance.ofCode(mk.substring(c + 1)));
+                    }
+                }
+                // „checkin-locked“, „phone-results“, „phone-results-direct“ (Handy-Zugang im Hallen-WLAN bis 1.8.0) werden ignoriert
                 if (folders.get("hc") != null) t.restoreHandicapRules(de.hts.tournament.HandicapRules.decode(folders.get("hc")));
                 folders.forEach((k, v) -> {
                     if (!k.startsWith(TABLE_NAME_KEY)) return;

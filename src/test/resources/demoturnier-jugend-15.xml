@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tournament SYSTEM "http://www.datenautomaten.nu/dtd/nuLiga/TournamentPortal.dtd">
+<tournament name="HTS Demoturnier Jugend 15" start-date="2026-12-06" end-date="2026-12-06" tournament-id="DEMO-J15-01" winning-sets="3" winning-sets-text="3 Gewinnsätze" multiple-participations-same-day="true" multiple-participations-same-time="false" table-count="16" tournament-type="Einzel und Doppel">
+  <tournament-location name="Sporthalle Elbufer" street="Am Deich 1" zip-code="20000" city="Hamburg"/>
+  <competition competition-id="J15E" age-group="Jungen 15" type="Einzel" start-date="2026-12-06 11:00" ttr-from="0" ttr-to="9999" entry-fee="8.0" sex="male" preliminary-round-playmode="Gruppen" final-round-playmode="KO">
+    <players>
+      <player type="single" id="J15E-P1">
+        <person firstname="Ole" lastname="Brandt" birthyear="2013" sex="1" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU910001" licence-nr="910001" nationality="DE" region="Hamburg" ttr="1897" ttr-match-count="119"/>
+      </player>
+      <player type="single" id="J15E-P2">
+        <person firstname="Lars" lastname="Hollmann" birthyear="2014" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910002" licence-nr="910002" nationality="DE" region="Hamburg" ttr="1790" ttr-match-count="270"/>
+      </player>
+      <player type="single" id="J15E-P3">
+        <person firstname="Paul" lastname="Petersen" birthyear="2013" sex="1" club-name="TV Heidekamp" club-nr="2003" club-federation-nickname="HaTTV" internal-nr="NU910003" licence-nr="910003" nationality="DE" region="Hamburg" ttr="1742" ttr-match-count="234"/>
+      </player>
+      <player type="single" id="J15E-P4">
+        <person firstname="Anton" lastname="Albers" birthyear="2012" sex="1" club-name="SV Waldwinkel" club-nr="2004" club-federation-nickname="HaTTV" internal-nr="NU910004" licence-nr="910004" nationality="DE" region="Hamburg" ttr="1741" ttr-match-count="227"/>
+      </player>
+      <player type="single" id="J15E-P5">
+        <person firstname="Felix" lastname="Vogt" birthyear="2012" sex="1" club-name="TuS Nordheide" club-nr="2005" club-federation-nickname="HaTTV" internal-nr="NU910005" licence-nr="910005" nationality="DE" region="Hamburg" ttr="1730" ttr-match-count="150"/>
+      </player>
+      <player type="single" id="J15E-P6">
+        <person firstname="Mats" lastname="Dierks" birthyear="2012" sex="1" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU910006" licence-nr="910006" nationality="DE" region="Hamburg" ttr="1715" ttr-match-count="45"/>
+      </player>
+      <player type="single" id="J15E-P7">
+        <person firstname="Bennet" lastname="Behrens" birthyear="2013" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910007" licence-nr="910007" nationality="DE" region="Hamburg" ttr="1622" ttr-match-count="294"/>
+      </player>
+      <player type="single" id="J15E-P8">
+        <person firstname="Max" lastname="Claussen" birthyear="2012" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910008" licence-nr="910008" nationality="DE" region="Hamburg" ttr="1607" ttr-match-count="189"/>
+      </player>
+      <player type="single" id="J15E-P9">
+        <person firstname="Kian" lastname="Rohde" birthyear="2013" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910009" licence-nr="910009" nationality="DE" region="Hamburg" ttr="1578" ttr-match-count="286"/>
+      </player>
+      <player type="single" id="J15E-P10">
+        <person firstname="Julian" lastname="Kruse" birthyear="2016" sex="1" club-name="SC Fleetenkamp" club-nr="2007" club-federation-nickname="HaTTV" internal-nr="NU910010" licence-nr="910010" nationality="DE" region="Hamburg" ttr="1495" ttr-match-count="305"/>
+      </player>
+      <player type="single" id="J15E-P11">
+        <person firstname="Leon" lastname="Lindner" birthyear="2017" sex="1" club-name="SV Grün-Weiß Süderelbe" club-nr="2008" club-federation-nickname="HaTTV" internal-nr="NU910011" licence-nr="910011" nationality="DE" region="Hamburg" ttr="1491" ttr-match-count="277"/>
+      </player>
+      <player type="single" id="J15E-P12">
+        <person firstname="Pablo" lastname="Ahrens" birthyear="2012" sex="1" club-name="Hamburger Turnclub Elbe" club-nr="2009" club-federation-nickname="HaTTV" internal-nr="NU910012" licence-nr="910012" nationality="DE" region="Hamburg" ttr="1474" ttr-match-count="158"/>
+      </player>
+      <player type="single" id="J15E-P13">
+        <person firstname="Mattis" lastname="Paulsen" birthyear="2014" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910013" licence-nr="910013" nationality="DE" region="Hamburg" ttr="1433" ttr-match-count="171"/>
+      </player>
+      <player type="single" id="J15E-P14">
+        <person firstname="Björn" lastname="Sievers" birthyear="2014" sex="1" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU910014" licence-nr="910014" nationality="DE" region="Hamburg" ttr="1427" ttr-match-count="129"/>
+      </player>
+      <player type="single" id="J15E-P15">
+        <person firstname="Henry" lastname="Thies" birthyear="2014" sex="1" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU910015" licence-nr="910015" nationality="DE" region="Hamburg" ttr="1407" ttr-match-count="289"/>
+      </player>
+      <player type="single" id="J15E-P16">
+        <person firstname="Jonte" lastname="Jessen" birthyear="2013" sex="1" club-name="TTG Hammer Deich" club-nr="2010" club-federation-nickname="HaTTV" internal-nr="NU910016" licence-nr="910016" nationality="DE" region="Hamburg" ttr="1396" ttr-match-count="212"/>
+      </player>
+      <player type="single" id="J15E-P17">
+        <person firstname="Martin" lastname="Wulf" birthyear="2012" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910017" licence-nr="910017" nationality="DE" region="Hamburg" ttr="1394" ttr-match-count="198"/>
+      </player>
+      <player type="single" id="J15E-P18">
+        <person firstname="Niklas" lastname="Harms" birthyear="2012" sex="1" club-name="SG Wandsestrand" club-nr="2011" club-federation-nickname="HaTTV" internal-nr="NU910018" licence-nr="910018" nationality="DE" region="Hamburg" ttr="1392" ttr-match-count="184"/>
+      </player>
+      <player type="single" id="J15E-P19">
+        <person firstname="Neo" lastname="Matthiesen" birthyear="2013" sex="1" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU910019" licence-nr="910019" nationality="DE" region="Hamburg" ttr="1383" ttr-match-count="121"/>
+      </player>
+      <player type="single" id="J15E-P20">
+        <person firstname="Hannes" lastname="Lüders" birthyear="2016" sex="1" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU910020" licence-nr="910020" nationality="DE" region="Hamburg" ttr="1380" ttr-match-count="100"/>
+      </player>
+      <player type="single" id="J15E-P21">
+        <person firstname="Linus" lastname="Feddersen" birthyear="2012" sex="1" club-name="SC Fleetenkamp" club-nr="2007" club-federation-nickname="HaTTV" internal-nr="NU910021" licence-nr="910021" nationality="DE" region="Hamburg" ttr="1372" ttr-match-count="44"/>
+      </player>
+      <player type="single" id="J15E-P22">
+        <person firstname="Jan" lastname="Carstens" birthyear="2013" sex="1" club-name="SC Fleetenkamp" club-nr="2007" club-federation-nickname="HaTTV" internal-nr="NU910022" licence-nr="910022" nationality="DE" region="Hamburg" ttr="1341" ttr-match-count="127"/>
+      </player>
+      <player type="single" id="J15E-P23">
+        <person firstname="Maximilian" lastname="Hinz" birthyear="2012" sex="1" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU910023" licence-nr="910023" nationality="DE" region="Hamburg" ttr="1329" ttr-match-count="43"/>
+      </player>
+      <player type="single" id="J15E-P24">
+        <person firstname="Clemens" lastname="Reimers" birthyear="2013" sex="1" club-name="Meiendamm SV" club-nr="2012" club-federation-nickname="HaTTV" internal-nr="NU910024" licence-nr="910024" nationality="DE" region="Hamburg" ttr="1322" ttr-match-count="294"/>
+      </player>
+      <player type="single" id="J15E-P25">
+        <person firstname="Noah" lastname="Tiedemann" birthyear="2013" sex="1" club-name="SG Lohbrügge-West" club-nr="2013" club-federation-nickname="HaTTV" internal-nr="NU910025" licence-nr="910025" nationality="DE" region="Hamburg" ttr="1311" ttr-match-count="217"/>
+      </player>
+      <player type="single" id="J15E-P26">
+        <person firstname="Aaron" lastname="Stamer" birthyear="2013" sex="1" club-name="TTG Hammer Deich" club-nr="2010" club-federation-nickname="HaTTV" internal-nr="NU910026" licence-nr="910026" nationality="DE" region="Hamburg" ttr="1308" ttr-match-count="196"/>
+      </player>
+      <player type="single" id="J15E-P27">
+        <person firstname="Emil" lastname="Kröger" birthyear="2012" sex="1" club-name="SG Harburger Berge" club-nr="2014" club-federation-nickname="HaTTV" internal-nr="NU910027" licence-nr="910027" nationality="DE" region="Hamburg" ttr="1258" ttr-match-count="146"/>
+      </player>
+      <player type="single" id="J15E-P28">
+        <person firstname="Marian" lastname="Boysen" birthyear="2013" sex="1" club-name="SV Waldwinkel" club-nr="2004" club-federation-nickname="HaTTV" internal-nr="NU910028" licence-nr="910028" nationality="DE" region="Hamburg" ttr="1223" ttr-match-count="201"/>
+      </player>
+      <player type="single" id="J15E-P29" waiting-list-player="true">
+        <person firstname="Finn" lastname="Möller" birthyear="2012" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910029" licence-nr="910029" nationality="DE" region="Hamburg" ttr="1374" ttr-match-count="58"/>
+      </player>
+      <player type="single" id="J15E-P30" waiting-list-player="true">
+        <person firstname="Ben" lastname="Ehlers" birthyear="2016" sex="1" club-name="SC Fleetenkamp" club-nr="2007" club-federation-nickname="HaTTV" internal-nr="NU910030" licence-nr="910030" nationality="DE" region="Hamburg" ttr="1267" ttr-match-count="209"/>
+      </player>
+      <player type="single" id="J15E-P31" waiting-list-player="true">
+        <person firstname="Moritz" lastname="Rathje" birthyear="2014" sex="1" club-name="TTG Hammer Deich" club-nr="2010" club-federation-nickname="HaTTV" internal-nr="NU910031" licence-nr="910031" nationality="DE" region="Hamburg" ttr="1123" ttr-match-count="101"/>
+      </player>
+      <player type="single" id="J15E-P32" waiting-list-player="true">
+        <person firstname="Melvin" lastname="Steen" birthyear="2013" sex="1" club-name="Meiendamm SV" club-nr="2012" club-federation-nickname="HaTTV" internal-nr="NU910032" licence-nr="910032" nationality="DE" region="Hamburg" ttr="1113" ttr-match-count="331"/>
+      </player>
+      <player type="single" id="J15E-P33" waiting-list-player="true">
+        <person firstname="Florian" lastname="Grothe" birthyear="2017" sex="1" club-name="Meiendamm SV" club-nr="2012" club-federation-nickname="HaTTV" internal-nr="NU910033" licence-nr="910033" nationality="DE" region="Hamburg" ttr="1051" ttr-match-count="197"/>
+      </player>
+      <player type="single" id="J15E-P34" waiting-list-player="true">
+        <person firstname="Matti" lastname="Hansen" birthyear="2012" sex="1" club-name="USC Sternschanze" club-nr="2015" club-federation-nickname="HaTTV" internal-nr="NU910034" licence-nr="910034" nationality="DE" region="Hamburg" ttr="1252" ttr-match-count="104"/>
+      </player>
+      <player type="single" id="J15E-P35" waiting-list-player="true">
+        <person firstname="Lasse" lastname="Siemsen" birthyear="2013" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910035" licence-nr="910035" nationality="DE" region="Hamburg" ttr="1206" ttr-match-count="82"/>
+      </player>
+      <player type="single" id="J15E-P36" waiting-list-player="true">
+        <person firstname="Theo" lastname="Jacobs" birthyear="2014" sex="1" club-name="SV Grün-Weiß Süderelbe" club-nr="2008" club-federation-nickname="HaTTV" internal-nr="NU910036" licence-nr="910036" nationality="DE" region="Hamburg" ttr="1193" ttr-match-count="291"/>
+      </player>
+      <player type="single" id="J15E-P37" waiting-list-player="true">
+        <person firstname="Jonas" lastname="Wendt" birthyear="2015" sex="1" club-name="USC Sternschanze" club-nr="2015" club-federation-nickname="HaTTV" internal-nr="NU910037" licence-nr="910037" nationality="DE" region="Hamburg" ttr="1135" ttr-match-count="185"/>
+      </player>
+      <player type="single" id="J15E-P38" waiting-list-player="true">
+        <person firstname="Mads" lastname="Lorenzen" birthyear="2012" sex="1" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU910038" licence-nr="910038" nationality="DE" region="Hamburg" ttr="1075" ttr-match-count="65"/>
+      </player>
+      <player type="single" id="J15E-P39" waiting-list-player="true">
+        <person firstname="Tjark" lastname="Timm" birthyear="2012" sex="1" club-name="SG Wandsestrand" club-nr="2011" club-federation-nickname="HaTTV" internal-nr="NU910039" licence-nr="910039" nationality="DE" region="Hamburg" ttr="1075" ttr-match-count="65"/>
+      </player>
+    </players>
+  </competition>
+  <competition competition-id="M15E" age-group="Mädchen 15" type="Einzel" start-date="2026-12-06 11:00" ttr-from="0" ttr-to="9999" entry-fee="8.0" sex="female" preliminary-round-playmode="Gruppen" final-round-playmode="KO">
+    <players>
+      <player type="single" id="M15E-P1">
+        <person firstname="Fiona" lastname="Engels" birthyear="2013" sex="2" club-name="TTC Obstmarsch" club-nr="2016" club-federation-nickname="HaTTV" internal-nr="NU920001" licence-nr="920001" nationality="DE" region="Hamburg" ttr="1563" ttr-match-count="181"/>
+      </player>
+      <player type="single" id="M15E-P2">
+        <person firstname="Lina" lastname="Wiese" birthyear="2013" sex="2" club-name="TuS Elbstrand" club-nr="2017" club-federation-nickname="HaTTV" internal-nr="NU920002" licence-nr="920002" nationality="DE" region="Hamburg" ttr="1253" ttr-match-count="111"/>
+      </player>
+      <player type="single" id="M15E-P3">
+        <person firstname="Lucia" lastname="Rieck" birthyear="2014" sex="2" club-name="SV Waldwinkel" club-nr="2004" club-federation-nickname="HaTTV" internal-nr="NU920003" licence-nr="920003" nationality="DE" region="Hamburg" ttr="1200" ttr-match-count="40"/>
+      </player>
+      <player type="single" id="M15E-P4">
+        <person firstname="Lea" lastname="Grube" birthyear="2013" sex="2" club-name="SG Wandsestrand" club-nr="2011" club-federation-nickname="HaTTV" internal-nr="NU920004" licence-nr="920004" nationality="DE" region="Hamburg" ttr="1176" ttr-match-count="172"/>
+      </player>
+      <player type="single" id="M15E-P5">
+        <person firstname="Freyja" lastname="Winter" birthyear="2014" sex="2" club-name="TTG Hammer Deich" club-nr="2010" club-federation-nickname="HaTTV" internal-nr="NU920005" licence-nr="920005" nationality="DE" region="Hamburg" ttr="1168" ttr-match-count="116"/>
+      </player>
+      <player type="single" id="M15E-P6">
+        <person firstname="Emily" lastname="Rademacher" birthyear="2014" sex="2" club-name="Meiendamm SV" club-nr="2012" club-federation-nickname="HaTTV" internal-nr="NU920006" licence-nr="920006" nationality="DE" region="Hamburg" ttr="1095" ttr-match-count="205"/>
+      </player>
+      <player type="single" id="M15E-P7">
+        <person firstname="Ronja" lastname="Lehnert" birthyear="2013" sex="2" club-name="SG Wandsestrand" club-nr="2011" club-federation-nickname="HaTTV" internal-nr="NU920007" licence-nr="920007" nationality="DE" region="Hamburg" ttr="1062" ttr-match-count="274"/>
+      </player>
+      <player type="single" id="M15E-P8">
+        <person firstname="Kim" lastname="Fiedler" birthyear="2014" sex="2" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU920008" licence-nr="920008" nationality="DE" region="Hamburg" ttr="1001" ttr-match-count="147"/>
+      </player>
+      <player type="single" id="M15E-P9">
+        <person firstname="Claire" lastname="Koopmann" birthyear="2016" sex="2" club-name="TV Heidekamp" club-nr="2003" club-federation-nickname="HaTTV" internal-nr="NU920009" licence-nr="920009" nationality="DE" region="Hamburg" ttr="975" ttr-match-count="265"/>
+      </player>
+      <player type="single" id="M15E-P10">
+        <person firstname="Sophie" lastname="Wilde" birthyear="2017" sex="2" club-name="SV Grün-Weiß Süderelbe" club-nr="2008" club-federation-nickname="HaTTV" internal-nr="NU920010" licence-nr="920010" nationality="DE" region="Hamburg" ttr="938" ttr-match-count="306"/>
+      </player>
+      <player type="single" id="M15E-P11">
+        <person firstname="Eva" lastname="Wimmers" birthyear="2014" sex="2" club-name="Meiendamm SV" club-nr="2012" club-federation-nickname="HaTTV" internal-nr="NU920011" licence-nr="920011" nationality="DE" region="Hamburg" ttr="929" ttr-match-count="243"/>
+      </player>
+      <player type="single" id="M15E-P12">
+        <person firstname="Emma" lastname="Zander" birthyear="2013" sex="2" club-name="Oberhafen VfW" club-nr="2018" club-federation-nickname="HaTTV" internal-nr="NU920012" licence-nr="920012" nationality="DE" region="Hamburg" ttr="883" ttr-match-count="221"/>
+      </player>
+      <player type="single" id="M15E-P13">
+        <person firstname="Mia" lastname="Stender" birthyear="2013" sex="2" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU920013" licence-nr="920013" nationality="DE" region="Hamburg" ttr="882" ttr-match-count="214"/>
+      </player>
+      <player type="single" id="M15E-P14">
+        <person firstname="Leila" lastname="Glantz" birthyear="2016" sex="2" club-name="TuS Nordheide" club-nr="2005" club-federation-nickname="HaTTV" internal-nr="NU920014" licence-nr="920014" nationality="DE" region="Hamburg" ttr="880" ttr-match-count="200"/>
+      </player>
+      <player type="single" id="M15E-P15">
+        <person firstname="Sophia" lastname="Frerichs" birthyear="2013" sex="2" club-name="Horner Brücke TV" club-nr="2019" club-federation-nickname="HaTTV" internal-nr="NU920015" licence-nr="920015" nationality="DE" region="Hamburg" ttr="838" ttr-match-count="206"/>
+      </player>
+      <player type="single" id="M15E-P16">
+        <person firstname="Daria" lastname="Pape" birthyear="2013" sex="2" club-name="Horner Brücke TV" club-nr="2019" club-federation-nickname="HaTTV" internal-nr="NU920016" licence-nr="920016" nationality="DE" region="Hamburg" ttr="819" ttr-match-count="73"/>
+      </player>
+      <player type="single" id="M15E-P17">
+        <person firstname="Nele" lastname="Voß" birthyear="2012" sex="2" club-name="SG Wandsestrand" club-nr="2011" club-federation-nickname="HaTTV" internal-nr="NU920017" licence-nr="920017" nationality="DE" region="Hamburg" ttr="794" ttr-match-count="198"/>
+      </player>
+      <player type="single" id="M15E-P18">
+        <person firstname="Mira" lastname="Rohwer" birthyear="2012" sex="2" club-name="SC Tarpenbek" club-nr="2020" club-federation-nickname="HaTTV" internal-nr="NU920018" licence-nr="920018" nationality="DE" region="Hamburg" ttr="757" ttr-match-count="239"/>
+      </player>
+      <player type="single" id="M15E-P19">
+        <person firstname="Amelie" lastname="Stein" birthyear="2013" sex="2" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU920019" licence-nr="920019" nationality="DE" region="Hamburg" ttr="733" ttr-match-count="71"/>
+      </player>
+      <player type="single" id="M15E-P20">
+        <person firstname="Mela" lastname="Lüth" birthyear="2013" sex="2" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU920020" licence-nr="920020" nationality="DE" region="Hamburg"/>
+      </player>
+    </players>
+  </competition>
+  <competition competition-id="J15D" age-group="Jungen 15" type="Doppel" start-date="2026-12-06 14:00" ttr-from="0" ttr-to="9999" entry-fee="0.0" sex="male" preliminary-round-playmode="Gruppen" final-round-playmode="KO">
+    <players>
+      <player type="double" id="J15D-P1">
+        <person firstname="Clemens" lastname="Reimers" birthyear="2013" sex="1" club-name="Meiendamm SV" club-nr="2012" club-federation-nickname="HaTTV" internal-nr="NU910024" licence-nr="910024" nationality="DE" region="Hamburg" ttr="1322" ttr-match-count="294"/>
+        <person firstname="Noah" lastname="Tiedemann" birthyear="2013" sex="1" club-name="SG Lohbrügge-West" club-nr="2013" club-federation-nickname="HaTTV" internal-nr="NU910025" licence-nr="910025" nationality="DE" region="Hamburg" ttr="1311" ttr-match-count="217"/>
+      </player>
+      <player type="double" id="J15D-P2">
+        <person firstname="Ole" lastname="Brandt" birthyear="2013" sex="1" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU910001" licence-nr="910001" nationality="DE" region="Hamburg" ttr="1897" ttr-match-count="119"/>
+      </player>
+      <player type="double" id="J15D-P3">
+        <person firstname="Lars" lastname="Hollmann" birthyear="2014" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910002" licence-nr="910002" nationality="DE" region="Hamburg" ttr="1790" ttr-match-count="270"/>
+      </player>
+      <player type="double" id="J15D-P4">
+        <person firstname="Paul" lastname="Petersen" birthyear="2013" sex="1" club-name="TV Heidekamp" club-nr="2003" club-federation-nickname="HaTTV" internal-nr="NU910003" licence-nr="910003" nationality="DE" region="Hamburg" ttr="1742" ttr-match-count="234"/>
+      </player>
+      <player type="double" id="J15D-P5">
+        <person firstname="Anton" lastname="Albers" birthyear="2012" sex="1" club-name="SV Waldwinkel" club-nr="2004" club-federation-nickname="HaTTV" internal-nr="NU910004" licence-nr="910004" nationality="DE" region="Hamburg" ttr="1741" ttr-match-count="227"/>
+      </player>
+      <player type="double" id="J15D-P6">
+        <person firstname="Felix" lastname="Vogt" birthyear="2012" sex="1" club-name="TuS Nordheide" club-nr="2005" club-federation-nickname="HaTTV" internal-nr="NU910005" licence-nr="910005" nationality="DE" region="Hamburg" ttr="1730" ttr-match-count="150"/>
+      </player>
+      <player type="double" id="J15D-P7">
+        <person firstname="Mats" lastname="Dierks" birthyear="2012" sex="1" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU910006" licence-nr="910006" nationality="DE" region="Hamburg" ttr="1715" ttr-match-count="45"/>
+      </player>
+      <player type="double" id="J15D-P8">
+        <person firstname="Bennet" lastname="Behrens" birthyear="2013" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910007" licence-nr="910007" nationality="DE" region="Hamburg" ttr="1622" ttr-match-count="294"/>
+      </player>
+      <player type="double" id="J15D-P9">
+        <person firstname="Max" lastname="Claussen" birthyear="2012" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910008" licence-nr="910008" nationality="DE" region="Hamburg" ttr="1607" ttr-match-count="189"/>
+      </player>
+      <player type="double" id="J15D-P10">
+        <person firstname="Kian" lastname="Rohde" birthyear="2013" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910009" licence-nr="910009" nationality="DE" region="Hamburg" ttr="1578" ttr-match-count="286"/>
+      </player>
+      <player type="double" id="J15D-P11">
+        <person firstname="Julian" lastname="Kruse" birthyear="2016" sex="1" club-name="SC Fleetenkamp" club-nr="2007" club-federation-nickname="HaTTV" internal-nr="NU910010" licence-nr="910010" nationality="DE" region="Hamburg" ttr="1495" ttr-match-count="305"/>
+      </player>
+      <player type="double" id="J15D-P12">
+        <person firstname="Leon" lastname="Lindner" birthyear="2017" sex="1" club-name="SV Grün-Weiß Süderelbe" club-nr="2008" club-federation-nickname="HaTTV" internal-nr="NU910011" licence-nr="910011" nationality="DE" region="Hamburg" ttr="1491" ttr-match-count="277"/>
+      </player>
+      <player type="double" id="J15D-P13">
+        <person firstname="Pablo" lastname="Ahrens" birthyear="2012" sex="1" club-name="Hamburger Turnclub Elbe" club-nr="2009" club-federation-nickname="HaTTV" internal-nr="NU910012" licence-nr="910012" nationality="DE" region="Hamburg" ttr="1474" ttr-match-count="158"/>
+      </player>
+      <player type="double" id="J15D-P14">
+        <person firstname="Mattis" lastname="Paulsen" birthyear="2014" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910013" licence-nr="910013" nationality="DE" region="Hamburg" ttr="1433" ttr-match-count="171"/>
+      </player>
+      <player type="double" id="J15D-P15">
+        <person firstname="Björn" lastname="Sievers" birthyear="2014" sex="1" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU910014" licence-nr="910014" nationality="DE" region="Hamburg" ttr="1427" ttr-match-count="129"/>
+      </player>
+      <player type="double" id="J15D-P16">
+        <person firstname="Henry" lastname="Thies" birthyear="2014" sex="1" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU910015" licence-nr="910015" nationality="DE" region="Hamburg" ttr="1407" ttr-match-count="289"/>
+      </player>
+      <player type="double" id="J15D-P17">
+        <person firstname="Jonte" lastname="Jessen" birthyear="2013" sex="1" club-name="TTG Hammer Deich" club-nr="2010" club-federation-nickname="HaTTV" internal-nr="NU910016" licence-nr="910016" nationality="DE" region="Hamburg" ttr="1396" ttr-match-count="212"/>
+      </player>
+      <player type="double" id="J15D-P18">
+        <person firstname="Martin" lastname="Wulf" birthyear="2012" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910017" licence-nr="910017" nationality="DE" region="Hamburg" ttr="1394" ttr-match-count="198"/>
+      </player>
+      <player type="double" id="J15D-P19">
+        <person firstname="Niklas" lastname="Harms" birthyear="2012" sex="1" club-name="SG Wandsestrand" club-nr="2011" club-federation-nickname="HaTTV" internal-nr="NU910018" licence-nr="910018" nationality="DE" region="Hamburg" ttr="1392" ttr-match-count="184"/>
+      </player>
+      <player type="double" id="J15D-P20">
+        <person firstname="Neo" lastname="Matthiesen" birthyear="2013" sex="1" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU910019" licence-nr="910019" nationality="DE" region="Hamburg" ttr="1383" ttr-match-count="121"/>
+      </player>
+      <player type="double" id="J15D-P21">
+        <person firstname="Hannes" lastname="Lüders" birthyear="2016" sex="1" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU910020" licence-nr="910020" nationality="DE" region="Hamburg" ttr="1380" ttr-match-count="100"/>
+      </player>
+      <player type="double" id="J15D-P22">
+        <person firstname="Linus" lastname="Feddersen" birthyear="2012" sex="1" club-name="SC Fleetenkamp" club-nr="2007" club-federation-nickname="HaTTV" internal-nr="NU910021" licence-nr="910021" nationality="DE" region="Hamburg" ttr="1372" ttr-match-count="44"/>
+      </player>
+      <player type="double" id="J15D-P23">
+        <person firstname="Jan" lastname="Carstens" birthyear="2013" sex="1" club-name="SC Fleetenkamp" club-nr="2007" club-federation-nickname="HaTTV" internal-nr="NU910022" licence-nr="910022" nationality="DE" region="Hamburg" ttr="1341" ttr-match-count="127"/>
+      </player>
+      <player type="double" id="J15D-P24">
+        <person firstname="Maximilian" lastname="Hinz" birthyear="2012" sex="1" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU910023" licence-nr="910023" nationality="DE" region="Hamburg" ttr="1329" ttr-match-count="43"/>
+      </player>
+      <player type="double" id="J15D-P25">
+        <person firstname="Aaron" lastname="Stamer" birthyear="2013" sex="1" club-name="TTG Hammer Deich" club-nr="2010" club-federation-nickname="HaTTV" internal-nr="NU910026" licence-nr="910026" nationality="DE" region="Hamburg" ttr="1308" ttr-match-count="196"/>
+      </player>
+      <player type="double" id="J15D-P26">
+        <person firstname="Emil" lastname="Kröger" birthyear="2012" sex="1" club-name="SG Harburger Berge" club-nr="2014" club-federation-nickname="HaTTV" internal-nr="NU910027" licence-nr="910027" nationality="DE" region="Hamburg" ttr="1258" ttr-match-count="146"/>
+      </player>
+      <player type="double" id="J15D-P27">
+        <person firstname="Marian" lastname="Boysen" birthyear="2013" sex="1" club-name="SV Waldwinkel" club-nr="2004" club-federation-nickname="HaTTV" internal-nr="NU910028" licence-nr="910028" nationality="DE" region="Hamburg" ttr="1223" ttr-match-count="201"/>
+      </player>
+    </players>
+  </competition>
+  <competition competition-id="M15D" age-group="Mädchen 15" type="Doppel" start-date="2026-12-06 14:00" ttr-from="0" ttr-to="9999" entry-fee="0.0" sex="female" preliminary-round-playmode="Gruppen" final-round-playmode="KO">
+    <players>
+      <player type="double" id="M15D-P1">
+        <person firstname="Fiona" lastname="Engels" birthyear="2013" sex="2" club-name="TTC Obstmarsch" club-nr="2016" club-federation-nickname="HaTTV" internal-nr="NU920001" licence-nr="920001" nationality="DE" region="Hamburg" ttr="1563" ttr-match-count="181"/>
+        <person firstname="Lucia" lastname="Rieck" birthyear="2014" sex="2" club-name="SV Waldwinkel" club-nr="2004" club-federation-nickname="HaTTV" internal-nr="NU920003" licence-nr="920003" nationality="DE" region="Hamburg" ttr="1200" ttr-match-count="40"/>
+      </player>
+      <player type="double" id="M15D-P2">
+        <person firstname="Emily" lastname="Rademacher" birthyear="2014" sex="2" club-name="Meiendamm SV" club-nr="2012" club-federation-nickname="HaTTV" internal-nr="NU920006" licence-nr="920006" nationality="DE" region="Hamburg" ttr="1095" ttr-match-count="205"/>
+        <person firstname="Eva" lastname="Wimmers" birthyear="2014" sex="2" club-name="Meiendamm SV" club-nr="2012" club-federation-nickname="HaTTV" internal-nr="NU920011" licence-nr="920011" nationality="DE" region="Hamburg" ttr="929" ttr-match-count="243"/>
+      </player>
+      <player type="double" id="M15D-P3">
+        <person firstname="Lina" lastname="Wiese" birthyear="2013" sex="2" club-name="TuS Elbstrand" club-nr="2017" club-federation-nickname="HaTTV" internal-nr="NU920002" licence-nr="920002" nationality="DE" region="Hamburg" ttr="1253" ttr-match-count="111"/>
+        <person firstname="Freyja" lastname="Winter" birthyear="2014" sex="2" club-name="TTG Hammer Deich" club-nr="2010" club-federation-nickname="HaTTV" internal-nr="NU920005" licence-nr="920005" nationality="DE" region="Hamburg" ttr="1168" ttr-match-count="116"/>
+      </player>
+      <player type="double" id="M15D-P4">
+        <person firstname="Lea" lastname="Grube" birthyear="2013" sex="2" club-name="SG Wandsestrand" club-nr="2011" club-federation-nickname="HaTTV" internal-nr="NU920004" licence-nr="920004" nationality="DE" region="Hamburg" ttr="1176" ttr-match-count="172"/>
+      </player>
+      <player type="double" id="M15D-P5">
+        <person firstname="Ronja" lastname="Lehnert" birthyear="2013" sex="2" club-name="SG Wandsestrand" club-nr="2011" club-federation-nickname="HaTTV" internal-nr="NU920007" licence-nr="920007" nationality="DE" region="Hamburg" ttr="1062" ttr-match-count="274"/>
+      </player>
+      <player type="double" id="M15D-P6">
+        <person firstname="Kim" lastname="Fiedler" birthyear="2014" sex="2" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU920008" licence-nr="920008" nationality="DE" region="Hamburg" ttr="1001" ttr-match-count="147"/>
+      </player>
+      <player type="double" id="M15D-P7">
+        <person firstname="Claire" lastname="Koopmann" birthyear="2016" sex="2" club-name="TV Heidekamp" club-nr="2003" club-federation-nickname="HaTTV" internal-nr="NU920009" licence-nr="920009" nationality="DE" region="Hamburg" ttr="975" ttr-match-count="265"/>
+      </player>
+      <player type="double" id="M15D-P8">
+        <person firstname="Sophie" lastname="Wilde" birthyear="2017" sex="2" club-name="SV Grün-Weiß Süderelbe" club-nr="2008" club-federation-nickname="HaTTV" internal-nr="NU920010" licence-nr="920010" nationality="DE" region="Hamburg" ttr="938" ttr-match-count="306"/>
+      </player>
+      <player type="double" id="M15D-P9">
+        <person firstname="Emma" lastname="Zander" birthyear="2013" sex="2" club-name="Oberhafen VfW" club-nr="2018" club-federation-nickname="HaTTV" internal-nr="NU920012" licence-nr="920012" nationality="DE" region="Hamburg" ttr="883" ttr-match-count="221"/>
+      </player>
+      <player type="double" id="M15D-P10">
+        <person firstname="Mia" lastname="Stender" birthyear="2013" sex="2" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU920013" licence-nr="920013" nationality="DE" region="Hamburg" ttr="882" ttr-match-count="214"/>
+      </player>
+      <player type="double" id="M15D-P11">
+        <person firstname="Leila" lastname="Glantz" birthyear="2016" sex="2" club-name="TuS Nordheide" club-nr="2005" club-federation-nickname="HaTTV" internal-nr="NU920014" licence-nr="920014" nationality="DE" region="Hamburg" ttr="880" ttr-match-count="200"/>
+      </player>
+      <player type="double" id="M15D-P12">
+        <person firstname="Sophia" lastname="Frerichs" birthyear="2013" sex="2" club-name="Horner Brücke TV" club-nr="2019" club-federation-nickname="HaTTV" internal-nr="NU920015" licence-nr="920015" nationality="DE" region="Hamburg" ttr="838" ttr-match-count="206"/>
+      </player>
+      <player type="double" id="M15D-P13">
+        <person firstname="Daria" lastname="Pape" birthyear="2013" sex="2" club-name="Horner Brücke TV" club-nr="2019" club-federation-nickname="HaTTV" internal-nr="NU920016" licence-nr="920016" nationality="DE" region="Hamburg" ttr="819" ttr-match-count="73"/>
+      </player>
+      <player type="double" id="M15D-P14">
+        <person firstname="Nele" lastname="Voß" birthyear="2012" sex="2" club-name="SG Wandsestrand" club-nr="2011" club-federation-nickname="HaTTV" internal-nr="NU920017" licence-nr="920017" nationality="DE" region="Hamburg" ttr="794" ttr-match-count="198"/>
+      </player>
+      <player type="double" id="M15D-P15">
+        <person firstname="Mira" lastname="Rohwer" birthyear="2012" sex="2" club-name="SC Tarpenbek" club-nr="2020" club-federation-nickname="HaTTV" internal-nr="NU920018" licence-nr="920018" nationality="DE" region="Hamburg" ttr="757" ttr-match-count="239"/>
+      </player>
+      <player type="double" id="M15D-P16">
+        <person firstname="Amelie" lastname="Stein" birthyear="2013" sex="2" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU920019" licence-nr="920019" nationality="DE" region="Hamburg" ttr="733" ttr-match-count="71"/>
+      </player>
+      <player type="double" id="M15D-P17">
+        <person firstname="Mela" lastname="Lüth" birthyear="2013" sex="2" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU920020" licence-nr="920020" nationality="DE" region="Hamburg"/>
+      </player>
+    </players>
+  </competition>
+  <competition competition-id="J15X" age-group="Jugend 15" type="Mixed" start-date="2026-12-06 16:00" ttr-from="0" ttr-to="9999" entry-fee="0.0" sex="mixed" preliminary-round-playmode="Gruppen" final-round-playmode="KO">
+    <players>
+      <player type="double" id="J15X-P1">
+        <person firstname="Ole" lastname="Brandt" birthyear="2013" sex="1" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU910001" licence-nr="910001" nationality="DE" region="Hamburg" ttr="1897" ttr-match-count="119"/>
+        <person firstname="Fiona" lastname="Engels" birthyear="2013" sex="2" club-name="TTC Obstmarsch" club-nr="2016" club-federation-nickname="HaTTV" internal-nr="NU920001" licence-nr="920001" nationality="DE" region="Hamburg" ttr="1563" ttr-match-count="181"/>
+      </player>
+      <player type="double" id="J15X-P2">
+        <person firstname="Lars" lastname="Hollmann" birthyear="2014" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910002" licence-nr="910002" nationality="DE" region="Hamburg" ttr="1790" ttr-match-count="270"/>
+        <person firstname="Lucia" lastname="Rieck" birthyear="2014" sex="2" club-name="SV Waldwinkel" club-nr="2004" club-federation-nickname="HaTTV" internal-nr="NU920003" licence-nr="920003" nationality="DE" region="Hamburg" ttr="1200" ttr-match-count="40"/>
+      </player>
+      <player type="double" id="J15X-P3">
+        <person firstname="Mats" lastname="Dierks" birthyear="2012" sex="1" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU910006" licence-nr="910006" nationality="DE" region="Hamburg" ttr="1715" ttr-match-count="45"/>
+        <person firstname="Emily" lastname="Rademacher" birthyear="2014" sex="2" club-name="Meiendamm SV" club-nr="2012" club-federation-nickname="HaTTV" internal-nr="NU920006" licence-nr="920006" nationality="DE" region="Hamburg" ttr="1095" ttr-match-count="205"/>
+      </player>
+      <player type="double" id="J15X-P4">
+        <person firstname="Clemens" lastname="Reimers" birthyear="2013" sex="1" club-name="Meiendamm SV" club-nr="2012" club-federation-nickname="HaTTV" internal-nr="NU910024" licence-nr="910024" nationality="DE" region="Hamburg" ttr="1322" ttr-match-count="294"/>
+        <person firstname="Eva" lastname="Wimmers" birthyear="2014" sex="2" club-name="Meiendamm SV" club-nr="2012" club-federation-nickname="HaTTV" internal-nr="NU920011" licence-nr="920011" nationality="DE" region="Hamburg" ttr="929" ttr-match-count="243"/>
+      </player>
+      <player type="double" id="J15X-P5">
+        <person firstname="Felix" lastname="Vogt" birthyear="2012" sex="1" club-name="TuS Nordheide" club-nr="2005" club-federation-nickname="HaTTV" internal-nr="NU910005" licence-nr="910005" nationality="DE" region="Hamburg" ttr="1730" ttr-match-count="150"/>
+        <person firstname="Freyja" lastname="Winter" birthyear="2014" sex="2" club-name="TTG Hammer Deich" club-nr="2010" club-federation-nickname="HaTTV" internal-nr="NU920005" licence-nr="920005" nationality="DE" region="Hamburg" ttr="1168" ttr-match-count="116"/>
+      </player>
+      <player type="double" id="J15X-P6">
+        <person firstname="Paul" lastname="Petersen" birthyear="2013" sex="1" club-name="TV Heidekamp" club-nr="2003" club-federation-nickname="HaTTV" internal-nr="NU910003" licence-nr="910003" nationality="DE" region="Hamburg" ttr="1742" ttr-match-count="234"/>
+      </player>
+      <player type="double" id="J15X-P7">
+        <person firstname="Anton" lastname="Albers" birthyear="2012" sex="1" club-name="SV Waldwinkel" club-nr="2004" club-federation-nickname="HaTTV" internal-nr="NU910004" licence-nr="910004" nationality="DE" region="Hamburg" ttr="1741" ttr-match-count="227"/>
+      </player>
+      <player type="double" id="J15X-P8">
+        <person firstname="Bennet" lastname="Behrens" birthyear="2013" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910007" licence-nr="910007" nationality="DE" region="Hamburg" ttr="1622" ttr-match-count="294"/>
+      </player>
+      <player type="double" id="J15X-P9">
+        <person firstname="Max" lastname="Claussen" birthyear="2012" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910008" licence-nr="910008" nationality="DE" region="Hamburg" ttr="1607" ttr-match-count="189"/>
+      </player>
+      <player type="double" id="J15X-P10">
+        <person firstname="Kian" lastname="Rohde" birthyear="2013" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910009" licence-nr="910009" nationality="DE" region="Hamburg" ttr="1578" ttr-match-count="286"/>
+      </player>
+      <player type="double" id="J15X-P11">
+        <person firstname="Julian" lastname="Kruse" birthyear="2016" sex="1" club-name="SC Fleetenkamp" club-nr="2007" club-federation-nickname="HaTTV" internal-nr="NU910010" licence-nr="910010" nationality="DE" region="Hamburg" ttr="1495" ttr-match-count="305"/>
+      </player>
+      <player type="double" id="J15X-P12">
+        <person firstname="Leon" lastname="Lindner" birthyear="2017" sex="1" club-name="SV Grün-Weiß Süderelbe" club-nr="2008" club-federation-nickname="HaTTV" internal-nr="NU910011" licence-nr="910011" nationality="DE" region="Hamburg" ttr="1491" ttr-match-count="277"/>
+      </player>
+      <player type="double" id="J15X-P13">
+        <person firstname="Pablo" lastname="Ahrens" birthyear="2012" sex="1" club-name="Hamburger Turnclub Elbe" club-nr="2009" club-federation-nickname="HaTTV" internal-nr="NU910012" licence-nr="910012" nationality="DE" region="Hamburg" ttr="1474" ttr-match-count="158"/>
+      </player>
+      <player type="double" id="J15X-P14">
+        <person firstname="Mattis" lastname="Paulsen" birthyear="2014" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910013" licence-nr="910013" nationality="DE" region="Hamburg" ttr="1433" ttr-match-count="171"/>
+      </player>
+      <player type="double" id="J15X-P15">
+        <person firstname="Björn" lastname="Sievers" birthyear="2014" sex="1" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU910014" licence-nr="910014" nationality="DE" region="Hamburg" ttr="1427" ttr-match-count="129"/>
+      </player>
+      <player type="double" id="J15X-P16">
+        <person firstname="Henry" lastname="Thies" birthyear="2014" sex="1" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU910015" licence-nr="910015" nationality="DE" region="Hamburg" ttr="1407" ttr-match-count="289"/>
+      </player>
+      <player type="double" id="J15X-P17">
+        <person firstname="Jonte" lastname="Jessen" birthyear="2013" sex="1" club-name="TTG Hammer Deich" club-nr="2010" club-federation-nickname="HaTTV" internal-nr="NU910016" licence-nr="910016" nationality="DE" region="Hamburg" ttr="1396" ttr-match-count="212"/>
+      </player>
+      <player type="double" id="J15X-P18">
+        <person firstname="Martin" lastname="Wulf" birthyear="2012" sex="1" club-name="SC Alsterquelle" club-nr="2002" club-federation-nickname="HaTTV" internal-nr="NU910017" licence-nr="910017" nationality="DE" region="Hamburg" ttr="1394" ttr-match-count="198"/>
+      </player>
+      <player type="double" id="J15X-P19">
+        <person firstname="Niklas" lastname="Harms" birthyear="2012" sex="1" club-name="SG Wandsestrand" club-nr="2011" club-federation-nickname="HaTTV" internal-nr="NU910018" licence-nr="910018" nationality="DE" region="Hamburg" ttr="1392" ttr-match-count="184"/>
+      </player>
+      <player type="double" id="J15X-P20">
+        <person firstname="Neo" lastname="Matthiesen" birthyear="2013" sex="1" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU910019" licence-nr="910019" nationality="DE" region="Hamburg" ttr="1383" ttr-match-count="121"/>
+      </player>
+      <player type="double" id="J15X-P21">
+        <person firstname="Hannes" lastname="Lüders" birthyear="2016" sex="1" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU910020" licence-nr="910020" nationality="DE" region="Hamburg" ttr="1380" ttr-match-count="100"/>
+      </player>
+      <player type="double" id="J15X-P22">
+        <person firstname="Linus" lastname="Feddersen" birthyear="2012" sex="1" club-name="SC Fleetenkamp" club-nr="2007" club-federation-nickname="HaTTV" internal-nr="NU910021" licence-nr="910021" nationality="DE" region="Hamburg" ttr="1372" ttr-match-count="44"/>
+      </player>
+      <player type="double" id="J15X-P23">
+        <person firstname="Jan" lastname="Carstens" birthyear="2013" sex="1" club-name="SC Fleetenkamp" club-nr="2007" club-federation-nickname="HaTTV" internal-nr="NU910022" licence-nr="910022" nationality="DE" region="Hamburg" ttr="1341" ttr-match-count="127"/>
+      </player>
+      <player type="double" id="J15X-P24">
+        <person firstname="Maximilian" lastname="Hinz" birthyear="2012" sex="1" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU910023" licence-nr="910023" nationality="DE" region="Hamburg" ttr="1329" ttr-match-count="43"/>
+      </player>
+      <player type="double" id="J15X-P25">
+        <person firstname="Noah" lastname="Tiedemann" birthyear="2013" sex="1" club-name="SG Lohbrügge-West" club-nr="2013" club-federation-nickname="HaTTV" internal-nr="NU910025" licence-nr="910025" nationality="DE" region="Hamburg" ttr="1311" ttr-match-count="217"/>
+      </player>
+      <player type="double" id="J15X-P26">
+        <person firstname="Aaron" lastname="Stamer" birthyear="2013" sex="1" club-name="TTG Hammer Deich" club-nr="2010" club-federation-nickname="HaTTV" internal-nr="NU910026" licence-nr="910026" nationality="DE" region="Hamburg" ttr="1308" ttr-match-count="196"/>
+      </player>
+      <player type="double" id="J15X-P27">
+        <person firstname="Emil" lastname="Kröger" birthyear="2012" sex="1" club-name="SG Harburger Berge" club-nr="2014" club-federation-nickname="HaTTV" internal-nr="NU910027" licence-nr="910027" nationality="DE" region="Hamburg" ttr="1258" ttr-match-count="146"/>
+      </player>
+      <player type="double" id="J15X-P28">
+        <person firstname="Marian" lastname="Boysen" birthyear="2013" sex="1" club-name="SV Waldwinkel" club-nr="2004" club-federation-nickname="HaTTV" internal-nr="NU910028" licence-nr="910028" nationality="DE" region="Hamburg" ttr="1223" ttr-match-count="201"/>
+      </player>
+      <player type="double" id="J15X-P29">
+        <person firstname="Lina" lastname="Wiese" birthyear="2013" sex="2" club-name="TuS Elbstrand" club-nr="2017" club-federation-nickname="HaTTV" internal-nr="NU920002" licence-nr="920002" nationality="DE" region="Hamburg" ttr="1253" ttr-match-count="111"/>
+      </player>
+      <player type="double" id="J15X-P30">
+        <person firstname="Lea" lastname="Grube" birthyear="2013" sex="2" club-name="SG Wandsestrand" club-nr="2011" club-federation-nickname="HaTTV" internal-nr="NU920004" licence-nr="920004" nationality="DE" region="Hamburg" ttr="1176" ttr-match-count="172"/>
+      </player>
+      <player type="double" id="J15X-P31">
+        <person firstname="Ronja" lastname="Lehnert" birthyear="2013" sex="2" club-name="SG Wandsestrand" club-nr="2011" club-federation-nickname="HaTTV" internal-nr="NU920007" licence-nr="920007" nationality="DE" region="Hamburg" ttr="1062" ttr-match-count="274"/>
+      </player>
+      <player type="double" id="J15X-P32">
+        <person firstname="Kim" lastname="Fiedler" birthyear="2014" sex="2" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU920008" licence-nr="920008" nationality="DE" region="Hamburg" ttr="1001" ttr-match-count="147"/>
+      </player>
+      <player type="double" id="J15X-P33">
+        <person firstname="Claire" lastname="Koopmann" birthyear="2016" sex="2" club-name="TV Heidekamp" club-nr="2003" club-federation-nickname="HaTTV" internal-nr="NU920009" licence-nr="920009" nationality="DE" region="Hamburg" ttr="975" ttr-match-count="265"/>
+      </player>
+      <player type="double" id="J15X-P34">
+        <person firstname="Sophie" lastname="Wilde" birthyear="2017" sex="2" club-name="SV Grün-Weiß Süderelbe" club-nr="2008" club-federation-nickname="HaTTV" internal-nr="NU920010" licence-nr="920010" nationality="DE" region="Hamburg" ttr="938" ttr-match-count="306"/>
+      </player>
+      <player type="double" id="J15X-P35">
+        <person firstname="Emma" lastname="Zander" birthyear="2013" sex="2" club-name="Oberhafen VfW" club-nr="2018" club-federation-nickname="HaTTV" internal-nr="NU920012" licence-nr="920012" nationality="DE" region="Hamburg" ttr="883" ttr-match-count="221"/>
+      </player>
+      <player type="double" id="J15X-P36">
+        <person firstname="Mia" lastname="Stender" birthyear="2013" sex="2" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU920013" licence-nr="920013" nationality="DE" region="Hamburg" ttr="882" ttr-match-count="214"/>
+      </player>
+      <player type="double" id="J15X-P37">
+        <person firstname="Leila" lastname="Glantz" birthyear="2016" sex="2" club-name="TuS Nordheide" club-nr="2005" club-federation-nickname="HaTTV" internal-nr="NU920014" licence-nr="920014" nationality="DE" region="Hamburg" ttr="880" ttr-match-count="200"/>
+      </player>
+      <player type="double" id="J15X-P38">
+        <person firstname="Sophia" lastname="Frerichs" birthyear="2013" sex="2" club-name="Horner Brücke TV" club-nr="2019" club-federation-nickname="HaTTV" internal-nr="NU920015" licence-nr="920015" nationality="DE" region="Hamburg" ttr="838" ttr-match-count="206"/>
+      </player>
+      <player type="double" id="J15X-P39">
+        <person firstname="Daria" lastname="Pape" birthyear="2013" sex="2" club-name="Horner Brücke TV" club-nr="2019" club-federation-nickname="HaTTV" internal-nr="NU920016" licence-nr="920016" nationality="DE" region="Hamburg" ttr="819" ttr-match-count="73"/>
+      </player>
+      <player type="double" id="J15X-P40">
+        <person firstname="Nele" lastname="Voß" birthyear="2012" sex="2" club-name="SG Wandsestrand" club-nr="2011" club-federation-nickname="HaTTV" internal-nr="NU920017" licence-nr="920017" nationality="DE" region="Hamburg" ttr="794" ttr-match-count="198"/>
+      </player>
+      <player type="double" id="J15X-P41">
+        <person firstname="Mira" lastname="Rohwer" birthyear="2012" sex="2" club-name="SC Tarpenbek" club-nr="2020" club-federation-nickname="HaTTV" internal-nr="NU920018" licence-nr="920018" nationality="DE" region="Hamburg" ttr="757" ttr-match-count="239"/>
+      </player>
+      <player type="double" id="J15X-P42">
+        <person firstname="Amelie" lastname="Stein" birthyear="2013" sex="2" club-name="TTG Stormarnring" club-nr="2006" club-federation-nickname="HaTTV" internal-nr="NU920019" licence-nr="920019" nationality="DE" region="Hamburg" ttr="733" ttr-match-count="71"/>
+      </player>
+      <player type="double" id="J15X-P43">
+        <person firstname="Mela" lastname="Lüth" birthyear="2013" sex="2" club-name="TSV Elbinsel" club-nr="2001" club-federation-nickname="HaTTV" internal-nr="NU920020" licence-nr="920020" nationality="DE" region="Hamburg"/>
+      </player>
+    </players>
+  </competition>
+</tournament>

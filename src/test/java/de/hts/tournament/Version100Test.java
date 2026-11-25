@@ -263,11 +263,6 @@ class Version100Test {
         assertTrue(t.matchesOf(c).stream().noneMatch(m -> m.getStatus() == MatchStatus.PLANNED), "alle Spiele eingereiht");
     }
 
-    @Test
-    void mobilAusgeblendet() {
-        assertFalse(de.hts.HtsApp.MOBILE_ENABLED, "#80: Reiter „Mobile Einstellungen“ ausgeblendet");
-    }
-
     /** Ausgabe verwerfen. */
     private static final class OutputStreamNull {
         static java.io.OutputStream get() {

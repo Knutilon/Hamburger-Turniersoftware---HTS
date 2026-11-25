@@ -25,6 +25,26 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.9.0
+
+- **Online-Anmeldung am Turniertag:** Über einen QR-Code melden sich Spieler/innen auf dem Live-Server selbst an oder ab,
+  Betreuer/innen auch für ihren ganzen Verein. Beim Anlegen des Turniers bzw. auf „Live im Internet“ wird die Uhrzeit
+  „Online-Anmeldung bis“ festgelegt; dort wird die Anmeldung auch ein- und ausgeschaltet, der QR-Code-Aushang gedruckt
+  und bei Bedarf ein neuer Link erzeugt. HTS holt die Meldungen nach wenigen Sekunden ab („online“ in der Teilnehmerliste,
+  „Online-Meldung zurücknehmen“). Online-Abmeldung = „nicht angemeldet“; endgültig abmelden bleibt bei der Turnierleitung.
+- **Handy-Zugang im Hallen-WLAN entfernt:** kein eigener Server mehr auf dem Laptop (Port 8080), keine Seite „Mobile
+  Einstellungen“, keine Anmeldung oder Ergebnisse per Handy im WLAN, keine WLAN-QR-Codes. Alte Turnierdateien bleiben lesbar.
+- **Gemeldete Doppel und Mixed sofort als Paarungen:** Nach dem click-TT-Import stehen die Paarungen gleich unter
+  „Doppelpaarungen“. Ist jemand noch nicht angemeldet, ist die Paarung orange markiert, bei abgemeldetem Partner rot
+  („Paarung auflösen“); Auslosen und Start sind dann gesperrt.
+- **Live-Seiten:** KO-Phasen als KO-Baum (Umschalter „Baum | Liste“), Freigestellte als eigene Karte über den Gruppen
+  (auch auf „Meine Spiele“ und in der Suche), Knopf „← Alle Turniere“ oben auf jeder Turnierseite.
+- **Klassen:** Die Filter über „Verfügbar“ gelten je Klasse.
+- **Startgebühren:** „Bezahlt“, „Gebühr“, der hellblaue Hinweis und die Zahlungsaktionen erscheinen nur bei einer
+  Gebühr über 0 €.
+- **Live-Server:** neue Schnittstelle für die Online-Anmeldung (Abholen nur mit dem geheimen Schlüssel); neuer Abschnitt
+  „Online-Anmeldung am Turniertag“ in der Datenschutz-Vorlage.
+
 ## Neu in 1.8.0
 
 - **Startseite der Live-Seiten geteilt:** Reiter „Aktuelle Turniere“ (`/`, laufende zuerst, dann nach Datum) und

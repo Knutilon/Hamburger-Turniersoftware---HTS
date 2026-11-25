@@ -9,11 +9,9 @@
 package de.hts.web;
 
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpServer;
 import de.hts.player.Attendance;
 import de.hts.player.Player;
 import de.hts.tournament.Entrant;
-import de.hts.tournament.GroupDraw;
 import de.hts.tournament.GroupStanding;
 import de.hts.tournament.Match;
 import de.hts.tournament.MatchStatus;
@@ -24,16 +22,11 @@ import de.hts.tournament.TournamentMode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,72 +36,52 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Handy-Zugang über das lokale WLAN (0.35): ein kleiner Webserver im Programm (Java-eigener HttpServer).
- * <ul>
- *   <li>{@code /live} – Live-Anzeige, nur lesend: Tische und laufende Spiele, Klassen (Gruppen, KO-Runden,
- *       Ergebnisse), „Meine Spiele“ / „Meine Gruppe“ (das Handy merkt sich den Namen).</li>
- *   <li>{@code /anmeldung/<Schlüssel>} – Anmeldung am Turniertag als Teilnehmende/r (nur sich selbst) oder
- *       Betreuende/r (Verein); der Schlüssel steht im ausgedruckten QR-Code. „Nicht anwesend“ muss die Turnierleitung
- *       bestätigen.</li>
- * </ul>
- * Alle Zugriffe auf das Turnier laufen über {@code ui} (in HTS der JavaFX-Thread), damit nichts gleichzeitig mit der
- * Oberfläche geändert wird.
+ * Aufbau der Live-Seiten (seit 0.35; seit 1.9.0 nur noch für den Live-Server im Internet, {@link LiveHost}): Tische,
+ * Klassen mit Reitern je Phase, Gruppen, KO-Baum, Ergebnisse, Spielseiten, Suche, „Meine Spiele“ und die
+ * Online-Anmeldung am Turniertag ({@code /anmeldung/<Schlüssel>}, 1.9.0 #164). Der frühere Handy-Zugang über das
+ * Hallen-WLAN (eigener Server auf Port 8080, Anmeldung und Ergebnisse per Handy) ist mit 1.9.0 (#163) entfallen.
+ * <p>
+ * Alle Zugriffe auf das Turnier laufen über {@code lock}, damit nichts gleichzeitig geändert wird.
  */
 public final class LiveServer {
 
-    public static final int PORT = 8080;
-
     private final Tournament t;
     private final Executor ui;
-    private final Runnable onChange;
-    private final int port;
-    private HttpServer server;
-    private ExecutorService pool;
 
-    // 1.6.0 (#101): Einsatz im Live-Server auf dem Internetserver (LiveHost) – mehrere Turniere unter /live/<ID>
     private String base = "/live";
-    private java.util.function.Supplier<byte[]> logoSource = () -> de.hts.persistence.Organizer.get().logoPng();
-    private java.util.function.Supplier<String> orgName = () -> de.hts.persistence.Organizer.get().getName();
+    private java.util.function.Supplier<byte[]> logoSource = () -> null;
+    private java.util.function.Supplier<String> orgName = () -> "";
     private String extraHead = "";
     private String extraFooter = "";
     private boolean finalOnly;
     private java.util.function.LongSupplier stampSource = System::currentTimeMillis;
+    /** 1.9.0 (#165): Ziel des Knopfs „← Alle Turniere“ ({@code null} = kein Knopf) */
+    private java.util.function.Supplier<String> homeHref = () -> null;
 
-    /**
-     * @param ui       führt Zugriffe auf das Turnier aus (HTS: {@code Platform::runLater})
-     * @param onChange nach einer Anmeldung per Handy (auf {@code ui}) – Ansichten aktualisieren
-     */
-    public LiveServer(Tournament t, Executor ui, Runnable onChange) {
-        this(t, ui, onChange, PORT);
-    }
-
-    public LiveServer(Tournament t, Executor ui, Runnable onChange, int port) {
+    private LiveServer(Tournament t, Executor ui) {
         this.t = t;
         this.ui = ui;
-        this.onChange = onChange == null ? () -> { } : onChange;
-        this.port = port;
     }
 
-    /**
-     * 1.6.0 (#101): Ansicht für den Live-Server im Internet. Nur lesend (keine Anmeldung, keine Ergebnisse per Handy),
-     * Adressen unter {@code base} (z. B. „/live/5c0c83c510be“), Logo und Fußzeile vom Server.
-     */
+    /** Für Tests: Seiten eines Turniers unter „/live“ ohne Live-Server. */
+    static LiveServer forTest(Tournament t) {
+        return new LiveServer(t, Runnable::run);
+    }
+
     static LiveServer forHost(Tournament t, Executor lock, String base, java.util.function.Supplier<byte[]> logo,
                               String extraHead, String extraFooter, boolean finalOnly, java.util.function.LongSupplier stamp) {
         return forHost(t, lock, base, logo, () -> "", extraHead, extraFooter, finalOnly, stamp);
     }
 
-    /** 1.8.0 (#150): mit Namen des Ausrichters (von HTS beim Hochladen mitgeschickt). */
+    /** 1.6.0 (#101) / 1.8.0 (#150): Ansicht für den Live-Server mit Namen des Ausrichters. */
     static LiveServer forHost(Tournament t, Executor lock, String base, java.util.function.Supplier<byte[]> logo,
                               java.util.function.Supplier<String> org, String extraHead, String extraFooter, boolean finalOnly,
                               java.util.function.LongSupplier stamp) {
-        LiveServer v = new LiveServer(t, lock, null, 0);
+        LiveServer v = new LiveServer(t, lock);
         v.stampSource = stamp;
         v.base = base;
         v.logoSource = logo;
@@ -119,111 +92,23 @@ public final class LiveServer {
         return v;
     }
 
-    /** Pfade „/live…“ in der fertigen Seite auf {@code base} umschreiben (Live-Server: „/live/<ID>…“). */
+    /** 1.9.0 (#165): Knopf „← Alle Turniere“ oben auf jeder Seite. */
+    LiveServer home(java.util.function.Supplier<String> href) {
+        homeHref = href == null ? () -> null : href;
+        return this;
+    }
+
+    Tournament tournament() {
+        return t;
+    }
+
+    /** Pfade „/live…“ in der fertigen Seite auf {@code base} umschreiben (Live-Server: „/live/<Turnier>…“). */
     String rebase(String html) {
         if (html == null || base.equals("/live")) return html;
         return html.replace("\"/live", "\"" + base).replace("'/live", "'" + base);
     }
 
-    public synchronized void start() throws IOException {
-        if (server != null) return;
-        HttpServer s = HttpServer.create(new InetSocketAddress(port), 0);
-        s.createContext("/", this::handle);
-        pool = Executors.newFixedThreadPool(4, r -> {
-            Thread th = new Thread(r, "HTS-Handy-Zugang");
-            th.setDaemon(true);
-            return th;
-        });
-        s.setExecutor(pool);
-        s.start();
-        server = s;
-    }
-
-    public synchronized void stop() {
-        if (server == null) return;
-        server.stop(0);
-        pool.shutdownNow();
-        server = null;
-    }
-
-    public synchronized boolean isRunning() {
-        return server != null;
-    }
-
-    /** Tatsächlicher Port (bei Port 0 der vom System vergebene). */
-    public synchronized int port() {
-        return server == null ? port : server.getAddress().getPort();
-    }
-
-    /** IPv4-Adressen dieses Rechners im lokalen Netz (private Bereiche zuerst). */
-    public static List<String> localAddresses() {
-        List<String> priv = new ArrayList<>(), other = new ArrayList<>();
-        try {
-            for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
-                if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) continue;
-                for (InetAddress a : Collections.list(ni.getInetAddresses())) {
-                    if (!(a instanceof Inet4Address) || a.isLoopbackAddress() || a.isLinkLocalAddress()) continue;
-                    (a.isSiteLocalAddress() ? priv : other).add(a.getHostAddress());
-                }
-            }
-        } catch (IOException ignored) {
-            // keine Netzwerkkarte: Liste bleibt leer
-        }
-        priv.sort(Comparator.comparing((String x) -> x.startsWith("192.168.") ? 0 : x.startsWith("10.") ? 1 : 2));
-        priv.addAll(other);
-        return priv;
-    }
-
-    public static String liveUrl(String host, int port) {
-        return "http://" + host + ":" + port + "/live";
-    }
-
-    public static String checkinUrl(String host, int port, String token) {
-        return "http://" + host + ":" + port + "/anmeldung/" + token;
-    }
-
-    /** 1.1 (#93): Adresse der Ergebnisseite eines Tisches. */
-    public static String resultUrl(String host, int port, Tournament t, int table) {
-        return "http://" + host + ":" + port + "/ergebnis/" + t.tableResultToken(table) + "/" + table;
-    }
-
     // --- Verteilung ------------------------------------------------------------------------------
-
-    private void handle(HttpExchange ex) throws IOException {
-        try (ex) {
-            String path = ex.getRequestURI().getPath();
-            String method = ex.getRequestMethod();
-            Map<String, String> q = parseQuery(ex.getRequestURI().getRawQuery());
-            if (!"GET".equals(method) && !"POST".equals(method)) {
-                send(ex, 405, "text/plain", "Nicht erlaubt");
-                return;
-            }
-            if (path.equals("/") || path.equals("/live/")) {
-                ex.getResponseHeaders().add("Location", "/live");
-                send(ex, 302, "text/plain", "");
-                return;
-            }
-            if (path.startsWith("/anmeldung/")) {
-                handleCheckin(ex, path.substring("/anmeldung/".length()), method);
-                return;
-            }
-            if (path.startsWith("/ergebnis/")) {                 // 1.1 (#93): Ergebnis per Handy am Tisch
-                handleResult(ex, path.substring("/ergebnis/".length()), method);
-                return;
-            }
-            if (!"GET".equals(method)) {
-                send(ex, 405, "text/plain", "Nur lesend");
-                return;
-            }
-            serveLive(ex, path, q);
-        } catch (Exception e) {
-            try {
-                send(ex, 500, "text/plain", "Fehler: " + e.getMessage());
-            } catch (IOException ignored) {
-                // Verbindung schon zu
-            }
-        }
-    }
 
     /**
      * Die Live-Anzeige (nur lesend). {@code path} in der Form „/live…“; im Live-Server bereits ohne Turnier-Kennung.
@@ -409,6 +294,18 @@ public final class LiveServer {
             .back{display:inline-block;font-size:13px;margin:4px 0 6px;text-decoration:none}
             .vs td{padding:8px 4px}.vs .nm{font-size:15px}.big{font-size:20px;font-weight:600}
             .note{background:#e4f7ef;border:1px solid #b9e8d6;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:13px}
+            .homebtn{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;margin:0 0 8px;border:1px solid #d0d5db;border-radius:999px;background:#fff;color:#1f2933;text-decoration:none;font-size:14px;font-weight:600}
+            header .homebtn{margin:0 auto 8px;max-width:1000px}header .hrow{max-width:1000px;margin:0 auto}
+            .exempt{border-left:4px solid #5fd3a8}.exempt .row{padding:4px 0;border-bottom:1px solid #eef0f2}.exempt .row:last-child{border-bottom:0}
+            .vt{display:inline-flex;border:1px solid #d0d5db;border-radius:999px;overflow:hidden;margin:0 0 10px}.vt a{padding:7px 16px;font-size:13px;color:#1f2933;text-decoration:none;cursor:pointer}.vt a.on{background:#187250;color:#fff}
+            .ktw{overflow-x:auto;padding:0 0 12px;-webkit-overflow-scrolling:touch}.kt{display:flex;gap:28px;align-items:stretch;min-width:max-content}
+            .kc{display:flex;flex-direction:column;min-width:max-content}.kc h3{margin:0 0 8px;white-space:nowrap}
+            .kcm{display:flex;flex-direction:column;justify-content:space-around;flex:1;gap:10px}
+            .km{display:block;position:relative;background:#fff;border:1px solid #e4e6ea;border-radius:10px;padding:6px 10px;color:inherit;text-decoration:none;min-width:max-content;white-space:nowrap}
+            .kt .kc:not(:last-child) .km::after{content:"";position:absolute;right:-29px;top:50%;width:28px;border-top:1px solid #b9c1ca}
+            .km .s{display:flex;justify-content:space-between;gap:14px;font-size:13px;padding:2px 0}.km .s+.s{border-top:1px solid #eef0f2}
+            .km .s small{color:#6b7280;font-size:11px;margin-left:4px}.km .meta{font-size:11px;color:#6b7280;display:flex;justify-content:space-between;gap:10px}
+            .km.run{border-color:#5fd3a8}
             """;
 
     /**
@@ -416,10 +313,14 @@ public final class LiveServer {
      * einer Variablen, solange die Seite offen ist – nichts im Browser gespeichert.
      */
     private static final String TILE_JS = """
-            <script>(function(){var s={};
+            <script>(function(){var s={},view='tree';
             function ap(){document.querySelectorAll('.tile[data-key]').forEach(function(t){var v=s[t.dataset.key]||0;
-            t.classList.toggle('open',v>=1);t.classList.toggle('games',v>=2);var b=t.querySelector('.gm');if(b)b.textContent=v>=2?'Spiele ausblenden':b.dataset.l;});}
-            document.addEventListener('click',function(e){var t=e.target.closest('.tile[data-key]');if(!t)return;var v=s[t.dataset.key]||0;
+            t.classList.toggle('open',v>=1);t.classList.toggle('games',v>=2);var b=t.querySelector('.gm');if(b)b.textContent=v>=2?'Spiele ausblenden':b.dataset.l;});
+            document.querySelectorAll('.vt a').forEach(function(a){a.classList.toggle('on',a.dataset.v===view);});
+            document.querySelectorAll('.ktw').forEach(function(x){x.style.display=view==='tree'?'':'none';});
+            document.querySelectorAll('.klst').forEach(function(x){x.style.display=view==='tree'?'none':'';});}
+            document.addEventListener('click',function(e){var a=e.target.closest('.vt a');if(a){e.preventDefault();view=a.dataset.v;ap();return;}
+            var t=e.target.closest('.tile[data-key]');if(!t)return;var v=s[t.dataset.key]||0;
             if(e.target.closest('.gm'))v=v>=2?1:2;else if(e.target.closest('.tb')||e.target.closest('.ml'))return;else v=v>=1?0:1;
             s[t.dataset.key]=v;ap();});window.htsApply=ap;ap();})();</script>
             """;
@@ -435,7 +336,8 @@ public final class LiveServer {
     private static final String REFRESH_JS = """
             <script>setInterval(function(){fetch(location.href,{cache:'no-store'}).then(function(r){return r.ok?r.text():null}).then(function(t){if(!t)return;
             var d=new DOMParser().parseFromString(t,'text/html'),n=d.getElementById('live'),m=document.getElementById('live');
-            if(n&&m&&n.innerHTML!==m.innerHTML){m.innerHTML=n.innerHTML;if(window.htsApply)htsApply();}
+            if(n&&m&&n.innerHTML!==m.innerHTML){var sl=[].map.call(document.querySelectorAll('.ktw'),function(x){return x.scrollLeft;});
+            m.innerHTML=n.innerHTML;if(window.htsApply)htsApply();[].forEach.call(document.querySelectorAll('.ktw'),function(x,i){if(sl[i])x.scrollLeft=sl[i];});}
             var a=d.getElementById('stamp'),b=document.getElementById('stamp');if(a&&b)b.textContent=a.textContent;}).catch(function(){});},10000);</script>
             """;
 
@@ -444,6 +346,7 @@ public final class LiveServer {
             function nm(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');}
             function es(s){return(s||'').replace(/[<>&"]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];});}
             function cd(p){return '<div class="card"><b>'+es(p.n)+'</b><div class="muted">'+es(p.c)+'</div><div class="kl">'+(p.k||[]).map(function(x){return '<span class="chip">'+es(x)+'</span>';}).join('')
+            +(p.x||[]).map(function(x){return '<span class="chip run">freigestellt: '+es(x)+'</span>';}).join('')
             +'</div><a class="btn" href="/live/ich?id='+encodeURIComponent(p.id)+'">Meine Spiele</a><div class="muted">Tipp: die Seite „Meine Spiele“ als Lesezeichen speichern</div></div>';}
             function sh(){var w=nm(q.value).split(/\\s+/).filter(function(x){return x;});if(!w.length){sr.innerHTML='';mn.style.display='';return;}
             if(!all){fetch('/live/spieler.json').then(function(r){return r.json();}).then(function(d){all=d;sh();});return;}
@@ -469,7 +372,7 @@ public final class LiveServer {
     private static final java.time.format.DateTimeFormatter HM = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
             .withZone(java.time.ZoneId.of("Europe/Berlin"));
 
-    /** Seiten der Anmeldung und Ergebnis-Eingabe (lokaler Handy-Zugang): ohne Suche und Klassenleiste. */
+    /** Seiten ohne Suche und Klassenleiste (Online-Anmeldung). */
     private String page(String title, String body, boolean reload) {
         return page(title, null, body, reload, false);
     }
@@ -482,7 +385,9 @@ public final class LiveServer {
         String name = t.getName() == null || t.getName().isBlank() ? "Turnier" : t.getName();
         StringBuilder h = new StringBuilder("<!doctype html><html lang=\"de\"><head><meta charset=\"utf-8\">"
                 + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>" + esc(title) + " – " + esc(name)
-                + "</title>" + extraHead + "<style>" + CSS + "</style></head><body><header><div class=\"hb\"><a class=\"brand\" href=\"/live\">"
+                + "</title>" + extraHead + "<style>" + CSS + "</style></head><body><header>"
+                + (homeHref.get() == null ? "" : "<div class=\"hrow\"><a class=\"homebtn\" href=\"" + esc(homeHref.get()) + "\">← Alle Turniere</a></div>")
+                + "<div class=\"hb\"><a class=\"brand\" href=\"/live\">"
                 + "<img src=\"/live/hts-logo.png?v=" + de.hts.HtsApp.VERSION + "\" alt=\"HTS\"><span><b>" + esc(name) + "</b><small>"
                 + (t.getDate() == null ? "" : DAY.format(t.getDate()) + " · ") + "<span id=\"stamp\">Stand "
                 + HM.format(java.time.Instant.ofEpochMilli(stampSource.getAsLong())) + " Uhr</span></small></span></a>" + organizerBadge() + "</div>");
@@ -670,6 +575,7 @@ public final class LiveServer {
         ms.sort(Comparator.comparingInt(Match::getNumber));
         TournamentMode mode = phase.getMode();
         if (mode == TournamentMode.GROUPS || mode == TournamentMode.PLACEMENT || mode == TournamentMode.SWISS) {
+            if (mode == TournamentMode.GROUPS) b.append(exemptCard(phase, person));            // 1.9.0 (#161)
             b.append("<div class=\"grid\">");
             int groups = mode == TournamentMode.SWISS ? Math.min(1, phase.getGroups().size()) : phase.getGroups().size();
             for (int g = 0; g < groups; g++) {
@@ -690,13 +596,104 @@ public final class LiveServer {
             Map<String, List<Match>> byStage = new LinkedHashMap<>();
             ms.sort(Comparator.comparingInt((Match m) -> m.getKoRound() >= 0 ? m.getKoRound() : m.getRound()).thenComparingInt(Match::getNumber));
             for (Match m : ms) if (m.getA() != null || m.getB() != null) byStage.computeIfAbsent(m.getStage(), k -> new ArrayList<>()).add(m);
-            if (byStage.isEmpty()) b.append("<p class=\"muted\">Noch keine Spiele.</p>");
+            if (byStage.isEmpty()) {
+                b.append("<p class=\"muted\">Noch keine Spiele.</p>");
+                return;
+            }
+            String tree = koTree(ms, person);                       // 1.9.0 (#162): KO-Baum, Liste umschaltbar
+            if (tree != null) {
+                b.append("<div class=\"vt\"><a data-v=\"tree\" class=\"on\">Baum</a><a data-v=\"list\">Liste</a></div>").append(tree)
+                        .append("<div class=\"klst\" style=\"display:none\">");
+            }
             byStage.forEach((stage, list) -> {
                 b.append("<h3>").append(esc(stage)).append("</h3><div class=\"card\">");
                 for (Match m : list) b.append(matchLine(m, person));
                 b.append("</div>");
             });
+            if (tree != null) b.append("</div>");
         }
+    }
+
+    /**
+     * 1.9.0 (#162): KO-Baum – je Runde eine Spalte (nach Position im Feld), das Spiel um Platz 3 unter dem Finale.
+     * {@code null}, wenn die Phase kein reines KO-Feld ist (dann nur die Liste).
+     */
+    private String koTree(List<Match> ms, String person) {
+        java.util.TreeMap<Integer, List<Match>> rounds = new java.util.TreeMap<>();
+        Match third = null;
+        for (Match m : ms) {
+            if (m.getKoRound() >= 0) rounds.computeIfAbsent(m.getKoRound(), k -> new ArrayList<>()).add(m);
+            else if (m.getPlacement() == 3 && Tournament.THIRD_PLACE_STAGE.equals(m.getStage())) third = m;
+            else return null;
+        }
+        if (rounds.size() < 2 && third == null) return null;
+        StringBuilder b = new StringBuilder("<div class=\"ktw\"><div class=\"kt\">");
+        int last = rounds.lastKey();
+        for (var en : rounds.entrySet()) {
+            List<Match> list = new ArrayList<>(en.getValue());
+            list.sort(Comparator.comparingInt(Match::getKoIndex));
+            b.append("<div class=\"kc\"><h3>").append(esc(list.get(0).getStage())).append("</h3><div class=\"kcm\">");
+            for (Match m : list) b.append(koCard(m, person));
+            if (en.getKey() == last && third != null) {
+                b.append("<h3 style=\"margin:12px 0 0\">").append(esc(third.getStage())).append("</h3>").append(koCard(third, person));
+            }
+            b.append("</div></div>");
+        }
+        return b.append("</div></div>").toString();
+    }
+
+    private String koCard(Match m, String person) {
+        String w = m.winner();
+        String status = switch (m.getStatus()) {
+            case ACTIVE, PAUSED -> "<span class=\"chip run\">laufend</span>";
+            case QUEUED -> "<span class=\"chip queue\">eingereiht</span>";
+            case DONE -> "<span class=\"chip res\">" + esc(m.getResultText()) + "</span>";
+            case CANCELLED -> "<span class=\"chip\">nicht gespielt</span>";
+            default -> "";
+        };
+        boolean mine = person != null && t.personsOf(m).contains(person);
+        StringBuilder b = new StringBuilder("<a class=\"km").append(m.getStatus().atTable() ? " run" : "").append(mine ? " mine" : "")
+                .append("\" href=\"").append(matchHref(m)).append("\">");
+        for (String id : new String[]{m.getA(), m.getB()}) {
+            String name = id == null ? null : t.entrantName(m, id);
+            String origin = id == null ? null : t.originLabel(m, id);
+            String detail = id == null ? null : entrantDetail(m, id);
+            b.append("<div class=\"s\"><span").append(id != null && id.equals(w) ? " class=\"win\"" : "").append(">")
+                    .append(origin == null ? "" : "<span class=\"muted\">" + esc(origin) + "</span> ")
+                    .append(name == null ? "<span class=\"muted\">" + (m.getKoRound() == 0 ? "Freilos" : "offen") + "</span>" : esc(name))
+                    .append(detail == null || detail.isBlank() ? "" : "<small>" + esc(detail) + "</small>").append("</span></div>");
+        }
+        b.append("<div class=\"meta\"><span>Spiel ").append(m.getNumber()).append("</span>").append(status).append("</div></a>");
+        return b.toString();
+    }
+
+    /** Verein (Einzel) bzw. Angabe der Paarung. */
+    private String entrantDetail(Match m, String id) {
+        PlayingClass c = t.findClass(m.getClassName()).orElse(null);
+        if (c != null) {
+            String d = t.entrantsOf(c).stream().filter(e -> e.id().equals(id)).map(Entrant::detail).filter(java.util.Objects::nonNull).findFirst().orElse(null);
+            if (d != null) return d;
+        }
+        return t.getPlayers().stream().filter(p -> p.getId().equals(id)).map(Player::getClubName).findFirst().orElse(null);
+    }
+
+    /** 1.9.0 (#161): Karte „Freigestellt“ über den Gruppen (S1 … S4, direkt in der KO-Runde). */
+    private String exemptCard(PlayingClass phase, String person) {
+        List<String> ex = phase.getExempt();
+        if (ex.isEmpty()) return "";
+        StringBuilder b = new StringBuilder("<div class=\"card exempt\"><div class=\"row\"><b>Freigestellt</b><span class=\"muted\">direkt in der KO-Runde</span></div>");
+        int i = 0;
+        for (String id : ex) {
+            i++;
+            Entrant e = t.entrantsOf(phase).stream().filter(x -> x.id().equals(id)).findFirst().orElse(null);
+            String name = e != null ? e.name() : t.getPlayers().stream().filter(p -> p.getId().equals(id)).map(Player::getDisplayName).findFirst().orElse(id);
+            String detail = e != null ? e.detail() : null;
+            boolean mine = person != null && (id.equals(person) || (e != null && involves(e, person)));
+            b.append("<div class=\"row").append(mine ? " win" : "").append("\"><span><span class=\"muted\">S").append(i).append("</span> ")
+                    .append(esc(name)).append(detail == null || detail.isBlank() ? "" : " <span class=\"muted\">" + esc(detail) + "</span>")
+                    .append("</span></div>");
+        }
+        return b.append("</div>").toString();
     }
 
     /** Kachel einer Gruppe: zu → Status, Fortschritt, Erster; 1× antippen → Tabelle; „Spiele anzeigen“ → Spiele. */
@@ -765,9 +762,28 @@ public final class LiveServer {
                     .append(",\"c\":").append(json(p.getClubName())).append(",\"s\":").append(json(p.getAttendance().code())).append(",\"k\":[");
             List<String> ks = classes.getOrDefault(p.getId(), List.of());
             for (int j = 0; j < ks.size(); j++) b.append(j > 0 ? "," : "").append(json(ks.get(j)));
+            b.append("],\"x\":[");
+            List<String> xs = exemptClassesOf(p.getId());
+            for (int j = 0; j < xs.size(); j++) b.append(j > 0 ? "," : "").append(json(xs.get(j)));
             b.append("]}");
         }
         return b.append(']').toString();
+    }
+
+    /** 1.9.0 (#161): Klassen, in denen die Person (bzw. ihre Paarung) in einer noch laufenden Gruppenphase freigestellt ist. */
+    private List<String> exemptClassesOf(String personId) {
+        List<String> out = new ArrayList<>();
+        for (PlayingClass c : t.getClasses()) {
+            if (c.getExempt().isEmpty() || c.isFinished()) continue;
+            for (String id : c.getExempt()) {
+                Entrant e = t.entrantsOf(c).stream().filter(x -> x.id().equals(id)).findFirst().orElse(null);
+                if (id.equals(personId) || (e != null && involves(e, personId))) {
+                    String n = t.rootOf(c).getName();
+                    if (!out.contains(n)) out.add(n);
+                }
+            }
+        }
+        return out;
     }
 
     private static void addClass(Map<String, List<String>> m, String id, String cls) {
@@ -795,6 +811,9 @@ public final class LiveServer {
         StringBuilder b = new StringBuilder();
         b.append("<div class=\"card me\"><b>").append(esc(p.getDisplayName())).append("</b><div class=\"muted\">").append(esc(p.getClubName()))
                 .append("</div></div>");
+        for (String cls : exemptClassesOf(id)) {                          // 1.9.0 (#161)
+            b.append("<div class=\"note\"><b>Freigestellt</b> in ").append(esc(cls)).append(" – erstes Spiel in der KO-Runde.</div>");
+        }
         // 1.8.0 (#155): Lesezeichen statt Speichern im Browser
         b.append("<div class=\"note\">Diese Seite als Lesezeichen speichern bzw. zum Startbildschirm hinzufügen – dann sind die eigenen "
                 + "Spiele mit einem Tippen wieder da.<br><a class=\"btn light\" href=\"#\" data-share=\"1\">Link kopieren</a></div>");
@@ -908,201 +927,134 @@ public final class LiveServer {
                 + esc(name) + (detail == null || detail.isBlank() ? "" : "<div class=\"muted\">" + esc(detail) + "</div>") + "</td></tr>";
     }
 
-    // --- 1.1 (#93): Ergebnis per Handy ----------------------------------------------------------
+    // --- 1.9.0 (#164): Online-Anmeldung am Turniertag ----------------------------------------------
 
-    private void handleResult(HttpExchange ex, String rest, String method) throws Exception {
-        String[] parts = rest.split("/");
-        int table;
-        try {
-            table = parts.length >= 2 ? Integer.parseInt(parts[1]) : -1;
-        } catch (NumberFormatException e) {
-            table = -1;
-        }
-        final int tb = table;
-        boolean ok = tb >= 1 && call(() -> t.isPhoneResults() && tb <= t.getTableCount() && parts[0].equals(t.tableResultToken(tb)));
-        if (!ok) {
-            send(ex, 404, "text/html", page("Nicht gefunden", "<p>Diese Seite gibt es nicht (oder Ergebnisse per Handy sind ausgeschaltet).</p>", false));
-            return;
-        }
-        if (parts.length == 2 && "GET".equals(method)) {
-            send(ex, 200, "text/html", call(() -> resultEntryPage(tb)));
-        } else if (parts.length == 3 && parts[2].equals("melden") && "POST".equals(method)) {
+    /** Nimmt eine Online-Meldung entgegen (Kennung, anwesend ja/nein) – der Live-Server merkt sie sich für HTS. */
+    interface CheckinSink {
+        void report(String id, boolean present);
+    }
+
+    /**
+     * Anmeldeseite unter {@code …/anmeldung/<Schlüssel>}: {@code sub} = "" (Seite), "daten.json" oder "melden" (POST).
+     * {@code open} = Online-Anmeldung jetzt möglich.
+     */
+    void serveCheckin(HttpExchange ex, String sub, String method, boolean open, CheckinSink sink) throws Exception {
+        if (sub.isEmpty() && "GET".equals(method)) {
+            send(ex, 200, "text/html", call(() -> checkinPage(open)));
+        } else if (sub.equals("daten.json") && "GET".equals(method)) {
+            send(ex, 200, "application/json", call(() -> checkinData(open)));
+        } else if (sub.equals("melden") && "POST".equals(method)) {
             byte[] body;
             try (InputStream in = ex.getRequestBody()) {
                 body = in.readNBytes(16 * 1024);
             }
             Map<String, String> form = parseQuery(new String(body, StandardCharsets.UTF_8));
-            send(ex, 200, "application/json", call(() -> submitResult(tb, form.getOrDefault("nr", ""), form.getOrDefault("saetze", ""))));
-        } else {
-            send(ex, 404, "text/plain", "Nicht gefunden");
-        }
-    }
-
-    /** „11:5,9:11,11:7“ → Sätze; leere Sätze werden übersprungen. */
-    static List<int[]> parseSets(String s) {
-        List<int[]> out = new ArrayList<>();
-        for (String part : s.split(",")) {
-            String p = part.trim();
-            if (p.isEmpty() || p.equals(":")) continue;
-            String[] ab = p.split(":");
-            if (ab.length != 2 || ab[0].isBlank() || ab[1].isBlank()) throw new IllegalArgumentException("Bitte jeden Satz vollständig angeben, z. B. 11:7.");
-            out.add(new int[]{Integer.parseInt(ab[0].trim()), Integer.parseInt(ab[1].trim())});
-        }
-        if (out.isEmpty()) throw new IllegalArgumentException("Bitte die Sätze eintragen.");
-        return out;
-    }
-
-    private String submitResult(int table, String nr, String sets) {
-        try {
-            boolean direct = t.submitPhoneResult(table, Integer.parseInt(nr.trim()), parseSets(sets));
-            onChange.run();
-            return "{\"ok\":true,\"msg\":" + json(direct ? "Ergebnis eingetragen – danke!" : "Ergebnis gemeldet – die Turnierleitung bestätigt es.") + "}";
-        } catch (NumberFormatException e) {
-            return "{\"ok\":false,\"msg\":" + json("Bitte nur Zahlen eintragen.") + "}";
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return "{\"ok\":false,\"msg\":" + json(e.getMessage()) + "}";
-        }
-    }
-
-    private String resultEntryPage(int table) {
-        Match m = t.activeMatchAt(table).orElse(null);
-        StringBuilder b = new StringBuilder();
-        b.append("<h2>").append(esc(t.tableName(table))).append("</h2>");
-        if (m == null || m.getStatus() != de.hts.tournament.MatchStatus.ACTIVE) {
-            b.append("<p class=\"muted\">Gerade läuft hier kein Spiel. Seite neu laden, sobald das nächste Spiel am Tisch ist.</p>")
-                    .append("<button onclick=\"location.reload()\">Neu laden</button>");
-            return page("Ergebnis eintragen", b.toString(), false);
-        }
-        int maxSets = t.winningSets(m) * 2 - 1;
-        String a = t.entrantName(m, m.getA()), bn = t.entrantName(m, m.getB());
-        b.append("<div class=\"card\"><div class=\"muted\">").append(esc(className(m))).append(" · ").append(esc(m.getStage()))
-                .append(" · Spiel ").append(m.getNumber()).append("</div><p><b>").append(esc(a)).append("</b><br>gegen<br><b>")
-                .append(esc(bn)).append("</b></p></div>");
-        b.append("<div class=\"card\"><table class=\"sets\"><tr><th>Satz</th><th>").append(esc(a)).append("</th><th>")
-                .append(esc(bn)).append("</th></tr>");
-        for (int k = 1; k <= maxSets; k++) {
-            b.append("<tr><td>").append(k).append("</td><td><input inputmode=\"numeric\" class=\"pa\" size=\"3\"></td>")
-                    .append("<td><input inputmode=\"numeric\" class=\"pb\" size=\"3\"></td></tr>");
-        }
-        b.append("</table><button onclick=\"send()\">Ergebnis melden</button></div><div id=\"msg\" class=\"card ok\" style=\"display:none\"></div>");
-        b.append("<script>function send(){var a=[].map.call(document.querySelectorAll('.pa'),x=>x.value.trim()),")
-                .append("b=[].map.call(document.querySelectorAll('.pb'),x=>x.value.trim()),s=[];")
-                .append("for(var i=0;i<a.length;i++){if(a[i]===''&&b[i]==='')continue;s.push(a[i]+':'+b[i]);}")
-                .append("fetch(location.pathname+'/melden',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},")
-                .append("body:'nr=").append(m.getNumber()).append("&saetze='+encodeURIComponent(s.join(','))}).then(r=>r.json()).then(d=>{")
-                .append("var e=document.getElementById('msg');e.style.display='block';e.className='card '+(d.ok?'ok':'warn');e.textContent=d.msg;})")
-                .append(".catch(()=>{var e=document.getElementById('msg');e.style.display='block';e.className='card warn';e.textContent='Keine Verbindung zum Turnier-Laptop.';});}</script>");
-        return page("Ergebnis eintragen", b.toString(), false);
-    }
-
-    // --- Anmeldung -------------------------------------------------------------------------------
-
-    private void handleCheckin(HttpExchange ex, String rest, String method) throws Exception {
-        String token = call(t::getCheckinToken);
-        String[] parts = rest.split("/", 2);
-        if (!parts[0].equalsIgnoreCase(token)) {
-            send(ex, 404, "text/html", page("Nicht gefunden", "<p>Diese Seite gibt es nicht.</p>", false));
-            return;
-        }
-        String sub = parts.length > 1 ? parts[1] : "";
-        if (sub.isEmpty() && "GET".equals(method)) {
-            send(ex, 200, "text/html", call(this::checkinPage));
-        } else if (sub.equals("daten.json") && "GET".equals(method)) {
-            send(ex, 200, "application/json", call(this::checkinData));
-        } else if (sub.equals("melden") && "POST".equals(method)) {
-            byte[] body;
-            try (InputStream in = ex.getRequestBody()) {
-                body = in.readNBytes(64 * 1024);
-            }
-            Map<String, String> form = parseQuery(new String(body, StandardCharsets.UTF_8));
             List<String> ids = form.getOrDefault("ids", "").isBlank() ? List.of() : List.of(form.get("ids").split(","));
+            if (ids.size() > 200) ids = ids.subList(0, 200);
             boolean present = "1".equals(form.get("anwesend"));
-            send(ex, 200, "application/json", call(() -> report(ids, present)));
+            List<String> fids = ids;
+            send(ex, 200, "application/json", call(() -> report(fids, present, open, sink)));
         } else {
             send(ex, 404, "text/plain", "Nicht gefunden");
         }
     }
 
-    /** Anmeldung bzw. Abmeldung per Handy (auf {@code ui}). */
-    private String report(List<String> ids, boolean present) {
-        if (!t.isCheckinOpen()) return "{\"ok\":false,\"msg\":" + json("Die Anmeldung ist geschlossen – bitte an die Turnierleitung wenden.") + "}";
+    private String report(List<String> ids, boolean present, boolean open, CheckinSink sink) {
+        if (!open) return "{\"ok\":false,\"msg\":" + json("Die Online-Anmeldung ist geschlossen – bitte an die Turnierleitung wenden.") + "}";
         int changed = 0, locked = 0, same = 0;
-        for (String id : ids) {
-            Player p = t.getPlayers().stream().filter(x -> x.getId().equals(id.trim())).findFirst().orElse(null);
+        for (String raw : ids) {
+            String id = raw.trim();
+            Player p = t.getPlayers().stream().filter(x -> x.getId().equals(id)).findFirst().orElse(null);
             if (p == null) continue;
-            if (p.getAttendance() == Attendance.WITHDRAWN) {
+            if (!t.canCheckinOnline(p)) {
                 locked++;
                 continue;
             }
-            if (t.checkinFromPhone(p, present)) changed++;
-            else same++;
+            if (t.checkinOnline(p, present)) {
+                changed++;
+                sink.report(id, present);
+            } else {
+                same++;
+            }
         }
-        if (changed > 0) onChange.run();
-        String msg = present ? changed + (changed == 1 ? " Person" : " Personen") + " als anwesend gemeldet."
-                : changed + (changed == 1 ? " Person" : " Personen") + " als nicht anwesend gemeldet – die Turnierleitung bestätigt das.";
+        String msg = changed + (changed == 1 ? " Person" : " Personen") + (present ? " angemeldet." : " abgemeldet.");
         if (same > 0) msg += " " + same + (same == 1 ? " war" : " waren") + " bereits so gemeldet.";
-        if (locked > 0) msg += " " + locked + " bereits endgültig abgemeldet – bitte an die Turnierleitung wenden.";
+        if (locked > 0) msg += " " + locked + " nicht mehr online änderbar (abgemeldet, Nachrücker oder Klasse läuft schon) – bitte an die Turnierleitung wenden.";
         return "{\"ok\":true,\"changed\":" + changed + ",\"msg\":" + json(msg) + "}";
     }
 
-    private String checkinData() {
-        StringBuilder b = new StringBuilder("{\"open\":").append(t.isCheckinOpen()).append(",\"players\":").append(playersJson()).append(",\"clubs\":[");
+    private String checkinData(boolean open) {
+        StringBuilder b = new StringBuilder("{\"open\":").append(open).append(",\"until\":")
+                .append(json(t.getCheckinUntil() == null ? "" : t.getCheckinUntil().toString())).append(",\"players\":[");
+        int i = 0;
+        for (Player p : sortedPlayers()) {
+            if (p.isReserveOnly()) continue;
+            String st = !t.canCheckinOnline(p) ? (p.getAttendance() == Attendance.WITHDRAWN ? "withdrawn" : "locked")
+                    : p.getAttendance() == Attendance.PRESENT ? "present" : "";
+            b.append(i++ > 0 ? "," : "").append("{\"id\":").append(json(p.getId())).append(",\"n\":").append(json(p.getDisplayName()))
+                    .append(",\"c\":").append(json(p.getClubName())).append(",\"s\":").append(json(st)).append('}');
+        }
+        b.append("],\"clubs\":[");
         Collator col = Collator.getInstance(Locale.GERMAN);
         Set<String> clubs = new TreeSet<>(col);
-        for (Player p : t.getPlayers()) if (p.getClubName() != null && !p.getClubName().isBlank()) clubs.add(p.getClubName());
-        int i = 0;
+        for (Player p : t.getPlayers()) if (!p.isReserveOnly() && p.getClubName() != null && !p.getClubName().isBlank()) clubs.add(p.getClubName());
+        i = 0;
         for (String c : clubs) b.append(i++ > 0 ? "," : "").append(json(c));
         return b.append("]}").toString();
     }
 
-    private String checkinPage() {
-        String body = """
-                <div id="closed" class="card warn" style="display:none">Die Anmeldung ist geschlossen. Bitte an die Turnierleitung wenden.</div>
-                <div id="role"><p>Wer meldet an?</p>
-                 <button onclick="pickRole('self')">Ich bin Teilnehmende/r</button><button class="light" onclick="pickRole('coach')">Ich bin Betreuende/r</button></div>
-                <div id="self" style="display:none"><h2>Teilnehmende/r</h2>
+    private String checkinPage(boolean open) {
+        String until = t.getCheckinUntil() == null ? "" : " bis " + t.getCheckinUntil() + " Uhr";
+        String body = "<h2>Anmeldung am Turniertag</h2><p class=\"muted\">Online-Anmeldung" + esc(until)
+                + ". Danach meldet nur noch die Turnierleitung an oder ab.</p>" + """
+                <div id="closed" class="card warn" style="display:none">Die Online-Anmeldung ist geschlossen. Bitte an die Turnierleitung wenden.</div>
+                <div id="role"><p>Wer meldet?</p>
+                 <button type="button" data-role="self">Ich spiele selbst</button><button type="button" class="light" data-role="coach">Ich bin Betreuer/in</button></div>
+                <div id="self" style="display:none"><h3>Spieler/in</h3>
                  <p class="muted">Eigenen Namen suchen (Vorname, Nachname oder Verein) und auswählen.</p>
-                 <input type="search" id="q" placeholder="z. B. Müller Eimsbüttel"><div id="hits"></div>
+                 <input type="search" id="cq" placeholder="z. B. Brandt Elbinsel" autocomplete="off"><div id="hits"></div>
                  <div id="chosen" class="card" style="display:none"></div></div>
-                <div id="coach" style="display:none"><h2>Betreuende/r</h2>
-                 <select id="club"><option value="">Verein wählen …</option></select>
+                <div id="coach" style="display:none"><h3>Betreuer/in</h3>
+                 <select id="club"><option value="">Verein wählen</option></select>
                  <div id="clubList"></div>
-                 <div id="coachBtns" style="display:none"><button onclick="sendSel(true)">Ausgewählte: anwesend</button>
-                 <button class="light" onclick="sendSel(false)">Ausgewählte: nicht anwesend</button></div></div>
+                 <div id="coachBtns" style="display:none"><button type="button" data-send="1">Ausgewählte anmelden</button>
+                 <button type="button" class="light" data-send="0">Ausgewählte abmelden</button></div></div>
                 <div id="msg" class="card ok" style="display:none"></div>
-                <script>
+                <script>(function(){
                 var base=location.pathname.replace(/\\/$/,''),data={players:[],clubs:[],open:true},me=null;
-                var lbl={'':'offen','present':'angemeldet ✓','withdraw-requested':'Abmeldung gemeldet – wartet auf Bestätigung','withdrawn':'endgültig abgemeldet'};
-                function esc(s){return (s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
+                var lbl={'':'nicht angemeldet','present':'angemeldet ✓','withdrawn':'endgültig abgemeldet','locked':'Klasse läuft schon'};
+                function $(i){return document.getElementById(i);}
+                function esc(s){return (s||'').replace(/[<>&"]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];});}
                 function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');}
-                function load(){return fetch(base+'/daten.json').then(r=>r.json()).then(d=>{data=d;
-                 document.getElementById('closed').style.display=d.open?'none':'block';
-                 var sel=document.getElementById('club');if(sel.options.length<=1)d.clubs.forEach(c=>{var o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});
+                function load(){return fetch(base+'/daten.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){data=d;
+                 $('closed').style.display=d.open?'none':'block';$('role').style.display=d.open&&!$('self').offsetParent&&!$('coach').offsetParent?'block':$('role').style.display;
+                 if(!d.open){$('role').style.display='none';$('self').style.display='none';$('coach').style.display='none';}
+                 var sel=$('club');if(sel.options.length<=1)d.clubs.forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});
                  hits();club();if(me)choose(me);});}
-                function pickRole(r){document.getElementById('role').style.display='none';document.getElementById(r).style.display='block';}
-                function hits(){var w=norm(document.getElementById('q').value).split(/\\s+/).filter(x=>x);
-                 var h=w.length?data.players.filter(p=>w.every(x=>norm(p.n+' '+p.c).includes(x))).slice(0,30):[];
-                 document.getElementById('hits').innerHTML=h.map(p=>'<a class="card" href="#" data-id="'+esc(p.id)+'"><div class="row"><b>'+esc(p.n)+'</b><span class="muted">'+lbl[p.s]+'</span></div><div class="muted">'+esc(p.c)+'</div></a>').join('');}
-                document.getElementById('q').addEventListener('input',hits);
-                document.getElementById('hits').addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;e.preventDefault();choose(a.dataset.id);});
-                function choose(id){me=id;var p=data.players.find(x=>x.id===id);if(!p)return;var c=document.getElementById('chosen');c.style.display='block';
-                 document.getElementById('hits').innerHTML='';document.getElementById('q').value='';
-                 c.innerHTML='<b>'+esc(p.n)+'</b><div class="muted">'+esc(p.c)+' · '+lbl[p.s]+'</div>'+(p.s==='withdrawn'?'<p class="warn">Bereits endgültig abgemeldet – bitte an die Turnierleitung wenden.</p>':
-                 '<label class="pl"><input type="checkbox" id="here" '+(p.s==='present'?'checked':'')+'> angemeldet (ich bin heute da)</label><button onclick="sendMe()">Abschicken</button>');}
-                function sendMe(){send([me],document.getElementById('here').checked);}
-                function club(){var c=document.getElementById('club').value,l=document.getElementById('clubList');
-                 if(!c){l.innerHTML='';document.getElementById('coachBtns').style.display='none';return;}
-                 var ps=data.players.filter(p=>p.c===c);
-                 l.innerHTML='<div class="card">'+ps.map(p=>'<label class="pl"><input type="checkbox" value="'+esc(p.id)+'" '+(p.s==='withdrawn'?'disabled':'')+'><span><b>'+esc(p.n)+'</b><div class="muted">'+lbl[p.s]+'</div></span></label>').join('')+'</div>';
-                 document.getElementById('coachBtns').style.display=ps.length?'block':'none';}
-                document.getElementById('club').addEventListener('change',club);
-                function sendSel(present){var ids=[].slice.call(document.querySelectorAll('#clubList input:checked')).map(x=>x.value);
-                 if(!ids.length){alertMsg('Bitte zuerst Personen auswählen.',false);return;}send(ids,present);}
-                function alertMsg(t,ok){var m=document.getElementById('msg');m.style.display='block';m.className='card '+(ok?'ok':'warn');m.textContent=t;scrollTo(0,0);}
+                document.addEventListener('click',function(e){var r=e.target.closest('[data-role]');if(r){$('role').style.display='none';$(r.dataset.role).style.display='block';return;}
+                 var s=e.target.closest('[data-send]');if(s){var ids=[].slice.call(document.querySelectorAll('#clubList input:checked')).map(function(x){return x.value;});
+                  if(!ids.length){msg('Bitte zuerst Personen auswählen.',false);return;}send(ids,s.dataset.send==='1');return;}
+                 var m=e.target.closest('[data-me]');if(m){send([me],m.dataset.me==='1');return;}
+                 var a=e.target.closest('#hits a');if(a){e.preventDefault();choose(a.dataset.id);}});
+                function hits(){var w=norm($('cq').value).split(/\\s+/).filter(function(x){return x;});
+                 var h=w.length?data.players.filter(function(p){return w.every(function(x){return norm(p.n+' '+p.c).indexOf(x)>=0;});}).slice(0,30):[];
+                 $('hits').innerHTML=h.map(function(p){return '<a class="card" href="#" data-id="'+esc(p.id)+'"><div class="row"><b>'+esc(p.n)+'</b><span class="muted">'+lbl[p.s]+'</span></div><div class="muted">'+esc(p.c)+'</div></a>';}).join('');}
+                $('cq').addEventListener('input',hits);
+                function choose(id){me=id;var p=data.players.filter(function(x){return x.id===id;})[0];if(!p)return;var c=$('chosen');c.style.display='block';
+                 $('hits').innerHTML='';$('cq').value='';
+                 c.innerHTML='<b>'+esc(p.n)+'</b><div class="muted">'+esc(p.c)+' · '+lbl[p.s]+'</div>'+(p.s==='withdrawn'||p.s==='locked'?'<p class="warn">Online nicht mehr änderbar – bitte an die Turnierleitung wenden.</p>':
+                 '<button type="button" data-me="1">Ich bin da – anmelden</button><button type="button" class="light" data-me="0">Ich komme nicht – abmelden</button>');}
+                function club(){var c=$('club').value,l=$('clubList');
+                 if(!c){l.innerHTML='';$('coachBtns').style.display='none';return;}
+                 var ps=data.players.filter(function(p){return p.c===c;});
+                 l.innerHTML='<div class="card">'+ps.map(function(p){var off=p.s==='withdrawn'||p.s==='locked';return '<label class="pl"><input type="checkbox" value="'+esc(p.id)+'"'+(off?' disabled':'')+'><span><b>'+esc(p.n)+'</b><div class="muted">'+lbl[p.s]+'</div></span></label>';}).join('')+'</div>';
+                 $('coachBtns').style.display=ps.length?'block':'none';}
+                $('club').addEventListener('change',club);
+                function msg(t,ok){var m=$('msg');m.style.display='block';m.className='card '+(ok?'ok':'warn');m.textContent=t;scrollTo(0,0);}
                 function send(ids,present){fetch(base+'/melden',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
-                 body:'ids='+encodeURIComponent(ids.join(','))+'&anwesend='+(present?'1':'0')}).then(r=>r.json()).then(d=>{alertMsg(d.msg,d.ok);load();})
-                 .catch(()=>alertMsg('Keine Verbindung zum Turnier-Laptop.',false));}
-                load();
+                 body:'ids='+encodeURIComponent(ids.join(','))+'&anwesend='+(present?'1':'0')}).then(function(r){return r.json();}).then(function(d){msg(d.msg,d.ok);load();})
+                 .catch(function(){msg('Keine Verbindung – bitte später noch einmal versuchen.',false);});}
+                load();})();
                 </script>
                 """;
         return page("Anmeldung am Turniertag", body, false);

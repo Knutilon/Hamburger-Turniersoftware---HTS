@@ -163,3 +163,5 @@
 .tab .tab-label { -fx-text-fill: -hts-text; }
 .check-box .box, .radio-button .radio { -fx-background-color: #262d35; -fx-border-color: #5a6470; }
 .check-box:selected .mark, .radio-button:selected .dot { -fx-background-color: #5fd3a8; }
+.pair-card.pair-unconfirmed { -fx-background-color: #3a2f15; -fx-border-color: #f0b429; }
+.pair-card.pair-withdrawn { -fx-background-color: #4a2020; -fx-border-color: #d64545; }

@@ -102,12 +102,24 @@ public final class LiveHost {
         volatile String slug = "";                           // 1.7.0 (#147): lesbare Adresse, z. B. Herbstturnier_28_11_2026
         volatile String organizer = "";                      // 1.8.0 (#150): Ausrichter (Kopfzeile X-HTS-Ausrichter)
         volatile String world = "";                          // 1.8.0 (#151): Link zur Turnierwelt
+        // 1.9.0 (#164): Online-Anmeldung
+        volatile String checkinToken = "";
+        volatile boolean onlineCheckin;
+        volatile java.time.LocalTime checkinUntil;
+        final List<Report> reports = new ArrayList<>();      // noch nicht von HTS abgeholt (unter lock)
+        long reportSeq;
+        final AtomicInteger checkinPosts = new AtomicInteger();
+        volatile long checkinWindow;
         volatile LiveServer view;                            // geladen bei Bedarf
         volatile long lastAccess;
 
         Entry(String id) {
             this.id = id;
         }
+    }
+
+    /** 1.9.0 (#164): eine Online-Meldung, bis HTS sie abholt. */
+    record Report(long seq, String id, boolean present, long at) {
     }
 
     private final Config cfg;
@@ -128,6 +140,7 @@ public final class LiveHost {
                 if (!Files.isDirectory(d) || !ID.matcher(id).matches() || !Files.exists(d.resolve("turnier.hts"))) continue;
                 Entry e = new Entry(id);
                 readMeta(e, d);
+                readReports(e, d);
                 entries.put(id, e);
             }
         }
@@ -187,7 +200,7 @@ public final class LiveHost {
                 }
                 return;
             }
-            if (!"GET".equals(method) && !"HEAD".equals(method)) {
+            if (!"GET".equals(method) && !"HEAD".equals(method) && !("POST".equals(method) && path.startsWith("/anmeldung/"))) {
                 text(ex, 405, "Nicht erlaubt");
                 return;
             }
@@ -221,10 +234,14 @@ public final class LiveHost {
                     return;
                 }
                 case "/robots.txt" -> {
-                    text(ex, 200, "User-agent: *\nDisallow: /live/\n");
+                    text(ex, 200, "User-agent: *\nDisallow: /live/\nDisallow: /anmeldung/\n");
                     return;
                 }
                 default -> { }
+            }
+            if (path.startsWith("/anmeldung/")) {                    // 1.9.0 (#164): Online-Anmeldung
+                checkin(ex, path.substring("/anmeldung/".length()), method);
+                return;
             }
             if (path.startsWith("/live/")) {
                 String rest = path.substring(6);
@@ -295,6 +312,19 @@ public final class LiveHost {
                 delete(id);
                 json(ex, 200, "{\"ok\":true}");
             }
+            case "GET anmeldungen" -> json(ex, 200, reportsJson(id));          // 1.9.0 (#164): HTS holt Meldungen ab
+            case "POST anmeldungen" -> {                                        // Quittung: „bis=<Nr>“ – Server löscht sie
+                byte[] b = readBody(ex, 1024);
+                Map<String, String> f = LiveServer.parseQuery(b == null ? "" : new String(b, StandardCharsets.UTF_8));
+                long bis;
+                try {
+                    bis = Long.parseLong(f.getOrDefault("bis", "-1"));
+                } catch (NumberFormatException nfe) {
+                    bis = -1;
+                }
+                acknowledge(id, bis);
+                json(ex, 200, "{\"ok\":true}");
+            }
             case "POST nur-endergebnis" -> {
                 Entry e = entries.get(id);
                 if (e == null) {
@@ -356,6 +386,9 @@ public final class LiveHost {
             e.name = t.getName() == null || t.getName().isBlank() ? "Turnier" : t.getName();
             e.date = t.getDate();
             e.slug = LiveSlug.of(t.getName(), t.getDate());
+            e.checkinToken = t.getCheckinToken();
+            e.onlineCheckin = t.isOnlineCheckin();
+            e.checkinUntil = t.getCheckinUntil();
             e.organizer = organizerOf(ex);
             String w = Tournament.validWorldUrl(t.getWorldUrl());
             e.world = w == null ? "" : w;
@@ -398,6 +431,107 @@ public final class LiveHost {
         Entry e = entries.get(id);
         if (e != null) e.view = null;                         // neues Logo sofort zeigen
         json(ex, 200, "{\"ok\":true}");
+    }
+
+    // --- 1.9.0 (#164): Online-Anmeldung --------------------------------------------------------------
+
+    /** Online-Anmeldung jetzt offen? Schalter an, Uhrzeit, Turniertag (Berlin) vor der Uhrzeit, nicht beendet. */
+    static boolean checkinOpen(boolean on, java.time.LocalTime until, LocalDate date, String state, boolean finalOnly, java.time.ZonedDateTime now) {
+        return on && until != null && date != null && date.equals(now.toLocalDate()) && now.toLocalTime().isBefore(until)
+                && !"beendet".equals(state) && !finalOnly;
+    }
+
+    private boolean checkinOpen(Entry e) {
+        return checkinOpen(e.onlineCheckin, e.checkinUntil, e.date, e.state, e.finalOnly, java.time.ZonedDateTime.now(ZoneId.of("Europe/Berlin")));
+    }
+
+    private Entry byToken(String token) {
+        if (token == null || token.length() < 20 || !ID.matcher(token).matches()) return null;
+        for (Entry e : entries.values()) {
+            if (!e.checkinToken.isEmpty() && MessageDigest.isEqual(e.checkinToken.getBytes(StandardCharsets.UTF_8), token.getBytes(StandardCharsets.UTF_8))) return e;
+        }
+        return null;
+    }
+
+    private void checkin(HttpExchange ex, String rest, String method) throws Exception {
+        String[] parts = rest.split("/", 2);
+        Entry e = byToken(parts[0]);
+        LiveServer v = e == null ? null : view(e);
+        if (v == null || !e.onlineCheckin) {
+            drain(ex, 64 * 1024);
+            html(ex, 404, frame("Anmeldung", "<p>Diesen Anmelde-Link gibt es nicht (mehr). Bitte an die Turnierleitung wenden.</p>"));
+            return;
+        }
+        if ("POST".equals(method)) {
+            long now = System.currentTimeMillis();
+            if (now - e.checkinWindow > 60_000) {
+                e.checkinWindow = now;
+                e.checkinPosts.set(0);
+            }
+            if (e.checkinPosts.incrementAndGet() > 120) {            // Ratenbremse je Turnier
+                drain(ex, 64 * 1024);
+                json(ex, 429, "{\"ok\":false,\"msg\":" + LiveServer.json("Zu viele Meldungen – bitte kurz warten.") + "}");
+                return;
+            }
+        }
+        String sub = parts.length > 1 ? parts[1] : "";
+        v.serveCheckin(ex, sub, method, checkinOpen(e), (id, present) -> addReport(e, id, present));
+    }
+
+    /** Wird unter dem Turnier-Schloss aufgerufen (aus LiveServer.call). */
+    private void addReport(Entry e, String id, boolean present) {
+        e.reports.removeIf(r -> r.id().equals(id));
+        e.reports.add(new Report(++e.reportSeq, id, present, System.currentTimeMillis()));
+        writeReports(e);
+    }
+
+    private String reportsJson(String id) {
+        Entry e = entries.get(id);
+        if (e == null) return "{\"bis\":0,\"meldungen\":[]}";
+        synchronized (e.lock) {
+            StringBuilder b = new StringBuilder("{\"bis\":").append(e.reportSeq).append(",\"meldungen\":[");
+            int i = 0;
+            for (Report r : e.reports) {
+                b.append(i++ > 0 ? "," : "").append("{\"n\":").append(r.seq()).append(",\"id\":").append(LiveServer.json(r.id()))
+                        .append(",\"a\":").append(r.present() ? 1 : 0).append(",\"t\":").append(r.at()).append('}');
+            }
+            return b.append("]}").toString();
+        }
+    }
+
+    private void acknowledge(String id, long bis) {
+        Entry e = entries.get(id);
+        if (e == null || bis < 0) return;
+        synchronized (e.lock) {
+            if (e.reports.removeIf(r -> r.seq() <= bis)) writeReports(e);
+        }
+    }
+
+    private void writeReports(Entry e) {
+        StringBuilder b = new StringBuilder();
+        b.append(e.reportSeq).append('\n');
+        for (Report r : e.reports) b.append(r.seq()).append(';').append(r.id()).append(';').append(r.present() ? 1 : 0).append(';').append(r.at()).append('\n');
+        try {
+            writeAtomic(turniere.resolve(e.id).resolve("anmeldungen.txt"), b.toString().getBytes(StandardCharsets.UTF_8));
+        } catch (IOException ex) {
+            System.err.println("Anmeldungen von " + e.id + " nicht gespeichert: " + ex.getMessage());
+        }
+    }
+
+    private void readReports(Entry e, Path dir) {
+        Path f = dir.resolve("anmeldungen.txt");
+        if (!Files.isRegularFile(f)) return;
+        try {
+            List<String> lines = Files.readAllLines(f, StandardCharsets.UTF_8);
+            if (lines.isEmpty()) return;
+            e.reportSeq = Long.parseLong(lines.get(0).strip());
+            for (String l : lines.subList(1, lines.size())) {
+                String[] x = l.split(";");
+                if (x.length == 4 && ID.matcher(x[1]).matches()) e.reports.add(new Report(Long.parseLong(x[0]), x[1], "1".equals(x[2]), Long.parseLong(x[3])));
+            }
+        } catch (IOException | RuntimeException ex) {
+            System.err.println("Anmeldungen von " + e.id + " unlesbar: " + ex.getMessage());
+        }
     }
 
     private void delete(String id) throws IOException {
@@ -478,7 +612,8 @@ public final class LiveHost {
             } catch (IOException ex) {
                 return null;
             }
-        }, () -> e.organizer, HEAD_EXTRA, footer(), e.finalOnly, () -> e.updated);
+        }, () -> e.organizer, HEAD_EXTRA, footer(), e.finalOnly, () -> e.updated)
+                .home(() -> isPast(e.state, e.finalOnly, e.date, LocalDate.now(ZoneId.of("Europe/Berlin"))) ? "/vergangen" : "/");   // 1.9.0 (#165)
     }
 
     static String stateOf(Tournament t) {
@@ -506,6 +641,10 @@ public final class LiveHost {
             e.slug = p.getProperty("slug", LiveSlug.of(e.name, e.date));
             e.organizer = p.getProperty("organizer", "");
             e.world = p.getProperty("world", "");
+            e.checkinToken = p.getProperty("checkin-token", "");
+            e.onlineCheckin = Boolean.parseBoolean(p.getProperty("online-checkin", "false"));
+            String cu = p.getProperty("checkin-until", "");
+            e.checkinUntil = cu.isEmpty() ? null : java.time.LocalTime.parse(cu);
         } catch (IOException | RuntimeException ex) {
             System.err.println("Angaben zu Turnier " + e.id + " unvollständig: " + ex.getMessage());
         }
@@ -521,6 +660,9 @@ public final class LiveHost {
         p.setProperty("slug", e.slug);
         if (!e.organizer.isEmpty()) p.setProperty("organizer", e.organizer);
         if (!e.world.isEmpty()) p.setProperty("world", e.world);
+        if (!e.checkinToken.isEmpty()) p.setProperty("checkin-token", e.checkinToken);
+        p.setProperty("online-checkin", String.valueOf(e.onlineCheckin));
+        if (e.checkinUntil != null) p.setProperty("checkin-until", e.checkinUntil.toString());
         java.io.StringWriter w = new java.io.StringWriter();
         p.store(w, "HTS-Live-Server");
         writeAtomic(turniere.resolve(e.id).resolve("meta.properties"), w.toString().getBytes(StandardCharsets.UTF_8));
@@ -576,6 +718,7 @@ public final class LiveHost {
 
     /** Seitengerüst; {@code tabs} = Reiterleiste unter dem Kopf (Startseite) oder leer. */
     String frame(String title, String tabs, String body) {
+        if (tabs.isEmpty()) body = "<a class=\"homebtn\" href=\"/\">← Alle Turniere</a>" + body;             // 1.9.0 (#165)
         return "<!doctype html><html lang=\"de\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
                 + "<title>" + LiveServer.esc(title) + " – " + LiveServer.esc(cfg.siteTitle()) + "</title>" + HEAD_EXTRA
                 + "<style>" + LiveServer.CSS + HOST_CSS + "</style></head><body><header style=\"padding-bottom:10px\"><div class=\"hb\"><a class=\"brand\" href=\"/\">"

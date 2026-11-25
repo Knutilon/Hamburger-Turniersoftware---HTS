@@ -5178,153 +5178,144 @@ public final class Tournament {
         markModified();
     }
 
-    // --- 0.35: Anwesenheit am Turniertag, Anmeldung per Adresse -----------------------------------
+    // --- 0.35: Anwesenheit am Turniertag; 1.9.0 (#164): Online-Anmeldung über den Live-Server -------------------
 
-    private boolean checkinLocked;
+    private boolean onlineCheckin;
+    private java.time.LocalTime checkinUntil;
     private String checkinToken;
+    /** online gemeldete Personen → Anwesenheit davor (für „Online-Meldung zurücknehmen“) */
+    private final java.util.Map<String, Attendance> onlineMarks = new java.util.LinkedHashMap<>();
 
-    /** Anmeldung per Adresse (Handy) von der Turnierleitung gesperrt? */
-    public boolean isCheckinLocked() {
-        return checkinLocked;
+    /** Schalter „Online-Anmeldung zum Turnier“ (Seite „Live im Internet“, Vorgabe aus). */
+    public boolean isOnlineCheckin() {
+        return onlineCheckin;
     }
 
-    public void setCheckinLocked(boolean b) {
-        if (checkinLocked != b) {
-            checkinLocked = b;
+    public void setOnlineCheckin(boolean b) {
+        if (onlineCheckin != b) {
+            onlineCheckin = b;
             markModified();
         }
     }
 
-    /** Anmeldung per Adresse möglich: nicht gesperrt und noch nicht alle Klassen beendet. */
-    public boolean isCheckinOpen() {
-        return !checkinLocked && !isCompletelyFinished();
+    /** „Online-Anmeldung bis“ (Uhrzeit am Turniertag) oder {@code null}. */
+    public java.time.LocalTime getCheckinUntil() {
+        return checkinUntil;
     }
 
-    /** Zufälliger Schlüssel in der Adresse der Anmeldeseite (steht im ausgedruckten QR-Code). */
-    public String getCheckinToken() {
-        if (checkinToken == null || checkinToken.isBlank()) {
-            String abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            java.security.SecureRandom r = new java.security.SecureRandom();
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < 8; i++) sb.append(abc.charAt(r.nextInt(abc.length())));
-            checkinToken = sb.toString();
-        }
-        return checkinToken;
-    }
-
-    // --- 1.1 (#93): Ergebnisse per Handy (mit dem Handy-Zugang vorerst ausgeblendet) ---------------------------
-
-    private boolean phoneResults;
-    private boolean phoneResultsDirect;
-
-    /** Ein per Handy gemeldetes Ergebnis, das die Turnierleitung noch bestätigen muss. */
-    public record PhoneResult(Match match, int table, List<int[]> sets, LocalDateTime at) {
-        public String setsText() {
-            return String.join(", ", sets.stream().map(x -> x[0] + ":" + x[1]).toList());
-        }
-    }
-
-    private final List<PhoneResult> phoneInbox = new java.util.ArrayList<>();
-
-    /** Option „Ergebnisse per Handy eintragen“ (Mobile Einstellungen, Standard aus). */
-    public boolean isPhoneResults() { return phoneResults; }
-
-    public void setPhoneResults(boolean b) {
-        if (phoneResults != b) {
-            phoneResults = b;
+    public void setCheckinUntil(java.time.LocalTime t) {
+        java.time.LocalTime n = t == null ? null : t.withSecond(0).withNano(0);
+        if (!java.util.Objects.equals(n, checkinUntil)) {
+            checkinUntil = n;
             markModified();
-        }
-    }
-
-    /** Per Handy gemeldete Ergebnisse ohne Bestätigung übernehmen. */
-    public boolean isPhoneResultsDirect() { return phoneResultsDirect; }
-
-    public void setPhoneResultsDirect(boolean b) {
-        if (phoneResultsDirect != b) {
-            phoneResultsDirect = b;
-            markModified();
-        }
-    }
-
-    /** Schlüssel in der Adresse der Ergebnisseite eines Tisches (aus dem Turnier-Schlüssel abgeleitet, je Tisch anders). */
-    public String tableResultToken(int table) {
-        try {
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] h = md.digest((getCheckinToken() + ":ergebnis:" + getId() + ":" + table).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            String abc = "abcdefghjkmnpqrstuvwxyz23456789";
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < 10; i++) sb.append(abc.charAt((h[i] & 0xff) % abc.length()));
-            return sb.toString();
-        } catch (java.security.NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
         }
     }
 
     /**
-     * Ergebnis per Handy für das Spiel an einem Tisch melden. Geprüft wird wie bei der Eingabe in HTS; mit „direkt
-     * übernehmen“ wird es sofort eingetragen, sonst wartet es auf die Bestätigung.
-     * @return {@code true}, wenn direkt übernommen
-     * @throws IllegalArgumentException ungültiges Ergebnis; IllegalStateException kein passendes Spiel am Tisch
+     * Online-Anmeldung jetzt möglich? Schalter an, Uhrzeit eingetragen, heute ist der Turniertag, die Uhrzeit ist noch
+     * nicht erreicht und noch nicht alle Klassen sind beendet. (Ob das Turnier veröffentlicht ist, prüft HTS bzw. der Server.)
      */
-    public boolean submitPhoneResult(int table, int matchNumber, List<int[]> sets) {
-        if (!phoneResults) throw new IllegalStateException("Ergebnisse per Handy sind ausgeschaltet.");
-        Match m = activeMatchAt(table).orElse(null);
-        if (m == null || m.getNumber() != matchNumber) throw new IllegalStateException("An diesem Tisch läuft dieses Spiel nicht mehr.");
-        if (m.getStatus() != MatchStatus.ACTIVE) throw new IllegalStateException("Das Spiel ist angehalten.");
-        evaluateScore(m, sets, 0);                       // wirft bei ungültigem Ergebnis
-        if (phoneResultsDirect) {
-            recordResult(m, sets, 0);
-            return true;
-        }
-        phoneInbox.removeIf(r -> r.match() == m);
-        phoneInbox.add(new PhoneResult(m, table, List.copyOf(sets), LocalDateTime.now().withNano(0)));
-        return false;
+    public boolean isOnlineCheckinOpen(java.time.LocalDateTime now) {
+        return onlineCheckin && checkinUntil != null && getDate() != null && getDate().equals(now.toLocalDate())
+                && now.toLocalTime().isBefore(checkinUntil) && !isCompletelyFinished();
     }
 
-    /** Wartende Handy-Ergebnisse (ältestes zuerst); Spiele, die inzwischen anders erledigt sind, fallen heraus. */
-    public List<PhoneResult> pendingPhoneResults() {
-        phoneInbox.removeIf(r -> r.match().getStatus() != MatchStatus.ACTIVE || !matches.contains(r.match()));
-        return List.copyOf(phoneInbox);
+    /** Zufälliger Schlüssel in der Adresse der Anmeldeseite (26 Zeichen ≈ 130 Bit; steht im ausgedruckten QR-Code). */
+    public String getCheckinToken() {
+        if (checkinToken == null || checkinToken.length() < 20) checkinToken = randomToken();
+        return checkinToken;
     }
 
-    /** Handy-Ergebnis übernehmen. */
-    public void acceptPhoneResult(PhoneResult r) {
-        phoneInbox.remove(r);
-        recordResult(r.match(), r.sets(), 0);
+    /** „Neuen Anmelde-Link erzeugen“: der alte Link wird sofort ungültig. */
+    public String newCheckinToken() {
+        checkinToken = randomToken();
+        markModified();
+        return checkinToken;
     }
 
-    /** Handy-Ergebnis verwerfen. */
-    public void rejectPhoneResult(PhoneResult r) {
-        phoneInbox.remove(r);
+    private static String randomToken() {
+        String abc = "abcdefghjkmnpqrstuvwxyz23456789";
+        java.security.SecureRandom r = new java.security.SecureRandom();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 26; i++) sb.append(abc.charAt(r.nextInt(abc.length())));
+        return sb.toString();
     }
 
     /** Nur für das Laden. */
-    public void restoreCheckin(boolean locked, String token) {
-        checkinLocked = locked;
+    public void restoreCheckin(boolean online, java.time.LocalTime until, String token) {
+        onlineCheckin = online;
+        checkinUntil = until;
         checkinToken = token;
     }
 
-    /** Anwesenheit setzen (Turnierleitung oder Anmeldeseite). */
+    /** Anwesenheit setzen (Turnierleitung); eine Online-Markierung der Person entfällt dabei. */
     public void setAttendance(Player p, Attendance a) {
+        onlineMarks.remove(p.getId());
         if (p.getAttendance() != a) {
             p.setAttendance(a);
             markModified();
         }
     }
 
+    /** Darf sich die Person noch online an- bzw. abmelden? (nicht endgültig abgemeldet, kein Nachrücker, nicht nur gestartete Klassen) */
+    public boolean canCheckinOnline(Player p) {
+        if (p.getAttendance() == Attendance.WITHDRAWN || p.isReserveOnly()) return false;
+        List<String> names = new java.util.ArrayList<>(p.getRegistrations());
+        names.addAll(p.getClassNames());
+        boolean any = false;
+        for (String n : names) {
+            PlayingClass c = findClass(n).orElse(null);
+            if (c == null) continue;
+            any = true;
+            if (!rootOf(c).isStarted()) return true;
+        }
+        return !any;
+    }
+
     /**
-     * Anmeldung per Handy: Teilnehmende/Betreuende melden „anwesend“ oder „nicht anwesend“. „Nicht anwesend“ muss die
-     * Turnierleitung bestätigen; endgültig Abgemeldete ändert nur die Turnierleitung.
+     * 1.9.0 (#164): Meldung über die Online-Anmeldung – „anwesend“ = angemeldet, „nicht anwesend“ = nicht angemeldet
+     * (keine endgültige Abmeldung). Merkt sich die Anwesenheit davor für „Online-Meldung zurücknehmen“.
      *
      * @return {@code true}, wenn sich etwas geändert hat
      */
-    public boolean checkinFromPhone(Player p, boolean present) {
-        if (!isCheckinOpen()) throw new IllegalStateException("Die Anmeldung ist geschlossen.");
-        if (p.getAttendance() == Attendance.WITHDRAWN || p.isReserveOnly()) return false;     // Nachrücker: keine An-/Abmeldung
-        Attendance next = present ? Attendance.PRESENT : Attendance.WITHDRAW_REQUESTED;
+    public boolean checkinOnline(Player p, boolean present) {
+        if (!canCheckinOnline(p)) return false;
+        Attendance next = present ? Attendance.PRESENT : Attendance.UNKNOWN;
         if (p.getAttendance() == next) return false;
-        setAttendance(p, next);
+        Attendance before = onlineMarks.containsKey(p.getId()) ? onlineMarks.get(p.getId()) : p.getAttendance();
+        p.setAttendance(next);
+        onlineMarks.put(p.getId(), before);
+        markModified();
         return true;
+    }
+
+    /** Wurde die Anwesenheit der Person online gemeldet (und seitdem nicht von Hand geändert)? */
+    public boolean isOnlineMarked(Player p) {
+        return onlineMarks.containsKey(p.getId());
+    }
+
+    /** Online-Markierung entfernen (Anwesenheit von Hand geändert). */
+    public void clearOnlineMark(Player p) {
+        if (onlineMarks.remove(p.getId()) != null) markModified();
+    }
+
+    /** „Online-Meldung zurücknehmen“: Anwesenheit wie vor der Online-Meldung. */
+    public boolean undoOnline(Player p) {
+        Attendance before = onlineMarks.remove(p.getId());
+        if (before == null) return false;
+        p.setAttendance(before);
+        markModified();
+        return true;
+    }
+
+    /** Für das Speichern: Kennung → Anwesenheit davor. */
+    public java.util.Map<String, Attendance> getOnlineMarks() {
+        return java.util.Collections.unmodifiableMap(onlineMarks);
+    }
+
+    /** Nur für das Laden. */
+    public void restoreOnlineMark(String id, Attendance before) {
+        onlineMarks.put(id, before);
     }
 
     /** Gemeldete einer Klasse (laut Meldeliste bzw. in der Klasse/in Paarungen) – Nachrücker zählen nicht. */
@@ -5377,6 +5368,8 @@ public final class Tournament {
 
     /** Grund, warum die Klasse wegen offener An-/Abmeldungen nicht starten kann – sonst {@code null}. */
     public String attendanceProblem(PlayingClass c) {
+        String pp = pairProblem(c);                                   // 1.9.0 (#167)
+        if (pp != null) return pp;
         List<Player> open = openAttendance(c);
         if (open.isEmpty()) return null;
         List<String> names = open.stream().limit(8).map(Player::getDisplayName).toList();
@@ -5431,7 +5424,65 @@ public final class Tournament {
                 b.setRegisteredPartner(pr[0], a.identityKey());
             }
         }
-        return merge(imported);
+        MergeResult r = merge(imported);
+        createRegisteredPairs();                                     // 1.9.0 (#167)
+        return r;
+    }
+
+    /**
+     * 1.9.0 (#167): Gemeldete Paarungen (laut click-TT) sofort als Doppelpaarungen in die (noch nicht ausgeloste) Klasse
+     * legen – auch wenn die beiden noch nicht angemeldet sind; sie sind dann markiert und die Klasse startet erst, wenn
+     * beide angemeldet sind ({@link #pairProblem}).
+     */
+    public int createRegisteredPairs() {
+        Map<String, Player> byKey = new java.util.HashMap<>();
+        for (Player p : players) byKey.put(p.identityKey(), p);
+        int n = 0;
+        for (PlayingClass c : rootClasses()) {
+            if (!c.isDoubles() || c.isTeam() || c.isDrawn() || c.isStarted()) continue;
+            for (Player p : new java.util.ArrayList<>(players)) {
+                String key = p.getRegisteredPartner(c.getName());
+                Player partner = key == null ? null : byKey.get(key);
+                if (partner == null || partner == p || !p.isEnteredFor(c.getName()) || !partner.isEnteredFor(c.getName())) continue;
+                if (p.getAttendance() == Attendance.WITHDRAWN || partner.getAttendance() == Attendance.WITHDRAWN) continue;
+                if (pairOf(p, c).isPresent() || pairOf(partner, c).isPresent()) continue;
+                createPair(c, p, partner);
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /** 1.9.0 (#167): Paarung, deren Mitglieder (noch) nicht alle angemeldet sind – „markiert“. */
+    public boolean isPairUnconfirmed(DoublesPair pair) {
+        PlayingClass c = findClass(pair.getClassName()).orElse(null);
+        if (c == null || !rootOf(c).isImportedFromXml()) return false;
+        for (Player m : pair.members()) if (m != null && m.getAttendance() != Attendance.PRESENT) return true;
+        return false;
+    }
+
+    /**
+     * 1.9.0 (#167): Grund, warum die Doppelklasse nicht ausgelost bzw. gestartet werden kann (Paarungen mit nicht
+     * angemeldeten oder abgemeldeten Mitgliedern) – sonst {@code null}.
+     */
+    public String pairProblem(PlayingClass c) {
+        PlayingClass root = rootOf(c);
+        if (!root.isDoubles() || !root.isImportedFromXml()) return null;
+        List<String> open = new java.util.ArrayList<>(), gone = new java.util.ArrayList<>();
+        for (DoublesPair pair : pairsIn(root)) {
+            for (Player m : pair.members()) {
+                if (m == null) continue;
+                if (m.getAttendance() == Attendance.WITHDRAWN) gone.add(pair.getDisplayName());
+                else if (m.getAttendance() != Attendance.PRESENT) open.add(pair.getDisplayName());
+                if (m.getAttendance() != Attendance.PRESENT) break;
+            }
+        }
+        if (open.isEmpty() && gone.isEmpty()) return null;
+        StringBuilder b = new StringBuilder("„" + root.getName() + "“ kann noch nicht ausgelost bzw. gestartet werden:");
+        if (!open.isEmpty()) b.append(" noch nicht angemeldet – ").append(String.join("; ", open.stream().limit(8).toList()))
+                .append(open.size() > 8 ? " und " + (open.size() - 8) + " weitere" : "").append(".");
+        if (!gone.isEmpty()) b.append(" Partner/in abgemeldet (Paarung auflösen) – ").append(String.join("; ", gone)).append(".");
+        return b.toString();
     }
 
     /**
@@ -5612,7 +5663,8 @@ public final class Tournament {
 
     /** Wird in diesem Turnier überhaupt eine Gebühr erhoben (Klassen- oder Nachmeldegebühr)? */
     public boolean hasFees() {
-        return lateFeeCents > 0 || classes.stream().anyMatch(c -> !c.isPhase() && !c.isDoubles() && c.getFeeCents() != null);
+        // 1.9.0 (#166): nur echte Gebühren (> 0 €) – Startgebühr 0 bzw. leer = ohne Bezahlen
+        return lateFeeCents > 0 || classes.stream().anyMatch(c -> !c.isPhase() && !c.isDoubles() && c.getFeeCents() != null && c.getFeeCents() > 0);
     }
 
     /**
@@ -6107,7 +6159,7 @@ public final class Tournament {
             if (c.isPhase() && classes.contains(c)) removeClass(c);
         }
         for (Player p : players) p.setAttendance(Attendance.UNKNOWN);
-        checkinLocked = false;
+        onlineMarks.clear();
         checkinToken = null;
         for (PlayingClass c : classes) {
             c.setFollowUpClass(null);
@@ -6142,7 +6194,7 @@ public final class Tournament {
         matches.clear();
         tableClasses.clear();
         for (Player p : players) p.setAttendance(Attendance.UNKNOWN);
-        checkinLocked = false;
+        onlineMarks.clear();
         checkinToken = null;
         setStartedAt(null);
         markModified();
