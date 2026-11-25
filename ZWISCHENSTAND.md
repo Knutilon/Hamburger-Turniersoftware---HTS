@@ -129,6 +129,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
      schicken); Protokoll-Dokument, Anleitung, Handbuch. Tests: Meldung im Zeitraum, nach Ablauf abgelehnt, falscher/
      alter Schlüssel abgelehnt, Verein anmelden, Abmeldung, Übernahme in HTS, gestartete Klasse gesperrt.
 
+7. LIVE-SEITEN: KNOPF „ZURÜCK ZUR TURNIERÜBERSICHT“ (Nutzer 25.11.2026, 19:07, Issue #165): Auf den Turnierseiten gibt es
+   bisher nur den Link „Alle Turniere“ ganz unten in der Fußzeile; Logo und Turniername oben führen zur Startseite DES
+   TURNIERS. Künftig oben im Kopf jeder Turnierseite (über bzw. links neben Logo und Turniername) ein gut sichtbarer Knopf
+   „← Alle Turniere“ zur Startseite https://<Server>/ (bei vergangenen Turnieren zu /vergangen). Auch auf Spielseiten,
+   „Meine Spiele“, Impressum, Datenschutz und Spenden. Nur auf dem Live-Server (nicht nötig, wenn es nur ein Turnier gibt –
+   trotzdem zeigen). Auf dem Handy mit großer Tippfläche (mind. 44 px), Text nie abkürzen.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
