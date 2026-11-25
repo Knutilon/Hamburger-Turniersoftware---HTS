@@ -73,6 +73,16 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Feste Farbe entfernen; außerdem die ganze Oberfläche im Darkmode prüfen (Kästchen, Optionsfelder, Auswahllisten,
    Hinweise, Symbole – Icons.of setzt fest #1f1f1f, im Darkmode nur im Seitenmenü umgefärbt) und mit Screenshots
    aller Seiten und Dialoge im Darkmode belegen (Kontrast mind. 4,5 : 1).
+   Ergänzung Prüfung 25.11.2026: Dialog „Spielklasse … – nur Ansicht“ – gesperrte Felder im Darkmode kaum lesbar.
+4. LIVE-SERVER: UPLOAD KOMPRIMIEREN (Issue #170, Belastungstest 25.11.2026): Turnierdatei wird unkomprimiert
+   hochgeladen (8.000 Meldungen: 4–8 MB je Upload, gzip 0,5–0,9 MB). gzip im Publisher, Entpacken im LiveHost mit
+   Größenbegrenzung; ältere Server weiter bedienen.
+5. LIVE-SERVER: SEITEN ZWISCHENSPEICHERN (Issue #171): Seiten je Adresse bis zum nächsten Upload cachen; große
+   Klassenseite 170 ms, Sperre je Turnier → nur ≈ 5,5 Seiten/s (≈ 55 Zuschauer). entrantIndex nicht je Aufruf neu;
+   Upload außerhalb der Sperre parsen.
+6. GROSSE TURNIERE: OBERFLÄCHE NACH ERGEBNIS (Issue #172): unsichtbare Teilnehmerliste nicht bei jedem Ergebnis neu
+   aufbauen (550 ms), Tische nicht doppelt aktualisieren, Live-Stand im Hintergrund erstellen.
+7. INFO-DIALOG ABGESCHNITTEN (Issue #173, Bug): bei 1093 × 614 Text rechts abgeschnitten.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
