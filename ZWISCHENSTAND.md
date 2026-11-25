@@ -68,6 +68,11 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    brauche ich?“ mit drei Karten Windows / macOS (Apple-Chip) / Linux (Dateiname + Startanleitung, auf dem Handy
    untereinander); grüner Hinweis „Gut zu wissen“ (Dateien unter „Assets“, alte Turnierdateien lesbar, Link Spenden).
    Keine Versionsnummer auf der Seite. Links target="_blank" rel="noopener"; Knöpfe ≥ 44 px; Texte nie abkürzen.
+3. DARKMODE: ALLE OPTIONEN LESBAR (Issue #169, Bug, Nutzer 25.11.2026): Auf „Urkunden drucken“ → „Welche
+   Urkunden?“ sind die Optionsfelder im Darkmode unlesbar (CertificatesView setzt fest -fx-text-fill: #1f2937).
+   Feste Farbe entfernen; außerdem die ganze Oberfläche im Darkmode prüfen (Kästchen, Optionsfelder, Auswahllisten,
+   Hinweise, Symbole – Icons.of setzt fest #1f1f1f, im Darkmode nur im Seitenmenü umgefärbt) und mit Screenshots
+   aller Seiten und Dialoge im Darkmode belegen (Kontrast mind. 4,5 : 1).
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
