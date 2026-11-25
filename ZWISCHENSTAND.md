@@ -87,7 +87,7 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 6. GROSSE TURNIERE: OBERFLÄCHE NACH ERGEBNIS (Issue #172): unsichtbare Teilnehmerliste nicht bei jedem Ergebnis neu
    aufbauen (550 ms), Tische nicht doppelt aktualisieren, Live-Stand im Hintergrund erstellen.
 7. INFO-DIALOG ABGESCHNITTEN (Issue #173, Bug): bei 1093 × 614 Text rechts abgeschnitten.
-8. LIVE-SEITEN: KO-KARTEN UND SAUBERER KO-BAUM (Issue #174, Nutzer 26.11.2026, Design – Canvas
+8. LIVE-SEITEN: KO-KARTEN UND SAUBERER KO-BAUM (Issue #174, Nutzer 26.11.2026, DESIGN FREIGEGEBEN – Canvas
    https://claude.ai/artifact/Dq7HkenhPJYsDP7JGRaZYz, Ansichten „KO-Baum“, „Karten-Zustände“, „Handy“):
    Karte = Variante E + C: Zeile des Siegers hellgrün hinterlegt (#e4f7ef), Name fett; rechts jeder Satz als eigene
    Spalte (gewonnene Sätze fett), dahinter nach einem Trennstrich der Satzstand (Sieger fett im HTS-Grün #187250,
@@ -97,6 +97,7 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    beiden Vorgängern; Linien als Klammer: waagerechter Strich aus jeder Karte, senkrechter Strich verbindet das Paar,
    waagerechter Strich zum Folgespiel (1,5 px #b9c1ca, 40 px Rundenabstand); Spiel um Platz 3 unter dem Baum ohne
    Linien. LiveServer.koTree/koCard und CSS (.kt/.kc/.km) umbauen; alle Karten einer Runde gleich breit.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
