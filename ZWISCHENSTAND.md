@@ -104,6 +104,9 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 10. LIVE-SERVER: REITER „LAUFENDE TURNIERE“ (Issue #176, Nutzer 26.11.2026): Reiter „Aktuelle Turniere“ auf der
    Startseite in „Laufende Turniere“ umbenennen (auch Leertext „Gerade keine laufenden Turniere.“, Doku, Tests).
    Inhalt unverändert. Download-Design entsprechend angepasst.
+11. „BEDIENUNG“ IN DEN REITER „PROGRAMM“ (Issue #177, Nutzer 26.11.2026): Bereich „Bedienung“ (Schalter
+   Tablet-Modus, gilt für diesen Rechner) aus dem Info-Dialog entfernen und im Reiter „Programm“ der Turnierübersicht
+   anzeigen (bei den übrigen Programmeinstellungen); Text umbrechen (#173). Doku/Handbuch anpassen.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
