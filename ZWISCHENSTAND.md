@@ -136,6 +136,14 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    „Meine Spiele“, Impressum, Datenschutz und Spenden. Nur auf dem Live-Server (nicht nötig, wenn es nur ein Turnier gibt –
    trotzdem zeigen). Auf dem Handy mit großer Tippfläche (mind. 44 px), Text nie abkürzen.
 
+8. TEILNEHMENDE: „BEZAHLT“ NUR, WENN DAS TURNIER GEBÜHREN HAT (Nutzer 25.11.2026, 19:10, Issue #166): Spalten
+   „Bezahlt“ und „Gebühr“, der Hinweis „Angemeldet, aber noch nicht bezahlt – hellblau markiert“ (mit Zähler), die
+   hellblaue Markierung, die Aktionen „Bezahlt – bar/Überweisung“, „Gebühr erlassen“, „Verein abrechnen“, Quittung und
+   Kassenübersicht erscheinen nur, wenn im Turnier eine Gebühr eingestellt ist (Startgebühr > 0 in mindestens einer
+   Einzelklasse oder Nachmeldegebühr > 0). Ohne Gebühr: nur „Angemeldet“ – Haken genügt, nichts hellblau. Wird später
+   eine Gebühr eingetragen, erscheinen Spalten und Aktionen sofort (bisherige Zahlungsangaben bleiben erhalten).
+   Spaltenbreiten danach wieder mit Ui.fitColumns. Test: Turnier ohne Gebühren → keine Bezahlt-Spalte, kein Hinweis.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
