@@ -144,6 +144,22 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    eine Gebühr eingetragen, erscheinen Spalten und Aktionen sofort (bisherige Zahlungsangaben bleiben erhalten).
    Spaltenbreiten danach wieder mit Ui.fitColumns. Test: Turnier ohne Gebühren → keine Bezahlt-Spalte, kein Hinweis.
 
+9. IMPORTIERTE DOPPEL/MIXED SOFORT ALS DOPPELPAARUNGEN (Nutzer 25.11.2026, 19:13, Issue #167): Bisher merkt sich HTS die
+   Paarungen aus der click-TT-Datei nur (Spalte „Doppelpartner/in“ unter „Verfügbar“, Status „… Doppelpaarungen
+   gemerkt“); Doppelpaarung wird es erst, wenn beide am Turniertag angemeldet sind – im Demo-Turnier stehen deshalb
+   0 Doppel im Mixed. Künftig:
+   - Gemeldete Paarungen erscheinen beim Import sofort unter „Doppelpaarungen“ der Klasse (Doppel und Mixed).
+   - Ist eine/r der beiden noch nicht angemeldet, ist die Paarung markiert (z. B. orange Karte, Chip „nicht angemeldet:
+     Name“); sind beide angemeldet, normal. Endgültig abgemeldet → Paarung rot mit „Partner/in abgemeldet“ und Aktion
+     „Paarung auflösen“ (Übrige/r zurück unter „Verfügbar“ bzw. neu zulosen).
+   - Klasse starten bzw. auslosen ist gesperrt, solange eine Paarung markiert ist – Hinweis mit Liste der betroffenen
+     Paarungen und den Möglichkeiten „anmelden“, „Paarung auflösen“ oder „Paarung entfernen“. Ohne Partner Gemeldete
+     bleiben wie bisher unter „Verfügbar“ (zulosen möglich).
+   - Gilt auch für das Zuordnen von Hand und für kopierte Turniere; Nachrücker-Paarungen (Warteliste) bleiben unter
+     „Verfügbar“. Online-Anmeldung (Punkt 6) aktualisiert die Markierung sofort.
+   - Tests: Import mit Paarungen → Doppel in der Klasse, markiert; beide angemeldet → frei; Start gesperrt mit
+     verständlicher Meldung; Auflösen.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
