@@ -58,6 +58,14 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
    Gerät; Ergebnisse als Bug/Feature melden.
 
+2. KLASSEN: FILTER „VERFÜGBAR“ JE KLASSE MERKEN (Nutzer 25.11.2026, 18:20, Issue #160): Auf der Seite „Klassen“ gelten die
+   Filter über der Liste „Verfügbar“ (Einzelklasse, Suche, Verein, Auswahl „Alle“/…, „nur passende“) bisher für alle
+   Klassen, sobald sie einmal gewählt sind. Künftig merkt sich HTS die Filter JE KLASSE: Wechsel zu einer anderen Klasse
+   zeigt deren eigene Filter (bei einer noch nie geöffneten Klasse die Vorgaben: „Alle Teilnehmenden“, alle Vereine,
+   „Alle“, „nur passende“ an, Suche leer); zurück zur ersten Klasse stellt deren Filter wieder her. Gemerkt für die
+   Sitzung (solange das Turnier offen ist; nicht in der Turnierdatei). Test: Filter in Klasse A setzen, zu B wechseln
+   (Vorgaben), zurück zu A (Filter wieder da).
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
