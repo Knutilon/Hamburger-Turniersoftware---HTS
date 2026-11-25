@@ -74,9 +74,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Hinweise, Symbole – Icons.of setzt fest #1f1f1f, im Darkmode nur im Seitenmenü umgefärbt) und mit Screenshots
    aller Seiten und Dialoge im Darkmode belegen (Kontrast mind. 4,5 : 1).
    Ergänzung Prüfung 25.11.2026: Dialog „Spielklasse … – nur Ansicht“ – gesperrte Felder im Darkmode kaum lesbar.
-4. LIVE-SERVER: UPLOAD KOMPRIMIEREN (Issue #170, Belastungstest 25.11.2026): Turnierdatei wird unkomprimiert
-   hochgeladen (8.000 Meldungen: 4–8 MB je Upload, gzip 0,5–0,9 MB). gzip im Publisher, Entpacken im LiveHost mit
-   Größenbegrenzung; ältere Server weiter bedienen.
+4. LIVE-SERVER: KOMPRIMIERTER UPLOAD HÖCHSTENS ALLE 30 SEKUNDEN (Issue #170, Belastungstest 25.11.2026, Intervall
+   festgelegt vom Nutzer 26.11.2026): Turnierdatei wird bisher unkomprimiert und bis zu alle 5 s hochgeladen
+   (8.000 Meldungen: 4–8 MB je Upload, gzip 0,5–0,9 MB). Neu: gzip im Publisher, Entpacken im LiveHost mit
+   Größenbegrenzung (ältere Server weiter bedienen); Publisher.MIN_INTERVAL_MS = 30 s (nur bei Änderungen).
+   Erwartung Großturnier 10 h: ≈ 0,9 GB Upload/Tag statt 14–43 GB; Live-Seiten höchstens ≈ 40 s hinterher.
+   Online-Anmeldung weiter alle 5 s abfragen. Texte anpassen („höchstens alle 30 Sekunden“ auf „Live im Internet“,
+   Dokumentation, WEBSERVER-PROTOKOLL).
 5. LIVE-SERVER: SEITEN ZWISCHENSPEICHERN (Issue #171): Seiten je Adresse bis zum nächsten Upload cachen; große
    Klassenseite 170 ms, Sperre je Turnier → nur ≈ 5,5 Seiten/s (≈ 55 Zuschauer). entrantIndex nicht je Aufruf neu;
    Upload außerhalb der Sperre parsen.
