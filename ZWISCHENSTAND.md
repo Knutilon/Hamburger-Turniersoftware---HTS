@@ -182,9 +182,16 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    - NUTZERWUNSCH: Telefonnummer, E-Mail und Anschrift NICHT ins öffentliche GitHub-Projekt – auch nicht ins Server-Paket,
      weil das als Release-Anhang öffentlich wird. Ins Repo/Paket kommen nur die neutralen Vorlagen mit Platzhaltern
      (dist/hts-server/vorlagen/impressum.html und datenschutz.html, schon auf den neuen Text umgestellt).
-   - Beim „kompilieren“ von 1.8.0: die beiden persönlichen Dateien dem Nutzer separat per SendUserFile schicken, mit dem
-     scp-Befehl zum Hochladen NACH dem Server-Update (install.sh/update.sh überschreiben vorhandene Rechtstexte nicht).
-   - Erst zusammen mit den Punkten 8/9 hochladen (sonst stimmt „nichts im Browser gespeichert“ nicht).
+   - Stand 25.11.2026, 17:02: Impressum mit c/o-Anschrift „Dein-Impressum“ (Hungen) und neuer Telefonnummer; dieselbe
+     c/o-Anschrift in der Datenschutzerklärung (verantwortliche Stelle). Bisher ist NICHTS davon auf dem Server.
+   - Verarbeitung im Server-Skript (Nutzer 25.11.2026, 17:04): update.sh (und install.sh) erkennen eine Datei
+     hts-rechtstexte.tar.gz (bzw. einen Ordner rechtstexte/) neben dem Skript bzw. im selben Ordner wie das Server-Paket.
+     Ist sie da: impressum.html und datenschutz.html prüfen (nur diese zwei Namen, kein Platzhalter „__AUSFUELLEN__“
+     mehr drin), alte Dateien als .bak-<Datum> sichern, neue mit root:hts 644 nach /etc/hts-server installieren, Meldung
+     ausgeben. Fehlt sie: Rechtstexte unverändert lassen, Hinweis ausgeben.
+   - Beim „kompilieren“ von 1.8.0: hts-rechtstexte.tar.gz aus /home/claude/work/rechtstexte-betreiber/ bauen und dem
+     Nutzer NUR per SendUserFile schicken (nie ins Repo, nie als Release-Anhang); Anleitung: beide Archive per scp
+     hochladen, dann update.sh – alles in einem Durchgang zusammen mit den Punkten 8/9.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
