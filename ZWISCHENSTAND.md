@@ -57,6 +57,9 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 1. TABLET: TEST AUF ECHTEM GERÄT (Issue #133, offen aus 1.5.0): Die Tablet-Funktionen von 1.5.0 auf einem echten
    Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
    Gerät; Ergebnisse als Bug/Feature melden.
+2. LIVE-SERVER: REITER „DOWNLOAD HTS“ (Issue #168, Nutzer 25.11.2026): Auf hts-livescoring.de einen weiteren Reiter
+   „Download HTS“ (wie „Spenden“, in der Fußzeile bzw. Reiterleiste) mit Link zum GitHub-Repository und zum neuesten
+   Release https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/latest (neuer Tab).
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
