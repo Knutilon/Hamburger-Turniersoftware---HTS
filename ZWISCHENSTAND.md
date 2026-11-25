@@ -97,6 +97,10 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    beiden Vorgängern; Linien als Klammer: waagerechter Strich aus jeder Karte, senkrechter Strich verbindet das Paar,
    waagerechter Strich zum Folgespiel (1,5 px #b9c1ca, 40 px Rundenabstand); Spiel um Platz 3 unter dem Baum ohne
    Linien. LiveServer.koTree/koCard und CSS (.kt/.kc/.km) umbauen; alle Karten einer Runde gleich breit.
+9. LIVE-SERVER: UNTER DEM LOGO „HAMBURGER TURNIERSOFTWARE“ (Issue #175, Nutzer 26.11.2026): Im Kopf der
+   Server-Seiten (Start, Vergangene, Spenden, Impressum, Datenschutz, Download) steht unter „HTS Live-Scoring“ immer
+   „Hamburger Turniersoftware“ statt des Reiter-/Seitennamens (LiveHost.frame); Browser-Tab-Titel bleibt je Seite.
+   Turnierseiten unverändert (Turniername, Datum, Stand). Download-Design entsprechend angepasst.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
