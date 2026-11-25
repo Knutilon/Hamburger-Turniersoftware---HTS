@@ -82,6 +82,26 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Karte führt auf die Spielseite (…/spiel45). Aktualisierung alle 10 s wie bisher, gescrollte Position bleibt.
    Test: 16er-Feld mit Freilosen, Spiel um Platz 3, Baum enthält alle Spiele.
 
+5. HANDY-ZUGANG ÜBER DAS HALLEN-WLAN ENTFERNEN (Nutzer 25.11.2026, 18:35, Issue #163 – nach Rückfrage so gemeint):
+   Seit dem Live-Server im Internet nicht mehr nötig. Entfernen (alles seit 1.0.0 hinter HtsApp.MOBILE_ENABLED ausgeblendet):
+   - Web-Server auf dem Laptop (Port 8080): LiveServer.start/stop/isRunning/port, localAddresses, liveUrl, handle();
+     Seite „Mobile Einstellungen“ (Page.MOBILE, Menüpunkt, Zustand, Starten/Beenden, Firewall-/WLAN-Hinweise),
+     HtsApp.MOBILE_ENABLED.
+   - (1) Live-Anzeige im Hallen-WLAN – NUR der lokale Server; der Seitenaufbau in LiveServer bleibt für den Live-Server
+     im Internet (LiveHost → serveLive) unverändert erhalten.
+   - (2) Anmeldung per Handy: /anmeldung/…, checkinUrl, checkinPage/checkinData/report, Turnier-Schlüssel checkin-token,
+     „Anmeldung per Adresse sperren/öffnen“ (checkin-locked).
+   - (3) Handyabmeldungen bestätigen: Knopf „Handyabmeldungen“ in der Teilnehmerliste und Dialog. Alte Turnierdateien mit
+     dem Zustand „Abmeldung per Handy“ (orange) bleiben lesbar; die Personen lassen sich wie bisher über die normale
+     Anwesenheit (Haken/Abmelden) ändern.
+   - (4) QR-Code-Aushang für das Hallen-WLAN (PdfReports mit WLAN-Name/Passwort) – NICHT der Live-QR-Aushang von 1.7.0.
+   - (5) Ergebnisse per Handy am Tisch: /ergebnis/…, resultUrl, Tisch-Schlüssel, Schalter phone-results und
+     phone-results-direct, Bestätigungsdialog askPhoneResults, pendingPhoneResults, PDF mit Tisch-QR-Codes.
+   - Turnierdateien mit den alten Feldern bleiben lesbar (Felder ignorieren, nicht mehr schreiben); Kompatibilitätstest
+     grün. Tests zu Handy-Anmeldung und Handy-Ergebnis entfernen bzw. auf den Seitenaufbau umstellen. Doku (Kapitel 12,
+     Hinweise in 1, 3, 11, 14), README, Handbuch, Protokoll-Dokument kürzen. Prüfen, dass kein Text mehr „Hallen-WLAN“,
+     „Handy-Zugang“, „Turnier-WLAN“ oder Port 8080 nennt.
+
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
 - (#101) → am 24.11.2026 in die Feature-Sammlung übernommen und in 1.6.0 umgesetzt (siehe Umgesetzt).
