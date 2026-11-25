@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # Aufruf als root im entpackten Ordner der NEUEN Version:   ./update.sh
-# Ersetzt nur das Programm (hts-server.jar); Einstellungen, Schlüssel, Impressum und Turniere bleiben.
+# Ersetzt das Programm (hts-server.jar); Einstellungen, Schlüssel und Turniere bleiben. Impressum und Datenschutz
+# bleiben ebenso – außer neben dem Paket liegt eine Datei hts-rechtstexte.tar.gz mit eigenen Fassungen (1.8.0).
 # Geht etwas schief, wird die vorige Version automatisch wiederhergestellt.
 
 set -euo pipefail
@@ -21,11 +22,53 @@ if [[ "$HERE" == "$OPT" ]]; then
   echo "Bitte update.sh aus dem entpackten Ordner der neuen Version starten, nicht aus $OPT." >&2; exit 1
 fi
 
+# 1.8.0 (#159): eigene Rechtstexte einspielen – Datei hts-rechtstexte.tar.gz (oder Ordner rechtstexte/) neben diesem
+# Ordner bzw. darin. Enthält impressum.html und/oder datenschutz.html; alte Dateien werden als .bak-<Datum> gesichert.
+rechtstexte_einspielen() {
+  local etc="$1" quelle="" tmp="" f n=0
+  for c in "$HERE/hts-rechtstexte.tar.gz" "$HERE/../hts-rechtstexte.tar.gz" "$HERE/rechtstexte" "$HERE/../rechtstexte"; do
+    if [[ -e "$c" ]]; then quelle="$c"; break; fi
+  done
+  if [[ -z "$quelle" ]]; then
+    echo "Rechtstexte: keine Datei hts-rechtstexte.tar.gz gefunden – Impressum und Datenschutz bleiben unverändert."
+    return 0
+  fi
+  tmp="$(mktemp -d)"
+  if [[ -f "$quelle" ]]; then
+    for f in impressum.html datenschutz.html; do
+      tar -xzf "$quelle" -C "$tmp" --no-same-owner --no-same-permissions "$f" 2>/dev/null || true
+    done
+  else
+    for f in impressum.html datenschutz.html; do [[ -f "$quelle/$f" ]] && cp "$quelle/$f" "$tmp/$f"; done
+  fi
+  for f in impressum.html datenschutz.html; do
+    [[ -f "$tmp/$f" && ! -L "$tmp/$f" ]] || continue
+    if [[ $(stat -c %s "$tmp/$f") -gt 524288 ]]; then echo "Rechtstexte: $f ist zu groß – übersprungen." >&2; continue; fi
+    if grep -q "__AUSFUELLEN__" "$tmp/$f"; then echo "Rechtstexte: In $f stehen noch Platzhalter (__AUSFUELLEN__) – übersprungen." >&2; continue; fi
+    if [[ -f "$etc/$f" ]] && cmp -s "$tmp/$f" "$etc/$f"; then echo "Rechtstexte: $f ist schon aktuell."; continue; fi
+    if [[ -f "$etc/$f" ]]; then
+      cp -p "$etc/$f" "$etc/$f.bak-$(date +%Y-%m-%d-%H%M)"
+      install -o root -g hts -m 644 "$tmp/$f" "$etc/$f"
+      echo "Rechtstexte: $f eingespielt (vorherige Fassung gesichert)."
+    else
+      install -o root -g hts -m 644 "$tmp/$f" "$etc/$f"
+      echo "Rechtstexte: $f eingespielt."
+    fi
+    n=$((n + 1))
+  done
+  rm -rf "$tmp"
+  return 0
+}
+
 cp "$OPT/hts-server.jar" "$OPT/hts-server.jar.vorher"
 install -o root -g root -m 644 "$HERE/hts-server.jar" "$OPT/hts-server.jar"
 for f in LICENSE LIESMICH.txt; do [[ -f "$HERE/$f" ]] && install -o root -g root -m 644 "$HERE/$f" "$OPT/$f"; done
 [[ -d "$HERE/Lizenzen" ]] && { rm -rf "$OPT/Lizenzen"; cp -r "$HERE/Lizenzen" "$OPT/Lizenzen"; }
 install -o root -g root -m 755 "$HERE/update.sh" "$OPT/update.sh"
+if [[ ! -f /etc/hts-server/spenden.html && -f "$HERE/vorlagen/spenden.html" ]]; then     # 1.8.0 (#153)
+  install -o root -g hts -m 644 "$HERE/vorlagen/spenden.html" /etc/hts-server/spenden.html
+fi
+rechtstexte_einspielen /etc/hts-server
 systemctl restart hts-server
 
 PORT="$(sed -n 's/^port=//p' /etc/hts-server/server.properties)"; PORT="${PORT:-8090}"

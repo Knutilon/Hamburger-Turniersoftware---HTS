@@ -80,6 +80,7 @@ public final class OverviewView {
         appHeader.addMenuItem("archive", "Archivierte Turniere", null, () -> showArchive(true));
         appHeader.addMenuItem("organizer", "Ausrichter", null, this::showOrganizer);      // 1.5.0 (#139)
         appHeader.addMenuItem("webserver", "Webserver", null, this::showWebserver);       // 1.5.0 (#135)
+        appHeader.addMenuItem("program", "Programm", null, this::showProgram);           // 1.8.0 (#152)
         appHeader.select("tournaments");
         InfoDialog.install(appHeader, () -> stage);
 
@@ -101,7 +102,19 @@ public final class OverviewView {
         importResults.getStyleClass().add("pill");
         importResults.setTooltip(new javafx.scene.control.Tooltip("click-TT-Ergebnisdatei (XML, z. B. „Ergebnisse.xml“) eines "
                 + "abgeschlossenen Turniers einlesen – daraus wird ein neues, abgeschlossenes HTS-Turnier"));
-        HBox header = new HBox(14, new VBox(2, title, subtitle), spacer, importResults, importFile, create);
+        // 1.8.0: Titel nie mit „…“ abkürzen – die Knöpfe brechen bei wenig Platz in eine zweite Zeile um
+        VBox titleBox = new VBox(2, title, subtitle);
+        title.setMinWidth(Region.USE_PREF_SIZE);
+        subtitle.setWrapText(true);
+        subtitle.setMaxWidth(380);
+        subtitle.setMinHeight(Region.USE_PREF_SIZE);
+        titleBox.setMinWidth(Region.USE_PREF_SIZE);
+        for (Button b : new Button[]{importResults, importFile, create}) b.setMinWidth(Region.USE_PREF_SIZE);
+        javafx.scene.layout.FlowPane actions = new javafx.scene.layout.FlowPane(8, 8, importResults, importFile, create);
+        actions.setAlignment(Pos.CENTER_RIGHT);
+        actions.setPrefWrapLength(300);
+        HBox.setHgrow(actions, Priority.ALWAYS);
+        HBox header = new HBox(14, titleBox, spacer, actions);
         header.setAlignment(Pos.CENTER_LEFT);
         header.getStyleClass().add("page-header");
 
@@ -124,8 +137,12 @@ public final class OverviewView {
 
         message.getStyleClass().add("warning");
         message.setWrapText(true);
-        Label folder = new Label("Ablageordner: " + store.getDirectory().toAbsolutePath()
+        Label folder = new Label(store.usesFlatLayout()
+                ? "Neue Turniere: " + de.hts.persistence.ProgramFolder.htsDir().toAbsolutePath() + "  ·  ältere Turniere bleiben in "
+                + store.getDirectory().toAbsolutePath() + "  (Speicherorte im Reiter „Programm“)"
+                : "Ablageordner: " + store.getDirectory().toAbsolutePath()
                 + "  (je Turnier ein Ordner mit „Turnierdatei“, „XML Export“ und „PDF Export“)", Icons.of(Icons.FOLDER, 14));
+        folderLabel = folder;
         folder.getStyleClass().add("hint");
         folder.setWrapText(true);                         // 1.4.0: nie mit „…“ abkürzen, sondern umbrechen
         folder.setMinHeight(Region.USE_PREF_SIZE);
@@ -208,7 +225,7 @@ public final class OverviewView {
             noLogo.setVisible(png == null);
             source.setText(switch (org.getLogoSource()) {
                 case DEFAULT -> "Standard: Logo des Hamburger Tisch-Tennis-Verbands";
-                case CUSTOM -> "Eigenes Logo (gespeichert im Ablageordner der Turniere)";
+                case CUSTOM -> "Eigenes Logo (gespeichert im Programmordner)";
                 case NONE -> "Ohne Logo";
             });
         };
@@ -244,7 +261,7 @@ public final class OverviewView {
         for (Button b : new Button[]{upload, std, none}) b.setMinWidth(Region.USE_PREF_SIZE);
         javafx.scene.layout.FlowPane buttons = new javafx.scene.layout.FlowPane(8, 8, upload, std, none);
         Label hint = new Label("Das Logo erscheint auf dem Schiedsrichterzettel oben rechts und auf den Live-Seiten. Name und "
-                + "Logo gelten für alle Turniere auf diesem Rechner und liegen im Ablageordner der Turniere.");
+                + "Logo gelten für alle Turniere auf diesem Rechner und liegen im Programmordner (dort, wo „HTS starten“ liegt).");
         hint.getStyleClass().add("hint");
         hint.setWrapText(true);
         hint.setMaxWidth(620);
@@ -262,6 +279,164 @@ public final class OverviewView {
         sp.getStyleClass().add("page-scroll");
         show.run();
         root.setCenter(sp);
+    }
+
+    private Label folderLabel;
+
+    /**
+     * 1.8.0 (#152): Seite „Programm“ – Dunkelmodus, Speicherorte (Turnierdateien, PDF-Exporte, XML-Exporte) und
+     * „Einstellungen aus älterer Version übernehmen“.
+     */
+    private void showProgram() {
+        if (listCenter == null) listCenter = root.getCenter();
+        appHeader.select("program");
+        title.setText("Programm");
+        subtitle.setText("Einstellungen für HTS auf diesem Rechner");
+        for (Button b : new Button[]{create, importFile, importResults}) {
+            b.setVisible(false);
+            b.setManaged(false);
+        }
+        // Dunkelmodus
+        Label darkHead = new Label("Darstellung");
+        darkHead.getStyleClass().add("class-name");
+        javafx.scene.control.CheckBox dark = new javafx.scene.control.CheckBox("Dunkelmodus aktivieren");
+        dark.setSelected(DarkMode.isOn());
+        dark.selectedProperty().addListener((o, a, b) -> DarkMode.set(b));
+        Label darkHint = wrapHint("Dunkler Hintergrund mit heller Schrift für die ganze Oberfläche. Ausdrucke und PDF-Dateien bleiben hell.");
+        VBox darkCard = cardOf(darkHead, dark, darkHint);
+
+        // Speicherorte
+        Label whereHead = new Label("Speicherorte");
+        whereHead.getStyleClass().add("class-name");
+        VBox whereCard = cardOf(whereHead,
+                folderRow("Speicherort der HTS-Turnierdateien (speichern und laden)", de.hts.persistence.ProgramFolder.KEY_HTS,
+                        de.hts.persistence.ProgramFolder.defaultHtsDir()),
+                folderRow("Speicherort der PDF-Exporte", de.hts.persistence.ProgramFolder.KEY_PDF,
+                        de.hts.persistence.ProgramFolder.defaultExportDir()),
+                folderRow("Speicherort der XML-Exporte (click-TT)", de.hts.persistence.ProgramFolder.KEY_XML,
+                        de.hts.persistence.ProgramFolder.defaultExportDir()),
+                wrapHint("Gilt für neue Turniere: Die Turnierdateien liegen direkt im gewählten Ordner, PDF- und XML-Dateien "
+                        + "beginnen mit Turniername und Datum. Turniere aus älteren Versionen bleiben in ihrem bisherigen Ordner ("
+                        + store.getDirectory().toAbsolutePath() + ") und werden dort weiter gespeichert."));
+
+        // Programmordner, ältere Version
+        Label progHead = new Label("Programmordner");
+        progHead.getStyleClass().add("class-name");
+        Label progDir = wrapHint("Ausrichter (Name und Logo), Programmeinstellungen und der Ordner „Protokoll“ liegen hier: "
+                + de.hts.persistence.ProgramFolder.dir().toAbsolutePath()
+                + (de.hts.persistence.ProgramFolder.isFallback() ? "  (Der Ordner von HTS ist nicht beschreibbar – deshalb im Benutzerordner.)" : ""));
+        Button openDir = new Button("Programmordner öffnen", Icons.of(Icons.FOLDER, 16));
+        openDir.getStyleClass().add("pill");
+        openDir.setMinWidth(Region.USE_PREF_SIZE);
+        openDir.setOnAction(e -> HtsApp.openLink(de.hts.persistence.ProgramFolder.dir().toUri().toString()));
+        Button carry = new Button("Einstellungen aus älterer Version übernehmen");
+        carry.getStyleClass().add("pill");
+        carry.setMinWidth(Region.USE_PREF_SIZE);
+        carry.setOnAction(e -> carryOverSettings());
+        javafx.scene.layout.FlowPane progButtons = new javafx.scene.layout.FlowPane(8, 8, openDir, carry);
+        Label carryHint = wrapHint("Nach dem Entpacken einer neuen HTS-Version: den Ordner der bisherigen Version wählen (dort, wo deren "
+                + "„HTS starten“ liegt). Übernommen werden Ausrichter und Programmeinstellungen. Bei Versionen vor 1.8.0 den Ordner "
+                + "„HTS Turniere“ unter „Dokumente“ wählen.");
+        VBox progCard = cardOf(progHead, progDir, progButtons, carryHint);
+
+        VBox page = new VBox(14, darkCard, whereCard, progCard);
+        page.setPadding(new Insets(0, 40, 16, 40));
+        javafx.scene.control.ScrollPane sp = new javafx.scene.control.ScrollPane(page);
+        sp.setFitToWidth(true);
+        sp.getStyleClass().add("page-scroll");
+        root.setCenter(sp);
+    }
+
+    private static Label wrapHint(String text) {
+        Label l = new Label(text);
+        l.getStyleClass().add("hint");
+        l.setWrapText(true);
+        l.setMinHeight(Region.USE_PREF_SIZE);
+        return l;
+    }
+
+    private static VBox cardOf(Node... nodes) {
+        VBox v = new VBox(10, nodes);
+        v.getStyleClass().add("card");
+        v.setPadding(new Insets(18, 20, 18, 20));
+        v.setMaxWidth(820);
+        return v;
+    }
+
+    /** Eine Zeile „Speicherort“: Bezeichnung, gewählter Ordner (bzw. Vorgabe), „Ordner wählen“, „Vorgabe“. */
+    private Node folderRow(String label, String key, java.nio.file.Path standard) {
+        Label head = new Label(label);
+        head.setWrapText(true);
+        head.setMinHeight(Region.USE_PREF_SIZE);
+        Label value = new Label();
+        value.getStyleClass().add("hint");
+        value.setWrapText(true);
+        value.setMinHeight(Region.USE_PREF_SIZE);
+        Runnable show = () -> {
+            java.nio.file.Path c = de.hts.persistence.ProgramFolder.chosen(key);
+            value.setText(c != null ? c.toString() : standard + "  (Vorgabe)");
+        };
+        Button choose = new Button("Ordner wählen", Icons.of(Icons.FOLDER, 16));
+        choose.getStyleClass().add("pill");
+        choose.setMinWidth(Region.USE_PREF_SIZE);
+        choose.setOnAction(e -> {
+            javafx.stage.DirectoryChooser dc = new javafx.stage.DirectoryChooser();
+            dc.setTitle(label);
+            java.nio.file.Path c = de.hts.persistence.ProgramFolder.chosen(key);
+            dc.setInitialDirectory(de.hts.persistence.StorageLocations.ensure(c != null ? c : standard));
+            File d = dc.showDialog(stage);
+            if (d == null) return;
+            de.hts.persistence.ProgramFolder.choose(key, d.toPath().equals(standard) ? null : d.toPath());
+            show.run();
+            updateFolderLabel();
+        });
+        Button reset = new Button("Vorgabe");
+        reset.getStyleClass().add("pill");
+        reset.setMinWidth(Region.USE_PREF_SIZE);
+        reset.setOnAction(e -> {
+            de.hts.persistence.ProgramFolder.choose(key, null);
+            show.run();
+            updateFolderLabel();
+        });
+        show.run();
+        javafx.scene.layout.FlowPane row = new javafx.scene.layout.FlowPane(8, 6, value, choose, reset);
+        row.setAlignment(Pos.CENTER_LEFT);
+        value.setMaxWidth(520);
+        return new VBox(4, head, row);
+    }
+
+    private void updateFolderLabel() {
+        if (folderLabel != null && store.usesFlatLayout()) {
+            folderLabel.setText("Neue Turniere: " + de.hts.persistence.ProgramFolder.htsDir().toAbsolutePath() + "  ·  ältere Turniere bleiben in "
+                    + store.getDirectory().toAbsolutePath() + "  (Speicherorte im Reiter „Programm“)");
+        }
+    }
+
+    /** „Einstellungen aus älterer Version übernehmen“: Ordner wählen, Dateien kopieren, Ausrichter neu laden. */
+    private void carryOverSettings() {
+        javafx.stage.DirectoryChooser dc = new javafx.stage.DirectoryChooser();
+        dc.setTitle("Ordner der älteren HTS-Version wählen");
+        File d = dc.showDialog(stage);
+        if (d == null) return;
+        try {
+            List<String> done = de.hts.persistence.ProgramFolder.carryOverFrom(d.toPath());
+            if (done.isEmpty()) {
+                showError("Im gewählten Ordner liegen keine Einstellungen von HTS (ausrichter.properties bzw. programm.properties).");
+                return;
+            }
+            de.hts.persistence.Organizer.load(de.hts.persistence.ProgramFolder.dir());
+            DarkMode.set(de.hts.persistence.ProgramFolder.isDarkMode());
+            Alert a = new Alert(Alert.AlertType.INFORMATION);
+            a.initOwner(stage);
+            a.setTitle("Einstellungen übernommen");
+            a.setHeaderText("Übernommen: " + String.join(", ", done));
+            a.setContentText("Ausrichter und Programmeinstellungen gelten ab sofort.");
+            DialogSizing.fit(a);
+            a.showAndWait();
+            showProgram();
+        } catch (IOException ex) {
+            showError("Einstellungen konnten nicht übernommen werden: " + ex.getMessage());
+        }
     }
 
     /** 1.5.0 (#135): Seite „Webserver“ – Adresse und Schlüssel (Programmeinstellung), Verbindung testen. */
@@ -475,8 +650,9 @@ public final class OverviewView {
                 Tournament t = r.copyFrom() != null
                         ? store.copy(r.copyFrom(), r.copyMode(), r.name(), r.date(), r.tables(), r.test(), r.fileDir())
                         : store.create(r.name(), r.date(), r.tables(), r.fileDir(), r.test(), r.handicap());
-                if (dlg.lateFeeCents() > 0) {
+                if (dlg.lateFeeCents() > 0 || !dlg.worldUrl().isEmpty()) {
                     t.setLateFeeCents(dlg.lateFeeCents());               // 1.0 (#82)
+                    t.setWorldUrl(dlg.worldUrl());                       // 1.8.0 (#151)
                     store.save(t);
                 }
                 refresh();
@@ -517,11 +693,12 @@ public final class OverviewView {
             return;
         }
         TournamentDialog dlg = new TournamentDialog(stage, s.name(), s.date(), s.tables(), false, s.file(), s.test(), List.of(), s.handicap())
-                .withLateFee(loaded.getLateFeeCents());
+                .withLateFee(loaded.getLateFeeCents()).withWorldUrl(loaded.getWorldUrl());
         dlg.showAndWait().ifPresent(r -> {
             try {
                 Tournament t = loaded;
                 t.setLateFeeCents(dlg.lateFeeCents());                   // 1.0 (#82)
+                t.setWorldUrl(dlg.worldUrl());                           // 1.8.0 (#151)
                 t.setTest(r.test());
                 t.setName(r.name());
                 t.setDate(r.date());
@@ -538,11 +715,41 @@ public final class OverviewView {
     private void delete(TournamentStore.Summary s) {
         if (!confirm("Turnier löschen", "Turnier „" + s.name() + "“ mit " + s.participants() + " Teilnehmenden und "
                 + s.classes() + " Klassen endgültig löschen?")) return;
+        boolean askServer = wasPublished(s);                      // 1.8.0 (#154)
+        boolean fromServer = askServer && confirm("Live-Daten löschen", "Live-Daten auch vom Webserver löschen?\n"
+                + "Ja: Das Turnier verschwindet sofort von der Live-Seite.\n"
+                + "Nein: Es bleibt dort, bis es der Server automatisch löscht (90 Tage nach der letzten Änderung).");
         try {
             store.delete(s);
             refresh();
         } catch (IOException e) {
             error("Turnier konnte nicht gelöscht werden", e.getMessage());
+            return;
+        }
+        if (fromServer) {
+            String[] problem = {null};
+            Ui.busy(stage, "Live-Daten werden vom Webserver gelöscht", () -> problem[0] = de.hts.web.PendingDeletes.deleteNow(s.id()));
+            if (problem[0] != null) {
+                Alert a = new Alert(Alert.AlertType.INFORMATION);
+                a.initOwner(stage);
+                a.setTitle("Live-Daten löschen");
+                a.setHeaderText("Webserver gerade nicht erreichbar");
+                a.setContentText("Das Turnier ist hier gelöscht. Vom Webserver löscht HTS es beim nächsten Start bzw. beim nächsten "
+                        + "Veröffentlichen (" + problem[0] + ").");
+                DialogSizing.fit(a);
+                a.showAndWait();
+            }
+        }
+    }
+
+    /** 1.8.0 (#154): Wurde das Turnier veröffentlicht (eingeschaltet oder schon einmal hochgeladen)? */
+    private static boolean wasPublished(TournamentStore.Summary s) {
+        if (s.id() == null) return false;
+        try {
+            var f = de.hts.persistence.TournamentFile.load(s.file()).folders();
+            return f != null && ("true".equals(f.get("publish")) || "true".equals(f.get("published-once")));
+        } catch (IOException e) {
+            return false;
         }
     }
 

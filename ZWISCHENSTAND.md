@@ -1,4 +1,4 @@
-# Zwischenstand HTS 1.7.0 (24.11.2026)
+# Zwischenstand HTS 1.8.0 (25.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -50,148 +50,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 - click-TT-Upload der Ergebnisdatei: Praxistest erfolgreich (Nutzer 15.11.2026); Einschränkung unter „Bekannte
   Grenzen“ in der Doku gestrichen (mit 1.1.0 ausgeliefert).
 
-## Feature-Sammlung für 1.8.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 1.9.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.5.x)
 
 1. TABLET: TEST AUF ECHTEM GERÄT (Issue #133, offen aus 1.5.0): Die Tablet-Funktionen von 1.5.0 auf einem echten
    Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
    Gerät; Ergebnisse als Bug/Feature melden.
-
-2. LIVE-SERVER: STARTSEITE MIT NEUEM LOGO (Nutzer 24.11.2026, 22:23, Issue #149): Auf https://hts-livescoring.de/ erscheint
-   noch das alte (blaue) Logo, obwohl Design und Version 1.7.0 schon neu sind. Ursache vermutlich der Browser-Zwischenspeicher:
-   /favicon.png und /live/…/hts-logo.png werden 24 h gecacht und haben denselben Namen wie vorher. Lösung: Logo-Adresse mit
-   Version (z. B. /hts-logo-1.7.png bzw. ?v=<Version>), kürzere Cache-Zeit; Startseite, Rechtsseiten und Turnierseiten
-   einheitlich mit neuem Logo und Design prüfen.
-
-3. LIVE-SERVER: AUSRICHTER IN DER TURNIERÜBERSICHT (Nutzer 24.11.2026, Issue #150): Auf der Startseite steht je Turnier,
-   wer es ausrichtet – Name und Logo aus dem Reiter „Ausrichter“ (kleines Logo links oder rechts in der Turnierkarte). Dafür
-   muss HTS den Namen mitsenden (bisher nur das Logo): z. B. Kopfzeile X-HTS-Ausrichter (URL-kodiert) bei PUT …/logo bzw.
-   PUT /api/turniere/<ID> oder eigener Aufruf PUT …/ausrichter; der Server speichert Name in meta.properties. Auch im Kopf
-   der Turnierseite den Namen neben dem Logo zeigen. Protokoll-Dokument ergänzen.
-
-4. LINK ZUR MYTISCHTENNIS-TURNIERWELT (Nutzer 24.11.2026, Issue #151): Beim Anlegen/Bearbeiten eines Turniers optionales
-   Feld „Link zur Turnierwelt (myTischtennis)“, z. B. https://www.mytischtennis.de/turnierwelt/… – gespeichert in der
-   Turnierdatei. Auf den Live-Seiten (Startseiten-Karte des Turniers und Kopf der Turnierseite) ein Link „zur Turnierwelt“
-   (öffnet in neuem Tab, rel=noopener). Nur https-Adressen; Prüfung, dass es eine gültige Adresse ist (Hinweis, wenn nicht
-   mytischtennis.de). Auch in HTS selbst (Turnierübersicht/Bearbeiten) anklickbar.
-
-5. REITER „PROGRAMM“ IN DER TURNIERÜBERSICHT: DUNKELMODUS UND SPEICHERORTE (Nutzer 24.11.2026, Issue #152): neuer 5. Reiter
-   „Programm“ (nach Turniere, Archivierte Turniere, Ausrichter, Webserver) mit:
-   1. „Dunkelmodus aktivieren“ (Schalter): dunkles Farbschema für die ganze Oberfläche (eigene Stildatei bzw. Variablen in
-      hts.css: Hintergrund dunkelgrau, Karten etwas heller, Schrift hell, Grün/Mint als Akzente, gut lesbare Kontraste;
-      Dialoge, Tabellen, PDF-Ansicht-Rahmen). Gilt sofort und wird gemerkt. Druck/PDFs bleiben hell.
-   2. Ordnerauswahl „Speicherort der HTS-Turnierdateien“ (speichern und laden).
-   3. Ordnerauswahl „Speicherort der PDF-Exporte“.
-   4. Ordnerauswahl „Speicherort der XML-Exporte (click-TT)“.
-   VORGABE, wenn nichts gewählt ist (Nutzerwunsch): unter „Dokumente“ ein Ordner „HTS“ mit den HTS-Dateien und einem
-   Unterordner „Export files“ für PDF- und XML-Dateien. Bisherige Ablage („Dokumente\HTS Turniere\<Turnier>\Turnierdatei|
-   PDF Export|XML Export“) – Übernahme/Weiterverwendung bestehender Turniere klären (offene Fragen an den Nutzer gestellt:
-   je Turnier eigener Unterordner? bestehende Turniere verschieben oder am alten Ort lassen? Ausrichter-Logo und Protokoll
-   wohin?). Texte nie abkürzen, DialogSizing.fit.
-   ENTSCHIEDEN (Nutzer 24.11.2026, 22:27): KEINE Unterordner je Turnier – alle .hts-Dateien direkt in „Dokumente\HTS“, alle
-   PDF- und XML-Dateien gemeinsam in „Dokumente\HTS\Export files“. Damit sie unterscheidbar bleiben, beginnen alle
-   Exportdateien mit dem Turniernamen (und Datum), z. B. „Herbstturnier 2026-11-28 – Endergebnis Herren C.pdf“; gleiche
-   Namen → Zusatz „(2)“.
-   ENTSCHIEDEN (Nutzer 24.11.2026, 22:28): BESTEHENDE TURNIERE BLEIBEN im alten Ordner „Dokumente\HTS Turniere\<Turnier>\…“
-   (nicht verschieben); HTS zeigt sie weiter in der Übersicht und speichert sie dort. Nur NEUE Turniere kommen nach der
-   neuen Ablage (Dokumente\HTS bzw. gewählter Ordner); deren Exporte nach „Export files“ bzw. in die gewählten Ordner.
-   ENTSCHIEDEN (Nutzer 24.11.2026, 22:28): Ausrichter (ausrichter.properties + ausrichter-logo.png) und der Ordner
-   „Protokoll“ liegen im PROGRAMMORDNER (dort, wo „HTS starten.bat“ bzw. hts.jar liegt), nicht unter Dokumente\HTS.
-   Umsetzung: Programmordner aus dem Ort von hts.jar ermitteln; beim ersten Start vorhandene Dateien aus dem alten
-   Ablageordner übernehmen; Startdateien legen die Absturzberichte der Java-Laufzeit ebenfalls dort ab
-   (%~dp0Protokoll bzw. „$(dirname "$0")/Protokoll“). Ist der Programmordner nicht beschreibbar (z. B. unter
-   „C:\Programme“), Ersatzort im Benutzerprofil (~/.hts) und Hinweis. Beim Update auf eine neue Version (neuer Ordner)
-   Ausrichter und Protokoll aus dem vorigen Programmordner übernehmen können (Hinweis in der Anleitung bzw. Knopf
-   „Einstellungen aus älterer Version übernehmen“ im Reiter „Programm“).
-
-6. LIVE-SERVER: SEITE „SPENDEN“ (Nutzer 24.11.2026, Issue #153): Auf allen Seiten von HTS-Livescoring in der Fußzeile ein
-   Link „Spenden“ (neben Alle Turniere · Impressum · Datenschutz) zu /spenden. Dort der Text: „Unterstützt als Dankeschön
-   für das Projekt gerne ein Herzensprojekt von mir.“ und der Link
-   https://www.gofundme.com/f/eine-sportliche-heimat-fur-hamburgs-tischtennistalente?lang=de_DE&ts=1791899912
-   (öffnet in neuem Tab, rel=noopener; Linktext z. B. „Eine sportliche Heimat für Hamburgs Tischtennistalente
-   (GoFundMe)“). Text und Link in einer Datei im Konfigurationsordner (spenden.html, Vorlage durch install/update.sh),
-   damit sie ohne neue Version änderbar sind.
-
-7. LIVE-DATEN BEIM LÖSCHEN/ARCHIVIEREN VOM WEBSERVER ENTFERNEN (Nutzer 24.11.2026, 22:27, Issue #154; Anlass: in HTS
-   gelöschtes Turnier „Testing Logo“ stand weiter auf hts-livescoring.de – HTS sendet beim Löschen bisher nichts):
-   - Wird ein Turnier gelöscht oder archiviert, das schon veröffentlicht wurde (Merkmal in der Turnierdatei, z. B.
-     „published-once“ bzw. „publish“ = ja oder je erfolgreichem Hochladen gesetzt), fragt HTS: „Live-Daten auch vom
-     Webserver löschen?“ – Ja: DELETE /api/turniere/<ID> sofort (mit „Bitte warten“); Nein: bleibt (Hinweis auf die
-     automatische Löschung nach 90 Tagen).
-   - Server nicht erreichbar bzw. Webserver nicht eingerichtet/entschlüsselbar: Hinweis, Turnier trotzdem löschen bzw.
-     archivieren; Löschauftrag merken und beim nächsten Start bzw. beim nächsten Veröffentlichen nachholen.
-   - Gleiches beim „Turnier wiederherstellen“ aus dem Archiv nicht nötig (dann wieder veröffentlichen, wenn eingeschaltet).
-
-8. LIVE-SEITEN OHNE SPEICHERUNG IM BROWSER (Nutzer 24.11.2026, 22:44, Issue #155; Ziel: keine Cookies und keine Daten der
-   Besucher – Cookies gibt es schon keine):
-   - LOCAL STORAGE ENTFÄLLT: Statt sich die Person zu merken („Als ‚Meine Spiele‘ merken“, Schlüssel hts-me), gibt es einen
-     Link „Meine Spiele“ (…/live/<Turnier>/ich?id=<Kennung>), den man als Lesezeichen speichert – in der Suche je Treffer
-     und oben auf der Seite „Meine Spiele“ mit kurzem Hinweis („als Lesezeichen speichern bzw. zum Startbildschirm
-     hinzufügen“). Der Kasten „Meine Spiele“ auf der Turnier-Startseite entfällt.
-   - SESSION STORAGE ENTFÄLLT: aufgeklappte Kacheln/„Spiele anzeigen“ und Scrollposition bleiben nur, solange die Seite offen
-     ist (Zustand in JavaScript-Variablen; beim Aktualisieren alle 10 s bleibt er seit 1.7.0 ohnehin erhalten). Der alte
-     RELOAD-Code der lokalen Handy-Seiten (Scrollposition in sessionStorage) ebenso ersetzen.
-   - Danach Datenschutz-Vorlage (dist/hts-server/vorlagen/datenschutz.html, Abschnitt 5) kürzen: keine Cookies, keine
-     Speicherung im Browser; dem Nutzer den geänderten Abschnitt für seine Datei schicken. Test: keine Vorkommen von
-     localStorage/sessionStorage/document.cookie in den ausgelieferten Seiten.
-
-9. VERÖFFENTLICHEN ALS STANDARD, VORNAMEN IMMER ABGEKÜRZT (Nutzer 24.11.2026, 22:51, Issue #156):
-   - Neu angelegte Turniere (auch kopierte und aus click-TT importierte) haben „Dieses Turnier veröffentlichen“
-     eingeschaltet; hochgeladen wird nur, wenn der Webserver eingerichtet ist (sonst ohne Wirkung, Hinweis wie bisher).
-     TESTTURNIERE werden NICHT automatisch veröffentlicht (Nutzer 24.11.2026, 22:53; von Hand einschaltbar). Bestehende
-     Turniere behalten ihre Einstellung.
-   - Vornamen werden in der hochgeladenen Kopie IMMER abgekürzt („M. Mustermann“); der Schalter „Vornamen abkürzen
-     (z. B. „M. Mustermann“) – Datenschutz“ auf der Seite „Live im Internet“ entfällt (Turnierdatei-Feld publish-abbrev
-     wird ignoriert bzw. beim Laden auf ja gesetzt). Hinweistext auf der Seite entsprechend: „Auf dem Webserver erscheinen
-     die Vornamen nur abgekürzt (z. B. „M. Mustermann“).“
-   - Datenschutz-Vorlage Abschnitt 3 anpassen: „Vorname nur als Anfangsbuchstabe“ statt „je nach Turnier“; Handbuch,
-     Anleitung und Protokoll-Dokument mitziehen; Tests (Hochladen immer abgekürzt, neues Turnier veröffentlicht).
-
-10. LIVE-STARTSEITE GETEILT: „AKTUELLE TURNIERE“ UND „VERGANGENE TURNIERE“ (Nutzer 24.11.2026, 22:53, Issue #157):
-   - Startseite https://<Server>/ mit zwei Bereichen, oben umschaltbar (Reiter „Aktuelle Turniere“ | „Vergangene Turniere“,
-     Vorwahl „Aktuelle“; eigene Adressen / und /vergangen, damit verlinkbar).
-   - Aktuell = noch nicht beendet UND Turnierdatum heute oder später (bzw. ohne Datum); sortiert: laufende zuerst, dann
-     nach Datum aufsteigend; Status-Chip „läuft“/„demnächst“.
-   - Vergangen = beendet ODER Turnierdatum vor heute; sortiert nach Datum absteigend (neueste zuerst); Chip „beendet“ bzw.
-     „Endergebnis“ (bei „Nur Endergebnis behalten“). Leerer Bereich: kurzer Hinweis („Gerade keine aktuellen Turniere“).
-   - Je Karte wie bisher Name, Datum, Stand; dazu Ausrichter (Punkt 3) und Link „zur Turnierwelt“ (Punkt 4).
-
-11. EIGENER LINK FÜR JEDES SPIEL (Nutzer 24.11.2026, 23:05, Issue #158):
-   - Jedes Spiel bekommt eine eigene Seite mit der HTS-Spielnummer in der Adresse. Da die Nummern je Klasse zählen
-     (Spiel 45 gibt es in mehreren Klassen), steht die Klasse davor:
-     https://<Server>/live/<Turnier_TT_MM_JJJJ>/<Klasse>/spiel45 (Klassenname lesbar, Leerzeichen → „_“, z. B. Herren_C).
-   - Inhalt: Klasse, Phase/Gruppe bzw. KO-Runde, Spielnummer, beide Spieler (Vorname abgekürzt) mit Verein, Tisch,
-     Status („eingereiht“/„laufend“/beendet) und Ergebnis mit Sätzen; Link zurück zur Gruppe/Klasse; aktualisiert sich
-     wie die übrigen Seiten alle 10 Sekunden.
-   - Überall, wo ein Spiel steht (Spiele einer Gruppe, KO-Baum, Tische, „Meine Spiele“, Suche), führt ein Antippen auf
-     die Spielseite; dort Knopf „Link kopieren“ (bzw. Teilen-Menü des Handys) – ohne Speichern im Browser.
-   - Spielnummern bleiben fest (Nutzer 24.11.2026, 23:07): Das Spiel um Platz 3 bekommt die Nummer NACH dem Finale;
-     HTS tauscht die Nummern nicht mehr (bisher Tausch in Tournament.addThirdPlaceMatch). Die Spielreihenfolge bleibt
-     wie bisher: Platz 3 wird weiterhin vor dem Finale aufgerufen (über die Reihenfolge der Warteschlange, nicht über die
-     Nummer). Alte Turnierdateien mit getauschten Nummern bleiben unverändert.
-   - Unbekannte Nummer (z. B. nach neuer Auslosung der Phase) → Seite „Spiel nicht gefunden“ mit Link zur Klasse.
-   - Gilt für den Internet-Server und das lokale WLAN; Tests (Adresse, Klassen mit Sonderzeichen, gleiche Nummer in zwei
-     Klassen, „Nur Endergebnis behalten“ sperrt die Spielseiten).
-
-12. NEUE DATENSCHUTZERKLÄRUNG UND NEUES IMPRESSUM (Nutzer 24.11.2026, 23:20/23:22/23:29 und 25.11.2026, 09:10, Issue #159):
-   - Texte des Nutzers (Ich-Form; Datenschutz mit Abschnitt 4 „Veröffentlichte Daten der Spielerinnen und Spieler“,
-     Abschnitt 5 Seitenaufrufe ohne Protokolle, keine Cookies, nichts im Browser gespeichert, TDDDG; Impressum § 5 DDG,
-     Haftung, Urheberrecht) liegen fertig AUSSERHALB des Repos in /home/claude/work/rechtstexte-betreiber/
-     (Erzeuger Datenschutz: /home/claude/work/datenschutz-gen.py).
-   - NUTZERWUNSCH: Telefonnummer, E-Mail und Anschrift NICHT ins öffentliche GitHub-Projekt – auch nicht ins Server-Paket,
-     weil das als Release-Anhang öffentlich wird. Ins Repo/Paket kommen nur die neutralen Vorlagen mit Platzhaltern
-     (dist/hts-server/vorlagen/impressum.html und datenschutz.html, schon auf den neuen Text umgestellt).
-   - Stand 25.11.2026, 17:02: Impressum mit c/o-Anschrift „Dein-Impressum“ (Hungen) und neuer Telefonnummer; dieselbe
-     c/o-Anschrift in der Datenschutzerklärung (verantwortliche Stelle). Bisher ist NICHTS davon auf dem Server.
-   - Verarbeitung im Server-Skript (Nutzer 25.11.2026, 17:04): update.sh (und install.sh) erkennen eine Datei
-     hts-rechtstexte.tar.gz (bzw. einen Ordner rechtstexte/) neben dem Skript bzw. im selben Ordner wie das Server-Paket.
-     Ist sie da: impressum.html und datenschutz.html prüfen (nur diese zwei Namen, kein Platzhalter „__AUSFUELLEN__“
-     mehr drin), alte Dateien als .bak-<Datum> sichern, neue mit root:hts 644 nach /etc/hts-server installieren, Meldung
-     ausgeben. Fehlt sie: Rechtstexte unverändert lassen, Hinweis ausgeben.
-   - Beim „kompilieren“ von 1.8.0: hts-rechtstexte.tar.gz aus /home/claude/work/rechtstexte-betreiber/ bauen und dem
-     Nutzer NUR per SendUserFile schicken (nie ins Repo, nie als Release-Anhang); Anleitung: beide Archive per scp
-     hochladen, dann update.sh – alles in einem Durchgang zusammen mit den Punkten 8/9.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
@@ -215,6 +80,40 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 
 ## Umgesetzt
+
+1.8.0 (25.11.2026, Commit „HTS 1.8.0“, Closes #149 #150 #151 #152 #153 #154 #155 #156 #157 #158 #159; alle Punkte der
+   Feature-Sammlung außer #133 Tablet-Test, der nur mit Gerät geht):
+   - #149 Logo-Adressen mit ?v=<Version> (/favicon.png?v=…, /live/…/hts-logo.png?v=…): 7 Tage Cache, ohne Version 1 h.
+   - #150 Publisher.setOrganizer → Kopfzeile X-HTS-Ausrichter (URL-kodiert, ≤ 120 Zeichen); LiveHost speichert
+     meta.properties „organizer“; Startseiten-Karte (Name + Logo) und Turnierseiten-Kopf (LiveServer.forHost mit org).
+   - #151 Tournament.worldUrl (Datei „turnierwelt“), Tournament.validWorldUrl (nur https mit Host); Feld im
+     TournamentDialog (Hinweis bei Nicht-mytischtennis.de, Link „Turnierwelt im Browser öffnen“), Link auf „Live im
+     Internet“; Live-Seiten: „zur Turnierwelt ↗“ im Kopf und auf der Startseiten-Karte (meta „world“).
+   - #152 ProgramFolder (Ordner von hts.jar, sonst ~/.hts; programm.properties: dark, dir-hts, dir-pdf, dir-xml;
+     migrateFrom alter Ablage; carryOverFrom „Einstellungen aus älterer Version übernehmen“); Organizer und Log im
+     Programmordner; Reiter „Programm“ in OverviewView (Dunkelmodus, drei Ordnerwahlen, Programmordner öffnen, Übernahme);
+     DarkMode (Window.getWindows-Listener, hts-dunkel.css); neue Ablage: TournamentStore.placeFlat (Datei direkt im
+     HTS-Ordner, „(2)“), Tournament.flatLayout (Datei „flat“), StorageLocations.pdfDir/xmlDir → Export files,
+     exportFileName („Name JJJJ-MM-TT - …“, „(2)“; Bindestrich statt Gedankenstrich wegen Dateisystem-Kodierung) in
+     PdfViewer und Urkunden; alte Turniere unverändert; Tests/hts.dataDir nutzen die alte Struktur. Startdateien:
+     -XX:ErrorFile in „Protokoll“ neben hts.jar. Turnierübersicht: Überschrift nie mit „…“ (Knöpfe in FlowPane).
+   - #153 /spenden (spenden.html im Konfigurationsordner, sonst Vorgabetext), Fußzeile „Spenden“; Vorlage
+     vorlagen/spenden.html (install.sh/update.sh legen sie an, wenn sie fehlt).
+   - #154 Tournament.publishedOnce (Datei „published-once“, gesetzt bei erstem OK); OverviewView.delete fragt „Live-Daten
+     auch vom Webserver löschen?“; PendingDeletes (webserver-loeschen.txt im Programmordner, retryLater beim Start und
+     beim Einschalten des Veröffentlichens). Archivieren geschieht in HTS automatisch (Datum > 14 Tage) – keine Rückfrage.
+   - #155 TILE_JS ohne sessionStorage (Variable), Suche/„Meine Spiele“ ohne localStorage (Link „Meine Spiele“ +
+     Lesezeichen-Hinweis, SHARE_JS „Link kopieren“); Kasten „Meine Spiele“ auf der Turnier-Startseite entfällt.
+   - #156 TournamentStore.create/copy: publish = !test; publishAbbrev immer true (Schalter entfernt, Transform immer).
+   - #157 LiveHost.startPage(past) mit Reitern / und /vergangen, isPast(state, finalOnly, date, heute).
+   - #158 LiveServer.MATCH_PATH „/live/<Klasse>[/phase<n>]/spiel<Nr>“, matchPage, matchHref; Spiele und Tisch-Kacheln
+     verlinkt. Abweichung zur Feature-Beschreibung: Nummern zählen je Klasse UND Phase → ab Phase 2 „…/phase2/spiel3“.
+     Spiel um Platz 3: kein Nummerntausch mehr, Tournament.queueOrderOf reiht es vor dem Finale ein.
+   - #159 Persönliche Rechtstexte NUR in /home/claude/work/rechtstexte-betreiber/ (nie ins Repo/Release); im Repo
+     neutrale Vorlagen (neuer Text, Platzhalter). install.sh/update.sh: rechtstexte_einspielen (hts-rechtstexte.tar.gz
+     oder rechtstexte/ neben bzw. im Paketordner; Platzhalter-Prüfung, ≤ 512 KB, .bak-<Datum>). Dem Nutzer
+     hts-rechtstexte.tar.gz separat geschickt.
+   - Tests: Version180Test (7), Version020Test (Platz 3 feste Nummer, Aufruf vor dem Finale), LiveHostTest angepasst.
 
 1.7.0 (24.11.2026, Commit „HTS 1.7.0“, Closes #140 #141 #142 #143 #145 #146 #147 #148; auf Zuruf „ansonsten alles
    kompilieren“ – alle Punkte der Feature-Sammlung außer #133 Tablet-Test, der nur mit Gerät geht):

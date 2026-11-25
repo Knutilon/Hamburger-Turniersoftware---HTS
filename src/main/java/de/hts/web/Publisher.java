@@ -116,6 +116,23 @@ public final class Publisher implements AutoCloseable {
         dirty = true;
     }
 
+    /** 1.8.0 (#150): Name des Ausrichters – wird bei jedem Hochladen als Kopfzeile X-HTS-Ausrichter mitgeschickt. */
+    private volatile Supplier<String> organizer = () -> null;
+
+    public void setOrganizer(Supplier<String> name) {
+        organizer = name == null ? () -> null : name;
+        dirty = true;
+    }
+
+    /** Ausrichter-Name für die Kopfzeile: URL-kodiert, höchstens 120 Zeichen, ohne Steuerzeichen. */
+    static String organizerHeader(String name) {
+        if (name == null) return null;
+        String n = name.replaceAll("\\p{Cntrl}", " ").strip();
+        if (n.isEmpty()) return null;
+        if (n.length() > 120) n = n.substring(0, 120);
+        return java.net.URLEncoder.encode(n, java.nio.charset.StandardCharsets.UTF_8);
+    }
+
     /** Das Turnier hat sich geändert (Ergebnis, neue Phase, Tischvergabe …). */
     public void changed() {
         dirty = true;
@@ -162,7 +179,13 @@ public final class Publisher implements AutoCloseable {
                 if (png != null) request("PUT", "/logo", png, "image/png");
                 logoSent = true;
             }
-            request("PUT", "", data, "application/octet-stream");
+            String org;
+            try {
+                org = organizerHeader(organizer.get());
+            } catch (RuntimeException e) {
+                org = null;
+            }
+            request("PUT", "", data, "application/octet-stream", org);
             pending = null;
             lastSuccess = System.currentTimeMillis();
             if (status.state() != State.OK) de.hts.Log.info("Live im Internet: veröffentlicht");
@@ -176,10 +199,15 @@ public final class Publisher implements AutoCloseable {
     }
 
     private void request(String method, String suffix, byte[] body, String type) throws IOException, InterruptedException {
+        request(method, suffix, body, type, null);
+    }
+
+    private void request(String method, String suffix, byte[] body, String type, String organizerHeader) throws IOException, InterruptedException {
         HttpRequest.Builder rb = HttpRequest.newBuilder(URI.create(base + "/api/turniere/" + id + suffix))
                 .timeout(Duration.ofSeconds(30))
                 .header("Authorization", "Bearer " + key)
                 .header("X-HTS-Version", de.hts.HtsApp.VERSION);
+        if (organizerHeader != null) rb.header("X-HTS-Ausrichter", organizerHeader);
         if (body != null) rb.header("Content-Type", type).method(method, HttpRequest.BodyPublishers.ofByteArray(body));
         else rb.method(method, HttpRequest.BodyPublishers.noBody());
         HttpResponse<String> r = http.send(rb.build(), HttpResponse.BodyHandlers.ofString());

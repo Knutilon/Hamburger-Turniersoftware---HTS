@@ -99,9 +99,10 @@ class LiveHostTest {
             }
             HttpResponse<String> start = get(s.base() + "/");
             assertEquals(200, start.statusCode());
-            assertTrue(start.body().contains("Hamburger Ranglistenturnier") && start.body().contains("/live/Hamburger_Ranglistenturnier_28_11_2026"),
+            String both = start.body() + get(s.base() + "/vergangen").body();      // 1.8.0 (#157): je nach heutigem Datum
+            assertTrue(both.contains("Hamburger Ranglistenturnier") && both.contains("/live/Hamburger_Ranglistenturnier_28_11_2026"),
                     "Startseite listet das Turnier mit lesbarer Adresse");
-            assertTrue(start.body().contains("Laufende Turniere") && start.body().contains("28.11.2026"));
+            assertTrue(start.body().contains("Aktuelle Turniere") && start.body().contains("href=\"/vergangen\"") && both.contains("28.11.2026"));
             assertTrue(start.body().contains("href=\"/impressum\"") && start.body().contains("href=\"/datenschutz\""), "Impressum/Datenschutz verlinkt");
             assertEquals("nosniff", start.headers().firstValue("X-Content-Type-Options").orElse(""));
             assertTrue(start.headers().firstValue("Content-Security-Policy").orElse("").contains("default-src 'self'"));
@@ -181,7 +182,7 @@ class LiveHostTest {
         try (Srv s = server(data, content, 25)) {                // Neustart: Stand von der Platte
             String ov = get(s.base() + "/live/t1").body();
             assertTrue(ov.contains("Endergebnisse"), "„Nur Endergebnis“ bleibt nach Neustart");
-            assertTrue(get(s.base() + "/").body().contains("Herbstturnier"));
+            assertTrue(get(s.base() + "/vergangen").body().contains("Herbstturnier"), "nur Endergebnis = vergangen (1.8.0)");
             Path meta = data.resolve("turniere/t1/meta.properties");
             String m = Files.readString(meta).replaceAll("updated=\\d+", "updated=1000");
             Files.writeString(meta, m);
@@ -189,7 +190,7 @@ class LiveHostTest {
         try (Srv s = server(data, content, 25)) {
             s.host().cleanUp();
             assertFalse(Files.exists(data.resolve("turniere/t1")), "nach der Aufbewahrungsfrist gelöscht");
-            assertTrue(get(s.base() + "/").body().contains("keine Turniere"));
+            assertTrue(get(s.base() + "/").body().contains("Gerade keine aktuellen Turniere"));
         }
     }
 

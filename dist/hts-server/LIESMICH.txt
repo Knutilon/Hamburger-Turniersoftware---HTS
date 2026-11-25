@@ -9,7 +9,7 @@ Inhalt
   hts-server.jar     das Server-Programm (benötigt Java 21, wird von install.sh installiert)
   install.sh         Einrichtung (einmalig; erneut ausführen ist gefahrlos)
   update.sh          neue Version einspielen (aus dem Ordner der neuen Version starten)
-  vorlagen/          Vorlagen für Impressum und Datenschutzerklärung
+  vorlagen/          Vorlagen für Impressum, Datenschutzerklärung und die Seite „Spenden“
   SHA256SUMS         Prüfsummen
   LICENSE, Lizenzen/ Lizenztexte (HTS: AGPL-3.0; OpenJFX-Basis: GPL-2.0 mit Classpath-Ausnahme; Schrift Comic Neue: OFL)
 
@@ -29,6 +29,15 @@ Kurzfassung (Einzelheiten: docs/LIVE-SERVER-ANLEITUNG.md im HTS-Repository)
   5. Impressum und Datenschutz ausfüllen:
          nano /etc/hts-server/impressum.html
          nano /etc/hts-server/datenschutz.html
+     Oder (ab 1.8.0) fertige Fassungen als Datei hts-rechtstexte.tar.gz (enthält impressum.html und/oder
+     datenschutz.html) neben das Paket legen – install.sh bzw. update.sh spielen sie dann selbst ein und
+     sichern die vorherigen Dateien als .bak-<Datum>:
+         scp hts-server-VERSION.tar.gz hts-rechtstexte.tar.gz root@hts-livescoring.de:
+
+Neue Version einspielen
+         scp hts-server-VERSION.tar.gz root@hts-livescoring.de:        (ggf. auch hts-rechtstexte.tar.gz)
+         ssh root@hts-livescoring.de
+         tar xzf hts-server-VERSION.tar.gz && cd hts-server && ./update.sh
 
 Nützliche Befehle auf dem Server
   systemctl status hts-server          läuft der Live-Server?

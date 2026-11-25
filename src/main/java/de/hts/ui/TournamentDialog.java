@@ -55,6 +55,19 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
     }
 
     /** 1.0 (#82): eingegebene Nachmeldegebühr in Cent (leer = 0). */
+    // 1.8.0 (#151): Link zur myTischtennis-Turnierwelt
+    private final javafx.scene.control.TextField worldField = new javafx.scene.control.TextField();
+
+    public TournamentDialog withWorldUrl(String url) {
+        worldField.setText(url == null ? "" : url);
+        return this;
+    }
+
+    /** Eingetragener Link zur Turnierwelt ({@code ""} = keiner). */
+    public String worldUrl() {
+        return worldField.getText() == null ? "" : worldField.getText().strip();
+    }
+
     public int lateFeeCents() {
         Integer c = de.hts.importer.clicktt.ClickTtXmlImporter.feeCents(lateFeeField.getText());
         return c == null ? 0 : c;
@@ -119,6 +132,8 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
         Runnable showWhere = () -> {
             if (chosen[0] != null) where.setText(chosen[0].toString());
             else if (currentFile != null) where.setText(currentFile.getParent().toString());
+            else if (de.hts.persistence.StorageLocations.newTournamentDir() != null)          // 1.8.0 (#152)
+                where.setText(de.hts.persistence.StorageLocations.newTournamentDir() + "  (Standard)");
             else where.setText(de.hts.persistence.StorageLocations.root()
                     .resolve(de.hts.persistence.StorageLocations.safeName(nameField.getText()))
                     .resolve(de.hts.persistence.StorageLocations.FILE_DIR) + "  (Standard)");
@@ -131,7 +146,8 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
             javafx.stage.DirectoryChooser dc = new javafx.stage.DirectoryChooser();
             dc.setTitle("Ordner für die Turnierdatei wählen");
             java.nio.file.Path start = chosen[0] != null ? chosen[0] : currentFile != null ? currentFile.getParent()
-                    : de.hts.persistence.StorageLocations.root();
+                    : de.hts.persistence.StorageLocations.newTournamentDir() != null
+                    ? de.hts.persistence.StorageLocations.newTournamentDir() : de.hts.persistence.StorageLocations.root();
             dc.setInitialDirectory(de.hts.persistence.StorageLocations.ensure(start));
             java.io.File d = dc.showDialog(getDialogPane().getScene().getWindow());
             if (d != null) {
@@ -219,7 +235,37 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
         grid.addRow(8, lateLabel, lateBox);
         lateLabel.visibleProperty().bind(handicapBox.selectedProperty().not());
         lateBox.visibleProperty().bind(handicapBox.selectedProperty().not());
-        grid.add(error, 0, 9, 2, 1);
+        // 1.8.0 (#151): Link zur Turnierwelt (myTischtennis)
+        worldField.setPromptText("z. B. https://www.mytischtennis.de/turnierwelt");
+        worldField.setPrefColumnCount(28);
+        Label worldHint = hintLabel("optional – erscheint auf den Live-Seiten als Link „zur Turnierwelt“");
+        Label worldWarn = new Label();
+        worldWarn.getStyleClass().add("warning");
+        worldWarn.setWrapText(true);
+        worldWarn.setMaxWidth(380);
+        worldWarn.managedProperty().bind(worldWarn.textProperty().isNotEmpty());
+        Runnable checkWorld = () -> {
+            String u = worldUrl();
+            String ok = de.hts.tournament.Tournament.validWorldUrl(u);
+            worldWarn.setText(u.isEmpty() || (ok != null && ok.toLowerCase(java.util.Locale.ROOT).contains("mytischtennis.de")) ? ""
+                    : ok == null ? "Bitte eine vollständige Adresse mit https:// eingeben." : "Hinweis: Das ist keine Adresse von mytischtennis.de.");
+        };
+        javafx.scene.control.Hyperlink worldOpen = new javafx.scene.control.Hyperlink("Turnierwelt im Browser öffnen");
+        worldOpen.setOnAction(e -> {
+            String ok = de.hts.tournament.Tournament.validWorldUrl(worldUrl());
+            if (ok != null) de.hts.HtsApp.openLink(ok);
+        });
+        worldField.textProperty().addListener((o, a, b) -> {
+            checkWorld.run();
+            worldOpen.setVisible(de.hts.tournament.Tournament.validWorldUrl(worldUrl()) != null);
+        });
+        checkWorld.run();
+        worldOpen.setVisible(de.hts.tournament.Tournament.validWorldUrl(worldUrl()) != null);
+        worldOpen.managedProperty().bind(worldOpen.visibleProperty());
+        javafx.scene.layout.VBox worldBox = new javafx.scene.layout.VBox(4, worldField, worldHint, worldWarn, worldOpen);
+        Label worldLabel = new Label("Turnierwelt-Link:");
+        grid.addRow(9, worldLabel, worldBox);
+        grid.add(error, 0, 10, 2, 1);
         getDialogPane().setContent(grid);
 
         ButtonType ok = new ButtonType(isNew ? "Anlegen" : "Übernehmen", ButtonBar.ButtonData.OK_DONE);
@@ -241,6 +287,9 @@ public final class TournamentDialog extends Dialog<TournamentDialog.Result> {
                 e.consume();
             } else if (tablesField.getText().isBlank() || Integer.parseInt(tablesField.getText()) < 1) {
                 error.setText("Bitte die Anzahl der Spieltische angeben (mindestens 1).");
+                e.consume();
+            } else if (!worldUrl().isEmpty() && de.hts.tournament.Tournament.validWorldUrl(worldUrl()) == null) {
+                error.setText("Der Turnierwelt-Link muss eine vollständige Adresse mit https:// sein (oder leer bleiben).");
                 e.consume();
             }
         });

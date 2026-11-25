@@ -75,6 +75,19 @@ public final class StorageLocations {
         return s.isEmpty() ? "Turnier" : s;
     }
 
+    /** 1.8.0 (#152): Ordner neuer Turniere (neue Ablage) – {@code null}, wenn die Ablage die alte Ordnerstruktur nutzt. */
+    private static volatile java.util.function.Supplier<Path> flat;
+
+    static void setFlat(java.util.function.Supplier<Path> s) {
+        flat = s;
+    }
+
+    /** Ordner, in den neue Turnierdateien kommen ({@code null} = alte Ordnerstruktur „HTS Turniere\Name\Turnierdatei“). */
+    public static Path newTournamentDir() {
+        java.util.function.Supplier<Path> s = flat;
+        return s == null ? null : s.get();
+    }
+
     /** Turnierordner: festgelegter Ordner oder Stammordner\Turniername. */
     public static Path tournamentFolder(Tournament t) {
         if (t.getFolder() != null) return Path.of(t.getFolder());
@@ -82,11 +95,39 @@ public final class StorageLocations {
     }
 
     public static Path pdfDir(Tournament t) {
-        return t.getPdfDir() != null ? Path.of(t.getPdfDir()) : tournamentFolder(t).resolve(PDF_DIR);
+        if (t.getPdfDir() != null) return Path.of(t.getPdfDir());
+        return t.isFlatLayout() ? ProgramFolder.pdfDir() : tournamentFolder(t).resolve(PDF_DIR);
     }
 
     public static Path xmlDir(Tournament t) {
-        return t.getXmlDir() != null ? Path.of(t.getXmlDir()) : tournamentFolder(t).resolve(XML_DIR);
+        if (t.getXmlDir() != null) return Path.of(t.getXmlDir());
+        return t.isFlatLayout() ? ProgramFolder.xmlDir() : tournamentFolder(t).resolve(XML_DIR);
+    }
+
+    private static Path defaultPdfDir(Tournament t) {
+        return t.isFlatLayout() ? ProgramFolder.pdfDir() : tournamentFolder(t).resolve(PDF_DIR);
+    }
+
+    private static Path defaultXmlDir(Tournament t) {
+        return t.isFlatLayout() ? ProgramFolder.xmlDir() : tournamentFolder(t).resolve(XML_DIR);
+    }
+
+    /**
+     * 1.8.0 (#152): Dateiname für einen Export. In der neuen Ablage liegen die Exporte aller Turniere in einem Ordner –
+     * dann beginnt der Name mit Turniername und Datum (z. B. „Herbstturnier 2026-11-28 - Endergebnis Herren C.pdf“), und
+     * bei gleichem Namen wird „(2)“, „(3)“ … angehängt.
+     */
+    public static String exportFileName(Tournament t, Path dir, String fileName) {
+        String fn = fileName == null || fileName.isBlank() ? "Export" : fileName.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", "_");
+        if (t == null || !t.isFlatLayout()) return fn;
+        String prefix = safeName(t.getName()) + (t.getDate() == null ? "" : " " + t.getDate());
+        if (!fn.startsWith(prefix)) fn = prefix + " - " + fn;
+        if (dir == null) return fn;
+        int dot = fn.lastIndexOf('.');
+        String stem = dot > 0 ? fn.substring(0, dot) : fn, ext = dot > 0 ? fn.substring(dot) : "";
+        String candidate = fn;
+        for (int k = 2; Files.exists(dir.resolve(candidate)) && k < 1000; k++) candidate = stem + " (" + k + ")" + ext;
+        return candidate;
     }
 
     /** Name der click-TT-Ergebnisdatei: „Ergebnisse - &lt;erste 20 Zeichen des Turniernamens&gt; - DD_MM_YYYY.xml“. */
@@ -112,11 +153,11 @@ public final class StorageLocations {
     /** Merkt sich einen im Speichern-Dialog gewählten Ordner als PDF-Ordner des Turniers (Standard: zurücksetzen). */
     public static void rememberPdfDir(Tournament t, Path chosen) {
         if (t == null || chosen == null) return;
-        t.setPdfDir(chosen.equals(tournamentFolder(t).resolve(PDF_DIR)) ? null : chosen.toString());
+        t.setPdfDir(chosen.equals(defaultPdfDir(t)) ? null : chosen.toString());
     }
 
     public static void rememberXmlDir(Tournament t, Path chosen) {
         if (t == null || chosen == null) return;
-        t.setXmlDir(chosen.equals(tournamentFolder(t).resolve(XML_DIR)) ? null : chosen.toString());
+        t.setXmlDir(chosen.equals(defaultXmlDir(t)) ? null : chosen.toString());
     }
 }

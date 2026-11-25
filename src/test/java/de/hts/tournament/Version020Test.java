@@ -84,7 +84,7 @@ class Version020Test {
         assertEquals(8, t.matchesOf(c).size(), "4 + 2 + Spiel um Platz 3 + Finale");
         Match third = t.thirdPlaceMatch(c);
         Match fin = t.matchesOf(c).stream().filter(m -> m.getStage().equals("Finale")).findFirst().orElseThrow();
-        assertTrue(third.getNumber() < fin.getNumber(), "Spiel um Platz 3 vor dem Finale");
+        assertTrue(third.getNumber() > fin.getNumber(), "1.8.0 (#158): Spiel um Platz 3 nach dem Finale nummeriert");
         t.startClass(c);
         play(t, c, m -> true);
         assertTrue(t.isPhaseComplete(c));
@@ -98,6 +98,24 @@ class Version020Test {
         PlayingClass c2 = back.findClass("KO").orElseThrow();
         assertTrue(c2.isThirdPlace());
         assertEquals(from, back.finalResult(c2).rows().stream().map(Tournament.Placing::from).toList());
+    }
+
+    @Test
+    void spielUmPlatz3HatFesteNummerUndKommtTrotzdemVorDemFinale() {
+        // 1.8.0 (#158): keine Nummern mehr tauschen – Platz 3 nach dem Finale nummeriert, aber zuerst aufgerufen
+        Tournament t = new Tournament();
+        t.setTableCount(10);
+        PlayingClass c = koClass(t, "KO", 8);
+        t.setThirdPlace(c, true);
+        Match fin = t.matchesOf(c).stream().filter(m -> m.getStage().equals("Finale")).findFirst().orElseThrow();
+        int finNr = fin.getNumber();
+        t.startClass(c);
+        play(t, c, m -> !m.getStage().equals("Finale") && !m.getStage().equals(Tournament.THIRD_PLACE_STAGE));
+        Match third = t.thirdPlaceMatch(c);
+        assertEquals(finNr, fin.getNumber(), "Nummer des Finales unverändert");
+        assertEquals(finNr + 1, third.getNumber());
+        assertTrue(third.getQueueOrder() > 0 && fin.getQueueOrder() > 0, "beide eingereiht");
+        assertTrue(third.getQueueOrder() < fin.getQueueOrder(), "Spiel um Platz 3 wird vor dem Finale aufgerufen");
     }
 
     @Test

@@ -583,9 +583,11 @@ final class CertificatesView {
         if (sel.isEmpty()) return;
         FileChooser fc = new FileChooser();
         fc.setTitle("Urkunden als PDF speichern");
-        fc.setInitialFileName(jobName().replaceAll("[\\\\/:*?\"<>|]", "_") + ".pdf");
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF-Dokument", "*.pdf"));
-        fc.setInitialDirectory(de.hts.persistence.StorageLocations.ensure(de.hts.persistence.StorageLocations.pdfDir(tournament)));
+        File pdfDir = de.hts.persistence.StorageLocations.ensure(de.hts.persistence.StorageLocations.pdfDir(tournament));
+        fc.setInitialDirectory(pdfDir);
+        fc.setInitialFileName(de.hts.persistence.StorageLocations.exportFileName(tournament, pdfDir.toPath(),
+                jobName().replaceAll("[\\\\/:*?\"<>|]", "_") + ".pdf"));                // 1.8.0 (#152)
         File f = fc.showSaveDialog(content.getScene() == null ? null : content.getScene().getWindow());
         if (f == null) return;
         if (!f.getName().toLowerCase().endsWith(".pdf")) f = new File(f.getParentFile(), f.getName() + ".pdf");

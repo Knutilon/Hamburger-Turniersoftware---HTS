@@ -1,0 +1,165 @@
+/*
+ * HTS – Hamburger Turniersoftware
+ * Copyright 2026 by Richard Johan Frederich Michaelis, Hamburg, Germany
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Dieses Programm ist freie Software unter der GNU Affero General
+ * Public License v3.0; Einzelheiten in der Datei LICENSE.
+ */
+/*
+ * 1.8.0 (#152): Dunkelmodus – wird zusätzlich zu hts.css geladen (Reiter „Programm“ → „Dunkelmodus aktivieren“).
+ * Hintergrund dunkelgrau, Karten etwas heller, Schrift hell, Grün und Mint als Akzente. Druck und PDFs bleiben hell.
+ */
+.root {
+    -hts-navy: #e3e8ec;
+    -hts-navy-dark: #f3f5f7;
+    -hts-text: #e3e8ec;
+    -hts-muted: #a3adb8;
+    -hts-line: #3a424c;
+    -hts-bg: #15191e;
+    -hts-row: #2a3139;
+    -hts-turquoise-light: #1f3d33;
+    -hts-card: #1f252c;
+    -hts-on-accent: #0b3d2c;
+    -fx-base: #2a3038;
+    -fx-background: #15191e;
+    -fx-control-inner-background: #1f252c;
+    -fx-control-inner-background-alt: #242b33;
+    -fx-text-base-color: #e3e8ec;
+    -fx-text-background-color: #e3e8ec;
+    -fx-text-inner-color: #e3e8ec;
+    -fx-dark-text-color: #e3e8ec;
+    -fx-mid-text-color: #cfd5dc;
+    -fx-light-text-color: #ffffff;
+    -fx-selection-bar: #187250;
+    -fx-selection-bar-non-focused: #2c4a3f;
+    -fx-selection-bar-text: white;
+    -fx-box-border: #3a424c;
+    -fx-outer-border: #3a424c;
+    -fx-background-color: -hts-bg;
+    -fx-text-fill: -hts-text;
+}
+
+/* Flächen, die in hts.css weiß sind */
+.app-header, .status-bar, .card, .exempt-bar, .table-view, .table-view .column-header-background, .table-row-cell,
+.workspace .search-bar, .slot, .combo-box-popup > .list-view, .context-menu, .group-row,
+.result-tabs .tab-header-background, .tab-page-arrow, .inner-card, .group-matches, .table-card, .bracket-titlebar,
+.pres-root, .pres-body, .pill-combo, .menu-button.action-menu, .match-option, .match-done-row, .fee-pending-button,
+.dialog-pane > .header-panel, .dialog-pane, .list-view, .list-cell, .tab-pane > .tab-header-area > .headers-region > .tab {
+    -fx-background-color: -hts-card;
+}
+.pairs-scroll, .pairs-scroll > .viewport, .bracket-scroll, .bracket-scroll > .viewport {
+    -fx-background-color: -hts-card;
+    -fx-background: -hts-card;
+}
+.scroll-pane, .scroll-pane > .viewport, .page-scroll, .page-scroll > .viewport {
+    -fx-background-color: transparent;
+    -fx-background: -hts-bg;
+}
+.count-box, .keypad { -fx-background-color: #232a32; }
+.table-row-cell:hover, .list-cell:filled:hover, .clickable:hover { -fx-background-color: #2a323b; }
+.table-row-cell { -fx-border-color: transparent transparent #2c333b transparent; }
+.table-view .column-header, .table-view .filler { -fx-background-color: -hts-card; }
+.table-view .column-header .label { -fx-text-fill: -hts-muted; }
+.table-cell, .list-cell { -fx-text-fill: -hts-text; }
+
+/* Eingabefelder */
+.text-field, .text-area, .combo-box, .date-picker, .spinner, .text-field:focused, .combo-box:focused,
+.dialog-pane .text-field, .dialog-pane .combo-box, .spinner:focused, .spinner:contains-focus, .dialog-pane .spinner,
+.search-choice:focus-within, .password-field {
+    -fx-background-color: #262d35;
+    -fx-text-fill: -hts-text;
+    -fx-prompt-text-fill: #8a95a1;
+    -fx-border-color: #46505b;
+}
+.text-area .content { -fx-background-color: #262d35; }
+
+/* Knöpfe */
+.button, .button.pill, .toggle-button, .menu-button {
+    -fx-background-color: #262d35;
+    -fx-border-color: #46505b;
+    -fx-text-fill: -hts-text;
+}
+.button:hover, .toggle-button:hover { -fx-background-color: #1f3d33; }
+.button.navy-pill, .button.accent, .dialog-pane .button:default {
+    -fx-background-color: #187250;
+    -fx-border-color: #187250;
+    -fx-text-fill: white;
+}
+.button.navy-pill:hover, .button.accent:hover, .dialog-pane .button:default:hover { -fx-background-color: #1f8a61; }
+.menu-button.action-menu > .label { -fx-text-fill: -hts-text; }
+.menu-button.action-menu > .arrow-button > .arrow { -fx-background-color: -hts-muted; }
+.fee-pending-button { -fx-text-fill: #7fd0dc; -fx-border-color: #3b8f9c; }
+
+/* Kopfzeile und Menü */
+.logo-text, .header-context { -fx-text-fill: #f3f5f7; }
+.logo-sub { -fx-text-fill: #5fd3a8; }
+.button.menu-item { -fx-text-fill: #b9c2cc; -fx-background-color: transparent; -fx-border-color: transparent; }
+.button.menu-item .icon { -fx-stroke: #b9c2cc; }
+.button.menu-item:hover, .button.menu-item.active { -fx-text-fill: #f3f5f7; }
+.button.menu-item:hover .icon, .button.menu-item.active .icon { -fx-stroke: #f3f5f7; }
+.button.menu-item.active { -fx-border-color: transparent transparent #5fd3a8 transparent; }
+.save-state.clean { -fx-text-fill: #5fd3a8; }
+.save-state.dirty { -fx-text-fill: #f5b56a; }
+
+/* Chips und Markierungen auf hellem Grund: auf dunklem Grund etwas gedämpfter */
+.chip-started, .badge-doubles, .exempt-chip { -fx-background-color: #187250; -fx-text-fill: white; }
+.chip-finished { -fx-background-color: #3a424c; -fx-text-fill: white; }
+.chip-disabled { -fx-background-color: #000000; -fx-text-fill: white; }
+.badge-singles { -fx-background-color: -hts-row; -fx-text-fill: -hts-text; }
+.chip.status-queued, .chip-paused, .status-paused, .badge-warn, .chip-test { -fx-background-color: #4a3b12; -fx-text-fill: #ffd98a; }
+.chip-free { -fx-background-color: #1d3b29; -fx-text-fill: #8be0a8; }
+.status-cancelled, .chip-cancelled { -fx-background-color: #2e353e; -fx-text-fill: #b7c0ca; }
+.chip.chip-locked, .chip-clash { -fx-background-color: #4a2020; -fx-text-fill: #ffb4b4; }
+.qualified, .qual-count-ok { -fx-background-color: #1a3d34; -fx-text-fill: #8fe3c9; }
+.qual-count-reserve, .qual-decision { -fx-background-color: #3d3014; -fx-text-fill: #f3cf8a; }
+.qual-place { -fx-background-color: #2a3139; -fx-text-fill: #c9d1d9; }
+.handicap-badge { -fx-background-color: #183a3b; -fx-text-fill: #8fe0e2; }
+.pair-card.incomplete, .lock-banner, .match-open-card { -fx-background-color: #3a2f15; }
+.lock-banner .label { -fx-text-fill: #ffd98a; }
+.fee-pending-banner, .table-row-cell.fee-pending-row { -fx-background-color: #173a40; -fx-text-fill: #9fe3ed; }
+.fee-pending-text { -fx-text-fill: #9fe3ed; }
+.table-row-cell.over-limit, .pair-card.over-limit, .corr-new-player, .corr-legend-player { -fx-background-color: #4a2020; }
+.table-row-cell.over-limit .table-cell { -fx-text-fill: #ffb4b4; }
+.table-row-cell.attendance-withdrawn { -fx-background-color: #4a4314; }
+.table-row-cell.attendance-withdrawn:selected { -fx-background-color: #6b5f17; }
+.table-row-cell.attendance-requested { -fx-background-color: #4a3014; }
+.table-row-cell.attendance-requested:selected { -fx-background-color: #6b4417; }
+.match-deactivated { -fx-background-color: #20252b; }
+.table-card.table-disabled { -fx-background-color: #101317; -fx-border-color: #000000; }
+.search-hit, .tap-picked { -fx-background-color: #5a4b12; }
+.set-field.set-a { -fx-background-color: #1b3a35; }
+.set-field.set-b { -fx-background-color: #232a3b; }
+.set-field.set-invalid { -fx-background-color: #4a2020; }
+.match-name.drop-hover, .label.drop-hover, .label.search-current { -fx-background-color: #1f3d33; }
+.medal-2, .adv-3 { -fx-text-fill: #1f2933; }
+
+/* Schrift, die in hts.css fest dunkel ist */
+.result-summary, .table-info, .table-num { -fx-text-fill: -hts-text; }
+.table-head, .row-open .table-cell, .place-2, .card-club, .qual-ttr, .set-details, .card-sets, .caption-label { -fx-text-fill: -hts-muted; }
+.qual-club { -fx-fill: -hts-muted; }
+.winner, .table-cell.fee-paid, .fee-paid-label { -fx-text-fill: #7fdc98; }
+.label.warning, .table-only, .table-cell.fee-open, .fee-open-label { -fx-text-fill: #f5c26b; }
+.label.error, .club-clash, .lock-hint, .field-error-text, .label.handicap-problem { -fx-text-fill: #ff9a9a; }
+.hyperlink, .hyperlink.lock-hint-link { -fx-text-fill: #7fdcb8; }
+.publish-state.publish-ok { -fx-text-fill: #5fd3a8; }
+.publish-state.publish-error { -fx-text-fill: #ff9a9a; }
+.table-cell.fee-pending { -fx-text-fill: #7fd0dc; }
+.table-cell.fee-waived { -fx-text-fill: #c4b5fd; }
+.busy-hint { -fx-background-color: #000000; }
+
+/* Linien */
+.sticky-bar { -fx-border-color: #3a424c transparent #3a424c transparent; }
+.match-card .side-b { -fx-border-color: #3a424c transparent transparent transparent; }
+.qual-row { -fx-border-color: transparent transparent #3a424c transparent; }
+.tab-page-arrow, .pill-combo, .menu-button.action-menu, .search-choice-list { -fx-border-color: #46505b; }
+.match-card.card-done { -fx-border-color: transparent transparent transparent #cfd5dc; }
+.separator .line { -fx-border-color: #3a424c; }
+
+/* Tooltips, Menüs, Reiter */
+.tooltip { -fx-background-color: #2a3038; -fx-text-fill: #e3e8ec; }
+.context-menu .menu-item .label { -fx-text-fill: -hts-text; }
+.tab-pane > .tab-header-area > .tab-header-background { -fx-background-color: -hts-card; }
+.tab .tab-label { -fx-text-fill: -hts-text; }
+.check-box .box, .radio-button .radio { -fx-background-color: #262d35; -fx-border-color: #5a6470; }
+.check-box:selected .mark, .radio-button:selected .dot { -fx-background-color: #5fd3a8; }

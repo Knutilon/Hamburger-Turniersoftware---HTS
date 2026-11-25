@@ -25,6 +25,37 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.8.0
+
+- **Startseite der Live-Seiten geteilt:** Reiter „Aktuelle Turniere“ (`/`, laufende zuerst, dann nach Datum) und
+  „Vergangene Turniere“ (`/vergangen`, neueste zuerst). Jede Karte zeigt den Ausrichter mit Logo und – falls eingetragen
+  – den Link „zur Turnierwelt“.
+- **Eigene Seite für jedes Spiel:** z. B. `…/live/Hamburger_Ranglistenturnier_28_11_2026/Herren_C/spiel45` (ab Phase 2
+  `…/Herren_C/phase2/spiel3`) mit Spielern, Verein, Tisch, Status und Sätzen, Knopf „Link kopieren“. Überall, wo ein
+  Spiel steht, führt Antippen dorthin. Das Spiel um Platz 3 wird nach dem Finale nummeriert (Nummern bleiben fest),
+  aber weiterhin vor dem Finale aufgerufen.
+- **Nichts mehr im Browser gespeichert:** keine Cookies, kein „Local Storage“, kein „Session Storage“. Statt „Als
+  ‚Meine Spiele‘ merken“ gibt es den Link „Meine Spiele“ zum Speichern als Lesezeichen.
+- **Ausrichter und Turnierwelt:** HTS schickt den Namen des Ausrichters mit; er steht mit Logo auf der Startseite und im
+  Kopf der Turnierseite. Neues Feld „Turnierwelt-Link“ beim Anlegen und Bearbeiten eines Turniers (nur https-Adressen,
+  Hinweis bei anderen Seiten als mytischtennis.de).
+- **Seite „Spenden“** in der Fußzeile aller Live-Seiten (Text änderbar in `/etc/hts-server/spenden.html`). Das Logo
+  wird mit Versionsnummer geladen – kein altes Logo mehr aus dem Browser-Zwischenspeicher.
+- **Veröffentlichen als Standard:** Neue, kopierte und importierte Turniere sind veröffentlicht (Testturniere nicht).
+  Vornamen erscheinen auf dem Webserver immer abgekürzt; der Schalter dafür entfällt.
+- **Löschen fragt nach den Live-Daten:** Beim Löschen eines veröffentlichten Turniers fragt HTS „Live-Daten auch vom
+  Webserver löschen?“. Ist der Server nicht erreichbar, holt HTS das beim nächsten Start bzw. Veröffentlichen nach.
+- **Neuer Reiter „Programm“:** Dunkelmodus für die ganze Oberfläche (Ausdrucke bleiben hell), Speicherorte für
+  Turnierdateien, PDF- und XML-Exporte, „Einstellungen aus älterer Version übernehmen“. Neue Turniere liegen direkt in
+  `Dokumente\HTS`, alle PDF- und XML-Dateien gemeinsam in `Dokumente\HTS\Export files` (Dateiname beginnt mit
+  Turniername und Datum, bei gleichem Namen „(2)“). Turniere aus älteren Versionen bleiben in „HTS Turniere“.
+  Ausrichter, Programmeinstellungen und der Ordner „Protokoll“ liegen jetzt im Programmordner (dort, wo „HTS starten“
+  liegt); beim ersten Start werden die Ausrichter-Angaben übernommen.
+- **Live-Server:** `update.sh` und `install.sh` spielen eigene Fassungen von Impressum und Datenschutzerklärung ein,
+  wenn neben dem Paket eine Datei `hts-rechtstexte.tar.gz` liegt (alte Dateien werden gesichert). Neue Vorlagen für
+  Impressum und Datenschutzerklärung.
+- **Überschrift der Turnierübersicht nie abgekürzt:** Bei wenig Platz brechen die Knöpfe in eine zweite Zeile um.
+
 ## Neu in 1.7.0
 
 - **Neue Farben und neues Logo:** HTS ist jetzt neutral mit Grün (#187250) für die Hauptknöpfe und Mint an allen Stellen,

@@ -72,18 +72,54 @@ public final class TournamentStore {
         this(dir, null, null);
     }
 
+    /** 1.8.0 (#152): Ordner neuer Turniere (neue Ablage); {@code null} = alte Ordnerstruktur (Tests, hts.dataDir). */
+    private final java.util.function.Supplier<Path> flatDir;
+
     TournamentStore(Path dir, Path legacyDir, java.util.prefs.Preferences prefs) {
+        this(dir, legacyDir, prefs, null);
+    }
+
+    TournamentStore(Path dir, Path legacyDir, java.util.prefs.Preferences prefs, java.util.function.Supplier<Path> flatDir) {
         this.dir = dir;
         this.legacyDir = legacyDir;
         this.prefs = prefs;
+        this.flatDir = flatDir;
         StorageLocations.setRoot(dir);
+        StorageLocations.setFlat(flatDir);
     }
 
     public static TournamentStore defaultStore() {
         String custom = System.getProperty("hts.dataDir");
         if (custom != null && !custom.isBlank()) return new TournamentStore(Path.of(custom));
         return new TournamentStore(StorageLocations.defaultRoot(), Path.of(System.getProperty("user.home"), "HTS", "Turniere"),
-                java.util.prefs.Preferences.userNodeForPackage(TournamentStore.class));
+                java.util.prefs.Preferences.userNodeForPackage(TournamentStore.class), ProgramFolder::htsDir);
+    }
+
+    /** Für Tests: Ablage mit neuer Ordnerstruktur (Turnierdateien direkt in {@code flat}). */
+    static TournamentStore withFlatDir(Path oldRoot, Path flat, java.util.prefs.Preferences prefs) {
+        return new TournamentStore(oldRoot, null, prefs, () -> flat);
+    }
+
+    /**
+     * 1.8.0 (#152): neues Turnier in die neue Ablage legen – Datei direkt im HTS-Ordner (bzw. im gewählten Ordner),
+     * Name „Turniername.hts“, bei gleichem Namen „Turniername (2).hts“. {@code false}: alte Ordnerstruktur.
+     */
+    private boolean placeFlat(Tournament t, Path fileDir) {
+        if (flatDir == null) return false;
+        Path d = fileDir != null ? fileDir : flatDir.get();
+        t.setFlatLayout(true);
+        t.setFolder(d.toString());
+        String base = StorageLocations.safeName(t.getName());
+        Path f = d.resolve(base + "." + TournamentFile.EXTENSION);
+        for (int k = 2; Files.exists(f) || files.containsValue(f); k++) f = d.resolve(base + " (" + k + ")." + TournamentFile.EXTENSION);
+        files.put(t.getId(), f);
+        register(f);
+        return true;
+    }
+
+    /** Liegen neue Turniere in der neuen Ablage? */
+    public boolean usesFlatLayout() {
+        return flatDir != null;
     }
 
     /** Stammordner „HTS Turniere“. */
@@ -117,6 +153,14 @@ public final class TournamentStore {
                             fs.filter(TournamentStore::isHts).forEach(candidates::add);
                         }
                     }
+                }
+            }
+        }
+        if (flatDir != null) {                                         // 1.8.0 (#152): neue Ablage „Dokumente\HTS“
+            Path fd = flatDir.get();
+            if (fd != null && Files.isDirectory(fd) && !fd.equals(dir)) {
+                try (Stream<Path> top = Files.list(fd)) {
+                    top.filter(TournamentStore::isHts).forEach(candidates::add);
                 }
             }
         }
@@ -182,12 +226,15 @@ public final class TournamentStore {
         t.setId(newId(date));
         t.setName(name);
         t.setDate(date);
-        t.setFolder(uniqueFolder(name).toString());
-        if (fileDir != null) {
-            Path f = fileDir.resolve(StorageLocations.safeName(name) + "." + TournamentFile.EXTENSION);
-            if (Files.exists(f)) f = fileDir.resolve(StorageLocations.safeName(name) + " " + t.getId() + "." + TournamentFile.EXTENSION);
-            files.put(t.getId(), f);
-            register(f);
+        t.setPublish(!test);                                // 1.8.0 (#156): neue Turniere veröffentlichen (Testturniere nicht)
+        if (!placeFlat(t, fileDir)) {
+            t.setFolder(uniqueFolder(name).toString());
+            if (fileDir != null) {
+                Path f = fileDir.resolve(StorageLocations.safeName(name) + "." + TournamentFile.EXTENSION);
+                if (Files.exists(f)) f = fileDir.resolve(StorageLocations.safeName(name) + " " + t.getId() + "." + TournamentFile.EXTENSION);
+                files.put(t.getId(), f);
+                register(f);
+            }
         }
         save(t);
         return t;
@@ -290,7 +337,8 @@ public final class TournamentStore {
             String fn = source.getFileName().toString();
             t.setName(fn.endsWith("." + TournamentFile.EXTENSION) ? fn.substring(0, fn.length() - 4) : fn);
         }
-        t.setFolder(uniqueFolder(t.getName()).toString());
+        t.setPublishedOnce(false);
+        if (!placeFlat(t, null)) t.setFolder(uniqueFolder(t.getName()).toString());
         save(t);
         return t;
     }
@@ -299,7 +347,7 @@ public final class TournamentStore {
     public Tournament importFinished(Tournament t) throws IOException {
         t.setImportedFinished(true);
         t.setId(newId(t.getDate()));
-        t.setFolder(uniqueFolder(t.getName()).toString());
+        if (!placeFlat(t, null)) t.setFolder(uniqueFolder(t.getName()).toString());
         save(t);
         return t;
     }
@@ -334,13 +382,17 @@ public final class TournamentStore {
         t.setImportedFinished(false);          // eine Kopie stammt nicht mehr direkt aus der XML-Datei
         t.setPdfDir(null);
         t.setXmlDir(null);
-        t.setFolder(uniqueFolder(name).toString());
+        t.setFlatLayout(false);
+        t.setPublishedOnce(false);
+        t.setPublish(!test);                                // 1.8.0 (#156)
+        boolean flat = placeFlat(t, fileDir);
+        if (!flat) t.setFolder(uniqueFolder(name).toString());
         switch (mode == null ? CopyMode.WITHOUT_DRAW : mode) {
             case WITHOUT_DRAW -> t.resetToBeforeDraw();
             case PLAYERS_ONLY -> t.removeAllClasses();
             case EVERYTHING -> { }
         }
-        if (fileDir != null) {
+        if (!flat && fileDir != null) {
             Path f = fileDir.resolve(StorageLocations.safeName(name) + "." + TournamentFile.EXTENSION);
             if (Files.exists(f)) f = fileDir.resolve(StorageLocations.safeName(name) + " " + t.getId() + "." + TournamentFile.EXTENSION);
             files.put(t.getId(), f);

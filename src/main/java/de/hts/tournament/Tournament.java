@@ -1228,14 +1228,10 @@ public final class Tournament {
         if (thirdPlaceMatch(c) != null) return;
         int sf = semifinalRound(c);
         int no = matchesOf(c).stream().mapToInt(Match::getNumber).max().orElse(0) + 1;
-        Match fin = koMatch(c, sf + 1, 0);
         Match third = new Match(null, c.getName(), THIRD_PLACE_STAGE, sf + 2, no, -1, -1, -1, null, null);
         third.restorePhaseInfo(3, false);
-        if (fin != null && fin.getStatus() == MatchStatus.PLANNED && fin.getQueueOrder() == 0) {
-            // vor das Finale ziehen
-            third.setNumber(fin.getNumber());
-            fin.setNumber(no);
-        }
+        // 1.8.0 (#158): Spielnummern bleiben fest – Platz 3 bekommt die Nummer nach dem Finale (kein Tausch mehr);
+        // aufgerufen wird es trotzdem vor dem Finale (siehe queueReady)
         matches.add(third);
     }
 
@@ -1411,7 +1407,7 @@ public final class Tournament {
         List<Match> ms = matchesOf(c);
         roundCache = sched ? ms : null;                 // 1.2: Runden nicht je Spiel neu aus allen Spielen suchen
         try {
-            for (Match m : ms) {
+            for (Match m : queueOrderOf(c, ms)) {
                 if (m.getStatus() == MatchStatus.PLANNED && m.isReady() && (!sched || roundOpen(c, m))) {
                     m.setStatus(MatchStatus.QUEUED);
                     if (m.getQueueOrder() == 0) m.setQueueOrder(++queueCounter);   // nach Anhalten: alter Platz bleibt
@@ -1420,6 +1416,23 @@ public final class Tournament {
         } finally {
             roundCache = null;
         }
+    }
+
+    /**
+     * 1.8.0 (#158): Reihenfolge beim Einreihen – nach Spielnummer, nur das Spiel um Platz 3 kommt direkt vor das Finale
+     * (es hat die höhere Nummer, wird aber wie bisher zuerst aufgerufen).
+     */
+    private List<Match> queueOrderOf(PlayingClass c, List<Match> ms) {
+        Match third = null;
+        for (Match m : ms) if (THIRD_PLACE_STAGE.equals(m.getStage())) third = m;
+        if (third == null) return ms;
+        Match fin = c.getMode() == TournamentMode.KNOCKOUT ? koMatch(c, semifinalRound(c) + 1, 0) : null;
+        if (fin == null || fin == third) return ms;
+        List<Match> out = new java.util.ArrayList<>(ms);
+        out.remove(third);
+        int i = out.indexOf(fin);
+        out.add(i < 0 ? out.size() : i, third);
+        return out;
     }
 
     /** Spiele der Klasse während {@link #queueReady} (sonst {@code null}). */
@@ -5685,7 +5698,7 @@ public final class Tournament {
     // --- 1.5.0 (#135/#138): Veröffentlichen auf dem Webserver ------------------------------------------
 
     private boolean publish;
-    private boolean publishAbbrev;
+    private boolean publishAbbrev = true;                  // 1.8.0 (#156): immer abgekürzt
 
     /** Wird dieses Turnier auf dem Webserver veröffentlicht? (Adresse und Schlüssel: Programmeinstellung) */
     public boolean isPublish() { return publish; }
@@ -5703,6 +5716,53 @@ public final class Tournament {
         if (b == publishAbbrev) return;
         publishAbbrev = b;
         markModified();
+    }
+
+    // --- 1.8.0 ------------------------------------------------------------------------------------------
+
+    private boolean publishedOnce;
+    private String worldUrl = "";
+    private boolean flatLayout;
+
+    /** 1.8.0 (#154): Wurde der Stand schon einmal erfolgreich hochgeladen? (Rückfrage beim Löschen/Archivieren) */
+    public boolean isPublishedOnce() { return publishedOnce; }
+
+    public void setPublishedOnce(boolean b) {
+        if (b == publishedOnce) return;
+        publishedOnce = b;
+        markModified();
+    }
+
+    /** 1.8.0 (#151): Link zur myTischtennis-Turnierwelt ({@code ""} = keiner). */
+    public String getWorldUrl() { return worldUrl; }
+
+    public void setWorldUrl(String url) {
+        String n = url == null ? "" : url.strip();
+        if (n.equals(worldUrl)) return;
+        worldUrl = n;
+        markModified();
+    }
+
+    /** Nur gültige https-Adressen (für die Anzeige als Link); sonst {@code null}. */
+    public static String validWorldUrl(String url) {
+        if (url == null || url.isBlank()) return null;
+        try {
+            java.net.URI u = new java.net.URI(url.strip());
+            if (!"https".equalsIgnoreCase(u.getScheme()) || u.getHost() == null || u.getHost().isBlank()) return null;
+            return u.toASCIIString();
+        } catch (java.net.URISyntaxException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 1.8.0 (#152): neue Ablage – Turnierdatei direkt im HTS-Ordner (Standard „Dokumente\HTS“), Exporte gemeinsam in
+     * „Export files“ (bzw. den im Reiter „Programm“ gewählten Ordnern); ältere Turniere behalten ihren Turnierordner.
+     */
+    public boolean isFlatLayout() { return flatLayout; }
+
+    public void setFlatLayout(boolean b) {
+        flatLayout = b;
     }
 
     /** 1.4.0 (#108): Aussehen der Spielzettel (A6), Standard: Spielerzettel. */

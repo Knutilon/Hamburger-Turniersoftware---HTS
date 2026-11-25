@@ -7,9 +7,9 @@
 # Public License v3.0; Einzelheiten in der Datei LICENSE.
 # Hamburger Turniersoftware (HTS) starten – Linux
 cd "$(dirname "$0")" || exit 1
-# 1.7.0 (#140): Absturzbericht der Java-Laufzeit in ~/.hts (kommt in den Fehlerbericht)
-mkdir -p "$HOME/.hts" 2>/dev/null
-JOPTS="-XX:ErrorFile=$HOME/.hts/hs_err_pid%p.log"
+# 1.8.0 (#152): Absturzbericht der Java-Laufzeit in den Ordner „Protokoll“ neben hts.jar (kommt in den Fehlerbericht)
+mkdir -p "Protokoll" 2>/dev/null
+JOPTS="-XX:ErrorFile=$(pwd)/Protokoll/hs_err_pid%p.log"
 if [ -x "jre/bin/java" ]; then exec "jre/bin/java" "$JOPTS" -jar hts.jar "$@"; fi
 if [ -n "$JAVA_HOME" ] && [ -x "$JAVA_HOME/bin/java" ]; then exec "$JAVA_HOME/bin/java" "$JOPTS" -jar hts.jar "$@"; fi
 if command -v java >/dev/null 2>&1; then exec java "$JOPTS" -jar hts.jar "$@"; fi

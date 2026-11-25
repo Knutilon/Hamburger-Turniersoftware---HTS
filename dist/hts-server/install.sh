@@ -31,6 +31,44 @@ ETC=/etc/hts-server
 DATA=/var/lib/hts-server
 PORT=8090
 
+# 1.8.0 (#159): eigene Rechtstexte einspielen – Datei hts-rechtstexte.tar.gz (oder Ordner rechtstexte/) neben diesem
+# Ordner bzw. darin. Enthält impressum.html und/oder datenschutz.html; alte Dateien werden als .bak-<Datum> gesichert.
+rechtstexte_einspielen() {
+  local etc="$1" quelle="" tmp="" f n=0
+  for c in "$HERE/hts-rechtstexte.tar.gz" "$HERE/../hts-rechtstexte.tar.gz" "$HERE/rechtstexte" "$HERE/../rechtstexte"; do
+    if [[ -e "$c" ]]; then quelle="$c"; break; fi
+  done
+  if [[ -z "$quelle" ]]; then
+    echo "Rechtstexte: keine Datei hts-rechtstexte.tar.gz gefunden – Impressum und Datenschutz bleiben unverändert."
+    return 0
+  fi
+  tmp="$(mktemp -d)"
+  if [[ -f "$quelle" ]]; then
+    for f in impressum.html datenschutz.html; do
+      tar -xzf "$quelle" -C "$tmp" --no-same-owner --no-same-permissions "$f" 2>/dev/null || true
+    done
+  else
+    for f in impressum.html datenschutz.html; do [[ -f "$quelle/$f" ]] && cp "$quelle/$f" "$tmp/$f"; done
+  fi
+  for f in impressum.html datenschutz.html; do
+    [[ -f "$tmp/$f" && ! -L "$tmp/$f" ]] || continue
+    if [[ $(stat -c %s "$tmp/$f") -gt 524288 ]]; then echo "Rechtstexte: $f ist zu groß – übersprungen." >&2; continue; fi
+    if grep -q "__AUSFUELLEN__" "$tmp/$f"; then echo "Rechtstexte: In $f stehen noch Platzhalter (__AUSFUELLEN__) – übersprungen." >&2; continue; fi
+    if [[ -f "$etc/$f" ]] && cmp -s "$tmp/$f" "$etc/$f"; then echo "Rechtstexte: $f ist schon aktuell."; continue; fi
+    if [[ -f "$etc/$f" ]]; then
+      cp -p "$etc/$f" "$etc/$f.bak-$(date +%Y-%m-%d-%H%M)"
+      install -o root -g hts -m 644 "$tmp/$f" "$etc/$f"
+      echo "Rechtstexte: $f eingespielt (vorherige Fassung gesichert)."
+    else
+      install -o root -g hts -m 644 "$tmp/$f" "$etc/$f"
+      echo "Rechtstexte: $f eingespielt."
+    fi
+    n=$((n + 1))
+  done
+  rm -rf "$tmp"
+  return 0
+}
+
 schritt() { printf '\n\033[1;32m==> %s\033[0m\n' "$*"; }
 warnung() { printf '\033[1;33mHinweis: %s\033[0m\n' "$*"; }
 
@@ -99,12 +137,13 @@ site-title=HTS Live-Scoring
 EOF
 fi
 chown root:hts "$ETC/server.properties"; chmod 640 "$ETC/server.properties"
-for f in impressum.html datenschutz.html; do
-  if [[ ! -f "$ETC/$f" ]]; then
+for f in impressum.html datenschutz.html spenden.html; do
+  if [[ ! -f "$ETC/$f" && -f "$HERE/vorlagen/$f" ]]; then
     install -o root -g hts -m 644 "$HERE/vorlagen/$f" "$ETC/$f"
     sed -i "s/__DOMAIN__/$DOMAIN/g" "$ETC/$f"
   fi
 done
+rechtstexte_einspielen "$ETC"                                   # 1.8.0 (#159)
 
 schritt "Dienst hts-server einrichten (startet automatisch, auch nach Neustart)"
 cat > /etc/systemd/system/hts-server.service <<EOF

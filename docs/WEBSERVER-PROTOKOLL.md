@@ -1,11 +1,13 @@
 # HTS – Protokoll „Live im Internet“ (Webserver)
 
-Stand: HTS 1.6.0. HTS lädt nur hoch (seit 1.5.0, Issues #135–#138); vom Server fließt nichts zurück. Seit 1.6.0 gibt
+Stand: HTS 1.8.0. HTS lädt nur hoch (seit 1.5.0, Issues #135–#138); vom Server fließt nichts zurück. Seit 1.6.0 gibt
 es den passenden Server: den HTS-Live-Server (#101, `de.hts.web.LiveHost`, Paket `hts-server-x.y.z.tar.gz`, Einrichtung
 siehe `docs/LIVE-SERVER-ANLEITUNG.md`).
 
 Alle Anfragen gehen über HTTPS an die in HTS eingetragene Adresse (Turnierübersicht → „Webserver“) und tragen den
-geheimen Schlüssel als `Authorization: Bearer <Schlüssel>` sowie `X-HTS-Version: <Version>`.
+geheimen Schlüssel als `Authorization: Bearer <Schlüssel>` sowie `X-HTS-Version: <Version>`. Seit 1.8.0 trägt
+`PUT /api/turniere/<ID>` zusätzlich `X-HTS-Ausrichter: <Name>` (Name des Ausrichters aus dem Reiter „Ausrichter“,
+URL-kodiert nach UTF-8, höchstens 120 Zeichen, ohne Steuerzeichen); fehlt die Kopfzeile, zeigt der Server keinen Namen.
 
 | Anfrage | Inhalt | Zweck |
 | --- | --- | --- |
@@ -20,8 +22,12 @@ geheimen Schlüssel als `Authorization: Bearer <Schlüssel>` sowie `X-HTS-Versio
   die weiter auf die lesbare Adresse umleitet).
 - HTS sendet nach jeder Änderung höchstens alle 5 Sekunden. Ist der Server nicht erreichbar, behält HTS den letzten Stand
   und versucht es alle 10 Sekunden erneut.
-- Mit „Vornamen abkürzen“ enthält die hochgeladene Turnierdatei nur die Anfangsbuchstaben der Vornamen („M.“); die
-  Turnierdatei auf dem Rechner bleibt unverändert.
+- Die hochgeladene Turnierdatei enthält nur die Anfangsbuchstaben der Vornamen („M.“) – seit 1.8.0 immer (vorher nur mit
+  „Vornamen abkürzen“); die Turnierdatei auf dem Rechner bleibt unverändert. Der Link zur Turnierwelt (seit 1.8.0) steht
+  in der Turnierdatei (`turnierwelt`, nur https-Adressen werden angezeigt).
+- Seit 1.8.0 sendet HTS `DELETE /api/turniere/<ID>` auch beim Löschen eines veröffentlichten Turniers in der
+  Turnierübersicht (nach Rückfrage); gelingt das nicht, merkt HTS den Auftrag (`webserver-loeschen.txt` im
+  Programmordner) und holt ihn beim nächsten Start bzw. Veröffentlichen nach.
 - Antworten mit 2xx gelten als Erfolg; alles andere (auch 401/403) als Fehler, der in HTS unten rechts angezeigt wird.
 
 ## Verhalten des HTS-Live-Servers (1.6.0)
@@ -37,9 +43,13 @@ geheimen Schlüssel als `Authorization: Bearer <Schlüssel>` sowie `X-HTS-Versio
 - `POST …/nur-endergebnis`: Startseite des Turniers zeigt nur noch die Endergebnisse; Tische, Klassen, Suche und
   „Meine Spiele“ leiten dorthin um.
 - Aufbewahrung: Turniere werden `retention-days` (Vorgabe 90) Tage nach der letzten Änderung automatisch gelöscht.
-- Öffentliche Seiten: `/` (alle Turniere: laufend, demnächst, abgeschlossen), `/live/<ID>` mit `…/tische`,
-  `…/klasse?k=`, `…/ergebnis?k=`, `…/suche`, `…/ich?id=`, `…/logo.png`; `/impressum` und `/datenschutz` aus
-  `impressum.html` bzw. `datenschutz.html` im Konfigurationsordner. Keine Anmeldung und keine Ergebniseingabe über das
-  Internet.
-- Keine Cookies, keine Zugriffsprotokolle, Meldungen ohne IP-Adressen; Kopfzeilen `Content-Security-Policy`,
+- Öffentliche Seiten: `/` (seit 1.8.0 „Aktuelle Turniere“) und `/vergangen` („Vergangene Turniere“: beendet, nur
+  Endergebnis oder Datum vor heute), `/live/<Turnier>` mit `…/tische`, `…/klasse?k=`, `…/ergebnis?k=`, `…/suche`,
+  `…/ich?id=`, `…/logo.png` und seit 1.8.0 `…/<Klasse>/spiel<Nr>` bzw. `…/<Klasse>/phase<n>/spiel<Nr>` (Klassenname mit
+  „_“ statt Leerzeichen); `/impressum`, `/datenschutz` und `/spenden` aus `impressum.html`, `datenschutz.html` bzw.
+  `spenden.html` im Konfigurationsordner (Spenden ohne Datei: Vorgabetext). Logo und Seitensymbol mit `?v=<Version>`
+  (7 Tage zwischengespeichert, ohne Version 1 Stunde). Keine Anmeldung und keine Ergebniseingabe über das Internet.
+- Der Server speichert je Turnier in `meta.properties` zusätzlich `organizer` (aus `X-HTS-Ausrichter`) und `world`
+  (Turnierwelt-Link) – seit 1.8.0.
+- Keine Cookies, nichts im Browser gespeichert (seit 1.8.0 weder Local noch Session Storage), keine Zugriffsprotokolle, Meldungen ohne IP-Adressen; Kopfzeilen `Content-Security-Policy`,
   `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`; `robots.txt` sperrt `/live/` für Suchmaschinen.

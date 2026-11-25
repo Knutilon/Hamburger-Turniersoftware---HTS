@@ -106,7 +106,8 @@ public final class TournamentFile {
         for (String k : List.of("cert-title", "cert-place", "cert-signer", "cert-host")) {        // 1.4.0 (#113): leer ist erlaubt
             if (root.hasAttribute(k)) m.put(k, root.getAttribute(k));
         }
-        for (String k : List.of("cert-top", "cert-tab", "cert-asked", "cert-printed", "publish", "publish-abbrev")) {
+        for (String k : List.of("cert-top", "cert-tab", "cert-asked", "cert-printed", "publish", "publish-abbrev",
+                "published-once", "turnierwelt", "flat")) {
             if (root.hasAttribute(k)) m.put(k, root.getAttribute(k));
         }
         if (!m.containsKey("model")) m.put("legacy", "true");         // Datei vor 0.35 → beim Laden umstellen
@@ -204,6 +205,9 @@ public final class TournamentFile {
             if (t.isCertTabShown()) m.put("cert-tab", "true");
             if (t.isPublish()) m.put("publish", "true");                                                 // 1.5.0 (#135)
             if (t.isPublishAbbrev()) m.put("publish-abbrev", "true");
+            if (t.isPublishedOnce()) m.put("published-once", "true");                                   // 1.8.0 (#154)
+            if (!t.getWorldUrl().isEmpty()) m.put("turnierwelt", t.getWorldUrl());                      // 1.8.0 (#151)
+            if (t.isFlatLayout()) m.put("flat", "true");                                                // 1.8.0 (#152)
             if (!t.getCertPrinted().isEmpty()) {                                                      // 1.5.0 (#132)
                 m.put("cert-printed", String.join("|", t.getCertPrinted().stream().map(Content::enc).toList()));
             }
@@ -274,7 +278,10 @@ public final class TournamentFile {
                 t.setCertLeaveTop(!"false".equals(folders.get("cert-top")));
                 t.setCertTabShown("true".equals(folders.get("cert-tab")));
                 t.setPublish("true".equals(folders.get("publish")));
-                t.setPublishAbbrev("true".equals(folders.get("publish-abbrev")));
+                t.setPublishAbbrev(true);                       // 1.8.0 (#156): Vornamen auf dem Webserver immer abgekürzt
+                t.setPublishedOnce("true".equals(folders.get("published-once")));
+                t.setWorldUrl(folders.get("turnierwelt"));
+                t.setFlatLayout("true".equals(folders.get("flat")));
                 if (folders.get("cert-printed") != null) {
                     for (String k : folders.get("cert-printed").split("\\|")) if (!k.isBlank()) t.restoreCertPrinted(dec(k));
                 }

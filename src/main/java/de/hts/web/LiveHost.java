@@ -100,6 +100,8 @@ public final class LiveHost {
         volatile long updated;
         volatile boolean finalOnly;
         volatile String slug = "";                           // 1.7.0 (#147): lesbare Adresse, z. B. Herbstturnier_28_11_2026
+        volatile String organizer = "";                      // 1.8.0 (#150): Ausrichter (Kopfzeile X-HTS-Ausrichter)
+        volatile String world = "";                          // 1.8.0 (#151): Link zur Turnierwelt
         volatile LiveServer view;                            // geladen bei Bedarf
         volatile long lastAccess;
 
@@ -194,8 +196,16 @@ public final class LiveHost {
                     if (!path.equals("/")) {
                         redirect(ex, "/");
                     } else {
-                        html(ex, 200, startPage());
+                        html(ex, 200, startPage(false));
                     }
+                    return;
+                }
+                case "/vergangen" -> {                               // 1.8.0 (#157)
+                    html(ex, 200, startPage(true));
+                    return;
+                }
+                case "/spenden" -> {                                 // 1.8.0 (#153)
+                    html(ex, 200, donationPage());
                     return;
                 }
                 case "/impressum" -> {
@@ -346,6 +356,9 @@ public final class LiveHost {
             e.name = t.getName() == null || t.getName().isBlank() ? "Turnier" : t.getName();
             e.date = t.getDate();
             e.slug = LiveSlug.of(t.getName(), t.getDate());
+            e.organizer = organizerOf(ex);
+            String w = Tournament.validWorldUrl(t.getWorldUrl());
+            e.world = w == null ? "" : w;
             e.state = stateOf(t);
             e.updated = System.currentTimeMillis();
             e.finalOnly = false;                              // neuer Stand: wieder alles zeigen
@@ -355,6 +368,18 @@ public final class LiveHost {
         }
         for (Entry o : entries.values()) if (o != e && o.slug.equals(e.slug)) o.view = null;   // gleiche Adresse: Verweise neu berechnen
         json(ex, 200, "{\"ok\":true}");
+    }
+
+    /** 1.8.0 (#150): Ausrichter aus der Kopfzeile X-HTS-Ausrichter (URL-kodiert); höchstens 120 Zeichen, ohne Steuerzeichen. */
+    static String organizerOf(HttpExchange ex) {
+        String h = ex.getRequestHeaders().getFirst("X-HTS-Ausrichter");
+        if (h == null || h.isBlank()) return "";
+        try {
+            String n = java.net.URLDecoder.decode(h, StandardCharsets.UTF_8).replaceAll("\\p{Cntrl}", " ").strip();
+            return n.length() > 120 ? n.substring(0, 120) : n;
+        } catch (IllegalArgumentException e) {
+            return "";
+        }
     }
 
     private void putLogo(HttpExchange ex, String id) throws IOException {
@@ -370,6 +395,8 @@ public final class LiveHost {
         Path dir = turniere.resolve(id);
         Files.createDirectories(dir);
         writeAtomic(dir.resolve("logo.png"), body);
+        Entry e = entries.get(id);
+        if (e != null) e.view = null;                         // neues Logo sofort zeigen
         json(ex, 200, "{\"ok\":true}");
     }
 
@@ -451,7 +478,7 @@ public final class LiveHost {
             } catch (IOException ex) {
                 return null;
             }
-        }, HEAD_EXTRA, footer(), e.finalOnly, () -> e.updated);
+        }, () -> e.organizer, HEAD_EXTRA, footer(), e.finalOnly, () -> e.updated);
     }
 
     static String stateOf(Tournament t) {
@@ -477,6 +504,8 @@ public final class LiveHost {
             e.updated = Long.parseLong(p.getProperty("updated", String.valueOf(Files.getLastModifiedTime(dir.resolve("turnier.hts")).toMillis())));
             e.finalOnly = Boolean.parseBoolean(p.getProperty("final-only", "false"));
             e.slug = p.getProperty("slug", LiveSlug.of(e.name, e.date));
+            e.organizer = p.getProperty("organizer", "");
+            e.world = p.getProperty("world", "");
         } catch (IOException | RuntimeException ex) {
             System.err.println("Angaben zu Turnier " + e.id + " unvollständig: " + ex.getMessage());
         }
@@ -490,6 +519,8 @@ public final class LiveHost {
         p.setProperty("updated", String.valueOf(e.updated));
         p.setProperty("final-only", String.valueOf(e.finalOnly));
         p.setProperty("slug", e.slug);
+        if (!e.organizer.isEmpty()) p.setProperty("organizer", e.organizer);
+        if (!e.world.isEmpty()) p.setProperty("world", e.world);
         java.io.StringWriter w = new java.io.StringWriter();
         p.store(w, "HTS-Live-Server");
         writeAtomic(turniere.resolve(e.id).resolve("meta.properties"), w.toString().getBytes(StandardCharsets.UTF_8));
@@ -525,59 +556,101 @@ public final class LiveHost {
 
     // --- Seiten des Servers ------------------------------------------------------------------------
 
-    private static final String HEAD_EXTRA = "<link rel=\"icon\" href=\"/favicon.png\"><meta name=\"robots\" content=\"noindex\">";
+    private static final String LOGO_URL = "/favicon.png?v=" + de.hts.HtsApp.VERSION;   // 1.8.0 (#149): Version gegen alten Zwischenspeicher
+    private static final String HEAD_EXTRA = "<link rel=\"icon\" href=\"" + LOGO_URL + "\"><meta name=\"robots\" content=\"noindex\">";
 
-    private static final String HOST_CSS = "footer.legal{text-align:center;font-size:13px;padding:18px 12px 0}footer.legal a{color:#187250;margin:0 8px}"
-            + ".info h2:first-child{margin-top:4px}.info{line-height:1.5}main>h2:first-child{margin-top:6px}";
+    private static final String HOST_CSS = "footer.legal{text-align:center;font-size:13px;padding:18px 12px 0;line-height:2}footer.legal a{color:#187250;margin:0 8px;white-space:nowrap}"
+            + ".info h2:first-child{margin-top:4px}.info{line-height:1.5}main>h2:first-child{margin-top:6px}"
+            + ".tcard{background:#fff;border:1px solid #e4e6ea;border-radius:12px;margin:8px 0}.tcard>a.cl{display:block;padding:10px 12px;color:inherit;text-decoration:none}"
+            + ".tcard .org{display:flex;align-items:center;gap:6px;font-size:12px;color:#4a5560}.tcard .org img{height:28px;width:auto;max-width:64px;object-fit:contain}"
+            + ".tcard .tw{display:block;padding:0 12px 10px;font-size:13px}.chip.final{background:#e8ebf0;color:#2d3440}";
 
     private static String footer() {
         return "<style>" + HOST_CSS + "</style><footer class=\"legal\"><a href=\"/\">Alle Turniere</a><a href=\"/impressum\">Impressum</a>"
-                + "<a href=\"/datenschutz\">Datenschutz</a></footer>";
+                + "<a href=\"/datenschutz\">Datenschutz</a><a href=\"/spenden\">Spenden</a></footer>";
     }
 
     String frame(String title, String body) {
+        return frame(title, "", body);
+    }
+
+    /** Seitengerüst; {@code tabs} = Reiterleiste unter dem Kopf (Startseite) oder leer. */
+    String frame(String title, String tabs, String body) {
         return "<!doctype html><html lang=\"de\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
                 + "<title>" + LiveServer.esc(title) + " – " + LiveServer.esc(cfg.siteTitle()) + "</title>" + HEAD_EXTRA
                 + "<style>" + LiveServer.CSS + HOST_CSS + "</style></head><body><header style=\"padding-bottom:10px\"><div class=\"hb\"><a class=\"brand\" href=\"/\">"
-                + "<img src=\"/favicon.png\" alt=\"HTS\"><span><b>" + LiveServer.esc(cfg.siteTitle()) + "</b><small>" + LiveServer.esc(title)
-                + "</small></span></a></div></header><main>" + body + "</main>"
+                + "<img src=\"" + LOGO_URL + "\" alt=\"HTS\"><span><b>" + LiveServer.esc(cfg.siteTitle()) + "</b><small>" + LiveServer.esc(title)
+                + "</small></span></a></div>" + tabs + "</header><main>" + body + "</main>"
                 + footer().replaceFirst("<style>[^<]*</style>", "") + LiveServer.SOURCE_FOOTER + "</body></html>";
     }
 
-    String startPage() {
+    /** Aktuell = noch nicht beendet und Turnierdatum heute oder später (bzw. ohne Datum); sonst vergangen. */
+    static boolean isPast(String state, boolean finalOnly, LocalDate date, LocalDate today) {
+        return "beendet".equals(state) || finalOnly || (date != null && date.isBefore(today));
+    }
+
+    /**
+     * 1.8.0 (#157): Startseite mit den Reitern „Aktuelle Turniere“ ({@code /}) und „Vergangene Turniere“ ({@code /vergangen}).
+     * Aktuelle: laufende zuerst, dann nach Datum aufsteigend; vergangene: neuestes Datum zuerst.
+     */
+    String startPage(boolean past) {
+        LocalDate today = LocalDate.now(ZoneId.of("Europe/Berlin"));
         List<Entry> list = new ArrayList<>(entries.values());
-        list.sort(Comparator.comparingInt((Entry e) -> switch (e.state) {
-            case "läuft" -> 0;
-            case "angekündigt" -> 1;
-            default -> 2;
-        }).thenComparing(Comparator.comparingLong((Entry e) -> e.updated).reversed()));
+        list.removeIf(e -> isPast(e.state, e.finalOnly, e.date, today) != past);
+        if (past) {
+            list.sort(Comparator.comparing((Entry e) -> e.date, Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(Comparator.comparingLong((Entry e) -> e.updated).reversed()));
+        } else {
+            list.sort(Comparator.comparingInt((Entry e) -> "läuft".equals(e.state) ? 0 : 1)
+                    .thenComparing(e -> e.date, Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(Comparator.comparingLong((Entry e) -> e.updated).reversed()));
+        }
+        String tabs = "<nav class=\"tabs\" style=\"margin:8px -12px 0;border-bottom:0\"><a href=\"/\"" + (past ? "" : " class=\"on\"")
+                + ">Aktuelle Turniere</a><a href=\"/vergangen\"" + (past ? " class=\"on\"" : "") + ">Vergangene Turniere</a></nav>";
         StringBuilder b = new StringBuilder();
         if (list.isEmpty()) {
-            b.append("<p class=\"muted\">Gerade sind keine Turniere veröffentlicht.</p>");
+            b.append("<p class=\"muted\">").append(past ? "Keine vergangenen Turniere." : "Gerade keine aktuellen Turniere.").append("</p>");
         }
-        String last = null;
         for (Entry e : list) {
-            String group = switch (e.state) {
-                case "läuft" -> "Laufende Turniere";
-                case "angekündigt" -> "Demnächst";
-                default -> "Abgeschlossene Turniere";
-            };
-            if (!group.equals(last)) {
-                b.append("<h2>").append(group).append("</h2>");
-                last = group;
-            }
-            String chip = switch (e.state) {
-                case "läuft" -> "<span class=\"chip run\">läuft</span>";
-                case "beendet" -> "<span class=\"chip done\">beendet</span>";
-                default -> "<span class=\"chip\">angekündigt</span>";
-            };
-            b.append("<a class=\"card\" href=\"").append(path(e)).append("\"><div class=\"row\"><b>").append(LiveServer.esc(e.name))
-                    .append("</b>").append(chip).append("</div><div class=\"muted\">")
+            String chip = past ? (e.finalOnly ? "<span class=\"chip final\">Endergebnis</span>" : "<span class=\"chip done\">beendet</span>")
+                    : "läuft".equals(e.state) ? "<span class=\"chip run\">läuft</span>" : "<span class=\"chip wait\">demnächst</span>";
+            b.append("<div class=\"tcard\"><a class=\"cl\" href=\"").append(path(e)).append("\"><div class=\"row\"><b>").append(LiveServer.esc(e.name))
+                    .append("</b>").append(chip).append("</div><div class=\"row\" style=\"margin-top:4px\"><span class=\"muted\">")
                     .append(e.date == null ? "" : DAY.format(e.date) + " · ")
-                    .append("Stand ").append(STAMP.format(Instant.ofEpochMilli(e.updated))).append("</div></a>");
+                    .append("Stand ").append(STAMP.format(Instant.ofEpochMilli(e.updated))).append("</span>").append(organizerBadge(e)).append("</div></a>");
+            if (!e.world.isEmpty()) {
+                b.append("<a class=\"tw\" href=\"").append(LiveServer.esc(e.world)).append("\" target=\"_blank\" rel=\"noopener\">zur Turnierwelt ↗</a>");
+            }
+            b.append("</div>");
         }
-        b.append("<script>setTimeout(function(){location.reload();},30000);</script>");
-        return frame("Live-Ergebnisse", b.toString());
+        if (!past) b.append("<script>setTimeout(function(){location.reload();},30000);</script>");
+        return frame(past ? "Vergangene Turniere" : "Live-Ergebnisse", tabs, b.toString());
+    }
+
+    /** Ausrichter in der Turnierkarte: kleines Logo und Name (soweit vorhanden). */
+    private String organizerBadge(Entry e) {
+        boolean logo = Files.isRegularFile(turniere.resolve(e.id).resolve("logo.png"));
+        if (!logo && e.organizer.isEmpty()) return "";
+        return "<span class=\"org\">" + (e.organizer.isEmpty() ? "" : "<span>" + LiveServer.esc(e.organizer) + "</span>")
+                + (logo ? "<img src=\"" + path(e) + "/logo.png\" alt=\"" + (e.organizer.isEmpty() ? "Logo des Ausrichters" : "Logo " + LiveServer.esc(e.organizer)) + "\">" : "")
+                + "</span>";
+    }
+
+    /** 1.8.0 (#153): Seite „Spenden“ – Text aus spenden.html im Konfigurationsordner, sonst die Vorgabe. */
+    static final String DONATION_DEFAULT = "<p>Unterstützt als Dankeschön für das Projekt gerne ein Herzensprojekt von mir.</p>"
+            + "<p><a href=\"https://www.gofundme.com/f/eine-sportliche-heimat-fur-hamburgs-tischtennistalente?lang=de_DE&amp;ts=1791899912\" "
+            + "target=\"_blank\" rel=\"noopener\">Eine sportliche Heimat für Hamburgs Tischtennistalente (GoFundMe) ↗</a></p>";
+
+    String donationPage() {
+        Path f = cfg.content().resolve("spenden.html");
+        String body;
+        try {
+            body = Files.isRegularFile(f) ? Files.readString(f, StandardCharsets.UTF_8) : null;
+        } catch (IOException e) {
+            body = null;
+        }
+        if (body == null || body.isBlank()) body = DONATION_DEFAULT;
+        return frame("Spenden", "<div class=\"card info\">" + body + "</div>");
     }
 
     String infoPage(String title, String file) {
@@ -602,7 +675,8 @@ public final class LiveHost {
             }
             byte[] b = in.readAllBytes();
             ex.getResponseHeaders().set("Content-Type", "image/png");
-            ex.getResponseHeaders().set("Cache-Control", "max-age=86400");
+            String q = ex.getRequestURI().getRawQuery();          // 1.8.0 (#149): mit Version lange, ohne nur kurz zwischenspeichern
+            ex.getResponseHeaders().set("Cache-Control", q != null && q.startsWith("v=") ? "max-age=604800" : "max-age=3600");
             ex.sendResponseHeaders(200, b.length);
             try (OutputStream os = ex.getResponseBody()) {
                 os.write(b);

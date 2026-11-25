@@ -87,6 +87,18 @@ Anschrift von netcup laut AV-Vertrag, zuständige Aufsichtsbehörde, Datum). Spe
 Beenden mit **Strg+X**. Die Änderungen gelten sofort. Bitte beide Texte vor der Veröffentlichung von fachkundiger Seite
 prüfen lassen.
 
+**Seit HTS 1.8.0 geht es auch ohne `nano`:** Die fertigen Fassungen als `impressum.html` und/oder `datenschutz.html`
+in eine Datei `hts-rechtstexte.tar.gz` packen und zusammen mit dem Paket hochladen:
+
+```
+scp hts-server-1.8.0.tar.gz hts-rechtstexte.tar.gz root@hts-livescoring.de:
+```
+
+`install.sh` bzw. `update.sh` finden die Datei neben dem Paket, prüfen sie (keine Platzhalter `__AUSFUELLEN__` mehr,
+höchstens 512 KB), sichern die vorherigen Fassungen als `impressum.html.bak-<Datum>` usw. und spielen sie ein. Ohne
+diese Datei bleiben Impressum und Datenschutz unverändert. Den Text der Seite **Spenden** ändert
+`nano /etc/hts-server/spenden.html`.
+
 Außerdem:
 
 - **AV-Vertrag** mit netcup abschließen (im netcup-Kundenkonto, Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO).
@@ -98,8 +110,8 @@ Außerdem:
 2. **Entsperren** (Admin-Passwort, seit HTS 1.7.0), dann Adresse `https://hts-livescoring.de` und den notierten Schlüssel
    eintragen → **Speichern**.
 3. **„Verbindung testen“** → „Verbindung in Ordnung.“
-4. Im Turnier → **„Live im Internet“** einschalten. Auf Wunsch „Vornamen abkürzen“ (auf dem Server erscheint dann nur
-   „M. Mustermann“).
+4. Im Turnier → **„Live im Internet“** einschalten (seit 1.8.0 bei neuen Turnieren schon an, bei Testturnieren nicht).
+   Auf dem Server erscheinen die Vornamen immer abgekürzt („M. Mustermann“).
 5. Die Adresse für Zuschauer (z. B. `https://hts-livescoring.de/live/Hamburger_Ranglistenturnier_28_11_2026`) steht
    darunter, mit „Adresse kopieren“ und **„QR-Code-Aushang drucken“** (A4 zum Aushängen; beim Turnierstart fragt HTS
    danach). Alle Turniere stehen außerdem auf `https://hts-livescoring.de`.
@@ -114,9 +126,10 @@ das **mobile Netz** (nicht das Hallen-WLAN) öffnen. Die Seiten aktualisieren si
 
 | Adresse | Inhalt |
 | --- | --- |
-| `https://hts-livescoring.de` | alle veröffentlichten Turniere (laufend, demnächst, abgeschlossen) |
+| `https://hts-livescoring.de` | „Aktuelle Turniere“ mit Ausrichter und ggf. „zur Turnierwelt“; Reiter „Vergangene Turniere“ (`…/vergangen`) |
 | `…/live/<Turniername>_<TT>_<MM>_<JJJJ>` | ein Turnier, z. B. `…/live/Hamburger_Ranglistenturnier_28_11_2026`: Reiter je Phase, Gruppenkacheln, Tische, Spielersuche, „Meine Spiele“ |
-| `…/impressum`, `…/datenschutz` | Impressum und Datenschutzerklärung |
+| `…/live/<Turnier>/<Klasse>/spiel45` | ein einzelnes Spiel mit „Link kopieren“ (seit 1.8.0) |
+| `…/impressum`, `…/datenschutz`, `…/spenden` | Impressum, Datenschutzerklärung und Seite „Spenden“ |
 
 Nach dem Turnier in HTS **„Nur Endergebnis behalten“** (Tische und Spiele verschwinden, Endergebnisse bleiben) oder
 **„Live-Daten löschen“**. Spätestens **90 Tage** nach der letzten Änderung löscht der Server ein Turnier von selbst
@@ -124,17 +137,20 @@ Nach dem Turnier in HTS **„Nur Endergebnis behalten“** (Tische und Spiele ve
 
 ## 7. Neue Version einspielen
 
-Neues Paket kopieren und im neuen Ordner `update.sh` starten (Beispiel 1.6.0 → 1.7.0):
+Neues Paket kopieren und im neuen Ordner `update.sh` starten (Beispiel 1.7.0 → 1.8.0; `hts-rechtstexte.tar.gz` nur,
+wenn Impressum bzw. Datenschutz mit eingespielt werden sollen):
 
 ```
-scp hts-server-1.7.0.tar.gz root@hts-livescoring.de:
+scp hts-server-1.8.0.tar.gz hts-rechtstexte.tar.gz root@hts-livescoring.de:
 ssh root@hts-livescoring.de
-tar xzf hts-server-1.7.0.tar.gz
+tar xzf hts-server-1.8.0.tar.gz
 cd hts-server
 ./update.sh
 ```
 
-Einstellungen, Schlüssel, Impressum und Turniere bleiben erhalten. Startet die neue Version nicht, stellt `update.sh`
+Einstellungen, Schlüssel und Turniere bleiben erhalten; Impressum und Datenschutz ebenso, außer neben dem Paket liegt
+`hts-rechtstexte.tar.gz` (siehe Abschnitt 4). Beim Update auf 1.8.0 legt `update.sh` außerdem die Vorlage
+`spenden.html` an. Startet die neue Version nicht, stellt `update.sh`
 die vorige automatisch wieder her.
 
 ## 8. Hilfe bei Problemen

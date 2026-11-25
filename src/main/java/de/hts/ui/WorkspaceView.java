@@ -417,7 +417,9 @@ public final class WorkspaceView {
             publisher = new de.hts.web.Publisher(de.hts.web.WebSettings.server(), de.hts.web.WebSettings.key(), tournament.getId(),
                     Platform::runLater, () -> de.hts.persistence.TournamentFile.publishBytes(tournament),
                     () -> de.hts.persistence.Organizer.get().logoPng());
-            publisher.setTransform(tournament.isPublishAbbrev() ? de.hts.persistence.TournamentFile::abbreviateFirstNames : null);
+            publisher.setTransform(de.hts.persistence.TournamentFile::abbreviateFirstNames);     // 1.8.0 (#156): immer abgekürzt
+            publisher.setOrganizer(() -> de.hts.persistence.Organizer.get().getName());          // 1.8.0 (#150)
+            de.hts.web.PendingDeletes.retryLater();                                              // 1.8.0 (#154)
             if (publishTimer == null) {
                 publishTimer = new javafx.animation.Timeline(new javafx.animation.KeyFrame(javafx.util.Duration.seconds(1), e -> showPublishState()));
                 publishTimer.setCycleCount(javafx.animation.Animation.INDEFINITE);
@@ -441,6 +443,7 @@ public final class WorkspaceView {
         publishState.setVisible(true);
         publishState.getStyleClass().removeAll("publish-ok", "publish-error");
         String ago = st.lastSuccessMillis() == 0 ? "" : agoText(System.currentTimeMillis() - st.lastSuccessMillis());
+        if (st.state() == de.hts.web.Publisher.State.OK && !tournament.isPublishedOnce()) tournament.setPublishedOnce(true);   // 1.8.0 (#154)
         switch (st.state()) {
             case OK -> {
                 publishState.setText("Live: veröffentlicht " + ago);
@@ -490,15 +493,23 @@ public final class WorkspaceView {
             updatePublisher();
             setStatus(b ? "Veröffentlichen eingeschaltet." : "Veröffentlichen ausgeschaltet – die Daten bleiben auf dem Server, bis sie gelöscht werden.");
         });
-        javafx.scene.control.CheckBox abbr = new javafx.scene.control.CheckBox();
-        abbr.setSelected(tournament.isPublishAbbrev());
-        Label abbrText = new Label("Vornamen abkürzen (z. B. „M. Mustermann“) – Datenschutz");
+        // 1.8.0 (#156): Vornamen immer abgekürzt – kein Schalter mehr
+        Label abbrText = new Label("Auf dem Webserver erscheinen die Vornamen nur abgekürzt (z. B. „M. Mustermann“).");
+        abbrText.getStyleClass().add("hint");
         abbrText.setWrapText(true);
-        abbr.selectedProperty().addListener((o, a, b) -> {
-            tournament.setPublishAbbrev(b);
-            if (publisher != null) publisher.setTransform(b ? de.hts.persistence.TournamentFile::abbreviateFirstNames : null);
-        });
-        box.getChildren().addAll(new HBox(6, on, onText), new HBox(6, abbr, abbrText));
+        abbrText.setMinHeight(Region.USE_PREF_SIZE);
+        box.getChildren().addAll(new HBox(6, on, onText), abbrText);
+        String world = Tournament.validWorldUrl(tournament.getWorldUrl());              // 1.8.0 (#151)
+        if (world != null) {
+            javafx.scene.control.Hyperlink wl = new javafx.scene.control.Hyperlink("Turnierwelt (myTischtennis): " + world);
+            wl.setWrapText(true);
+            wl.setOnAction(e -> de.hts.HtsApp.openLink(world));
+            Label wh = new Label("Der Link erscheint auf den Live-Seiten als „zur Turnierwelt“ (ändern unter „Turnier bearbeiten“).");
+            wh.getStyleClass().add("hint");
+            wh.setWrapText(true);
+            wh.setMinHeight(Region.USE_PREF_SIZE);
+            box.getChildren().addAll(wl, wh);
+        }
         if (de.hts.web.WebSettings.configured()) {
             String url = de.hts.web.Publisher.publicUrl(de.hts.web.WebSettings.server(), tournament.getName(), tournament.getDate());
             Label urlLbl = new Label("Adresse für Zuschauer: " + url);

@@ -119,9 +119,11 @@ final class PdfViewer {
             fc.setTitle("PDF speichern");
             fc.setInitialFileName(fileName);
             fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF-Dokument", "*.pdf"));
-            // Standard: „PDF Export“ im Turnierordner (bzw. der zuletzt für dieses Turnier gewählte Ordner)
+            // Standard: „PDF Export“ im Turnierordner bzw. (1.8.0, #152) „Export files“ mit Turniername und Datum im Dateinamen
             if (t != null) {
-                fc.setInitialDirectory(de.hts.persistence.StorageLocations.ensure(de.hts.persistence.StorageLocations.pdfDir(t)));
+                File dir = de.hts.persistence.StorageLocations.ensure(de.hts.persistence.StorageLocations.pdfDir(t));
+                fc.setInitialDirectory(dir);
+                fc.setInitialFileName(de.hts.persistence.StorageLocations.exportFileName(t, dir.toPath(), fileName));
             } else {
                 String dir = PREFS.get("lastPdfDir", null);
                 if (dir != null && new File(dir).isDirectory()) fc.setInitialDirectory(new File(dir));

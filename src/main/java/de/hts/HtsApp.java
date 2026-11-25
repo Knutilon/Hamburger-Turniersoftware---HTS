@@ -25,7 +25,7 @@ public class HtsApp extends Application {
 
     public static final String NAME = "Hamburger Turniersoftware";
     public static final String SHORT_NAME = "HTS";
-    public static final String VERSION = "1.7.0";
+    public static final String VERSION = "1.8.0";
 
     /** Repository auf GitHub (Quellcode, Feature- und Bug-Sammlung) */
     public static final String REPO_URL = "https://github.com/Knutilon/Hamburger-Turniersoftware---HTS";
@@ -63,7 +63,9 @@ public class HtsApp extends Application {
         this.stage = stage;
         hostServices = getHostServices();
         // 1.7.0 (#140): Protokoll und Behandlung unerwarteter Fehler (auch im Programm-Thread)
-        Log.init(store.getDirectory());
+        // 1.8.0 (#152): Protokoll, Ausrichter und Programmeinstellungen im Programmordner (dort, wo hts.jar liegt)
+        de.hts.persistence.ProgramFolder.migrateFrom(store.getDirectory());
+        Log.init(de.hts.persistence.ProgramFolder.dir());
         javafx.stage.Screen scr = javafx.stage.Screen.getPrimary();
         Log.startup((int) scr.getBounds().getWidth() + " × " + (int) scr.getBounds().getHeight() + " bei "
                 + Math.round(scr.getOutputScaleX() * 100) + " %");
@@ -72,7 +74,12 @@ public class HtsApp extends Application {
         Thread pre = new Thread(de.hts.web.WebSettings::preload, "HTS-Einstellungen");   // 1.7.0 (#142): DPAPI im Hintergrund
         pre.setDaemon(true);
         pre.start();
-        de.hts.persistence.Organizer.load(store.getDirectory());     // 1.5.0 (#139): Ausrichter (Name, Logo)
+        if (de.hts.persistence.ProgramFolder.isFallback()) {
+            Log.warn("Programmordner nicht beschreibbar – Einstellungen und Protokoll in " + de.hts.persistence.ProgramFolder.dir());
+        }
+        de.hts.persistence.Organizer.load(de.hts.persistence.ProgramFolder.dir());     // 1.5.0 (#139): Ausrichter (Name, Logo)
+        de.hts.ui.DarkMode.install();                                                  // 1.8.0 (#152)
+        de.hts.web.PendingDeletes.retryLater();                                        // 1.8.0 (#154): offene Löschaufträge
         overview = new OverviewView(stage, store, this::openTournament);
 
         Scene scene = new Scene(root, 1200, 760);
