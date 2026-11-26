@@ -65,8 +65,12 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    vollem Namen (+ Bestätigung Berechtigung/Datenschutz); Schlüssel erst nach Freigabe gültig; Admin-Anwendung auf
    127.0.0.1 (eigener Port) – Anträge freigeben/ablehnen, Schlüssel sperren/löschen, zuletzt genutzt, Turniere; je
    Ausrichter-Schlüssel nur eigene Turniere, Ausrichtername aus dem Schlüssel; Betreiber-Schlüssel bleibt; nur
-   Prüfwerte gespeichert; Ratenbremse. DESIGN-VORSCHLAG: Canvas https://claude.ai/artifact/9fDi2cfy6iAANyNoPDpYbf
-   (Freigabe ausstehend). DATENSCHUTZ FERTIG (26.11.2026): Abschnitt 4 neu (Ausrichter verantwortlich, Betreiber
+   Prüfwerte gespeichert; Ratenbremse. DESIGN FREIGEGEBEN (Nutzer 26.11.2026): Canvas
+   https://claude.ai/artifact/9fDi2cfy6iAANyNoPDpYbf – Seiten „Antrag“ (/schluessel: Verein oder Verband, Vor- und
+   Nachname, E-Mail, zwei Häkchen, Kasten „So geht es“), „Gesendet“ (Schlüssel einmal anzeigen + Kopieren, „wartet auf
+   Freigabe“, Anleitung HTS), „Admin“ (offene Anträge Freigeben/Ablehnen; Schlüssel-Tabelle mit Filter Alle/aktiv/
+   gesperrt/lange nicht genutzt, Sperren/Entsperren/Löschen, Betreiber-Zeile fest), „Handy“. Angefangener Code-Entwurf
+   (unvollständig, nicht ausgeliefert): work/entwurf-189 (OrganizerKeys.java, LiveHost.patch). DATENSCHUTZ FERTIG (26.11.2026): Abschnitt 4 neu (Ausrichter verantwortlich, Betreiber
    Auftragsverarbeiter Art. 28), Abschnitt 7 „Zugang für Ausrichter“; Vorlage im Repo (vorlagen/datenschutz.html),
    persönliche Fassung nur in work/rechtstexte-betreiber (datenschutz-gen.py 18) bzw. hts-rechtstexte.tar.gz – erst
    zusammen mit dem Release dieses Features einspielen. Offen: Nutzungsbedingungen/AV-Bedingungen für Ausrichter.
