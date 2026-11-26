@@ -60,6 +60,9 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 2. KO-LINIEN BEI FREILOSEN (Issue #178, Bug, Nutzer 26.11.2026): Klammerlinien fehlten bei Feldern ohne Zweierpotenz
    (6, 12, 24 …; gemeldet im Doppel). IM CODE BEREITS BEHOBEN (LiveServer.koTree: feste Plätze je Runde, byeCard
    „Freilos“ gestrichelt; Test klammerlinienAuchMitFreilosen) – beim nächsten „kompilieren“ als 1.10.1 ausliefern.
+3. LIVE-SEITEN: HERKUNFT NUR IN DER ERSTEN KO-RUNDE (Issue #179, Nutzer 26.11.2026): „A1“, „B2“, „S1“ … vor den
+   Namen nur in der ersten KO-Runde der Phase zeigen (LiveServer.koCard und Liste/matchLine); ab Runde 2 und im Spiel
+   um Platz 3 nur Name und Verein.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
