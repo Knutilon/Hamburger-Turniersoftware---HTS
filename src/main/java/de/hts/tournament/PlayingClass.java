@@ -358,10 +358,10 @@ public final class PlayingClass {
     private boolean thirdPlace;
     public boolean isThirdPlace() { return thirdPlace; }
     public void setThirdPlace(boolean b) { thirdPlace = b; }
-    /** Gewinnsätze je Spiel: 3 (Standard) oder 4. */
+    /** Gewinnsätze je Spiel: 1 bis 4 (Standard 3; 1.11.0 #182 – vorher nur 3 oder 4). */
     private int bestOf = 3;
     public int getWinningSets() { return bestOf; }
-    public void setWinningSets(int n) { bestOf = n == 4 ? 4 : 3; }
+    public void setWinningSets(int n) { bestOf = n >= 1 && n <= 4 ? n : 3; }
 
     public java.util.Map<String, Integer> getQualField() { return java.util.Collections.unmodifiableMap(qualField); }
     public void setQualField(java.util.Map<String, Integer> field) { qualField = new java.util.LinkedHashMap<>(field == null ? java.util.Map.of() : field); }

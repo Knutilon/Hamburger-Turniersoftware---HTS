@@ -3179,7 +3179,7 @@ public final class DrawView {
             KnockoutBracket b = new KnockoutBracket(slots);
             long byes = slots.stream().filter(e -> e == null).count();
             return " · " + b.playedMatches() + " Begegnungen" + (byes > 0 ? " · " + byes + " Freilose" : "")
-                    + (tournament.rootOf(c).getWinningSets() == 4 ? " · 4 Gewinnsätze" : "");
+                    + (tournament.rootOf(c).getWinningSets() != 3 ? " · " + Tournament.winningSetsLabel(tournament.rootOf(c).getWinningSets()) : "");
         } catch (RuntimeException ex) {
             return "";
         }

@@ -1,4 +1,4 @@
-# Zwischenstand HTS 1.10.0 (26.11.2026)
+# Zwischenstand HTS 1.11.0 (26.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -50,40 +50,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 - click-TT-Upload der Ergebnisdatei: Praxistest erfolgreich (Nutzer 15.11.2026); Einschränkung unter „Bekannte
   Grenzen“ in der Doku gestrichen (mit 1.1.0 ausgeliefert).
 
-## Feature-Sammlung für 1.11.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 1.12.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.5.x)
 
 1. TABLET: TEST AUF ECHTEM GERÄT (Issue #133, offen aus 1.5.0): Die Tablet-Funktionen von 1.5.0 auf einem echten
    Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
    Gerät; Ergebnisse als Bug/Feature melden.
-2. KO-LINIEN BEI FREILOSEN (Issue #178, Bug, Nutzer 26.11.2026): Klammerlinien fehlten bei Feldern ohne Zweierpotenz
-   (6, 12, 24 …; gemeldet im Doppel). IM CODE BEREITS BEHOBEN (LiveServer.koTree: feste Plätze je Runde, byeCard
-   „Freilos“ gestrichelt; Test klammerlinienAuchMitFreilosen) – beim nächsten „kompilieren“ als 1.10.1 ausliefern.
-3. LIVE-SEITEN: HERKUNFT NUR IN DER ERSTEN KO-RUNDE (Issue #179, Nutzer 26.11.2026): „A1“, „B2“, „S1“ … vor den
-   Namen nur in der ersten KO-Runde der Phase zeigen (LiveServer.koCard und Liste/matchLine); ab Runde 2 und im Spiel
-   um Platz 3 nur Name und Verein.
-4. ENDPLATZIERUNG NUR MIT RUNDE (Issue #180, Nutzer 26.11.2026): In „Ermittelt durch“ (HTS, PDFs, Live-Seiten)
-   „ausgeschieden: “ und „verloren“ weglassen – „Viertelfinale“, „Halbfinale“, „Finale“; Spiel um Platz 3:
-   3. Platz „Sieger/in Spiel um Platz 3“, 4. Platz „Spiel um Platz 3“ (Nutzer 26.11.2026); „Sieger/in“ beim 1. Platz
-   bleibt; offenes Platz-3-Spiel: „Halbfinale – Spiel um Platz 3 offen“.
-   Zentral in Tournament.placing/KO-Wertung (Zeilen um 4173 und 4395–4405); Tests mit den alten Texten anpassen.
-5. LIVE-SEITEN: SPIEL UM PLATZ 3 IN DER FINALSPALTE (Issue #181, Nutzer 26.11.2026): IM CODE BEREITS UMGESETZT
-   (LiveServer.koTree: .k3 unten in der Finalspalte, .k3.ghost unsichtbar oben, damit das Finale mittig bleibt).
-6. GEWINNSÄTZE 1 BIS 4 (Issue #182, Nutzer 26.11.2026): je Klasse 1, 2, 3 oder 4 Gewinnsätze (Best of 1/3/5/7),
-   Standard 3. Bisher nur 3 oder 4 (PlayingClass.setWinningSets: n == 4 ? 4 : 3). Betrifft ModeDialog, Klassenkopf
-   (DrawView), Ergebnisdialog/Prüfung, Spielzettel (Satzfelder), PDFs, Live-Seiten, Turnierdatei, click-TT
-   Import/Export. Ändern nur ohne Ergebnisse in der Klasse.
-7. CLICK-TT-EXPORT NUR MIT EXPORTIERTEN KONKURRENZEN (Issue #183, wichtig; Prüfung TTT2020-FAQ 26.11.2026): Bisher
-   bleiben übersprungene (nicht beendete) Konkurrenzen mit Teilnehmenden, aber ohne Spiele in der Ergebnisdatei – laut
-   FAQ löscht der click-TT-Ergebnis-Importer dann Ergebnisse und Teilnehmende. Übersprungene Konkurrenzen aus der Datei
-   entfernen (ClickTtResultExporter), im Bericht nennen; optional Auswahl der zu exportierenden Klassen.
-8. CLICK-TT-IMPORT: VERSTÄNDLICHE FEHLERMELDUNGEN, UTF-16 (Issue #184): abgeschnittene Datei → „Datei unvollständig –
-   erneut herunterladen …“; UTF-16 mit BOM trotz Deklaration UTF-8 einlesen; deutsche Texte statt Parsermeldungen.
-9. CLICK-TT-IMPORT: MANNSCHAFTSKONKURRENZEN ERKENNEN (Issue #185): nicht still als Einzel einlesen, in der Vorschau
-   kennzeichnen (bzw. als 2er/3er-Klasse, falls möglich); mit echter click-TT-Datei testen.
-10. CLICK-TT-IMPORT: GLEICHNAMIGE KONKURRENZEN (Issue #186): Name aus Altersklasse + Spielart + „TTR bis“ kann
-   kollidieren (nur „TTR ab“/Datum verschieden) → Namen ergänzen und in der Vorschau warnen.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
@@ -107,6 +80,22 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 
 ## Umgesetzt
+
+1.11.0 (26.11.2026, Commit „HTS 1.11.0“, Closes #178–#188; alle Punkte außer #133):
+   - #178 KO-Linien bei Freilosen: LiveServer.koTree mit festen Plätzen je Runde (slots), byeCard „Freilos“ (.km.bye).
+   - #179 LiveServer.origin(m, id): Herkunft nur in der ersten KO-Runde der Phase (Platzierungsspiele ohne), Freilos-Karte mit Herkunft.
+   - #180 Tournament.placing/KO-Wertung: nur Runde; „Sieger/in Spiel um Platz 3“, „Spiel um Platz 3“, „Finale“; „Sieger/in“ bleibt.
+   - #181 Spiel um Platz 3 in der Finalspalte (.k3 + unsichtbarer Zwilling .k3.ghost hält das Finale mittig).
+   - #182 Gewinnsätze 1–4: PlayingClass.setWinningSets 1..4, ModeDialog 1–4, Tournament.winningSetsLabel, Klassenkopf zeigt ≠ 3.
+   - #183 ClickTtResultExporter entfernt übersprungene Konkurrenzen aus der Datei (+ Hinweis im Bericht).
+   - #184 ClickTtXmlImporter.parse: UTF-16 per BOM, friendly(): „unvollständig“, „keine click-TT-Teilnehmerdatei“, sonst Hinweis.
+   - #185 isTeam(): Mannschaftskonkurrenzen (Typ Mannschaft/Team, type="team", <team>, > 2 Personen) nicht übernommen + Hinweis.
+   - #186 uniqueNames(doc): gleichnamige Konkurrenzen + „(TTR a–b)“ bzw. Datum bzw. Kennung; Importer, Ergebnis-Import und Export.
+   - #187 LiveHost.startPage(past, query) + StartFilter (v, d, z, von, bis), filterBar (details/summary, auf Handy zu,
+     ab 700 px per Skript auf), Trefferzeile, „Filter zurücksetzen“; Veranstalter-Liste aus den Turnieren.
+   - #188 install.sh/update.sh: ssh_absichern (fail2ban jail hts-ssh.local maxretry 5/findtime 10m/bantime 1d,
+     bestehende Datei → bantime 1d; sshd_config.d/hts.conf MaxAuthTries 3 nach sshd -t; ufw limit + delete allow).
+   - Tests: importer.clicktt.Version1110Test (4), web.Version1100Test um Filter ergänzt, Freilos-Test; 302 Tests grün.
 
 1.10.0 (26.11.2026, Commit „HTS 1.10.0“, Closes #168 #169 #170 #171 #172 #173 #174 #175 #176 #177; alle Punkte außer #133):
    - #170 Publisher.MIN_INTERVAL_MS = 30 s; Upload gzip (Content-Encoding: gzip), sobald der Server mit X-HTS-Gzip: 1

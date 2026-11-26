@@ -4170,7 +4170,7 @@ public final class Tournament {
 
     private Placing placing(PlayingClass c, String id, int from, int to, String stage, boolean won, Plan.Node n) {
         Entrant e = entrantIndex(c).get(id);
-        String info = from == to ? stage + (won ? " (Sieg)" : " verloren") : "ausgeschieden: " + stage;
+        String info = stage;                                   // 1.11.0 (#180): nur die Runde (vorher „… verloren“, „ausgeschieden: …“)
         if (won && from == 1 && to == 1) info = "Sieger/in";
         return new Placing(from, to, e, info);
     }
@@ -4395,14 +4395,14 @@ public final class Tournament {
                 list.add(new Placing(1, 1, e, "Sieger/in"));
             } else if (third != null && lost != null && (size >> lost.getKoRound()) == 4) {
                 // Spiel um Platz 3: Gewinner 3., Verlierer 4.; noch offen: 3.–4.
-                if (e.id().equals(third.winner())) list.add(new Placing(3, 3, e, "Spiel um Platz 3 (Sieg)"));
-                else if (e.id().equals(third.loser())) list.add(new Placing(4, 4, e, "Spiel um Platz 3 verloren"));
-                else list.add(new Placing(3, 4, e, "ausgeschieden: " + lost.getStage() + " – Spiel um Platz 3 offen"));
+                if (e.id().equals(third.winner())) list.add(new Placing(3, 3, e, "Sieger/in Spiel um Platz 3"));
+                else if (e.id().equals(third.loser())) list.add(new Placing(4, 4, e, "Spiel um Platz 3"));
+                else list.add(new Placing(3, 4, e, lost.getStage() + " – Spiel um Platz 3 offen"));
             } else if (lost != null) {
                 int inRound = size >> lost.getKoRound();
                 int from = inRound / 2 + 1, to = inRound == 4 ? 3 : Math.min(inRound, from + losers.getOrDefault(lost.getKoRound(), 1) - 1);
                 if (inRound == 4) from = 3;
-                list.add(new Placing(from, to, e, inRound == 2 ? "Finale verloren" : "ausgeschieden: " + lost.getStage()));
+                list.add(new Placing(from, to, e, inRound == 2 ? "Finale" : lost.getStage()));
             } else {
                 list.add(new Placing(1, (int) alive, e, c.isEndedEarly() ? "Phase vorzeitig beendet" : "noch im Wettbewerb"));
             }
@@ -4542,17 +4542,22 @@ public final class Tournament {
     public int getWinningSets() { return winningSets; }
     public void setWinningSets(int n) { winningSets = Math.max(1, n); markModified(); }
 
-    /** Gewinnsätze eines Spiels: Einstellung seiner Klasse (Phasen: die der Stammklasse), 3 oder 4. */
+    /** Gewinnsätze eines Spiels: Einstellung seiner Klasse (Phasen: die der Stammklasse), 1 bis 4. */
     public int winningSets(Match m) {
         if (forcedWinningSets > 0) return forcedWinningSets;
         PlayingClass c = m == null ? null : findClass(m.getClassName()).orElse(null);
         return c == null ? winningSets : rootOf(c).getWinningSets();
     }
 
+    /** „1 Gewinnsatz“, „3 Gewinnsätze“ (1.11.0, #182). */
+    public static String winningSetsLabel(int n) {
+        return n == 1 ? "1 Gewinnsatz" : n + " Gewinnsätze";
+    }
+
     /** Gewinnsätze einer Klasse ändern – nur solange in keiner ihrer Phasen ein Ergebnis eingetragen ist. */
     public void setWinningSets(PlayingClass c, int n) {
         PlayingClass root = rootOf(c);
-        if (root.getWinningSets() == (n == 4 ? 4 : 3)) return;
+        if (root.getWinningSets() == (n >= 1 && n <= 4 ? n : 3)) return;
         for (PlayingClass p : phasesOf(root)) {
             if (matchesOf(p).stream().anyMatch(m -> m.getStatus() == MatchStatus.DONE)) {
                 throw new IllegalStateException("Die Gewinnsätze lassen sich nicht mehr ändern – es sind schon Ergebnisse eingetragen.");

@@ -14,6 +14,7 @@ Stand: 25.11.2026 · Programmversion **1.9.0**
 
 | Datum | Programmversion | Änderung |
 | --- | --- | --- |
+| 26.11.2026 | 1.11.0 | Live-Server: Turnierübersicht nach Veranstalter und Datum filtern; KO-Baum mit Linien auch bei Freilosen, Platz 3 in der Finalspalte, Herkunft nur in der ersten KO-Runde; Endplatzierung nur mit Runde; Gewinnsätze 1–4; click-TT: Ergebnisdatei nur mit exportierten Konkurrenzen, verständliche Importmeldungen, UTF-16, Mannschaftskonkurrenzen erkannt, gleichnamige Konkurrenzen unterschieden; Server-Skripte sichern SSH ab (fail2ban) |
 | 26.11.2026 | 1.10.0 | Live-Server: komprimierter Upload höchstens alle 30 Sekunden, Seiten-Zwischenspeicher für viele Zuschauer, Reiter „Download HTS“, „Laufende Turniere“, Untertitel „Hamburger Turniersoftware“, KO-Baum mit Satzspalten und sauberen Linien; Darkmode-Lesbarkeit (Urkunden, Nur-Ansicht); „Bedienung“ und „Protokoll für die Fehlersuche“ im Reiter „Programm“; schneller bei großen Turnieren |
 | 25.11.2026 | 1.9.0 | Online-Anmeldung am Turniertag über den Live-Server (QR-Code, „Online-Anmeldung bis“, Schalter auf „Live im Internet“) – neues Kapitel 12; Handy-Zugang im Hallen-WLAN entfernt (lokaler Server, Mobile Einstellungen, Anmeldung und Ergebnisse per Handy); gemeldete Doppel/Mixed sofort als Paarungen (offene markiert, Auslosen/Start gesperrt); Filter „Verfügbar“ je Klasse; „Bezahlt“ nur mit Gebühr > 0 €; Live-Seiten: KO-Baum, Freigestellte, Knopf „← Alle Turniere“ |
 | 25.11.2026 | 1.8.0 | Reiter „Programm“ (Dunkelmodus, Speicherorte, Einstellungen aus älterer Version übernehmen); neue Ablage „Dokumente\HTS“ mit „Export files“, Ausrichter und Protokoll im Programmordner; Turnierwelt-Link; neue Turniere veröffentlicht, Vornamen immer abgekürzt; Rückfrage „Live-Daten auch vom Webserver löschen?“; Live-Seiten: Startseite „Aktuelle“/„Vergangene Turniere“ mit Ausrichter, eigene Seite je Spiel, nichts im Browser gespeichert (Lesezeichen „Meine Spiele“), Seite „Spenden“; Spiel um Platz 3 nach dem Finale nummeriert; Rechtstexte per update.sh |
@@ -308,7 +309,7 @@ Stehen die Teilnehmenden fest, öffnet **Teilnehmende fertig – Modus festlegen
 | Gruppen | Gruppen | Gruppengröße oder Anzahl Gruppen |
 | Bei gleichem Spielverhältnis | Gruppen | Satz- und Ballverhältnis oder direkter Vergleich |
 | Anzahl Runden | Schweizer System | Vorschlag: Runden eines KO-Systems + 1; nach Badeni 5 |
-| Gewinnsätze | alle | 3 (Best of 5, Standard) oder 4 (Best of 7) – gilt für alle Phasen der Klasse |
+| Gewinnsätze | alle | 1, 2, 3 oder 4 (Best of 1/3/5/7; Standard 3; seit 1.11.0 – vorher nur 3 oder 4) – gilt für alle Phasen der Klasse |
 | Vereinsgleichheit beachten | KO, Gruppen | eigene Zeile mit Checkbox: an (Standard) oder aus |
 
 Doppel werden nach dem Doppel-TTR gesetzt (Abschnitt 4). Die Auswahllisten im Dialog sind gleich breit.
@@ -565,7 +566,7 @@ Seit 1.5.0 zeigt der Ergebnisdialog im Tablet-Modus bzw. nach dem ersten Antippe
 | -12 | 12:14 |
 
 - **Enter** springt zum nächsten Satz. Ist das Spiel entschieden, springt Enter auf „Ergebnis speichern“; ein weiteres Enter speichert.
-- Hat eine Seite die nötigen Gewinnsätze (3 bzw. 4), sind die übrigen Sätze gesperrt.
+- Hat eine Seite die nötigen Gewinnsätze (1 bis 4, je nach Klasse), sind die übrigen Sätze gesperrt.
 - Gültig ist ein Satz mit 11 Punkten und höchstens 9 für den Gegner oder, ab 10:10, mit genau 2 Punkten Abstand.
 - Ungültige Sätze (z. B. 13:14 oder 11:10) und leere Sätze vor einem eingetragenen Satz werden rot markiert und blockieren das Speichern.
 
@@ -848,6 +849,8 @@ Im Phasen-PDF bricht ein langer Spielplan auf Fortsetzungsseiten um. Die Spalte 
 
 Seit 1.0.0 stehen auf der Seite „Klassen“ oben rechts zwei Knöpfe: **Gesamtergebnis als PDF** und **click-TT-Ergebnisdatei (XML)** – immer sichtbar, aktiv, sobald alle ausgelosten Klassen beendet sind.
 
+**Seit 1.11.0:** Die Ergebnisdatei enthält nur noch die Konkurrenzen, die tatsächlich exportiert werden. Nicht beendete Klassen (und Konkurrenzen ohne passende Klasse) fehlen in der Datei – der click-TT-Ergebnis-Importer würde bei einer Konkurrenz mit Teilnehmenden, aber ohne Spiele sonst deren Ergebnisse und Teilnehmende löschen. Beim Import der Teilnehmerdatei erklärt HTS Fehler verständlich (z. B. „Die Datei ist unvollständig … erneut herunterladen“), liest per E-Mail nach UTF-16 umgewandelte Dateien, übernimmt Mannschaftskonkurrenzen nicht (Hinweis: als 2er-/3er-Turnier von Hand anlegen) und ergänzt bei gleichnamigen Konkurrenzen den Namen, z. B. „Herren Einzel (TTR bis 1400) (TTR 1201–1400)“.
+
 - **Von Hand Nachgetragene:** Wurden Teilnehmende von Hand erfasst, bietet HTS an, eine aktualisierte Teilnehmerliste aus click-TT einzuspielen: eindeutige Personen (Vor-/Nachname, Verein) werden automatisch zugeordnet, die übrigen im Zuordnungsfenster von Hand. Beim erneuten Einlesen werden sie nicht doppelt angelegt, sondern übernehmen die click-TT-Nummer.
 - **Bericht:** Nach dem Export listet HTS alle nicht exportierten Spiele mit Grund (auch als PDF), z. B. „Doppel so nicht in click-TT gemeldet“ für am Turniertag zugeloste Doppel.
 - **Haupt- und Trostrunde:** Die Platzierungen der Trostrunde zählen hinter der Hauptrunde weiter (Abschnitt 8).
@@ -927,6 +930,8 @@ Was Zuschauer sehen:
 Die Seiten aktualisieren sich alle 10 Sekunden ohne Neuladen – aufgeklappte Kacheln, der gewählte Reiter und der Suchtext bleiben. Nach **Nur Endergebnis behalten** zeigt die Turnierseite nur noch die Endergebnisse; **Live-Daten löschen** entfernt das Turnier sofort. Spätestens 90 Tage nach der letzten Änderung löscht der Server ein Turnier von selbst. Keine Cookies, keine Zugriffsprotokolle, keine Inhalte von Drittanbietern und seit 1.8.0 auch nichts im Browser gespeichert (kein Local oder Session Storage); Suchmaschinen werden von den Turnierseiten ferngehalten. Neue Versionen spielt **`./update.sh`** aus dem Ordner des neuen Pakets ein (bei Problemen automatisch zurück zur vorigen Version). Die Schnittstelle beschreibt docs/WEBSERVER-PROTOKOLL.md.
 
 **Seit 1.10.0:** HTS lädt den Stand **komprimiert** und **höchstens alle 30 Sekunden** hoch (vorher alle 5 Sekunden, unkomprimiert) – die Live-Seiten zeigen den Stand also mit bis zu etwa 40 Sekunden Verzögerung; bei 8.000 Meldungen sind es an einem Turniertag etwa 0,9 GB statt bis zu 43 GB. Der Server hält fertige Seiten bis zum nächsten Stand bereit und verkraftet so auch sehr viele Zuschauer. Unter dem Logo steht „Hamburger Turniersoftware“. Im **KO-Baum** ist die Zeile des Siegers hellgrün, jeder Satz steht in einer eigenen Spalte (gewonnene Sätze fett), dahinter der Satzstand; die Linien verbinden jedes Spielpaar als Klammer mit dem Folgespiel, das genau mittig steht. Laufende Spiele zeigen „laufend · Tisch n“ ohne Zwischenstand; das Spiel um Platz 3 steht unter dem Baum.
+
+**Seit 1.11.0:** Auf der Startseite filtern **Veranstalter** (Auswahl aus den Turnieren) und **Datum** (laufend: Alle, Heute, Diese Woche, Dieser Monat; vergangen: Letzte 30 Tage, Jahr, Alle sowie von–bis). Die Filter stehen in der Adresse (z. B. `/vergangen?v=…&z=2026`), auf dem Handy hinter dem Knopf „Filter“. Im KO-Baum stehen Freilose als kleine gestrichelte Karte (Linien auch bei 6, 12, 24 … Teilnehmenden), das Spiel um Platz 3 in der Spalte des Finales und die Herkunft aus der Gruppe („A1“) nur in der ersten KO-Runde. In der Endplatzierung steht nur noch die Runde („Finale“, „Halbfinale“, „Sieger/in Spiel um Platz 3“, „Spiel um Platz 3“).
 
 ## 12. Online-Anmeldung am Turniertag (seit 1.9.0)
 

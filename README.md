@@ -25,6 +25,24 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.11.0
+
+- **Turnierübersicht filtern:** Auf hts-livescoring.de lassen sich laufende und vergangene Turniere nach Veranstalter
+  und Datum filtern (laufend: Heute, Diese Woche, Dieser Monat; vergangen: Letzte 30 Tage, Jahr, von–bis). Die Filter
+  stehen in der Adresse, so lässt sich z. B. „alle Turniere eines Verbands“ als Link teilen. Auf dem Handy sind sie
+  hinter „Filter“ zusammengeklappt.
+- **KO-Baum:** Linien auch bei Feldern mit Freilosen (z. B. 6, 12 oder 24 Teilnehmende; Freilos als kleine Karte), Spiel
+  um Platz 3 in der Spalte des Finales, Herkunft aus der Gruppe („A1“, „S1“) nur noch in der ersten KO-Runde.
+- **Endplatzierung nur mit Runde:** „Finale“, „Halbfinale“, „Viertelfinale“, „Sieger/in Spiel um Platz 3“, „Spiel um
+  Platz 3“ statt „ausgeschieden: …“ bzw. „… verloren“ – in HTS, den PDFs und auf den Live-Seiten.
+- **Gewinnsätze 1 bis 4:** je Klasse 1, 2, 3 oder 4 Gewinnsätze (Best of 1/3/5/7), Standard bleibt 3.
+- **click-TT:** Die Ergebnisdatei enthält nur noch die exportierten Konkurrenzen (nicht beendete fehlen – click-TT
+  könnte sonst deren Teilnehmende löschen). Beim Import verständliche Meldungen (z. B. „Datei unvollständig – erneut
+  herunterladen“), per E-Mail nach UTF-16 umgewandelte Dateien werden gelesen, Mannschaftskonkurrenzen werden erkannt und
+  nicht als Einzel übernommen, gleichnamige Konkurrenzen bekommen einen eindeutigen Namen.
+- **Live-Server absichern:** `install.sh` und `update.sh` richten fail2ban ein (5 Fehlversuche in 10 Minuten → 1 Tag
+  gesperrt), begrenzen die Passwortversuche je Verbindung auf 3 und bremsen SSH in der Firewall.
+
 ## Neu in 1.10.0
 
 - **Live-Server: weniger Daten, mehr Zuschauer:** HTS lädt den Stand komprimiert und höchstens alle 30 Sekunden hoch

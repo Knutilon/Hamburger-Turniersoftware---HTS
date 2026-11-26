@@ -60,6 +60,42 @@ rechtstexte_einspielen() {
   return 0
 }
 
+# 1.11.0 (#188): SSH absichern – fail2ban (5 Fehlversuche in 10 Minuten → 1 Tag gesperrt), höchstens 3 Passwortversuche je
+# Verbindung, Firewall-Bremse für SSH. Bricht bei Problemen nicht ab (nur Warnung), damit der Live-Server weiterläuft.
+ssh_absichern() {
+  local port
+  port="$( (sshd -T 2>/dev/null || true) | awk '/^port /{print $2; exit}')"; port="${port:-22}"
+  if ! command -v fail2ban-client >/dev/null 2>&1; then
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -q fail2ban >/dev/null 2>&1 || echo "Hinweis: fail2ban ließ sich nicht installieren." >&2
+  fi
+  if command -v fail2ban-client >/dev/null 2>&1; then
+    mkdir -p /etc/fail2ban/jail.d
+    if [[ -f /etc/fail2ban/jail.d/hts-ssh.local ]]; then
+      sed -i 's/^bantime = .*/bantime = 1d/' /etc/fail2ban/jail.d/hts-ssh.local
+    else
+      printf '[sshd]\nenabled = true\nport = %s\nmaxretry = 5\nfindtime = 10m\nbantime = 1d\n' "$port" > /etc/fail2ban/jail.d/hts-ssh.local
+    fi
+    systemctl enable fail2ban >/dev/null 2>&1 || true
+    systemctl restart fail2ban || echo "Hinweis: fail2ban startet nicht – siehe: journalctl -u fail2ban -n 30" >&2
+    echo "SSH-Schutz: fail2ban aktiv (5 Fehlversuche in 10 Minuten → 1 Tag gesperrt)."
+  fi
+  if [[ -d /etc/ssh/sshd_config.d ]] && [[ ! -f /etc/ssh/sshd_config.d/hts.conf ]]; then
+    printf 'MaxAuthTries 3\n' > /etc/ssh/sshd_config.d/hts.conf
+    if sshd -t 2>/dev/null; then
+      systemctl reload ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || true
+    else
+      rm -f /etc/ssh/sshd_config.d/hts.conf
+      echo "Hinweis: MaxAuthTries nicht gesetzt (SSH-Einstellungen nicht prüfbar)." >&2
+    fi
+  fi
+  if command -v ufw >/dev/null 2>&1; then
+    ufw limit "$port"/tcp >/dev/null 2>&1 || true
+    ufw delete allow "$port"/tcp >/dev/null 2>&1 || true
+  fi
+  echo "Selbst ausgesperrt? In der Server-Konsole des Anbieters (z. B. netcup SCP) anmelden und eingeben:"
+  echo "  fail2ban-client set sshd unbanip <eigene IP-Adresse>"
+}
+
 cp "$OPT/hts-server.jar" "$OPT/hts-server.jar.vorher"
 install -o root -g root -m 644 "$HERE/hts-server.jar" "$OPT/hts-server.jar"
 for f in LICENSE LIESMICH.txt; do [[ -f "$HERE/$f" ]] && install -o root -g root -m 644 "$HERE/$f" "$OPT/$f"; done
@@ -69,6 +105,7 @@ if [[ ! -f /etc/hts-server/spenden.html && -f "$HERE/vorlagen/spenden.html" ]]; 
   install -o root -g hts -m 644 "$HERE/vorlagen/spenden.html" /etc/hts-server/spenden.html
 fi
 rechtstexte_einspielen /etc/hts-server
+ssh_absichern
 # 1.10.0 (#171): mehr Arbeitsspeicher für große Turniere (vorher 512 MB)
 if grep -q -- "-Xmx512m" /etc/systemd/system/hts-server.service; then
   sed -i 's/-Xmx512m/-Xmx1g/' /etc/systemd/system/hts-server.service

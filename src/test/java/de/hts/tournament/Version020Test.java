@@ -92,7 +92,7 @@ class Version020Test {
         t.finishClass(c);
         List<Integer> from = t.finalResult(c).rows().stream().map(Tournament.Placing::from).toList();
         assertEquals(List.of(1, 2, 3, 4, 5, 5, 5, 5), from);
-        assertEquals("Spiel um Platz 3 (Sieg)", t.finalResult(c).rows().get(2).info());
+        assertEquals("Sieger/in Spiel um Platz 3", t.finalResult(c).rows().get(2).info());
 
         Tournament back = roundTrip(t);
         PlayingClass c2 = back.findClass("KO").orElseThrow();

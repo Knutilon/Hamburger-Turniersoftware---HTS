@@ -85,9 +85,11 @@ public final class ClickTtResultExporter {
         java.util.LinkedHashSet<Player> withoutId = new java.util.LinkedHashSet<>();
         int comps = 0, matchCount = 0, placements = 0;
         NodeList compEls = doc.getElementsByTagName("competition");
+        Map<Element, String> compNames = ClickTtXmlImporter.uniqueNames(doc);     // 1.11.0 (#186)
+        List<Element> drop = new ArrayList<>();                                 // 1.11.0 (#183)
         for (int i = 0; i < compEls.getLength(); i++) {
             Element comp = (Element) compEls.item(i);
-            String name = ClickTtXmlImporter.competitionName(comp);
+            String name = compNames.get(comp);
             // click-TT-Teilnehmer: ID → Personen, Personenschlüssel → ID
             Map<Set<String>, String> idByPersons = new HashMap<>();
             Map<String, Element> playerEls = new HashMap<>();
@@ -106,10 +108,12 @@ public final class ClickTtResultExporter {
             PlayingClass c = findClass(t, name, idByPersons.keySet());
             if (c == null) {
                 skipped.add(name + " – keine passende Klasse in HTS");
+                drop.add(comp);
                 continue;
             }
             if (!c.isFinished()) {
                 skipped.add(name + " – Klasse „" + c.getName() + "“ ist noch nicht beendet");
+                drop.add(comp);
                 continue;
             }
             comps++;
@@ -192,6 +196,11 @@ public final class ClickTtResultExporter {
                 placements++;
             }
         }
+        // 1.11.0 (#183): übersprungene Konkurrenzen nicht in die Datei – der click-TT-Ergebnis-Importer würde sonst deren
+        // Ergebnisse und Teilnehmende löschen (Konkurrenz mit Teilnehmenden, aber ohne Spiele)
+        for (Element comp : drop) comp.getParentNode().removeChild(comp);
+        if (!drop.isEmpty()) warnings.add(drop.size() == 1 ? "1 Konkurrenz ist nicht in der Datei (noch nicht beendet bzw. ohne passende Klasse)."
+                : drop.size() + " Konkurrenzen sind nicht in der Datei (noch nicht beendet bzw. ohne passende Klasse).");
         write(doc, out);
         return new Report(comps, matchCount, placements, skipped, warnings, notExported, List.copyOf(withoutId));
     }

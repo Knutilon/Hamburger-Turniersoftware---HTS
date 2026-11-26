@@ -194,6 +194,47 @@ class Version1100Test {
         assertTrue(h.contains("class=\"chip\">offen</span>"));
     }
 
+    @Test
+    void klammerlinienAuchMitFreilosen() throws Exception {      // 1.10.1: 6 bzw. 12 Teilnehmende (keine Zweierpotenz)
+        for (int n : new int[]{6, 12}) {
+            Tournament t = tournament("Freilose", n);
+            String h = classHtml(LiveServer.forTest(t), t.findClass("Herren C").orElseThrow());
+            assertTrue(h.contains("class=\"kt kl\""), n + ": Linien trotz Freilosen");
+            assertTrue(h.contains("class=\"km bye\"") && h.contains("<span>Freilos</span>"), n + ": Freilos als kleine Karte");
+        }
+    }
+
+    @Test
+    void startseiteFiltertNachVeranstalterUndDatum() throws Exception {     // 1.11.0 (#187)
+        try (Srv s = server(25)) {
+            String[][] ts = {{"f1", "Turnier Alster", "SC Alsterquelle", "0"}, {"f2", "Turnier Elbe", "TSV Elbinsel", "40"}, {"f3", "Turnier Alt", "TSV Elbinsel", "-400"}};
+            for (String[] x : ts) {
+                Tournament t = tournament(x[1], 4);
+                t.setDate(LocalDate.now().plusDays(Integer.parseInt(x[3])));
+                t.setId(x[0]);
+                HttpRequest r = HttpRequest.newBuilder(URI.create(s.base() + "/api/turniere/" + x[0])).header("Authorization", "Bearer " + KEY)
+                        .header("X-HTS-Ausrichter", java.net.URLEncoder.encode(x[2], StandardCharsets.UTF_8))
+                        .PUT(HttpRequest.BodyPublishers.ofByteArray(TournamentFile.publishBytes(t))).build();
+                assertEquals(200, http.send(r, HttpResponse.BodyHandlers.discarding()).statusCode());
+            }
+            String all = get(s.base() + "/").body();
+            assertTrue(all.contains("Turnier Alster") && all.contains("Turnier Elbe") && all.contains("class=\"flt\""), "Filterleiste");
+            assertTrue(all.contains("<option value=\"SC Alsterquelle\">") && all.contains("<option value=\"TSV Elbinsel\">"), "Veranstalter aus den Turnieren");
+            assertTrue(all.contains("2 Turniere") && !all.contains("Filter zurücksetzen"));
+            String elbe = get(s.base() + "/?v=TSV+Elbinsel").body();
+            assertTrue(elbe.contains("Turnier Elbe") && !elbe.contains("Turnier Alster"), "nach Veranstalter");
+            assertTrue(elbe.contains("1 von 2 Turnieren") && elbe.contains("Filter zurücksetzen") && elbe.contains("Filter · 1 aktiv"));
+            String heute = get(s.base() + "/?d=heute").body();
+            assertTrue(heute.contains("Turnier Alster") && !heute.contains("Turnier Elbe"), "nur heute");
+            String past = get(s.base() + "/vergangen?z=" + LocalDate.now().minusDays(400).getYear()).body();
+            assertTrue(past.contains("Turnier Alt"), "Jahr");
+            String none = get(s.base() + "/vergangen?z=30").body();
+            assertTrue(none.contains("Keine Turniere für diese Auswahl."));
+            String range = get(s.base() + "/vergangen?von=" + LocalDate.now().minusDays(401) + "&bis=" + LocalDate.now().minusDays(399)).body();
+            assertTrue(range.contains("Turnier Alt") && range.contains("type=\"date\""), "von/bis");
+        }
+    }
+
     private static String classHtml(LiveServer v, PlayingClass c) {
         try {
             var m = LiveServer.class.getDeclaredMethod("classPage", String.class, String.class);

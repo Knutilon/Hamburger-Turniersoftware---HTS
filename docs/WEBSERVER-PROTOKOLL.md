@@ -57,7 +57,7 @@ URL-kodiert nach UTF-8, höchstens 120 Zeichen, ohne Steuerzeichen); fehlt die K
 - `POST …/nur-endergebnis`: Startseite des Turniers zeigt nur noch die Endergebnisse; Tische, Klassen, Suche und
   „Meine Spiele“ leiten dorthin um.
 - Aufbewahrung: Turniere werden `retention-days` (Vorgabe 90) Tage nach der letzten Änderung automatisch gelöscht.
-- Öffentliche Seiten: `/` (seit 1.8.0 „Aktuelle Turniere“, seit 1.10.0 „Laufende Turniere“), `/download` (seit 1.10.0 „Download HTS“) und `/vergangen` („Vergangene Turniere“: beendet, nur
+- Öffentliche Seiten: `/` (seit 1.8.0 „Aktuelle Turniere“, seit 1.10.0 „Laufende Turniere“), `/download` (seit 1.10.0 „Download HTS“); seit 1.11.0 Filter der Startseite als Parameter: `v` (Veranstalter), `d` (laufend: `heute`, `woche`, `monat`, `alle`), `z` (vergangen: `30`, Jahr, `alle`), `von`/`bis` (JJJJ-MM-TT) und `/vergangen` („Vergangene Turniere“: beendet, nur
   Endergebnis oder Datum vor heute), `/live/<Turnier>` mit `…/tische`, `…/klasse?k=`, `…/ergebnis?k=`, `…/suche`,
   `…/ich?id=`, `…/logo.png` und seit 1.8.0 `…/<Klasse>/spiel<Nr>` bzw. `…/<Klasse>/phase<n>/spiel<Nr>` (Klassenname mit
   „_“ statt Leerzeichen); `/impressum`, `/datenschutz` und `/spenden` aus `impressum.html`, `datenschutz.html` bzw.

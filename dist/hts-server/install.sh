@@ -70,6 +70,42 @@ rechtstexte_einspielen() {
 }
 
 schritt() { printf '\n\033[1;32m==> %s\033[0m\n' "$*"; }
+
+# 1.11.0 (#188): SSH absichern – fail2ban (5 Fehlversuche in 10 Minuten → 1 Tag gesperrt), höchstens 3 Passwortversuche je
+# Verbindung, Firewall-Bremse für SSH. Bricht bei Problemen nicht ab (nur Warnung), damit der Live-Server weiterläuft.
+ssh_absichern() {
+  local port
+  port="$( (sshd -T 2>/dev/null || true) | awk '/^port /{print $2; exit}')"; port="${port:-22}"
+  if ! command -v fail2ban-client >/dev/null 2>&1; then
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -q fail2ban >/dev/null 2>&1 || echo "Hinweis: fail2ban ließ sich nicht installieren." >&2
+  fi
+  if command -v fail2ban-client >/dev/null 2>&1; then
+    mkdir -p /etc/fail2ban/jail.d
+    if [[ -f /etc/fail2ban/jail.d/hts-ssh.local ]]; then
+      sed -i 's/^bantime = .*/bantime = 1d/' /etc/fail2ban/jail.d/hts-ssh.local
+    else
+      printf '[sshd]\nenabled = true\nport = %s\nmaxretry = 5\nfindtime = 10m\nbantime = 1d\n' "$port" > /etc/fail2ban/jail.d/hts-ssh.local
+    fi
+    systemctl enable fail2ban >/dev/null 2>&1 || true
+    systemctl restart fail2ban || echo "Hinweis: fail2ban startet nicht – siehe: journalctl -u fail2ban -n 30" >&2
+    echo "SSH-Schutz: fail2ban aktiv (5 Fehlversuche in 10 Minuten → 1 Tag gesperrt)."
+  fi
+  if [[ -d /etc/ssh/sshd_config.d ]] && [[ ! -f /etc/ssh/sshd_config.d/hts.conf ]]; then
+    printf 'MaxAuthTries 3\n' > /etc/ssh/sshd_config.d/hts.conf
+    if sshd -t 2>/dev/null; then
+      systemctl reload ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || true
+    else
+      rm -f /etc/ssh/sshd_config.d/hts.conf
+      echo "Hinweis: MaxAuthTries nicht gesetzt (SSH-Einstellungen nicht prüfbar)." >&2
+    fi
+  fi
+  if command -v ufw >/dev/null 2>&1; then
+    ufw limit "$port"/tcp >/dev/null 2>&1 || true
+    ufw delete allow "$port"/tcp >/dev/null 2>&1 || true
+  fi
+  echo "Selbst ausgesperrt? In der Server-Konsole des Anbieters (z. B. netcup SCP) anmelden und eingeben:"
+  echo "  fail2ban-client set sshd unbanip <eigene IP-Adresse>"
+}
 warnung() { printf '\033[1;33mHinweis: %s\033[0m\n' "$*"; }
 
 [[ $EUID -eq 0 ]] || { echo "Bitte als root ausführen (z. B. mit sudo ./install.sh)." >&2; exit 1; }
@@ -207,6 +243,9 @@ ufw allow "$SSH_PORT"/tcp >/dev/null
 ufw allow 80/tcp >/dev/null
 ufw allow 443/tcp >/dev/null
 ufw --force enable >/dev/null
+
+schritt "SSH absichern (fail2ban, Fehlversuche begrenzen)"
+ssh_absichern
 
 schritt "Automatische Sicherheitsupdates (Neustart bei Bedarf um 4:30 Uhr)"
 cat > /etc/apt/apt.conf.d/20auto-upgrades <<EOF

@@ -124,12 +124,12 @@ final class ModeDialog extends Dialog<Boolean> {
         rounds.setPrefWidth(80);
 
         javafx.scene.control.ComboBox<Integer> sets = new javafx.scene.control.ComboBox<>();
-        sets.getItems().setAll(3, 4);
+        sets.getItems().setAll(1, 2, 3, 4);                          // 1.11.0 (#182): 1 bis 4 Gewinnsätze
         sets.setValue(t.rootOf(c).getWinningSets());
         sets.setConverter(new javafx.util.StringConverter<>() {
             @Override
             public String toString(Integer n) {
-                return n == null ? "" : n + " Gewinnsätze (Best of " + (2 * n - 1) + ")";
+                return n == null ? "" : Tournament.winningSetsLabel(n) + " (Best of " + (2 * n - 1) + ")";
             }
 
             @Override

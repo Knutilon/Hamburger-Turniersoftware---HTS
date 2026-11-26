@@ -276,7 +276,7 @@ public final class LiveServer {
         return b.append('"').toString();
     }
 
-    private static String enc(String s) {
+    static String enc(String s) {
         return URLEncoder.encode(s == null ? "" : s, StandardCharsets.UTF_8);
     }
 
@@ -341,7 +341,7 @@ public final class LiveServer {
             .kl .kp.j::after{content:"";position:absolute;right:-20px;top:25%;bottom:25%;border-right:1.5px solid #b9c1ca}
             .kl .kx.o::after{content:"";position:absolute;right:-20px;top:50%;width:20px;border-top:1.5px solid #b9c1ca}
             .kl .kx.i::before{content:"";position:absolute;left:-20px;top:50%;width:20px;border-top:1.5px solid #b9c1ca}
-            .k3{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:6px}.k3 h3{margin:0;white-space:nowrap}
+            .k3{padding:6px 0}.k3 h3{margin:0 0 6px;white-space:nowrap}.k3.ghost{visibility:hidden}
             .km{display:block;flex:1;box-sizing:border-box;background:#fff;border:1px solid #e4e6ea;border-radius:10px;padding:4px 4px 5px;color:inherit;text-decoration:none;white-space:nowrap}
             .km .s{display:flex;justify-content:space-between;align-items:center;gap:16px;font-size:13px;padding:4px 6px;border-radius:6px}
             .km .s.w{background:#e4f7ef}.km .s small{color:#6b7280;font-size:11px;margin-left:4px}
@@ -350,7 +350,7 @@ public final class LiveServer {
             .km .sc b{width:22px;text-align:center;font-size:15px;color:#4a5560;font-weight:600;margin-left:4px;padding-left:4px;border-left:1px solid #d9dee3}
             .km .s.w .sc b{color:#187250;font-weight:800}
             .km .meta{font-size:11px;color:#6b7280;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:3px 6px 0}
-            .km.run{border-color:#5fd3a8}.km.mine{background:#fff;border-color:#187250;box-shadow:0 0 0 1px #187250}
+            .km.bye{background:#f6f7f8;border-style:dashed;color:#4a5560}.km.run{border-color:#5fd3a8}.km.mine{background:#fff;border-color:#187250;box-shadow:0 0 0 1px #187250}
             """;
 
     /**
@@ -479,7 +479,7 @@ public final class LiveServer {
         String a = t.entrantName(m, m.getA()), bb = t.entrantName(m, m.getB());
         String w = m.winner();
         String na = a == null ? "–" : esc(a), nb = bb == null ? "–" : esc(bb);
-        String oa = t.originLabel(m, m.getA()), ob = t.originLabel(m, m.getB());      // 0.38: Herkunft, z. B. „A2“
+        String oa = origin(m, m.getA()), ob = origin(m, m.getB());      // 0.38: Herkunft, z. B. „A2“ (1.11.0: nur erste KO-Runde)
         if (a != null && oa != null) na = "<span class=\"muted\">" + esc(oa) + "</span> " + na;
         if (bb != null && ob != null) nb = "<span class=\"muted\">" + esc(ob) + "</span> " + nb;
         if (w != null && w.equals(m.getA())) na = "<span class=\"win\">" + na + "</span>";
@@ -683,33 +683,72 @@ public final class LiveServer {
             list.sort(Comparator.comparingInt(Match::getKoIndex));
             rs.add(list);
         }
-        boolean lines = true;                                  // Linien nur bei einem regelmäßigen Baum
-        for (int r = 0; r + 1 < rs.size(); r++) if (rs.get(r).size() != 2 * rs.get(r + 1).size()) lines = false;
+        // 1.10.1: feste Plätze je Runde (Position = KO-Index); Freilose fehlen als Spiel und werden als kleine Karte gezeigt,
+        // damit die Linien auch bei Feldern wie 6, 12 oder 24 (nicht Zweierpotenz) stimmen
+        int n = rs.size();
+        int[] slots = new int[n];
+        slots[n - 1] = rs.get(n - 1).size();
+        for (int r = n - 2; r >= 0; r--) slots[r] = 2 * slots[r + 1];
+        boolean lines = true;
+        for (int r = 0; r < n && lines; r++) {
+            for (Match m : rs.get(r)) if (m.getKoIndex() < 0 || m.getKoIndex() >= slots[r]) lines = false;
+            if (r > 0 && rs.get(r).size() != slots[r]) lines = false;   // fehlende Spiele nur in der ersten Runde (Freilose)
+        }
         StringBuilder b = new StringBuilder("<div class=\"ktw\"><div class=\"kt").append(lines ? " kl" : "").append("\">");
-        for (int r = 0; r < rs.size(); r++) {
+        for (int r = 0; r < n; r++) {
             List<Match> list = rs.get(r);
-            boolean last = r == rs.size() - 1;
+            boolean last = r == n - 1;
             String cls = "kx" + (last ? "" : " o") + (r == 0 ? "" : " i");
             b.append("<div class=\"kc\"><h3>").append(esc(list.get(0).getStage())).append("</h3><div class=\"kcm\">");
-            if (last || !lines) {
+            // 1.11.0: Spiel um Platz 3 in der Spalte des Finales, darunter; ein unsichtbarer Zwilling darüber hält das Finale mittig
+            String p3 = last && third != null ? "<h3>" + esc(third.getStage()) + "</h3><div style=\"display:flex\">" + koCard(third, person) + "</div>" : null;
+            if (p3 != null) b.append("<div class=\"k3 ghost\" aria-hidden=\"true\">").append(p3).append("</div>");
+            if (!lines) {
                 for (Match m : list) b.append("<div class=\"kp\"><div class=\"").append(cls).append("\">").append(koCard(m, person)).append("</div></div>");
             } else {
-                for (int k = 0; k < list.size(); k += 2) {
-                    b.append("<div class=\"kp j\">");
-                    for (int j = k; j < Math.min(k + 2, list.size()); j++) {
-                        b.append("<div class=\"").append(cls).append("\">").append(koCard(list.get(j), person)).append("</div>");
+                java.util.Map<Integer, Match> at = new java.util.HashMap<>();
+                for (Match m : list) at.put(m.getKoIndex(), m);
+                java.util.Map<Integer, Match> next = new java.util.HashMap<>();
+                if (!last) for (Match m : rs.get(r + 1)) next.put(m.getKoIndex(), m);
+                for (int k = 0; k < slots[r]; k += last ? 1 : 2) {
+                    b.append(last ? "<div class=\"kp\">" : "<div class=\"kp j\">");
+                    for (int j = k; j < k + (last ? 1 : 2); j++) {
+                        Match m = at.get(j);
+                        b.append("<div class=\"").append(cls).append("\">")
+                                .append(m != null ? koCard(m, person) : byeCard(next.get(j / 2), j % 2 == 0)).append("</div>");
                     }
                     b.append("</div>");
                 }
             }
+            if (p3 != null) b.append("<div class=\"k3\">").append(p3).append("</div>");
             b.append("</div></div>");
         }
         b.append("</div>");
-        if (third != null) {
-            b.append("<div class=\"k3\"><h3>").append(esc(third.getStage())).append("</h3><div style=\"display:flex\">")
-                    .append(koCard(third, person)).append("</div></div>");
-        }
         return b.append("</div>").toString();
+    }
+
+    /**
+     * 1.11.0 (#179): Herkunft aus der Vorphase („A2“, „S1“) nur in der ersten KO-Runde der Phase; danach (und im Spiel um
+     * Platz 3) ist die Gruppenplatzierung nicht mehr wichtig.
+     */
+    private String origin(Match m, String id) {
+        if (id == null) return null;
+        if (m.getKoRound() < 0) return m.getPlacement() > 0 ? null : t.originLabel(m, id);
+        int first = Integer.MAX_VALUE;
+        for (Match x : t.matchesOf(t.findClass(m.getClassName()).orElse(null))) if (x.getKoRound() >= 0) first = Math.min(first, x.getKoRound());
+        return m.getKoRound() <= first ? t.originLabel(m, id) : null;
+    }
+
+    /** 1.10.1: Freilos im KO-Baum – wer direkt in die nächste Runde kommt (aus dem Folgespiel). */
+    private String byeCard(Match next, boolean sideA) {
+        String id = next == null ? null : sideA ? next.getA() : next.getB();
+        String name = id == null ? null : t.entrantName(next, id);
+        String detail = id == null ? null : entrantDetail(next, id);
+        String org = id == null ? null : t.originLabel(next, id);       // Freilos steht in der ersten Runde: Herkunft zeigen
+        return "<div class=\"km bye\"><div class=\"s\"><span>" + (org == null ? "" : "<span class=\"muted\">" + esc(org) + "</span> ")
+                + (name == null ? "<span class=\"muted\">–</span>" : esc(name))
+                + (detail == null || detail.isBlank() ? "" : "<small>" + esc(detail) + "</small>") + "</span></div>"
+                + "<div class=\"meta\"><span>Freilos</span></div></div>";
     }
 
     /**
@@ -734,7 +773,7 @@ public final class LiveServer {
         for (int i = 0; i < 2; i++) {
             String id = ids[i];
             String name = id == null ? null : t.entrantName(m, id);
-            String origin = id == null ? null : t.originLabel(m, id);
+            String origin = id == null ? null : origin(m, id);
             String detail = id == null ? null : entrantDetail(m, id);
             boolean win = done && id != null && id.equals(w);
             b.append("<div class=\"s").append(win ? " w" : "").append("\"><span>")
@@ -1005,7 +1044,7 @@ public final class LiveServer {
 
     private String sideRow(Match m, String id, String name, String winner) {
         if (id == null || name == null) return "<tr><td class=\"nm muted\">noch offen</td></tr>";
-        String origin = t.originLabel(m, id);
+        String origin = origin(m, id);
         String detail = null;
         PlayingClass c = t.findClass(m.getClassName()).orElse(null);
         if (c != null) {

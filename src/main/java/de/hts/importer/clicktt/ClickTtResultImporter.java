@@ -94,9 +94,10 @@ public final class ClickTtResultImporter {
 
         int classCount = 0, matchCount = 0;
         NodeList comps = root.getElementsByTagName("competition");
+        Map<Element, String> cnames = ClickTtXmlImporter.uniqueNames(root.getOwnerDocument());   // 1.11.0 (#186)
         for (int ci = 0; ci < comps.getLength(); ci++) {
             Element comp = (Element) comps.item(ci);
-            String cname = ClickTtXmlImporter.competitionName(comp);
+            String cname = cnames.get(comp);
             boolean doubles = ClickTtXmlImporter.isDoubles(comp);
             List<XmlMatch> xms = readMatches(comp, notes, cname);
             if (xms.isEmpty()) {

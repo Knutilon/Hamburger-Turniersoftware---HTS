@@ -209,12 +209,12 @@ public final class LiveHost {
                     if (!path.equals("/")) {
                         redirect(ex, "/");
                     } else {
-                        html(ex, 200, startPage(false));
+                        html(ex, 200, startPage(false, LiveServer.parseQuery(ex.getRequestURI().getRawQuery())));
                     }
                     return;
                 }
                 case "/vergangen" -> {                               // 1.8.0 (#157)
-                    html(ex, 200, startPage(true));
+                    html(ex, 200, startPage(true, LiveServer.parseQuery(ex.getRequestURI().getRawQuery())));
                     return;
                 }
                 case "/download" -> {                                // 1.10.0 (#168)
@@ -742,6 +742,16 @@ public final class LiveHost {
             + ".dlg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.dlo{display:flex;flex-direction:column;gap:6px;margin:0;padding:14px 16px}"
             + ".dlo code{font-size:13px;background:#f1f3f4;border-radius:6px;padding:3px 7px;align-self:flex-start;overflow-wrap:anywhere}"
             + ".dlo span{font-size:13px;color:#4a5560;line-height:1.45}"
+            // 1.11.0 (#187): Filter der Startseite
+            + ".flt{margin:4px 0 0}.fsum{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid #d0d5db;"
+            + "background:#fff;font-size:14px;cursor:pointer;list-style:none}.fsum::-webkit-details-marker{display:none}.flt[data-act] .fsum{background:#187250;border-color:#187250;color:#fff}"
+            + ".fbar{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:flex-end;padding:12px 14px}.fl{display:block;font-size:12px;color:#4a5560;margin-bottom:4px;font-weight:600}"
+            + ".fsel,.finp{min-height:38px;padding:0 10px;border:1px solid #d0d5db;border-radius:10px;background:#fff;font-size:14px;color:#1f2933;font-family:inherit;max-width:100%}"
+            + ".fp{display:flex;flex-wrap:wrap;gap:6px}.fpill{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid #d0d5db;"
+            + "background:#fff;color:#1f2933!important;font-size:13px;text-decoration:none;white-space:nowrap}.fpill.on{background:#187250;border-color:#187250;color:#fff!important}"
+            + ".fdates{display:flex;gap:8px}.fcount{margin:6px 2px 0;flex-wrap:wrap}"
+            + "@media(min-width:700px){.fsum{display:none}}"
+            + "@media(max-width:699px){.fbar{flex-direction:column;align-items:stretch}.fsel{width:100%}.fdates>div{flex:1}.finp{width:100%}.flt[open] .fsum{margin-bottom:8px}}"
             + "@media(max-width:699px){.dlh{flex-direction:column;align-items:flex-start;gap:14px;padding:18px 16px}.dlh img{width:64px;height:64px}"
             + ".dlt h1{font-size:21px}.dlg{grid-template-columns:repeat(1,minmax(0,1fr))}}";
 
@@ -776,9 +786,75 @@ public final class LiveHost {
      * Aktuelle: laufende zuerst, dann nach Datum aufsteigend; vergangene: neuestes Datum zuerst.
      */
     String startPage(boolean past) {
+        return startPage(past, java.util.Map.of());
+    }
+
+    /** 1.11.0 (#187): Filter der Startseite (Veranstalter v, Datum d bzw. Zeitraum z, von, bis) – alles in der Adresse. */
+    record StartFilter(String org, String day, String span, LocalDate from, LocalDate to) {
+        static StartFilter of(java.util.Map<String, String> q) {
+            return new StartFilter(blankToNull(q.get("v")), blankToNull(q.get("d")), blankToNull(q.get("z")), date(q.get("von")), date(q.get("bis")));
+        }
+
+        private static String blankToNull(String s) {
+            return s == null || s.isBlank() ? null : s.strip();
+        }
+
+        private static LocalDate date(String s) {
+            if (s == null || s.isBlank()) return null;
+            try {
+                return s.contains(".") ? LocalDate.parse(s.strip(), java.time.format.DateTimeFormatter.ofPattern("d.M.uuuu")) : LocalDate.parse(s.strip());
+            } catch (RuntimeException e) {
+                return null;
+            }
+        }
+
+        int active(boolean past) {
+            int n = org != null ? 1 : 0;
+            if (past) n += (span != null && !"alle".equals(span)) || from != null || to != null ? 1 : 0;
+            else n += day != null && !"alle".equals(day) ? 1 : 0;
+            return n;
+        }
+
+        boolean accepts(Entry e, boolean past, LocalDate today) {
+            if (org != null && !org.equals(e.organizer)) return false;
+            LocalDate d = e.date;
+            if (past) {
+                if (span != null && !"alle".equals(span)) {
+                    if (d == null) return false;
+                    if ("30".equals(span) && d.isBefore(today.minusDays(30))) return false;
+                    if (span.matches("\\d{4}") && d.getYear() != Integer.parseInt(span)) return false;
+                }
+                if (from != null && (d == null || d.isBefore(from))) return false;
+                if (to != null && (d == null || d.isAfter(to))) return false;
+            } else if (day != null && !"alle".equals(day)) {
+                if (d == null) return false;
+                switch (day) {
+                    case "heute" -> { if (!d.equals(today)) return false; }
+                    case "woche" -> {
+                        LocalDate mon = today.with(java.time.DayOfWeek.MONDAY);
+                        if (d.isBefore(mon) || d.isAfter(mon.plusDays(6))) return false;
+                    }
+                    case "monat" -> { if (d.getYear() != today.getYear() || d.getMonth() != today.getMonth()) return false; }
+                    default -> { }
+                }
+            }
+            return true;
+        }
+    }
+
+    String startPage(boolean past, java.util.Map<String, String> query) {
         LocalDate today = LocalDate.now(ZoneId.of("Europe/Berlin"));
+        StartFilter f = StartFilter.of(query);
         List<Entry> list = new ArrayList<>(entries.values());
         list.removeIf(e -> isPast(e.state, e.finalOnly, e.date, today) != past);
+        int total = list.size();
+        java.util.TreeSet<String> orgs = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        java.util.TreeSet<Integer> years = new java.util.TreeSet<>(java.util.Comparator.reverseOrder());
+        for (Entry e : list) {
+            if (!e.organizer.isEmpty()) orgs.add(e.organizer);
+            if (e.date != null) years.add(e.date.getYear());
+        }
+        list.removeIf(e -> !f.accepts(e, past, today));
         if (past) {
             list.sort(Comparator.comparing((Entry e) -> e.date, Comparator.nullsLast(Comparator.reverseOrder()))
                     .thenComparing(Comparator.comparingLong((Entry e) -> e.updated).reversed()));
@@ -789,8 +865,10 @@ public final class LiveHost {
         }
         String tabs = startTabs(past ? "/vergangen" : "/");
         StringBuilder b = new StringBuilder();
+        if (total > 0) b.append(filterBar(past, f, orgs, years, list.size(), total));
         if (list.isEmpty()) {
-            b.append("<p class=\"muted\">").append(past ? "Keine vergangenen Turniere." : "Gerade keine laufenden Turniere.").append("</p>");
+            b.append("<p class=\"muted\">").append(total > 0 ? "Keine Turniere für diese Auswahl."
+                    : past ? "Keine vergangenen Turniere." : "Gerade keine laufenden Turniere.").append("</p>");
         }
         for (Entry e : list) {
             String chip = past ? (e.finalOnly ? "<span class=\"chip final\">Endergebnis</span>" : "<span class=\"chip done\">beendet</span>")
@@ -843,6 +921,54 @@ public final class LiveHost {
 
     private static String osCard(String name, String file, String how) {
         return "<div class=\"card dlo\"><b>" + name + "</b><code>" + file + "</code><span>" + how + "</span></div>";
+    }
+
+    /** 1.11.0 (#187): Filterleiste (Design vom 26.11.2026) – Formular mit GET, auf dem Handy zugeklappt. */
+    private static String filterBar(boolean past, StartFilter f, java.util.Set<String> orgs, java.util.Set<Integer> years, int shown, int total) {
+        String base = past ? "/vergangen" : "/";
+        StringBuilder b = new StringBuilder();
+        int act = f.active(past);
+        b.append("<details class=\"flt\"").append(act > 0 ? " data-act=\"1\"" : "").append("><summary class=\"fsum\">Filter")
+                .append(act > 0 ? " · " + act + " aktiv" : "").append("</summary><form class=\"card fbar\" method=\"get\" action=\"").append(base).append("\">");
+        b.append("<div><label class=\"fl\" for=\"fv\">Veranstalter</label><select id=\"fv\" name=\"v\" class=\"fsel\"><option value=\"\">Alle Veranstalter</option>");
+        for (String o : orgs) {
+            b.append("<option value=\"").append(LiveServer.esc(o)).append("\"").append(o.equals(f.org()) ? " selected" : "").append(">")
+                    .append(LiveServer.esc(o)).append("</option>");
+        }
+        b.append("</select></div>");
+        String vq = f.org() == null ? "" : "&v=" + LiveServer.enc(f.org());
+        if (!past) {
+            b.append("<div><span class=\"fl\">Datum</span><div class=\"fp\">");
+            String cur = f.day() == null ? "alle" : f.day();
+            for (String[] o : new String[][]{{"alle", "Alle"}, {"heute", "Heute"}, {"woche", "Diese Woche"}, {"monat", "Dieser Monat"}}) {
+                b.append("<a class=\"fpill").append(o[0].equals(cur) ? " on" : "").append("\" href=\"").append(base).append("?d=").append(o[0]).append(vq)
+                        .append("\">").append(o[1]).append("</a>");
+            }
+            b.append("</div></div>");
+        } else {
+            b.append("<div><span class=\"fl\">Zeitraum</span><div class=\"fp\">");
+            String cur = f.span() == null && f.from() == null && f.to() == null ? "alle" : f.span() == null ? "" : f.span();
+            List<String[]> opts = new ArrayList<>();
+            opts.add(new String[]{"30", "Letzte 30 Tage"});
+            for (Integer y : years) opts.add(new String[]{String.valueOf(y), String.valueOf(y)});
+            opts.add(new String[]{"alle", "Alle"});
+            for (String[] o : opts) {
+                b.append("<a class=\"fpill").append(o[0].equals(cur) ? " on" : "").append("\" href=\"").append(base).append("?z=").append(o[0]).append(vq)
+                        .append("\">").append(o[1]).append("</a>");
+            }
+            b.append("</div></div><div class=\"fdates\"><div><label class=\"fl\" for=\"fvon\">von</label><input id=\"fvon\" type=\"date\" name=\"von\" class=\"finp\"")
+                    .append(f.from() == null ? "" : " value=\"" + f.from() + "\"").append("></div><div><label class=\"fl\" for=\"fbis\">bis</label>")
+                    .append("<input id=\"fbis\" type=\"date\" name=\"bis\" class=\"finp\"").append(f.to() == null ? "" : " value=\"" + f.to() + "\"").append("></div></div>");
+        }
+        if (past && f.span() != null && !"alle".equals(f.span())) b.append("<input type=\"hidden\" name=\"z\" value=\"").append(LiveServer.esc(f.span())).append("\">");
+        if (!past && f.day() != null) b.append("<input type=\"hidden\" name=\"d\" value=\"").append(LiveServer.esc(f.day())).append("\">");
+        b.append("<noscript><button type=\"submit\" class=\"fpill\">Anwenden</button></noscript></form></details>");
+        b.append("<div class=\"row fcount\"><span class=\"muted\">").append(shown == total ? total + (total == 1 ? " Turnier" : " Turniere")
+                : shown + " von " + total + " Turnieren").append("</span>").append(act > 0 ? "<a href=\"" + base + "\">Filter zurücksetzen</a>" : "").append("</div>");
+        // auf breiten Bildschirmen aufgeklappt; Auswahl/Datum sofort übernehmen
+        b.append("<script>(function(){var d=document.querySelector('.flt');if(!d)return;if(window.innerWidth>=700)d.open=true;"
+                + "d.querySelectorAll('select,input[type=date]').forEach(function(x){x.addEventListener('change',function(){x.form.submit();});});})();</script>");
+        return b.toString();
     }
 
     /** Ausrichter in der Turnierkarte: kleines Logo und Name (soweit vorhanden). */

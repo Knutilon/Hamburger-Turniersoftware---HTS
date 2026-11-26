@@ -145,21 +145,21 @@ Nach dem Turnier in HTS **„Nur Endergebnis behalten“** (Tische und Spiele ve
 
 ## 7. Neue Version einspielen
 
-Neues Paket kopieren und im neuen Ordner `update.sh` starten (Beispiel 1.9.0 → 1.10.0; `hts-rechtstexte.tar.gz` nur,
+Neues Paket kopieren und im neuen Ordner `update.sh` starten (Beispiel 1.10.0 → 1.11.0; `hts-rechtstexte.tar.gz` nur,
 wenn Impressum bzw. Datenschutz mit eingespielt werden sollen):
 
 ```
-scp hts-server-1.10.0.tar.gz hts-rechtstexte.tar.gz root@hts-livescoring.de:
+scp hts-server-1.11.0.tar.gz hts-rechtstexte.tar.gz root@hts-livescoring.de:
 ssh root@hts-livescoring.de
 rm -rf hts-server
-tar xzf hts-server-1.10.0.tar.gz
+tar xzf hts-server-1.11.0.tar.gz
 cd hts-server
 ./update.sh
 ```
 
 Einstellungen, Schlüssel und Turniere bleiben erhalten; Impressum und Datenschutz ebenso, außer neben dem Paket liegt
 `hts-rechtstexte.tar.gz` (siehe Abschnitt 4). Beim Update auf 1.8.0 legt `update.sh` außerdem die Vorlage
-`spenden.html` an; beim Update auf 1.10.0 erhöht es den Arbeitsspeicher des Live-Servers von 512 MB auf 1 GB. Startet die
+`spenden.html` an; beim Update auf 1.10.0 erhöht es den Arbeitsspeicher des Live-Servers von 512 MB auf 1 GB; seit 1.11.0 richtet es den SSH-Schutz ein (fail2ban: 5 Fehlversuche in 10 Minuten → 1 Tag gesperrt, höchstens 3 Passwortversuche je Verbindung, Firewall-Bremse). Wer sich selbst aussperrt, meldet sich über die Server-Konsole des Anbieters (netcup: SCP) an und gibt `fail2ban-client set sshd unbanip <eigene IP>` ein. Startet die
 neue Version nicht, stellt `update.sh` die vorige automatisch wieder her.
 
 ## 8. Hilfe bei Problemen

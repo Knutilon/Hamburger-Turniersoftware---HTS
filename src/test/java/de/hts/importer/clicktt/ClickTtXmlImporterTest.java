@@ -182,7 +182,7 @@ class ClickTtXmlImporterTest {
     @Test
     void ungueltigesXmlLiefertVerstaendlicheMeldung() {
         var ex = assertThrows(ClickTtImportException.class, () -> importer.importStream(stream("<tournament><person>")));
-        assertTrue(ex.getMessage().startsWith("Die Datei ist kein gültiges XML"));
+        assertTrue(ex.getMessage().startsWith("Die Datei ist unvollständig"), ex.getMessage());   // 1.11.0 (#184): abgeschnittene Datei
     }
 
     @Test
