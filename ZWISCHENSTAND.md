@@ -57,6 +57,9 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 1. TABLET: TEST AUF ECHTEM GERÄT (Issue #133, offen aus 1.5.0): Die Tablet-Funktionen von 1.5.0 auf einem echten
    Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
    Gerät; Ergebnisse als Bug/Feature melden.
+2. KO-LINIEN BEI FREILOSEN (Issue #178, Bug, Nutzer 26.11.2026): Klammerlinien fehlten bei Feldern ohne Zweierpotenz
+   (6, 12, 24 …; gemeldet im Doppel). IM CODE BEREITS BEHOBEN (LiveServer.koTree: feste Plätze je Runde, byeCard
+   „Freilos“ gestrichelt; Test klammerlinienAuchMitFreilosen) – beim nächsten „kompilieren“ als 1.10.1 ausliefern.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
