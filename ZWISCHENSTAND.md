@@ -68,6 +68,8 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    3. Platz „Sieger/in Spiel um Platz 3“, 4. Platz „Spiel um Platz 3“ (Nutzer 26.11.2026); „Sieger/in“ beim 1. Platz
    bleibt; offenes Platz-3-Spiel: „Halbfinale – Spiel um Platz 3 offen“.
    Zentral in Tournament.placing/KO-Wertung (Zeilen um 4173 und 4395–4405); Tests mit den alten Texten anpassen.
+5. LIVE-SEITEN: SPIEL UM PLATZ 3 IN DER FINALSPALTE (Issue #181, Nutzer 26.11.2026): IM CODE BEREITS UMGESETZT
+   (LiveServer.koTree: .k3 unten in der Finalspalte, .k3.ghost unsichtbar oben, damit das Finale mittig bleibt).
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
