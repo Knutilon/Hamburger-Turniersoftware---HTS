@@ -74,6 +74,16 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Standard 3. Bisher nur 3 oder 4 (PlayingClass.setWinningSets: n == 4 ? 4 : 3). Betrifft ModeDialog, Klassenkopf
    (DrawView), Ergebnisdialog/Prüfung, Spielzettel (Satzfelder), PDFs, Live-Seiten, Turnierdatei, click-TT
    Import/Export. Ändern nur ohne Ergebnisse in der Klasse.
+7. CLICK-TT-EXPORT NUR MIT EXPORTIERTEN KONKURRENZEN (Issue #183, wichtig; Prüfung TTT2020-FAQ 26.11.2026): Bisher
+   bleiben übersprungene (nicht beendete) Konkurrenzen mit Teilnehmenden, aber ohne Spiele in der Ergebnisdatei – laut
+   FAQ löscht der click-TT-Ergebnis-Importer dann Ergebnisse und Teilnehmende. Übersprungene Konkurrenzen aus der Datei
+   entfernen (ClickTtResultExporter), im Bericht nennen; optional Auswahl der zu exportierenden Klassen.
+8. CLICK-TT-IMPORT: VERSTÄNDLICHE FEHLERMELDUNGEN, UTF-16 (Issue #184): abgeschnittene Datei → „Datei unvollständig –
+   erneut herunterladen …“; UTF-16 mit BOM trotz Deklaration UTF-8 einlesen; deutsche Texte statt Parsermeldungen.
+9. CLICK-TT-IMPORT: MANNSCHAFTSKONKURRENZEN ERKENNEN (Issue #185): nicht still als Einzel einlesen, in der Vorschau
+   kennzeichnen (bzw. als 2er/3er-Klasse, falls möglich); mit echter click-TT-Datei testen.
+10. CLICK-TT-IMPORT: GLEICHNAMIGE KONKURRENZEN (Issue #186): Name aus Altersklasse + Spielart + „TTR bis“ kann
+   kollidieren (nur „TTR ab“/Datum verschieden) → Namen ergänzen und in der Vorschau warnen.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
