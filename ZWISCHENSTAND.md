@@ -57,6 +57,9 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 1. TABLET: TEST AUF ECHTEM GERÄT (Issue #133, offen aus 1.5.0): Die Tablet-Funktionen von 1.5.0 auf einem echten
    Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
    Gerät; Ergebnisse als Bug/Feature melden.
+2. ADMIN-PASSWORT NEU (Nutzer 26.11.2026): neues 40-stelliges Admin-Passwort erzeugt und dem Nutzer einmal im Chat
+   gezeigt; im Code (AdminPassword) nur neuer SALT/HASH. IM CODE BEREITS GEÄNDERT – wirkt ab dem nächsten „kompilieren“.
+   Das Passwort selbst steht NIRGENDS (nicht in Code, Doku, Issues, Commits, Zusammenfassungen).
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
