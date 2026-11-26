@@ -488,7 +488,7 @@ public final class WorkspaceView {
         box.setPadding(new Insets(18, 20, 18, 20));
         box.setMaxWidth(820);
         Label intro = new Label("Zuschauer und Spieler sehen Tische, Gruppen, KO-Baum und Ergebnisse dieses Turniers im Internet. HTS lädt "
-                + "nach jeder Änderung den Stand hoch (höchstens alle 5 Sekunden) – vom Server kommt nichts zurück.");
+                + "nach jeder Änderung den Stand hoch (komprimiert, höchstens alle 30 Sekunden) – vom Server kommt nichts zurück.");
         intro.setWrapText(true);
         intro.setMinHeight(Region.USE_PREF_SIZE);
         if (!de.hts.web.WebSettings.configured()) {
@@ -826,6 +826,10 @@ public final class WorkspaceView {
             page = Page.HANDICAP;
         }
         currentPage = page;
+        if (page == Page.PARTICIPANTS && participantsStale) {        // 1.10.0 (#172)
+            participantsStale = false;
+            participants.refresh();
+        }
         pageActions.getChildren().clear();
         topActions.getChildren().clear();
         pageActions.setVisible(page == Page.PARTICIPANTS);   // eigene Knopfzeile nur noch bei „Teilnehmende“
@@ -947,10 +951,14 @@ public final class WorkspaceView {
     }
 
     /** Nach Starts und Ergebnissen: Menü, Startanzeige und offene Seiten aktualisieren. */
+    /** 1.10.0 (#172): Teilnehmerliste ist veraltet und wird beim nächsten Anzeigen neu aufgebaut. */
+    private boolean participantsStale;
+
     private void onRunningChanged() {
         offerCertificates();
         refreshUndo();
-        participants.refresh();
+        if (currentPage == Page.PARTICIPANTS) participants.refresh();   // 1.10.0 (#172): unsichtbare Liste erst beim Anzeigen
+        else participantsStale = true;
         if (matchesMenu != null) matchesMenu.setDisable(!tournament.isRunning());
         updateStartBox();
         if (currentPage == Page.TABLES) tablesView.refresh();

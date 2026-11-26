@@ -102,7 +102,7 @@ class LiveHostTest {
             String both = start.body() + get(s.base() + "/vergangen").body();      // 1.8.0 (#157): je nach heutigem Datum
             assertTrue(both.contains("Hamburger Ranglistenturnier") && both.contains("/live/Hamburger_Ranglistenturnier_28_11_2026"),
                     "Startseite listet das Turnier mit lesbarer Adresse");
-            assertTrue(start.body().contains("Aktuelle Turniere") && start.body().contains("href=\"/vergangen\"") && both.contains("28.11.2026"));
+            assertTrue(start.body().contains("Laufende Turniere") && start.body().contains("href=\"/vergangen\"") && both.contains("28.11.2026"));
             assertTrue(start.body().contains("href=\"/impressum\"") && start.body().contains("href=\"/datenschutz\""), "Impressum/Datenschutz verlinkt");
             assertEquals("nosniff", start.headers().firstValue("X-Content-Type-Options").orElse(""));
             assertTrue(start.headers().firstValue("Content-Security-Policy").orElse("").contains("default-src 'self'"));
@@ -190,7 +190,7 @@ class LiveHostTest {
         try (Srv s = server(data, content, 25)) {
             s.host().cleanUp();
             assertFalse(Files.exists(data.resolve("turniere/t1")), "nach der Aufbewahrungsfrist gelöscht");
-            assertTrue(get(s.base() + "/").body().contains("Gerade keine aktuellen Turniere"));
+            assertTrue(get(s.base() + "/").body().contains("Gerade keine laufenden Turniere"));
         }
     }
 

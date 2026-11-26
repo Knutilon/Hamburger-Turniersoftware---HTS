@@ -33,10 +33,14 @@ import java.util.function.Supplier;
  *   <li>{@code POST <Adresse>/api/turniere/<ID>/nur-endergebnis} – „nur Endergebnis behalten“</li>
  *   <li>{@code GET  <Adresse>/api/status} – „Verbindung testen“</li>
  * </ul>
+ *
+ * <p>1.10.0 (#170): höchstens alle 30 Sekunden; meldet der Server mit {@code X-HTS-Gzip: 1}, dass er komprimierte
+ * Turnierdateien versteht, geht jeder weitere Upload gzip-komprimiert ({@code Content-Encoding: gzip}, etwa ein Neuntel
+ * der Größe). Ältere Server melden das nicht und bekommen die Datei weiter unkomprimiert.
  */
 public final class Publisher implements AutoCloseable {
 
-    public static final long MIN_INTERVAL_MS = 5_000;
+    public static final long MIN_INTERVAL_MS = 30_000;          // 1.10.0 (#170): vorher 5 s
     public static final long RETRY_MS = 10_000;
 
     /** Zustand für die Anzeige. */
@@ -267,7 +271,11 @@ public final class Publisher implements AutoCloseable {
             } catch (RuntimeException e) {
                 org = null;
             }
-            request("PUT", "", data, "application/octet-stream", org);
+            if (serverGzip) {                                 // 1.10.0 (#170)
+                request("PUT", "", gzip(data), "application/octet-stream", org, true);
+            } else {
+                request("PUT", "", data, "application/octet-stream", org, false);
+            }
             pending = null;
             lastSuccess = System.currentTimeMillis();
             if (status.state() != State.OK) de.hts.Log.info("Live im Internet: veröffentlicht");
@@ -281,18 +289,36 @@ public final class Publisher implements AutoCloseable {
     }
 
     private void request(String method, String suffix, byte[] body, String type) throws IOException, InterruptedException {
-        request(method, suffix, body, type, null);
+        request(method, suffix, body, type, null, false);
     }
 
-    private void request(String method, String suffix, byte[] body, String type, String organizerHeader) throws IOException, InterruptedException {
+    /** 1.10.0 (#170): Server versteht gzip-komprimierte Turnierdateien (Antwortkopf {@code X-HTS-Gzip: 1}). */
+    private volatile boolean serverGzip;
+
+    boolean usesGzip() {
+        return serverGzip;
+    }
+
+    static byte[] gzip(byte[] data) throws IOException {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream(Math.max(1024, data.length / 6));
+        try (java.util.zip.GZIPOutputStream g = new java.util.zip.GZIPOutputStream(out, 64 * 1024)) {
+            g.write(data);
+        }
+        return out.toByteArray();
+    }
+
+    private void request(String method, String suffix, byte[] body, String type, String organizerHeader, boolean gzipped)
+            throws IOException, InterruptedException {
         HttpRequest.Builder rb = HttpRequest.newBuilder(URI.create(base + "/api/turniere/" + id + suffix))
                 .timeout(Duration.ofSeconds(30))
                 .header("Authorization", "Bearer " + key)
                 .header("X-HTS-Version", de.hts.HtsApp.VERSION);
         if (organizerHeader != null) rb.header("X-HTS-Ausrichter", organizerHeader);
+        if (gzipped) rb.header("Content-Encoding", "gzip");
         if (body != null) rb.header("Content-Type", type).method(method, HttpRequest.BodyPublishers.ofByteArray(body));
         else rb.method(method, HttpRequest.BodyPublishers.noBody());
         HttpResponse<String> r = http.send(rb.build(), HttpResponse.BodyHandlers.ofString());
+        if (r.headers().firstValue("X-HTS-Gzip").map("1"::equals).orElse(false)) serverGzip = true;
         if (r.statusCode() == 401 || r.statusCode() == 403) throw new IOException("Schlüssel abgelehnt (HTTP " + r.statusCode() + ")");
         if (r.statusCode() / 100 != 2) throw new IOException("HTTP " + r.statusCode());
     }

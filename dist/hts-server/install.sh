@@ -155,7 +155,7 @@ Wants=network-online.target
 [Service]
 User=hts
 Group=hts
-ExecStart=/usr/bin/java -Xmx512m -Djava.awt.headless=true -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -jar $OPT/hts-server.jar $ETC/server.properties
+ExecStart=/usr/bin/java -Xmx1g -Djava.awt.headless=true -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -jar $OPT/hts-server.jar $ETC/server.properties
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true

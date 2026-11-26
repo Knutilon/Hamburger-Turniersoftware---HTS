@@ -25,6 +25,23 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.10.0
+
+- **Live-Server: weniger Daten, mehr Zuschauer:** HTS lädt den Stand komprimiert und höchstens alle 30 Sekunden hoch
+  (bei 8.000 Meldungen ≈ 0,9 GB statt bis zu 43 GB an einem Turniertag). Der Server hält fertige Seiten bis zum nächsten
+  Stand bereit – statt ≈ 5 jetzt mehrere hundert Seiten pro Sekunde, also auch bei sehr vielen Zuschauern flüssig.
+  `update.sh` erhöht den Arbeitsspeicher des Live-Servers auf 1 GB.
+- **KO-Baum auf den Live-Seiten:** Zeile des Siegers hellgrün, jeder Satz als eigene Spalte (gewonnene Sätze fett),
+  dahinter der Satzstand in Grün; Linien als saubere Klammer, jedes Folgespiel genau mittig zwischen seinen Vorgängern.
+- **Reiter „Download HTS“** auf hts-livescoring.de mit Link zur neuesten Version und zum Projekt auf GitHub (auch in der
+  Fußzeile). Der Reiter „Aktuelle Turniere“ heißt jetzt „Laufende Turniere“; unter dem Logo steht „Hamburger
+  Turniersoftware“.
+- **Darkmode:** Die Optionen auf „Urkunden drucken“ und die Felder im Dialog „Spielklasse – nur Ansicht“ sind gut lesbar.
+- **Reiter „Programm“:** „Bedienung“ (Tablet-Modus) und „Protokoll für die Fehlersuche“ stehen jetzt hier (unter
+  „Speicherorte“) statt im Info-Dialog; der Info-Dialog schneidet keinen Text mehr ab.
+- **Große Turniere:** Nach jedem Ergebnis reagiert HTS bei sehr vielen Meldungen etwa doppelt so schnell (die
+  Teilnehmerliste wird erst beim Anzeigen neu aufgebaut).
+
 ## Neu in 1.9.0
 
 - **Online-Anmeldung am Turniertag:** Über einen QR-Code melden sich Spieler/innen auf dem Live-Server selbst an oder ab,
@@ -140,7 +157,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   und auf den Live-Seiten.
 - **Live im Internet (HTS-Seite):** Turnierübersicht → „Webserver“: Adresse und geheimer Schlüssel, „Verbindung
   testen“. Je Turnier „Live im Internet“: „Dieses Turnier veröffentlichen“, „Vornamen abkürzen“, Adresse für Zuschauer,
-  „Live-Daten löschen“ und „Nur Endergebnis behalten“. HTS lädt nach Änderungen höchstens alle 5 Sekunden hoch,
+  „Live-Daten löschen“ und „Nur Endergebnis behalten“. HTS lädt nach Änderungen höchstens alle 30 Sekunden hoch (seit 1.10.0 komprimiert),
   holt nach einem Funkloch nach und zeigt unten rechts „Live: veröffentlicht vor 5 s“ bzw. „keine Verbindung“. Nur
   Einsehen – vom Server fließt nichts zurück. Der Server selbst folgt später (Protokoll: docs/WEBSERVER-PROTOKOLL.md).
 - **Tablet:** Schalter „Tablet-Modus“ in der Info; Zahlenfeld und Schnelleingabe (11:3 bis 11:9 je Seite) im

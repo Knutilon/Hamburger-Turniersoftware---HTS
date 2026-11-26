@@ -69,6 +69,12 @@ if [[ ! -f /etc/hts-server/spenden.html && -f "$HERE/vorlagen/spenden.html" ]]; 
   install -o root -g hts -m 644 "$HERE/vorlagen/spenden.html" /etc/hts-server/spenden.html
 fi
 rechtstexte_einspielen /etc/hts-server
+# 1.10.0 (#171): mehr Arbeitsspeicher für große Turniere (vorher 512 MB)
+if grep -q -- "-Xmx512m" /etc/systemd/system/hts-server.service; then
+  sed -i 's/-Xmx512m/-Xmx1g/' /etc/systemd/system/hts-server.service
+  systemctl daemon-reload
+  echo "Arbeitsspeicher des Live-Servers auf 1 GB erhöht."
+fi
 systemctl restart hts-server
 
 PORT="$(sed -n 's/^port=//p' /etc/hts-server/server.properties)"; PORT="${PORT:-8090}"

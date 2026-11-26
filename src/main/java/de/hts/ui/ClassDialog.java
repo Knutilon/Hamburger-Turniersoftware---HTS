@@ -200,6 +200,7 @@ public final class ClassDialog extends Dialog<Boolean> {
             // Nach dem ersten Ergebnis in Phase 1: Einstellungen nur noch lesbar
             setHeaderText("Spielklasse „" + existing.getName() + "“ – nur Ansicht");
             boolean sched = existing.getScheduleMinutes() != null;
+            grid.getStyleClass().add("read-only-view");                // 1.10.0 (#169): gesperrte Felder gut lesbar
             for (javafx.scene.Node n : grid.getChildren()) {
                 if (n != preview && n != error && !(n instanceof Label) && !(sched && n == startRow)) n.setDisable(true);
             }

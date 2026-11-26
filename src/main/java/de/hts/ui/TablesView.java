@@ -478,7 +478,6 @@ public final class TablesView {
     }
 
     private void changed() {
-        refresh();
-        onChanged.run();
+        onChanged.run();          // 1.10.0 (#172): WorkspaceView aktualisiert die sichtbare Tische-Ansicht – nicht doppelt
     }
 }

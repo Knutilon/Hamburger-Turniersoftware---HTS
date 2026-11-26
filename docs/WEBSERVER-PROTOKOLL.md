@@ -22,8 +22,14 @@ URL-kodiert nach UTF-8, höchstens 120 Zeichen, ohne Steuerzeichen); fehlt die K
 - `<ID>` ist die Kennung des Turniers aus der Turnierdatei. Zuschauer erreichen die Live-Seiten seit 1.7.0 unter der
   lesbaren Adresse `<Adresse>/live/<Turniername>_<TT>_<MM>_<JJJJ>` (`de.hts.web.LiveSlug`; vorher `<Adresse>/live/<ID>`,
   die weiter auf die lesbare Adresse umleitet).
-- HTS sendet nach jeder Änderung höchstens alle 5 Sekunden. Ist der Server nicht erreichbar, behält HTS den letzten Stand
-  und versucht es alle 10 Sekunden erneut.
+- HTS sendet nach jeder Änderung höchstens alle 30 Sekunden (bis 1.9.0: 5 Sekunden). Ist der Server nicht erreichbar,
+  behält HTS den letzten Stand und versucht es alle 10 Sekunden erneut.
+- Seit 1.10.0: Der Server setzt bei jeder angemeldeten API-Antwort `X-HTS-Gzip: 1`. Danach sendet HTS die Turnierdatei
+  gzip-komprimiert mit `Content-Encoding: gzip` (etwa ein Neuntel der Größe). Der Server entpackt höchstens
+  `max-upload-mb` Megabyte (größer oder nicht entpackbar → 413). Ältere Server melden das nicht und bekommen die Datei
+  unkomprimiert.
+- Seit 1.10.0 hält der Server fertige Live-Seiten bis zum nächsten Upload bereit (höchstens 60 Sekunden, 600 Seiten je
+  Turnier).
 - Die hochgeladene Turnierdatei enthält nur die Anfangsbuchstaben der Vornamen („M.“) – seit 1.8.0 immer (vorher nur mit
   „Vornamen abkürzen“); die Turnierdatei auf dem Rechner bleibt unverändert. Der Link zur Turnierwelt (seit 1.8.0) steht
   in der Turnierdatei (`turnierwelt`, nur https-Adressen werden angezeigt).
@@ -51,7 +57,7 @@ URL-kodiert nach UTF-8, höchstens 120 Zeichen, ohne Steuerzeichen); fehlt die K
 - `POST …/nur-endergebnis`: Startseite des Turniers zeigt nur noch die Endergebnisse; Tische, Klassen, Suche und
   „Meine Spiele“ leiten dorthin um.
 - Aufbewahrung: Turniere werden `retention-days` (Vorgabe 90) Tage nach der letzten Änderung automatisch gelöscht.
-- Öffentliche Seiten: `/` (seit 1.8.0 „Aktuelle Turniere“) und `/vergangen` („Vergangene Turniere“: beendet, nur
+- Öffentliche Seiten: `/` (seit 1.8.0 „Aktuelle Turniere“, seit 1.10.0 „Laufende Turniere“), `/download` (seit 1.10.0 „Download HTS“) und `/vergangen` („Vergangene Turniere“: beendet, nur
   Endergebnis oder Datum vor heute), `/live/<Turnier>` mit `…/tische`, `…/klasse?k=`, `…/ergebnis?k=`, `…/suche`,
   `…/ich?id=`, `…/logo.png` und seit 1.8.0 `…/<Klasse>/spiel<Nr>` bzw. `…/<Klasse>/phase<n>/spiel<Nr>` (Klassenname mit
   „_“ statt Leerzeichen); `/impressum`, `/datenschutz` und `/spenden` aus `impressum.html`, `datenschutz.html` bzw.

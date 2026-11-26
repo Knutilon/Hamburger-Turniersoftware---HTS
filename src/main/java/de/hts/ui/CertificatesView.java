@@ -123,7 +123,6 @@ final class CertificatesView {
             }
         });
         for (RadioButton rb : List.of(top3, allPlaces, notPrinted, custom)) {
-            rb.setStyle("-fx-text-fill: #1f2937;");
             rb.setMinWidth(Region.USE_PREF_SIZE);
         }
         top3.setToggleGroup(mode);

@@ -217,6 +217,14 @@ public final class LiveHost {
                     html(ex, 200, startPage(true));
                     return;
                 }
+                case "/download" -> {                                // 1.10.0 (#168)
+                    html(ex, 200, downloadPage());
+                    return;
+                }
+                case "/hts-logo.png" -> {                            // 1.10.0 (#168): großes Logo für „Download HTS“
+                    png(ex, "/de/hts/ui/hts-logo.png");
+                    return;
+                }
                 case "/spenden" -> {                                 // 1.8.0 (#153)
                     html(ex, 200, donationPage());
                     return;
@@ -290,6 +298,7 @@ public final class LiveHost {
             text(ex, tooManyFailures() ? 429 : 401, "Schlüssel abgelehnt");
             return;
         }
+        ex.getResponseHeaders().set("X-HTS-Gzip", "1");          // 1.10.0 (#170): HTS darf komprimiert hochladen
         if (rest.equals("status") && "GET".equals(method)) {
             json(ex, 200, "{\"ok\":true,\"server\":\"HTS-Live-Server\",\"version\":" + LiveServer.json(de.hts.HtsApp.VERSION) + "}");
             return;
@@ -367,6 +376,13 @@ public final class LiveHost {
 
     private void putTournament(HttpExchange ex, String id) throws IOException {
         byte[] body = readBody(ex, (long) cfg.maxUploadMb() * 1024 * 1024);
+        if (body != null && "gzip".equalsIgnoreCase(String.valueOf(ex.getRequestHeaders().getFirst("Content-Encoding")).strip())) {
+            body = gunzip(body, (long) cfg.maxUploadMb() * 1024 * 1024);        // 1.10.0 (#170)
+            if (body == null) {
+                text(ex, 413, "Turnierdatei zu groß oder nicht entpackbar (höchstens " + cfg.maxUploadMb() + " MB entpackt)");
+                return;
+            }
+        }
         if (body == null) {
             text(ex, 413, "Turnierdatei zu groß (höchstens " + cfg.maxUploadMb() + " MB)");
             return;
@@ -559,6 +575,16 @@ public final class LiveHost {
         }
     }
 
+    /** 1.10.0 (#170): gzip entpacken, höchstens {@code max} Bytes (Schutz vor „Zip-Bomben“); sonst {@code null}. */
+    static byte[] gunzip(byte[] gz, long max) {
+        try (InputStream in = new java.util.zip.GZIPInputStream(new ByteArrayInputStream(gz), 64 * 1024)) {
+            byte[] b = in.readNBytes((int) Math.min(Integer.MAX_VALUE - 8, max + 1));
+            return b.length <= max ? b : null;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
     /** Liest den Inhalt, höchstens {@code max} Bytes; {@code null}, wenn er größer ist. */
     private static byte[] readBody(HttpExchange ex, long max) throws IOException {
         try (InputStream in = ex.getRequestBody()) {
@@ -602,8 +628,9 @@ public final class LiveHost {
 
     private LiveServer makeView(Entry e, Tournament t) {
         Path logo = turniere.resolve(e.id).resolve("logo.png");
+        Object viewLock = new Object();                       // 1.10.0 (#171): eigene Sperre je Stand – ein neuer Upload wartet nicht auf Seiten
         return LiveServer.forHost(t, r -> {
-            synchronized (e.lock) {                           // Turnier-Objekte sind nicht für parallele Zugriffe gebaut
+            synchronized (viewLock) {                         // Turnier-Objekte sind nicht für parallele Zugriffe gebaut
                 r.run();
             }
         }, path(e), () -> {
@@ -705,11 +732,23 @@ public final class LiveHost {
             + ".info h2:first-child{margin-top:4px}.info{line-height:1.5}main>h2:first-child{margin-top:6px}"
             + ".tcard{background:#fff;border:1px solid #e4e6ea;border-radius:12px;margin:8px 0}.tcard>a.cl{display:block;padding:10px 12px;color:inherit;text-decoration:none}"
             + ".tcard .org{display:flex;align-items:center;gap:6px;font-size:12px;color:#4a5560}.tcard .org img{height:28px;width:auto;max-width:64px;object-fit:contain}"
-            + ".tcard .tw{display:block;padding:0 12px 10px;font-size:13px}.chip.final{background:#e8ebf0;color:#2d3440}";
+            + ".tcard .tw{display:block;padding:0 12px 10px;font-size:13px}.chip.final{background:#e8ebf0;color:#2d3440}"
+            // 1.10.0 (#168): Seite „Download HTS“
+            + ".dlh{display:flex;gap:26px;align-items:center;padding:24px 26px}.dlh img{width:112px;height:112px;border-radius:18px;flex:none}"
+            + ".dlt{display:flex;flex-direction:column;gap:8px;min-width:0}.dlt h1{margin:0;font-size:26px;line-height:1.2}.dlt p{margin:0;color:#4a5560;line-height:1.5}"
+            + ".dlb{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}.dlb a{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 20px;"
+            + "border-radius:999px;text-decoration:none;font-size:15px}.dlp{background:#187250;color:#fff!important;font-weight:600;font-size:16px!important;padding:0 22px!important}"
+            + ".dls{background:#fff;color:#1f2933!important;border:1px solid #d0d5db}"
+            + ".dlg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.dlo{display:flex;flex-direction:column;gap:6px;margin:0;padding:14px 16px}"
+            + ".dlo code{font-size:13px;background:#f1f3f4;border-radius:6px;padding:3px 7px;align-self:flex-start;overflow-wrap:anywhere}"
+            + ".dlo span{font-size:13px;color:#4a5560;line-height:1.45}"
+            + "@media(max-width:699px){.dlh{flex-direction:column;align-items:flex-start;gap:14px;padding:18px 16px}.dlh img{width:64px;height:64px}"
+            + ".dlt h1{font-size:21px}.dlg{grid-template-columns:repeat(1,minmax(0,1fr))}}";
 
     private static String footer() {
-        return "<style>" + HOST_CSS + "</style><footer class=\"legal\"><a href=\"/\">Alle Turniere</a><a href=\"/impressum\">Impressum</a>"
-                + "<a href=\"/datenschutz\">Datenschutz</a><a href=\"/spenden\">Spenden</a></footer>";
+        // 1.10.0: Leerzeichen zwischen den Verweisen, damit die Zeile auf dem Handy umbricht
+        return "<style>" + HOST_CSS + "</style><footer class=\"legal\"><a href=\"/\">Alle Turniere</a> <a href=\"/impressum\">Impressum</a> "
+                + "<a href=\"/datenschutz\">Datenschutz</a> <a href=\"/spenden\">Spenden</a> <a href=\"/download\">Download HTS</a></footer>";
     }
 
     String frame(String title, String body) {
@@ -722,7 +761,7 @@ public final class LiveHost {
         return "<!doctype html><html lang=\"de\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
                 + "<title>" + LiveServer.esc(title) + " – " + LiveServer.esc(cfg.siteTitle()) + "</title>" + HEAD_EXTRA
                 + "<style>" + LiveServer.CSS + HOST_CSS + "</style></head><body><header style=\"padding-bottom:10px\"><div class=\"hb\"><a class=\"brand\" href=\"/\">"
-                + "<img src=\"" + LOGO_URL + "\" alt=\"HTS\"><span><b>" + LiveServer.esc(cfg.siteTitle()) + "</b><small>" + LiveServer.esc(title)
+                + "<img src=\"" + LOGO_URL + "\" alt=\"HTS\"><span><b>" + LiveServer.esc(cfg.siteTitle()) + "</b><small>Hamburger Turniersoftware"   // 1.10.0 (#175)
                 + "</small></span></a></div>" + tabs + "</header><main>" + body + "</main>"
                 + footer().replaceFirst("<style>[^<]*</style>", "") + LiveServer.SOURCE_FOOTER + "</body></html>";
     }
@@ -748,11 +787,10 @@ public final class LiveHost {
                     .thenComparing(e -> e.date, Comparator.nullsLast(Comparator.naturalOrder()))
                     .thenComparing(Comparator.comparingLong((Entry e) -> e.updated).reversed()));
         }
-        String tabs = "<nav class=\"tabs\" style=\"margin:8px -12px 0;border-bottom:0\"><a href=\"/\"" + (past ? "" : " class=\"on\"")
-                + ">Aktuelle Turniere</a><a href=\"/vergangen\"" + (past ? " class=\"on\"" : "") + ">Vergangene Turniere</a></nav>";
+        String tabs = startTabs(past ? "/vergangen" : "/");
         StringBuilder b = new StringBuilder();
         if (list.isEmpty()) {
-            b.append("<p class=\"muted\">").append(past ? "Keine vergangenen Turniere." : "Gerade keine aktuellen Turniere.").append("</p>");
+            b.append("<p class=\"muted\">").append(past ? "Keine vergangenen Turniere." : "Gerade keine laufenden Turniere.").append("</p>");
         }
         for (Entry e : list) {
             String chip = past ? (e.finalOnly ? "<span class=\"chip final\">Endergebnis</span>" : "<span class=\"chip done\">beendet</span>")
@@ -770,6 +808,43 @@ public final class LiveHost {
         return frame(past ? "Vergangene Turniere" : "Live-Ergebnisse", tabs, b.toString());
     }
 
+    /** Reiter der Startseite; 1.10.0: „Laufende Turniere“ (#176, vorher „Aktuelle Turniere“) und „Download HTS“ (#168). */
+    static String startTabs(String active) {
+        StringBuilder b = new StringBuilder("<nav class=\"tabs\" style=\"max-width:1000px;margin:8px auto 0;padding:0;border-bottom:0;flex-wrap:wrap;background:transparent\">");
+        String[][] tabs = {{"/", "Laufende Turniere"}, {"/vergangen", "Vergangene Turniere"}, {"/download", "Download HTS"}};
+        for (String[] tb : tabs) {
+            b.append("<a href=\"").append(tb[0]).append("\"").append(tb[0].equals(active) ? " class=\"on\"" : "").append(">").append(tb[1]).append("</a>");
+        }
+        return b.append("</nav>").toString();
+    }
+
+    static final String RELEASES_URL = de.hts.HtsApp.REPO_URL + "/releases/latest";
+
+    /** 1.10.0 (#168): Seite „Download HTS“ – Link zum neuesten Release und zum Repository (Design vom 25.11.2026). */
+    String downloadPage() {
+        String dl = "<svg aria-hidden=\"true\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" "
+                + "stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 4v11\"/><path d=\"M7 10l5 5 5-5\"/><path d=\"M5 20h14\"/></svg>";
+        String body = "<section class=\"card dlh\"><img src=\"/hts-logo.png?v=" + de.hts.HtsApp.VERSION + "\" alt=\"\"><div class=\"dlt\">"
+                + "<h1>Hamburger Turniersoftware (HTS)</h1>"
+                + "<p>Kostenlose Software für Tischtennis-Turniere: click-TT-Import, Auslosung, Gruppen- und KO-Phasen, Spielzettel, "
+                + "Online-Anmeldung und Live-Ergebnisse auf dieser Seite.</p>"
+                + "<div class=\"dlb\"><a class=\"dlp\" href=\"" + RELEASES_URL + "\" target=\"_blank\" rel=\"noopener\">" + dl
+                + "Neueste Version herunterladen ↗</a><a class=\"dls\" href=\"" + de.hts.HtsApp.REPO_URL + "\" target=\"_blank\" rel=\"noopener\">Projekt auf GitHub ↗</a></div>"
+                + "<span class=\"muted\">Freie Software (AGPL-3.0) · Java ist im Paket enthalten – keine Installation nötig</span></div></section>"
+                + "<h2>Welche Datei brauche ich?</h2><div class=\"dlg\">"
+                + osCard("Windows", "hts-…-windows.zip", "Entpacken und „HTS starten.bat“ doppelklicken.")
+                + osCard("macOS (Apple-Chip)", "hts-…-macos.tar.gz", "Entpacken, beim ersten Mal Rechtsklick auf „HTS starten.command“ → „Öffnen“.")
+                + osCard("Linux", "hts-…-linux.tar.gz", "Entpacken und „HTS starten.sh“ ausführen.")
+                + "</div><div class=\"note\"><b>Gut zu wissen:</b> Die Dateien liegen auf der Release-Seite unter „Assets“. Turnierdateien "
+                + "älterer Versionen lassen sich weiter öffnen. Gefällt dir HTS? Über <a href=\"/spenden\">Spenden</a> kannst du ein "
+                + "Herzensprojekt unterstützen.</div>";
+        return frame("Download HTS", startTabs("/download"), body);
+    }
+
+    private static String osCard(String name, String file, String how) {
+        return "<div class=\"card dlo\"><b>" + name + "</b><code>" + file + "</code><span>" + how + "</span></div>";
+    }
+
     /** Ausrichter in der Turnierkarte: kleines Logo und Name (soweit vorhanden). */
     private String organizerBadge(Entry e) {
         boolean logo = Files.isRegularFile(turniere.resolve(e.id).resolve("logo.png"));
@@ -780,7 +855,7 @@ public final class LiveHost {
     }
 
     /** 1.8.0 (#153): Seite „Spenden“ – Text aus spenden.html im Konfigurationsordner, sonst die Vorgabe. */
-    static final String DONATION_DEFAULT = "<p>Unterstützt als Dankeschön für das Projekt gerne ein Herzensprojekt von mir.</p>"
+    static final String DONATION_DEFAULT = "<p>Unterstützt als Dankeschön für die kostenfreie Nutzung der „Hamburger Turniersoftware“ gerne ein Herzensprojekt von mir.</p>"
             + "<p><a href=\"https://www.gofundme.com/f/eine-sportliche-heimat-fur-hamburgs-tischtennistalente?lang=de_DE&amp;ts=1791899912\" "
             + "target=\"_blank\" rel=\"noopener\">Eine sportliche Heimat für Hamburgs Tischtennistalente (GoFundMe) ↗</a></p>";
 
@@ -811,7 +886,11 @@ public final class LiveHost {
     }
 
     private void favicon(HttpExchange ex) throws IOException {
-        try (InputStream in = LiveHost.class.getResourceAsStream("/de/hts/ui/hts-logo-klein.png")) {
+        png(ex, "/de/hts/ui/hts-logo-klein.png");
+    }
+
+    private void png(HttpExchange ex, String resource) throws IOException {
+        try (InputStream in = LiveHost.class.getResourceAsStream(resource)) {
             if (in == null) {
                 text(ex, 404, "");
                 return;

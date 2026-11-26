@@ -62,9 +62,44 @@ public final class LiveServer {
     /** 1.9.0 (#165): Ziel des Knopfs „← Alle Turniere“ ({@code null} = kein Knopf) */
     private java.util.function.Supplier<String> homeHref = () -> null;
 
+    /**
+     * 1.10.0 (#171): fertige Seiten bis zum nächsten Upload zwischenspeichern (nur Live-Server – dort ändert sich das
+     * Turnier einer Ansicht nie; ein neuer Stand bringt eine neue Ansicht). Höchstens 600 Seiten, je höchstens 60 s alt.
+     */
+    private boolean cacheable;
+    private final Map<String, Object[]> cache = new java.util.LinkedHashMap<>(64, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Object[]> eldest) {
+            return size() > 600;
+        }
+    };
+    static final long CACHE_MS = 60_000;
+
     private LiveServer(Tournament t, Executor ui) {
         this.t = t;
         this.ui = ui;
+    }
+
+    private String cached(String key, Callable<String> c) throws Exception {
+        if (!cacheable) return call(c);
+        long now = System.currentTimeMillis();
+        synchronized (cache) {
+            Object[] hit = cache.get(key);
+            if (hit != null && now - (Long) hit[1] < CACHE_MS) return (String) hit[0];
+        }
+        String html = call(c);
+        if (html != null && !html.isEmpty()) {
+            synchronized (cache) {
+                cache.put(key, new Object[]{html, now});
+            }
+        }
+        return html;
+    }
+
+    int cachedPages() {
+        synchronized (cache) {
+            return cache.size();
+        }
     }
 
     /** Für Tests: Seiten eines Turniers unter „/live“ ohne Live-Server. */
@@ -89,6 +124,7 @@ public final class LiveServer {
         v.extraHead = extraHead == null ? "" : extraHead;
         v.extraFooter = extraFooter == null ? "" : extraFooter;
         v.finalOnly = finalOnly;
+        v.cacheable = true;
         return v;
     }
 
@@ -124,16 +160,16 @@ public final class LiveServer {
             if (mm.matches()) {
                 String seg = mm.group(1), ph = mm.group(2);
                 int nr = Integer.parseInt(mm.group(3));
-                send(ex, 200, "text/html", call(() -> matchPage(seg, ph == null ? 1 : Integer.parseInt(ph), nr)));
+                send(ex, 200, "text/html", cached(path, () -> matchPage(seg, ph == null ? 1 : Integer.parseInt(ph), nr)));
                 return;
             }
             String html = switch (path) {
-                case "/live" -> call(this::overview);
-                case "/live/tische" -> call(this::tablesPage);
-                case "/live/klasse" -> call(() -> classPage(q.get("k"), q.get("p")));
-                case "/live/ergebnis" -> call(() -> classPage(q.get("k"), "e"));
-                case "/live/suche" -> call(this::searchPage);
-                case "/live/ich" -> call(() -> mePage(q.get("id")));
+                case "/live" -> cached(path, this::overview);
+                case "/live/tische" -> cached(path, this::tablesPage);
+                case "/live/klasse" -> cached(path + "|" + q.get("k") + "|" + q.get("p"), () -> classPage(q.get("k"), q.get("p")));
+                case "/live/ergebnis" -> cached(path + "|" + q.get("k"), () -> classPage(q.get("k"), "e"));
+                case "/live/suche" -> cached(path, this::searchPage);
+                case "/live/ich" -> cached(path + "|" + q.get("id"), () -> mePage(q.get("id")));
                 case "/live/spieler.json" -> null;
                 default -> "";
             };
@@ -163,7 +199,7 @@ public final class LiveServer {
                     }
                 }
             } else if (path.equals("/live/spieler.json")) {
-                send(ex, 200, "application/json", call(this::playersJson));
+                send(ex, 200, "application/json", cached(path, this::playersJson));
             } else if (html == null || html.isEmpty()) {
                 send(ex, 404, "text/html", page("Nicht gefunden", "<p>Diese Seite gibt es nicht. <a href=\"/live\">Zur Übersicht</a></p>", false));
             } else {
@@ -298,14 +334,23 @@ public final class LiveServer {
             header .homebtn{margin:0 auto 8px;max-width:1000px}header .hrow{max-width:1000px;margin:0 auto}
             .exempt{border-left:4px solid #5fd3a8}.exempt .row{padding:4px 0;border-bottom:1px solid #eef0f2}.exempt .row:last-child{border-bottom:0}
             .vt{display:inline-flex;border:1px solid #d0d5db;border-radius:999px;overflow:hidden;margin:0 0 10px}.vt a{padding:7px 16px;font-size:13px;color:#1f2933;text-decoration:none;cursor:pointer}.vt a.on{background:#187250;color:#fff}
-            .ktw{overflow-x:auto;padding:0 0 12px;-webkit-overflow-scrolling:touch}.kt{display:flex;gap:28px;align-items:stretch;min-width:max-content}
-            .kc{display:flex;flex-direction:column;min-width:max-content}.kc h3{margin:0 0 8px;white-space:nowrap}
-            .kcm{display:flex;flex-direction:column;justify-content:space-around;flex:1;gap:10px}
-            .km{display:block;position:relative;background:#fff;border:1px solid #e4e6ea;border-radius:10px;padding:6px 10px;color:inherit;text-decoration:none;min-width:max-content;white-space:nowrap}
-            .kt .kc:not(:last-child) .km::after{content:"";position:absolute;right:-29px;top:50%;width:28px;border-top:1px solid #b9c1ca}
-            .km .s{display:flex;justify-content:space-between;gap:14px;font-size:13px;padding:2px 0}.km .s+.s{border-top:1px solid #eef0f2}
-            .km .s small{color:#6b7280;font-size:11px;margin-left:4px}.km .meta{font-size:11px;color:#6b7280;display:flex;justify-content:space-between;gap:10px}
-            .km.run{border-color:#5fd3a8}
+            .ktw{overflow-x:auto;padding:0 0 12px;-webkit-overflow-scrolling:touch}.kt{display:flex;align-items:stretch;min-width:max-content}
+            .kc{display:flex;flex-direction:column;min-width:max-content}.kc+.kc{margin-left:40px}.kc h3{margin:0 0 6px;white-space:nowrap}
+            .kcm{display:flex;flex-direction:column;flex:1}.kp{flex:1;display:flex;flex-direction:column;position:relative}
+            .kx{flex:1;display:flex;align-items:center;position:relative;padding:6px 0}
+            .kl .kp.j::after{content:"";position:absolute;right:-20px;top:25%;bottom:25%;border-right:1.5px solid #b9c1ca}
+            .kl .kx.o::after{content:"";position:absolute;right:-20px;top:50%;width:20px;border-top:1.5px solid #b9c1ca}
+            .kl .kx.i::before{content:"";position:absolute;left:-20px;top:50%;width:20px;border-top:1.5px solid #b9c1ca}
+            .k3{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:6px}.k3 h3{margin:0;white-space:nowrap}
+            .km{display:block;flex:1;box-sizing:border-box;background:#fff;border:1px solid #e4e6ea;border-radius:10px;padding:4px 4px 5px;color:inherit;text-decoration:none;white-space:nowrap}
+            .km .s{display:flex;justify-content:space-between;align-items:center;gap:16px;font-size:13px;padding:4px 6px;border-radius:6px}
+            .km .s.w{background:#e4f7ef}.km .s small{color:#6b7280;font-size:11px;margin-left:4px}
+            .km .sc{display:inline-flex;align-items:center;gap:2px;font-variant-numeric:tabular-nums}
+            .km .sc i{font-style:normal;width:20px;text-align:center;font-size:12px;color:#6b7280}.km .sc i.g{font-weight:700;color:#1f2933}
+            .km .sc b{width:22px;text-align:center;font-size:15px;color:#4a5560;font-weight:600;margin-left:4px;padding-left:4px;border-left:1px solid #d9dee3}
+            .km .s.w .sc b{color:#187250;font-weight:800}
+            .km .meta{font-size:11px;color:#6b7280;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:3px 6px 0}
+            .km.run{border-color:#5fd3a8}.km.mine{background:#fff;border-color:#187250;box-shadow:0 0 0 1px #187250}
             """;
 
     /**
@@ -618,6 +663,11 @@ public final class LiveServer {
      * 1.9.0 (#162): KO-Baum – je Runde eine Spalte (nach Position im Feld), das Spiel um Platz 3 unter dem Finale.
      * {@code null}, wenn die Phase kein reines KO-Feld ist (dann nur die Liste).
      */
+    /**
+     * 1.9.0 (#162), 1.10.0 (#174): KO-Baum. Jede Runde gleich hoch, jedes Spiel in einer gleich hohen Zelle – so steht ein
+     * Folgespiel genau mittig zwischen seinen beiden Vorgängern. Linien als Klammer (Strich aus jeder Karte, senkrechte
+     * Verbindung des Paars, Strich zum Folgespiel), wenn sich die Spiele je Runde halbieren; Spiel um Platz 3 darunter.
+     */
     private String koTree(List<Match> ms, String person) {
         java.util.TreeMap<Integer, List<Match>> rounds = new java.util.TreeMap<>();
         Match third = null;
@@ -627,43 +677,83 @@ public final class LiveServer {
             else return null;
         }
         if (rounds.size() < 2 && third == null) return null;
-        StringBuilder b = new StringBuilder("<div class=\"ktw\"><div class=\"kt\">");
-        int last = rounds.lastKey();
-        for (var en : rounds.entrySet()) {
-            List<Match> list = new ArrayList<>(en.getValue());
+        List<List<Match>> rs = new ArrayList<>();
+        for (List<Match> l : rounds.values()) {
+            List<Match> list = new ArrayList<>(l);
             list.sort(Comparator.comparingInt(Match::getKoIndex));
+            rs.add(list);
+        }
+        boolean lines = true;                                  // Linien nur bei einem regelmäßigen Baum
+        for (int r = 0; r + 1 < rs.size(); r++) if (rs.get(r).size() != 2 * rs.get(r + 1).size()) lines = false;
+        StringBuilder b = new StringBuilder("<div class=\"ktw\"><div class=\"kt").append(lines ? " kl" : "").append("\">");
+        for (int r = 0; r < rs.size(); r++) {
+            List<Match> list = rs.get(r);
+            boolean last = r == rs.size() - 1;
+            String cls = "kx" + (last ? "" : " o") + (r == 0 ? "" : " i");
             b.append("<div class=\"kc\"><h3>").append(esc(list.get(0).getStage())).append("</h3><div class=\"kcm\">");
-            for (Match m : list) b.append(koCard(m, person));
-            if (en.getKey() == last && third != null) {
-                b.append("<h3 style=\"margin:12px 0 0\">").append(esc(third.getStage())).append("</h3>").append(koCard(third, person));
+            if (last || !lines) {
+                for (Match m : list) b.append("<div class=\"kp\"><div class=\"").append(cls).append("\">").append(koCard(m, person)).append("</div></div>");
+            } else {
+                for (int k = 0; k < list.size(); k += 2) {
+                    b.append("<div class=\"kp j\">");
+                    for (int j = k; j < Math.min(k + 2, list.size()); j++) {
+                        b.append("<div class=\"").append(cls).append("\">").append(koCard(list.get(j), person)).append("</div>");
+                    }
+                    b.append("</div>");
+                }
             }
             b.append("</div></div>");
         }
-        return b.append("</div></div>").toString();
+        b.append("</div>");
+        if (third != null) {
+            b.append("<div class=\"k3\"><h3>").append(esc(third.getStage())).append("</h3><div style=\"display:flex\">")
+                    .append(koCard(third, person)).append("</div></div>");
+        }
+        return b.append("</div>").toString();
     }
 
+    /**
+     * 1.10.0 (#174): KO-Karte – Zeile des Siegers hellgrün, jeder Satz als eigene Spalte (gewonnene Sätze fett), dahinter
+     * der Satzstand (Sieger grün). Laufende Spiele ohne Zwischenstand.
+     */
     private String koCard(Match m, String person) {
         String w = m.winner();
+        boolean done = m.getStatus() == MatchStatus.DONE && w != null;
+        boolean walkover = done && m.getSetsText() != null && m.getSetsText().startsWith("kampflos");
         String status = switch (m.getStatus()) {
-            case ACTIVE, PAUSED -> "<span class=\"chip run\">laufend</span>";
+            case ACTIVE, PAUSED -> "<span class=\"chip run\">laufend" + (m.getTable() == null ? "" : " · " + esc(t.tableName(m.getTable()))) + "</span>";
             case QUEUED -> "<span class=\"chip queue\">eingereiht</span>";
-            case DONE -> "<span class=\"chip res\">" + esc(m.getResultText()) + "</span>";
             case CANCELLED -> "<span class=\"chip\">nicht gespielt</span>";
-            default -> "";
+            case DONE -> "";
+            default -> "<span class=\"chip\">offen</span>";
         };
         boolean mine = person != null && t.personsOf(m).contains(person);
         StringBuilder b = new StringBuilder("<a class=\"km").append(m.getStatus().atTable() ? " run" : "").append(mine ? " mine" : "")
                 .append("\" href=\"").append(matchHref(m)).append("\">");
-        for (String id : new String[]{m.getA(), m.getB()}) {
+        String[] ids = {m.getA(), m.getB()};
+        for (int i = 0; i < 2; i++) {
+            String id = ids[i];
             String name = id == null ? null : t.entrantName(m, id);
             String origin = id == null ? null : t.originLabel(m, id);
             String detail = id == null ? null : entrantDetail(m, id);
-            b.append("<div class=\"s\"><span").append(id != null && id.equals(w) ? " class=\"win\"" : "").append(">")
+            boolean win = done && id != null && id.equals(w);
+            b.append("<div class=\"s").append(win ? " w" : "").append("\"><span>")
                     .append(origin == null ? "" : "<span class=\"muted\">" + esc(origin) + "</span> ")
-                    .append(name == null ? "<span class=\"muted\">" + (m.getKoRound() == 0 ? "Freilos" : "offen") + "</span>" : esc(name))
-                    .append(detail == null || detail.isBlank() ? "" : "<small>" + esc(detail) + "</small>").append("</span></div>");
+                    .append(name == null ? "<span class=\"muted\">" + (m.getKoRound() == 0 ? "Freilos" : "offen") + "</span>"
+                            : win ? "<b>" + esc(name) + "</b>" : esc(name))
+                    .append(detail == null || detail.isBlank() ? "" : "<small>" + esc(detail) + "</small>").append("</span>");
+            if (done) {
+                b.append("<span class=\"sc\">");
+                if (!walkover && m.getPoints() != null) {
+                    for (int[] p : m.getPoints()) b.append("<i").append(p[i] > p[1 - i] ? " class=\"g\"" : "").append(">").append(p[i]).append("</i>");
+                }
+                Integer sets = i == 0 ? m.getSetsA() : m.getSetsB();
+                b.append("<b>").append(sets == null ? "" : sets).append("</b></span>");
+            }
+            b.append("</div>");
         }
-        b.append("<div class=\"meta\"><span>Spiel ").append(m.getNumber()).append("</span>").append(status).append("</div></a>");
+        String note = walkover ? " · kampflos" : done && m.getRetired() != 0 ? " · Aufgabe" : "";
+        b.append("<div class=\"meta\"><span>Spiel ").append(m.getNumber()).append(note).append("</span>").append(status).append("</div></a>");
         return b.toString();
     }
 

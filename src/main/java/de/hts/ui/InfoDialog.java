@@ -77,7 +77,14 @@ public final class InfoDialog extends Dialog<ButtonType> {
         version.getStyleClass().add("hint");
         Label signature = new Label(HtsApp.AUTHOR);
         signature.getStyleClass().add("info-signature");
+        // 1.10.0 (#173): Kopf und Hinweise umbrechen statt rechts abgeschnitten zu werden
+        for (Label l : new Label[]{name, version, signature}) {
+            l.setWrapText(true);
+            l.setMinHeight(Region.USE_PREF_SIZE);
+        }
         VBox head = new VBox(2, name, version, signature);
+        head.setMinWidth(0);
+        HBox.setHgrow(head, javafx.scene.layout.Priority.ALWAYS);
         HBox top = new HBox(14, logo, head);
         top.setAlignment(Pos.CENTER_LEFT);
 
@@ -87,32 +94,20 @@ public final class InfoDialog extends Dialog<ButtonType> {
                 + "Nutzung anbietet (z. B. die Live-Seiten im Internet), muss ihnen den Quellcode ebenfalls unter der AGPL zugänglich "
                 + "machen. HTS wird ohne jede Gewährleistung bereitgestellt.");
         license.setWrapText(true);
+        license.setMinHeight(Region.USE_PREF_SIZE);
         Label notice = new Label(NOTICE.strip());
         notice.getStyleClass().add("hint");
         notice.setStyle("-fx-font-family: 'Consolas', 'Courier New', monospace; -fx-font-size: 11px;");
         notice.setMinHeight(Region.USE_PREF_SIZE);
+        notice.setWrapText(true);
         Hyperlink licenseLink = link("Lizenztext (AGPL-3.0)", LICENSE);
         Hyperlink source = link("Quellcode auf GitHub", HtsApp.REPO_URL);
 
         Label feedbackHead = new Label("Mitmachen");
         feedbackHead.getStyleClass().add("class-name");
         VBox feedback = new VBox(2,
-                new HBox(10, link("Feature-Sammlung (Wünsche ansehen)", FEATURES), link("neuen Wunsch melden", NEW_FEATURE)),
-                new HBox(10, link("Bug-Sammlung (Fehler ansehen)", BUGS), link("neuen Fehler melden", NEW_BUG)));
-
-        // 1.5.0 (#124): Tablet-Modus
-        Label useHead = new Label("Bedienung");
-        useHead.getStyleClass().add("class-name");
-        javafx.scene.control.CheckBox tablet = new javafx.scene.control.CheckBox();
-        tablet.setSelected(TouchSupport.isTabletMode());
-        tablet.selectedProperty().addListener((o, a, b) -> TouchSupport.setTabletMode(b));
-        Label tabletText = new Label("Tablet-Modus: große Bedienelemente und Zahlenfeld bei der Ergebniseingabe – immer, nicht erst "
-                + "nach dem ersten Antippen (gilt für diesen Rechner)");
-        tabletText.setWrapText(true);
-        tabletText.setMinHeight(Region.USE_PREF_SIZE);
-        tabletText.setOnMouseClicked(e -> tablet.setSelected(!tablet.isSelected()));
-        HBox.setHgrow(tabletText, javafx.scene.layout.Priority.ALWAYS);
-        HBox tabletRow = new HBox(6, tablet, tabletText);
+                flow(link("Feature-Sammlung (Wünsche ansehen)", FEATURES), link("neuen Wunsch melden", NEW_FEATURE)),
+                flow(link("Bug-Sammlung (Fehler ansehen)", BUGS), link("neuen Fehler melden", NEW_BUG)));
 
         // 1.4.0 (#109): Danksagung
         Label thanksHead = new Label("Danke an:");
@@ -135,30 +130,17 @@ public final class InfoDialog extends Dialog<ButtonType> {
         libs.getStyleClass().add("hint");
         libs.setWrapText(true);
 
-        // 1.7.0 (#140): Protokoll und Fehlerbericht
-        Label logHead = new Label("Protokoll für die Fehlersuche");
-        logHead.getStyleClass().add("class-name");
-        Button openLog = new Button("Protokollordner öffnen");
-        openLog.getStyleClass().add("pill");
-        openLog.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-        openLog.setOnAction(e -> ErrorReport.openFolder(getOwner()));
-        Button report = new Button("Fehlerbericht erstellen");
-        report.getStyleClass().add("pill");
-        report.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
-        report.setOnAction(e -> ErrorReport.saveReport(getOwner()));
-        Label logHint = new Label("HTS schreibt je Tag ein Protokoll (30 Tage, nur technische Angaben, keine Namen oder Ergebnisse). "
-                + "Den Fehlerbericht bei Problemen an ein GitHub-Issue anhängen.");
-        logHint.getStyleClass().add("hint");
-        logHint.setWrapText(true);
-        javafx.scene.layout.FlowPane logRow = new javafx.scene.layout.FlowPane(10, 8, openLog, report);
-
-        VBox content = new VBox(12, top, license, notice, new HBox(10, licenseLink, source), feedbackHead, feedback, useHead, tabletRow,
-                logHead, logRow, logHint, thanksHead, thanks, libsHead, libs);
+        // 1.10.0 (#177): „Bedienung“ und „Protokoll für die Fehlersuche“ stehen jetzt im Reiter „Programm“
+        VBox content = new VBox(12, top, license, notice, flow(licenseLink, source), feedbackHead, feedback, thanksHead, thanks, libsHead, libs);
         content.setPadding(new Insets(8, 6, 4, 6));
         content.setPrefWidth(560);
         getDialogPane().setContent(content);
         getDialogPane().getButtonTypes().add(new ButtonType("Schließen", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE));
         DialogSizing.fit(this);
+    }
+
+    private static javafx.scene.layout.FlowPane flow(javafx.scene.Node... nodes) {
+        return new javafx.scene.layout.FlowPane(10, 2, nodes);
     }
 
     private static Hyperlink link(String text, String url) {

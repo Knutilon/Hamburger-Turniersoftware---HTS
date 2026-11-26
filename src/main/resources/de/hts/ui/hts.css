@@ -1130,3 +1130,6 @@
 /* 1.9.0 (#167): gemeldete Paarung, noch nicht (beide) angemeldet bzw. Partner/in abgemeldet */
 .pair-card.pair-unconfirmed { -fx-background-color: #fff4d6; -fx-border-color: #f0b429; }
 .pair-card.pair-withdrawn { -fx-background-color: #fde8e8; -fx-border-color: #d64545; }
+
+/* 1.10.0 (#169): „nur Ansicht“ – gesperrte Felder bleiben gut lesbar (sonst 40 % Deckkraft) */
+.read-only-view :disabled { -fx-opacity: 0.85; }

@@ -5,7 +5,7 @@ beschrieben am Beispiel **netcup VPS mit Ubuntu 24.04** und der Domain **hts-liv
 überall die eigene einsetzen.
 
 So funktioniert es: HTS auf dem Turnier-Laptop bleibt führend. Es lädt nach jeder Änderung den Turnierstand über HTTPS
-auf den Server (höchstens alle 5 Sekunden). Der Server zeigt ihn Zuschauerinnen und Zuschauern unter
+auf den Server (seit 1.10.0 komprimiert und höchstens alle 30 Sekunden). Der Server zeigt ihn Zuschauerinnen und Zuschauern unter
 `https://hts-livescoring.de`. Vom Server fließt nichts zurück zu HTS, Ergebnisse werden weiter nur am Laptop eingegeben.
 
 ## Was Sie brauchen
@@ -134,7 +134,7 @@ das **mobile Netz** (nicht das Hallen-WLAN) öffnen. Die Seiten aktualisieren si
 
 | Adresse | Inhalt |
 | --- | --- |
-| `https://hts-livescoring.de` | „Aktuelle Turniere“ mit Ausrichter und ggf. „zur Turnierwelt“; Reiter „Vergangene Turniere“ (`…/vergangen`) |
+| `https://hts-livescoring.de` | „Laufende Turniere“ (bis 1.9.0 „Aktuelle Turniere“) mit Ausrichter und ggf. „zur Turnierwelt“; Reiter „Vergangene Turniere“ (`…/vergangen`) |
 | `…/live/<Turniername>_<TT>_<MM>_<JJJJ>` | ein Turnier, z. B. `…/live/Hamburger_Ranglistenturnier_28_11_2026`: Reiter je Phase, Gruppenkacheln, Tische, Spielersuche, „Meine Spiele“ |
 | `…/live/<Turnier>/<Klasse>/spiel45` | ein einzelnes Spiel mit „Link kopieren“ (seit 1.8.0) |
 | `…/impressum`, `…/datenschutz`, `…/spenden` | Impressum, Datenschutzerklärung und Seite „Spenden“ |
@@ -145,21 +145,22 @@ Nach dem Turnier in HTS **„Nur Endergebnis behalten“** (Tische und Spiele ve
 
 ## 7. Neue Version einspielen
 
-Neues Paket kopieren und im neuen Ordner `update.sh` starten (Beispiel 1.8.0 → 1.9.0; `hts-rechtstexte.tar.gz` nur,
+Neues Paket kopieren und im neuen Ordner `update.sh` starten (Beispiel 1.9.0 → 1.10.0; `hts-rechtstexte.tar.gz` nur,
 wenn Impressum bzw. Datenschutz mit eingespielt werden sollen):
 
 ```
-scp hts-server-1.9.0.tar.gz hts-rechtstexte.tar.gz root@hts-livescoring.de:
+scp hts-server-1.10.0.tar.gz hts-rechtstexte.tar.gz root@hts-livescoring.de:
 ssh root@hts-livescoring.de
-tar xzf hts-server-1.9.0.tar.gz
+rm -rf hts-server
+tar xzf hts-server-1.10.0.tar.gz
 cd hts-server
 ./update.sh
 ```
 
 Einstellungen, Schlüssel und Turniere bleiben erhalten; Impressum und Datenschutz ebenso, außer neben dem Paket liegt
 `hts-rechtstexte.tar.gz` (siehe Abschnitt 4). Beim Update auf 1.8.0 legt `update.sh` außerdem die Vorlage
-`spenden.html` an. Startet die neue Version nicht, stellt `update.sh`
-die vorige automatisch wieder her.
+`spenden.html` an; beim Update auf 1.10.0 erhöht es den Arbeitsspeicher des Live-Servers von 512 MB auf 1 GB. Startet die
+neue Version nicht, stellt `update.sh` die vorige automatisch wieder her.
 
 ## 8. Hilfe bei Problemen
 

@@ -1,4 +1,4 @@
-# Zwischenstand HTS 1.9.0 (25.11.2026)
+# Zwischenstand HTS 1.10.0 (26.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -50,66 +50,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 - click-TT-Upload der Ergebnisdatei: Praxistest erfolgreich (Nutzer 15.11.2026); Einschränkung unter „Bekannte
   Grenzen“ in der Doku gestrichen (mit 1.1.0 ausgeliefert).
 
-## Feature-Sammlung für 1.10.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 1.11.0 (NICHT kompilieren – bis „… kompilieren“)
 
 (neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.5.x)
 
 1. TABLET: TEST AUF ECHTEM GERÄT (Issue #133, offen aus 1.5.0): Die Tablet-Funktionen von 1.5.0 auf einem echten
    Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
    Gerät; Ergebnisse als Bug/Feature melden.
-2. LIVE-SERVER: REITER „DOWNLOAD HTS“ (Issue #168, Nutzer 25.11.2026): Auf hts-livescoring.de einen weiteren Reiter
-   „Download HTS“ (wie „Spenden“, in der Fußzeile bzw. Reiterleiste) mit Link zum GitHub-Repository und zum neuesten
-   Release https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/releases/latest (neuer Tab).
-   DESIGN FREIGEGEBEN (Nutzer 25.11.2026, Canvas https://claude.ai/artifact/YNoEuWZ4Lkstqk5YzqG1Ao): dritter Reiter
-   „Download HTS“ auf der Startseite (nach „Vergangene Turniere“) plus Link in der Fußzeile (nach „Spenden“); Seite
-   /download: Kopfkarte mit großem Logo, „Hamburger Turniersoftware (HTS)“, ein Satz zu den Funktionen, grüner Knopf
-   „Neueste Version herunterladen ↗“ (releases/latest), heller Knopf „Projekt auf GitHub ↗“ (Repo), darunter
-   „Freie Software (AGPL-3.0) · Java ist im Paket enthalten – keine Installation nötig“; Abschnitt „Welche Datei
-   brauche ich?“ mit drei Karten Windows / macOS (Apple-Chip) / Linux (Dateiname + Startanleitung, auf dem Handy
-   untereinander); grüner Hinweis „Gut zu wissen“ (Dateien unter „Assets“, alte Turnierdateien lesbar, Link Spenden).
-   Keine Versionsnummer auf der Seite. Links target="_blank" rel="noopener"; Knöpfe ≥ 44 px; Texte nie abkürzen.
-3. DARKMODE: ALLE OPTIONEN LESBAR (Issue #169, Bug, Nutzer 25.11.2026): Auf „Urkunden drucken“ → „Welche
-   Urkunden?“ sind die Optionsfelder im Darkmode unlesbar (CertificatesView setzt fest -fx-text-fill: #1f2937).
-   Feste Farbe entfernen; außerdem die ganze Oberfläche im Darkmode prüfen (Kästchen, Optionsfelder, Auswahllisten,
-   Hinweise, Symbole – Icons.of setzt fest #1f1f1f, im Darkmode nur im Seitenmenü umgefärbt) und mit Screenshots
-   aller Seiten und Dialoge im Darkmode belegen (Kontrast mind. 4,5 : 1).
-   Ergänzung Prüfung 25.11.2026: Dialog „Spielklasse … – nur Ansicht“ – gesperrte Felder im Darkmode kaum lesbar.
-4. LIVE-SERVER: KOMPRIMIERTER UPLOAD HÖCHSTENS ALLE 30 SEKUNDEN (Issue #170, Belastungstest 25.11.2026, Intervall
-   festgelegt vom Nutzer 26.11.2026): Turnierdatei wird bisher unkomprimiert und bis zu alle 5 s hochgeladen
-   (8.000 Meldungen: 4–8 MB je Upload, gzip 0,5–0,9 MB). Neu: gzip im Publisher, Entpacken im LiveHost mit
-   Größenbegrenzung (ältere Server weiter bedienen); Publisher.MIN_INTERVAL_MS = 30 s (nur bei Änderungen).
-   Erwartung Großturnier 10 h: ≈ 0,9 GB Upload/Tag statt 14–43 GB; Live-Seiten höchstens ≈ 40 s hinterher.
-   Online-Anmeldung weiter alle 5 s abfragen. Texte anpassen („höchstens alle 30 Sekunden“ auf „Live im Internet“,
-   Dokumentation, WEBSERVER-PROTOKOLL).
-5. LIVE-SERVER: SEITEN ZWISCHENSPEICHERN (Issue #171): Seiten je Adresse bis zum nächsten Upload cachen; große
-   Klassenseite 170 ms, Sperre je Turnier → nur ≈ 5,5 Seiten/s (≈ 55 Zuschauer). entrantIndex nicht je Aufruf neu;
-   Upload außerhalb der Sperre parsen.
-6. GROSSE TURNIERE: OBERFLÄCHE NACH ERGEBNIS (Issue #172): unsichtbare Teilnehmerliste nicht bei jedem Ergebnis neu
-   aufbauen (550 ms), Tische nicht doppelt aktualisieren, Live-Stand im Hintergrund erstellen.
-7. INFO-DIALOG ABGESCHNITTEN (Issue #173, Bug): bei 1093 × 614 Text rechts abgeschnitten.
-8. LIVE-SEITEN: KO-KARTEN UND SAUBERER KO-BAUM (Issue #174, Nutzer 26.11.2026, DESIGN FREIGEGEBEN – Canvas
-   https://claude.ai/artifact/Dq7HkenhPJYsDP7JGRaZYz, Ansichten „KO-Baum“, „Karten-Zustände“, „Handy“):
-   Karte = Variante E + C: Zeile des Siegers hellgrün hinterlegt (#e4f7ef), Name fett; rechts jeder Satz als eigene
-   Spalte (gewonnene Sätze fett), dahinter nach einem Trennstrich der Satzstand (Sieger fett im HTS-Grün #187250,
-   Verlierer grau); keine Satzzeile unten mehr, unten nur „Spiel n“ (bei Aufgabe „· Aufgabe“) bzw. Plakette
-   „laufend · Tisch n“ / „eingereiht“ / „offen“; laufend ohne Zwischenstand.
-   KO-Baum sauberer: jede Runde gleich hoch, Spiele in gleich hohen Zellen, Folgespiel genau mittig zwischen seinen
-   beiden Vorgängern; Linien als Klammer: waagerechter Strich aus jeder Karte, senkrechter Strich verbindet das Paar,
-   waagerechter Strich zum Folgespiel (1,5 px #b9c1ca, 40 px Rundenabstand); Spiel um Platz 3 unter dem Baum ohne
-   Linien. LiveServer.koTree/koCard und CSS (.kt/.kc/.km) umbauen; alle Karten einer Runde gleich breit.
-9. LIVE-SERVER: UNTER DEM LOGO „HAMBURGER TURNIERSOFTWARE“ (Issue #175, Nutzer 26.11.2026): Im Kopf der
-   Server-Seiten (Start, Vergangene, Spenden, Impressum, Datenschutz, Download) steht unter „HTS Live-Scoring“ immer
-   „Hamburger Turniersoftware“ statt des Reiter-/Seitennamens (LiveHost.frame); Browser-Tab-Titel bleibt je Seite.
-   Turnierseiten unverändert (Turniername, Datum, Stand). Download-Design entsprechend angepasst.
-10. LIVE-SERVER: REITER „LAUFENDE TURNIERE“ (Issue #176, Nutzer 26.11.2026): Reiter „Aktuelle Turniere“ auf der
-   Startseite in „Laufende Turniere“ umbenennen (auch Leertext „Gerade keine laufenden Turniere.“, Doku, Tests).
-   Inhalt unverändert. Download-Design entsprechend angepasst.
-11. „BEDIENUNG“ UND „PROTOKOLL FÜR DIE FEHLERSUCHE“ IN DEN REITER „PROGRAMM“ (Issue #177, Nutzer 26.11.2026):
-   Bereich „Bedienung“ (Schalter Tablet-Modus, gilt für diesen Rechner) und Bereich „Protokoll für die Fehlersuche“
-   (Knöpfe „Protokollordner öffnen“, „Fehlerbericht erstellen“ + Hinweistext) aus dem Info-Dialog entfernen und im
-   Reiter „Programm“ der Turnierübersicht anzeigen (bei den übrigen Programmeinstellungen); „Protokoll für die
-   Fehlersuche“ direkt UNTER dem Bereich „Speicherorte“ (Nutzer 26.11.2026); Text umbrechen (#173).
-   Doku/Handbuch anpassen.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
@@ -133,6 +80,29 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 
 ## Umgesetzt
+
+1.10.0 (26.11.2026, Commit „HTS 1.10.0“, Closes #168 #169 #170 #171 #172 #173 #174 #175 #176 #177; alle Punkte außer #133):
+   - #170 Publisher.MIN_INTERVAL_MS = 30 s; Upload gzip (Content-Encoding: gzip), sobald der Server mit X-HTS-Gzip: 1
+     antwortet (erster Upload unkomprimiert, ältere Server bleiben unkomprimiert); LiveHost.gunzip mit Größengrenze
+     (maxUploadMb entpackt, Zip-Bombe → 413).
+   - #171 LiveServer-Seitencache (nur Live-Server, je Ansicht = je Stand; höchstens 600 Seiten, 60 s): Übersicht,
+     Tische, Klassen, Ergebnis, Suche, Meine Spiele, Spielseiten, spieler.json. Eigene Sperre je Ansicht statt e.lock.
+     install.sh -Xmx1g, update.sh hebt -Xmx512m auf 1g an. Messung 8.000 Meldungen: 1.000 Abrufe große Klassenseite
+     (20 parallel) 3,4 s statt ≈ 180 s; zweiter Abruf 7 ms statt 170 ms. entrantIndex unverändert (Cache genügt).
+   - #172 WorkspaceView: Teilnehmerliste nur bei sichtbarer Seite neu (sonst participantsStale → beim Anzeigen);
+     TablesView.changed ohne eigenes refresh (nicht doppelt). Nach Ergebnis 0,33–0,49 s statt 0,85–1,15 s (8.000
+     Meldungen). Live-Stand weiter im Programm-Thread erstellt (jetzt nur alle 30 s).
+   - #169 CertificatesView ohne feste Schriftfarbe; ClassDialog „nur Ansicht“ mit Style-Klasse read-only-view
+     (:disabled 85 % Deckkraft, hts.css + hts-dunkel.css). Symbole waren über .icon bereits hell.
+   - #173/#177 InfoDialog: Kopf, Lizenz- und Hinweistexte umbrechen, Verweiszeilen als FlowPane; „Bedienung“ und
+     „Protokoll für die Fehlersuche“ entfernt → OverviewView „Programm“ (Darstellung, Bedienung, Speicherorte, Protokoll,
+     Programmordner).
+   - #168 LiveHost /download (Design-Canvas YNoEuWZ4Lkstqk5YzqG1Ao), /hts-logo.png (1024 px), Reiter
+     startTabs(Laufende | Vergangene | Download HTS), Fußzeile + „Download HTS“ (mit Leerzeichen, umbricht auf dem Handy);
+     DONATION_DEFAULT neuer Text. #175 Untertitel „Hamburger Turniersoftware“. #176 „Laufende Turniere“.
+   - #174 LiveServer.koTree/koCard neu (Canvas Dq7HkenhPJYsDP7JGRaZYz): .kt.kl/.kc/.kcm/.kp(.j)/.kx(.o/.i), Linien
+     1,5 px #b9c1ca, Rundenabstand 40 px, Platz 3 in .k3 unter dem Baum; Karte .s.w (Sieger hellgrün), .sc i/.g/b.
+   - Tests: Version1100Test (4), LiveHostTest-Texte angepasst. 296 Tests grün.
 
 1.9.0 (25.11.2026, Commit „HTS 1.9.0“, Closes #160 #161 #162 #163 #164 #165 #166 #167; alle Punkte außer #133 Tablet-Test):
    - #163 Hallen-WLAN entfernt: LiveServer ohne eigenen Server (nur Seitenaufbau, forHost/forTest), WorkspaceView ohne

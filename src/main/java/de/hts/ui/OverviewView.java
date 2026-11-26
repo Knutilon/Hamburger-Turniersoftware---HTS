@@ -305,6 +305,21 @@ public final class OverviewView {
         Label darkHint = wrapHint("Dunkler Hintergrund mit heller Schrift für die ganze Oberfläche. Ausdrucke und PDF-Dateien bleiben hell.");
         VBox darkCard = cardOf(darkHead, dark, darkHint);
 
+        // 1.10.0 (#177): Bedienung (vorher im Info-Dialog; 1.5.0 #124)
+        Label useHead = new Label("Bedienung");
+        useHead.getStyleClass().add("class-name");
+        javafx.scene.control.CheckBox tablet = new javafx.scene.control.CheckBox();
+        tablet.setSelected(TouchSupport.isTabletMode());
+        tablet.selectedProperty().addListener((o, a, b) -> TouchSupport.setTabletMode(b));
+        Label tabletText = new Label("Tablet-Modus: große Bedienelemente und Zahlenfeld bei der Ergebniseingabe – immer, nicht erst "
+                + "nach dem ersten Antippen (gilt für diesen Rechner)");
+        tabletText.setWrapText(true);
+        tabletText.setMinHeight(Region.USE_PREF_SIZE);
+        tabletText.setOnMouseClicked(e -> tablet.setSelected(!tablet.isSelected()));
+        HBox.setHgrow(tabletText, javafx.scene.layout.Priority.ALWAYS);
+        HBox tabletRow = new HBox(6, tablet, tabletText);
+        VBox useCard = cardOf(useHead, tabletRow);
+
         // Speicherorte
         Label whereHead = new Label("Speicherorte");
         whereHead.getStyleClass().add("class-name");
@@ -318,6 +333,21 @@ public final class OverviewView {
                 wrapHint("Gilt für neue Turniere: Die Turnierdateien liegen direkt im gewählten Ordner, PDF- und XML-Dateien "
                         + "beginnen mit Turniername und Datum. Turniere aus älteren Versionen bleiben in ihrem bisherigen Ordner ("
                         + store.getDirectory().toAbsolutePath() + ") und werden dort weiter gespeichert."));
+
+        // 1.10.0 (#177): Protokoll für die Fehlersuche (vorher im Info-Dialog; 1.7.0 #140) – direkt unter „Speicherorte“
+        Label logHead = new Label("Protokoll für die Fehlersuche");
+        logHead.getStyleClass().add("class-name");
+        Button openLog = new Button("Protokollordner öffnen", Icons.of(Icons.FOLDER, 16));
+        openLog.getStyleClass().add("pill");
+        openLog.setMinWidth(Region.USE_PREF_SIZE);
+        openLog.setOnAction(e -> ErrorReport.openFolder(stage));
+        Button report = new Button("Fehlerbericht erstellen");
+        report.getStyleClass().add("pill");
+        report.setMinWidth(Region.USE_PREF_SIZE);
+        report.setOnAction(e -> ErrorReport.saveReport(stage));
+        VBox logCard = cardOf(logHead, new javafx.scene.layout.FlowPane(8, 8, openLog, report),
+                wrapHint("HTS schreibt je Tag ein Protokoll (30 Tage, nur technische Angaben, keine Namen oder Ergebnisse). "
+                        + "Den Fehlerbericht bei Problemen an ein GitHub-Issue anhängen."));
 
         // Programmordner, ältere Version
         Label progHead = new Label("Programmordner");
@@ -339,7 +369,7 @@ public final class OverviewView {
                 + "„HTS Turniere“ unter „Dokumente“ wählen.");
         VBox progCard = cardOf(progHead, progDir, progButtons, carryHint);
 
-        VBox page = new VBox(14, darkCard, whereCard, progCard);
+        VBox page = new VBox(14, darkCard, useCard, whereCard, logCard, progCard);
         page.setPadding(new Insets(0, 40, 16, 40));
         javafx.scene.control.ScrollPane sp = new javafx.scene.control.ScrollPane(page);
         sp.setFitToWidth(true);
