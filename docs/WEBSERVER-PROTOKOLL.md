@@ -43,6 +43,9 @@ URL-kodiert nach UTF-8, höchstens 120 Zeichen, ohne Steuerzeichen); fehlt die K
   Turnierübersicht (nach Rückfrage); gelingt das nicht, merkt HTS den Auftrag (`webserver-loeschen.txt` im
   Programmordner) und holt ihn beim nächsten Start bzw. Veröffentlichen nach.
 - Antworten mit 2xx gelten als Erfolg; alles andere (auch 401/403) als Fehler, der in HTS unten rechts angezeigt wird.
+- Seit 1.12.0 sendet HTS das Logo **nach** der Turnierdatei (ein Ausrichter-Schlüssel darf nur ein schon angelegtes
+  eigenes Turnier ergänzen). Bei `403` mit kurzem Text, der mit „Schlüssel“ beginnt, zeigt HTS diesen Text an
+  („Schlüssel wartet auf Freigabe“, „Schlüssel gesperrt …“, „… gehört einem anderen Ausrichter“).
 
 ## Verhalten des HTS-Live-Servers (1.6.0)
 
@@ -63,6 +66,14 @@ URL-kodiert nach UTF-8, höchstens 120 Zeichen, ohne Steuerzeichen); fehlt die K
   „_“ statt Leerzeichen); `/impressum`, `/datenschutz` und `/spenden` aus `impressum.html`, `datenschutz.html` bzw.
   `spenden.html` im Konfigurationsordner (Spenden ohne Datei: Vorgabetext); seit 1.9.0 `/anmeldung/<Schlüssel>`. Logo und Seitensymbol mit `?v=<Version>`
   (7 Tage zwischengespeichert, ohne Version 1 Stunde). Keine Anmeldung und keine Ergebniseingabe über das Internet.
+- Seit 1.12.0 **Ausrichter-Schlüssel:** Neben dem Betreiber-Schlüssel (`key-sha256`) nimmt der Server freigegebene
+  Ausrichter-Schlüssel an (Datei `ausrichter-schluessel.tsv` im Datenordner, nur SHA-256-Prüfwerte). Antworten: unbekannt
+  `401` „Schlüssel abgelehnt“; beantragt, aber nicht freigegeben `403` „Schlüssel wartet auf Freigabe“; gesperrt `403`
+  „Schlüssel gesperrt – …“. Ein Ausrichter-Schlüssel darf nur Turnier-Kennungen anlegen, die es noch nicht gibt, und nur
+  eigene Turniere ändern (`PUT`, `PUT …/logo`, `DELETE`, `…/nur-endergebnis`, `…/anmeldungen`), sonst `403` „… gehört
+  einem anderen Ausrichter“ bzw. `404`; `organizer` kommt dann aus dem Schlüssel (nicht aus `X-HTS-Ausrichter`),
+  `meta.properties` vermerkt `owner` (Kennung des Schlüssels). `GET/POST /schluessel` (Antrag), Verwaltung auf
+  `127.0.0.1:<admin-port>` (Vorgabe 8091; nur Host localhost/127.0.0.1, Aktionen per POST mit Prüfzeichen und Origin).
 - Der Server speichert je Turnier in `meta.properties` zusätzlich `organizer` (aus `X-HTS-Ausrichter`) und `world`
   (Turnierwelt-Link) – seit 1.8.0.
 - Keine Cookies, nichts im Browser gespeichert (seit 1.8.0 weder Local noch Session Storage), keine Zugriffsprotokolle, Meldungen ohne IP-Adressen; Kopfzeilen `Content-Security-Policy`,

@@ -116,7 +116,7 @@ public final class WebSettings {
         return !server().isBlank() && !key().isBlank();
     }
 
-    /** Für die Anzeige ohne Admin-Passwort: „http•••••.de“. */
+    /** Verdeckte Anzeige: „http•••••.de“ (bis 1.11.0 für die gesperrte Seite „Webserver“). */
     public static String mask(String s) {
         if (s == null || s.isBlank()) return "–";
         String t = s.strip();

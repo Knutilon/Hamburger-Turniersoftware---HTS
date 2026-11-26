@@ -112,6 +112,10 @@ if grep -q -- "-Xmx512m" /etc/systemd/system/hts-server.service; then
   systemctl daemon-reload
   echo "Arbeitsspeicher des Live-Servers auf 1 GB erhöht."
 fi
+# 1.12.0 (#189): Verwaltung der Ausrichter-Schlüssel (nur 127.0.0.1, per SSH-Tunnel)
+if ! grep -q '^admin-port=' /etc/hts-server/server.properties; then
+  printf '# Verwaltung der Ausrichter-Schlüssel (nur 127.0.0.1, Zugang per SSH-Tunnel; 0 = aus):\nadmin-port=8091\n' >> /etc/hts-server/server.properties
+fi
 systemctl restart hts-server
 
 PORT="$(sed -n 's/^port=//p' /etc/hts-server/server.properties)"; PORT="${PORT:-8090}"

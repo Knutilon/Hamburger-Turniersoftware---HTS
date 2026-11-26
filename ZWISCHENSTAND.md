@@ -1,4 +1,4 @@
-# Zwischenstand HTS 1.11.0 (26.11.2026)
+# Zwischenstand HTS 1.12.0 (26.11.2026)
 
 ## Ablauf GitHub (BESTÄTIGT 03.11.2026)
 
@@ -50,34 +50,15 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 - click-TT-Upload der Ergebnisdatei: Praxistest erfolgreich (Nutzer 15.11.2026); Einschränkung unter „Bekannte
   Grenzen“ in der Doku gestrichen (mit 1.1.0 ausgeliefert).
 
-## Feature-Sammlung für 1.12.0 (NICHT kompilieren – bis „… kompilieren“)
+## Feature-Sammlung für 1.13.0 (NICHT kompilieren – bis „… kompilieren“)
 
-(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.5.x)
+(neue Punkte zusätzlich als GitHub-Issue mit Label „Feature“ bzw. „bug“ anlegen; Fehlerbehebungen ggf. als 1.12.x)
 
 1. TABLET: TEST AUF ECHTEM GERÄT (Issue #133, offen aus 1.5.0): Die Tablet-Funktionen von 1.5.0 auf einem echten
    Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
    Gerät; Ergebnisse als Bug/Feature melden.
-2. ADMIN-PASSWORT FÜR DEN WEBSERVER-SCHLÜSSEL ENTFÄLLT (Issue #190, Nutzer 26.11.2026; ersetzt den Punkt
-   „Admin-Passwort neu“): Mit eigenen Ausrichter-Schlüsseln (#189) braucht die Seite „Webserver“ keine Sperre mehr –
-   Adresse und Schlüssel frei eintragen/ändern, „Verbindung testen“ ohne Passwort. Mehrere HTS-Installationen dürfen
-   sich einen Schlüssel teilen. Schlüssel bleibt verschlüsselt gespeichert (SecretStore) und maskiert angezeigt
-   („Anzeigen“). AdminPassword + Dialog entfernen (Version170Test anpassen); Hinweis: Betreiber-Schlüssel nur auf eigenen
-   Geräten. Im #189-Design „Gesendet“ entfällt „→ Entsperren“. (Die bereits geänderten SALT/HASH-Werte werden damit
-   hinfällig.)
-3. LIVE-SERVER: AUSRICHTER-SCHLÜSSEL SELBST BEANTRAGEN + ADMIN-ANWENDUNG (Issue #189, Nutzer 26.11.2026; Entscheidungen:
-   Freigabe durch Betreiber, Schlüssel einmal auf der Seite, Admin nur über SSH-Tunnel): Antrag mit Verein, E-Mail,
-   vollem Namen (+ Bestätigung Berechtigung/Datenschutz); Schlüssel erst nach Freigabe gültig; Admin-Anwendung auf
-   127.0.0.1 (eigener Port) – Anträge freigeben/ablehnen, Schlüssel sperren/löschen, zuletzt genutzt, Turniere; je
-   Ausrichter-Schlüssel nur eigene Turniere, Ausrichtername aus dem Schlüssel; Betreiber-Schlüssel bleibt; nur
-   Prüfwerte gespeichert; Ratenbremse. DESIGN FREIGEGEBEN (Nutzer 26.11.2026): Canvas
-   https://claude.ai/artifact/9fDi2cfy6iAANyNoPDpYbf – Seiten „Antrag“ (/schluessel: Verein oder Verband, Vor- und
-   Nachname, E-Mail, zwei Häkchen, Kasten „So geht es“), „Gesendet“ (Schlüssel einmal anzeigen + Kopieren, „wartet auf
-   Freigabe“, Anleitung HTS), „Admin“ (offene Anträge Freigeben/Ablehnen; Schlüssel-Tabelle mit Filter Alle/aktiv/
-   gesperrt/lange nicht genutzt, Sperren/Entsperren/Löschen, Betreiber-Zeile fest), „Handy“. Angefangener Code-Entwurf
-   (unvollständig, nicht ausgeliefert): work/entwurf-189 (OrganizerKeys.java, LiveHost.patch). DATENSCHUTZ FERTIG (26.11.2026): Abschnitt 4 neu (Ausrichter verantwortlich, Betreiber
-   Auftragsverarbeiter Art. 28), Abschnitt 7 „Zugang für Ausrichter“; Vorlage im Repo (vorlagen/datenschutz.html),
-   persönliche Fassung nur in work/rechtstexte-betreiber (datenschutz-gen.py 18) bzw. hts-rechtstexte.tar.gz – erst
-   zusammen mit dem Release dieses Features einspielen. Offen: Nutzungsbedingungen/AV-Bedingungen für Ausrichter.
+2. OFFEN AUS #189: Nutzungsbedingungen bzw. Bedingungen zur Auftragsverarbeitung für Ausrichter formulieren (beim Antrag
+   zu bestätigen) – erst auf Zuruf.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
@@ -101,6 +82,25 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 
 
 ## Umgesetzt
+
+1.12.0 (26.11.2026, Commit „HTS 1.12.0“, Closes #189 #190; alle Punkte außer #133):
+   - #189 OrganizerKeys (Datei <data>/ausrichter-schluessel.tsv: id, SHA-256, Verein/Verband, Name, E-Mail, beantragt,
+     Status OFFEN/AKTIV/GESPERRT/ABGELEHNT, entschieden, zuletzt genutzt; Schlüssel „hts-“ + 6×4 Zeichen, ~138 Bit;
+     höchstens 100 offene Anträge; abgelehnte nach 30 Tagen weg; lastUsed höchstens alle 10 min gespeichert).
+     LiveHost: /schluessel (GET Formular nach Design, POST Antrag mit Prüfung, Honigtopf „website“, KeyRequestLimit
+     3/Adresse + 20 gesamt pro Stunde, Adresse aus X-Forwarded-For nur hinter Loopback, nur gekürzter Hash im Speicher),
+     Bestätigungsseite zeigt Schlüssel einmal (Kopieren-Knopf); Principal (Betreiber oder Ausrichter): 401 unbekannt,
+     403 „Schlüssel wartet auf Freigabe“/„Schlüssel gesperrt …“; Entry.owner (meta „owner“), nur eigene Turniere
+     (403 „… gehört einem anderen Ausrichter“, sonst 404), organizer aus dem Schlüssel; Fußzeile „Ausrichter-Schlüssel“.
+     KeyAdmin: eigener HttpServer auf 127.0.0.1:admin-port (Vorgabe 8091, 0 = aus), Host-Prüfung localhost, POST mit
+     Prüfzeichen + Origin, Referrer-Policy same-origin (bei no-referrer schickt Chrome „Origin: null“ – im Browser-Test
+     gefunden), offene Anträge Freigeben/Ablehnen, Tabelle mit Betreiber-Zeile, Filter Alle/aktiv/gesperrt/lange nicht
+     genutzt (180 Tage), Suche, Sperren/Entsperren/Löschen (mit Rückfrage), Turniere je Schlüssel. install.sh schreibt
+     admin-port=8091, update.sh ergänzt ihn; LIESMICH/Anleitung: SSH-Tunnel. Publisher: Logo NACH der Turnierdatei,
+     keyMessage() zeigt Server-Text bei 403. Datenschutz-Vorlage (Abschnitt 4/7) im Paket; persönliche Fassung separat.
+   - #190 AdminPassword + Dialog entfernt; Seite „Webserver“ direkt bearbeitbar (verdeckt, „Anzeigen“), Hinweis
+     eigener Schlüssel/Betreiber-Schlüssel nur auf eigenen Geräten, Link „Ausrichter-Schlüssel beantragen (im Browser)“.
+   - Tests: Version1120Test (4), Version1100Test (Fußzeile), Version170Test (Admin-Passwort-Test entfernt).
 
 1.11.0 (26.11.2026, Commit „HTS 1.11.0“, Closes #178–#188; alle Punkte außer #133):
    - #178 KO-Linien bei Freilosen: LiveServer.koTree mit festen Plätzen je Runde (slots), byeCard „Freilos“ (.km.bye).

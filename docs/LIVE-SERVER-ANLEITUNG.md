@@ -107,8 +107,8 @@ Außerdem:
 ## 5. HTS verbinden
 
 1. HTS öffnen → Turnierübersicht → Reiter **„Webserver“**.
-2. **Entsperren** (Admin-Passwort, seit HTS 1.7.0), dann Adresse `https://hts-livescoring.de` und den notierten Schlüssel
-   eintragen → **Speichern**.
+2. Adresse `https://hts-livescoring.de` und den notierten Schlüssel eintragen → **Speichern** (seit HTS 1.12.0 ohne
+   Admin-Passwort).
 3. **„Verbindung testen“** → „Verbindung in Ordnung.“
 4. Im Turnier → **„Live im Internet“** einschalten (seit 1.8.0 bei neuen Turnieren schon an, bei Testturnieren nicht).
    Auf dem Server erscheinen die Vornamen immer abgekürzt („M. Mustermann“).
@@ -118,6 +118,23 @@ Außerdem:
 
 Unten rechts zeigt HTS den Stand: „veröffentlicht“ bzw. „keine Verbindung – wird nachgeholt“ (bei Funkloch hält HTS
 den letzten Stand und versucht es alle 10 Sekunden erneut).
+
+### Ausrichter-Schlüssel für Vereine und Verbände (seit HTS 1.12.0)
+
+Andere Vereine und Verbände bekommen **nicht** Ihren Betreiber-Schlüssel, sondern beantragen einen eigenen auf
+`https://hts-livescoring.de/schluessel`. Der Schlüssel wird ihnen einmal angezeigt und gilt erst nach Ihrer Freigabe;
+damit lassen sich nur die eigenen Turniere veröffentlichen.
+
+Freigeben, ablehnen, sperren und löschen geht in der **Verwaltung**, die nur auf dem Server läuft (127.0.0.1:8091).
+Auf dem eigenen Rechner einen SSH-Tunnel öffnen und das Fenster offen lassen:
+
+```
+ssh -L 8091:127.0.0.1:8091 root@hts-livescoring.de
+```
+
+Dann im Browser `http://localhost:8091/admin` öffnen. Neue Anträge stehen oben unter „Offene Anträge“; im Protokoll
+(`journalctl -u hts-server`) erscheint bei jedem Antrag „Neuer Antrag auf einen Ausrichter-Schlüssel eingegangen“.
+Vor der Freigabe ggf. per E-Mail nachfragen, ob die Person für den Verein bzw. Verband sprechen darf.
 
 ### Online-Anmeldung am Turniertag (seit HTS 1.9.0)
 

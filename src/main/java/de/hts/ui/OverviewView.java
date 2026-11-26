@@ -479,17 +479,14 @@ public final class OverviewView {
             b.setVisible(false);
             b.setManaged(false);
         }
-        showWebserverForm(false);
+        showWebserverForm();
     }
 
-    /** 1.7.0 (#141): ein Admin-Passwort für alle Aufrufe (Wartezeit nach Fehlversuchen bleibt bestehen). */
-    private static final de.hts.web.AdminPassword ADMIN = new de.hts.web.AdminPassword();
-
     /**
-     * 1.7.0 (#141/#142): Seite „Webserver“. Ohne Admin-Passwort nur verdeckte Anzeige (Adresse „http•••••.de“, Schlüssel
-     * „••••••••“); nach „Entsperren“ bearbeitbar, Werte weiter verdeckt (Auge-Knopf zeigt sie). Verlassen der Seite sperrt.
+     * Seite „Webserver“: Adresse und Schlüssel verdeckt (Auge-Knopf zeigt sie). 1.12.0 (#190): ohne Admin-Passwort – jeder
+     * Verein bzw. Verband hat seinen eigenen Ausrichter-Schlüssel (#189); mehrere Rechner dürfen sich einen teilen.
      */
-    private void showWebserverForm(boolean unlocked) {
+    private void showWebserverForm() {
         de.hts.web.WebSettings.State st = de.hts.web.WebSettings.state();
         Label aLbl = new Label("Adresse des Webservers");
         aLbl.getStyleClass().add("class-name");
@@ -501,88 +498,82 @@ public final class OverviewView {
         VBox form = new VBox(10);
         if (st == de.hts.web.WebSettings.State.UNREADABLE) {
             Label warn = new Label("Die gespeicherten Webserver-Einstellungen lassen sich auf diesem Rechner bzw. unter diesem Benutzer "
-                    + "nicht entschlüsseln. Bitte Adresse und Schlüssel neu eintragen (mit Admin-Passwort). Bis dahin pausiert das Veröffentlichen.");
+                    + "nicht entschlüsseln. Bitte Adresse und Schlüssel neu eintragen. Bis dahin pausiert das Veröffentlichen.");
             warn.getStyleClass().add("publish-state");
             warn.getStyleClass().add("publish-error");
             warn.setWrapText(true);
             warn.setMinHeight(Region.USE_PREF_SIZE);
             form.getChildren().add(warn);
         }
-        if (!unlocked) {
-            Label addr = new Label(de.hts.web.WebSettings.mask(de.hts.web.WebSettings.server()));
-            Label key = new Label(de.hts.web.WebSettings.key().isBlank() ? "–" : "••••••••");
-            Button unlock = new Button("Entsperren", Icons.of(Icons.LOCK, 16));
-            unlock.getStyleClass().add("navy-pill");
-            unlock.setMinWidth(Region.USE_PREF_SIZE);
-            unlock.setOnAction(e -> {
-                if (askAdminPassword()) showWebserverForm(true);
-            });
-            Label lockHint = new Label("Gesperrt: Adresse und Schlüssel ändern und die Verbindung testen geht nur mit dem Admin-Passwort.");
-            lockHint.getStyleClass().add("hint");
-            lockHint.setWrapText(true);
-            lockHint.setMinHeight(Region.USE_PREF_SIZE);
-            form.getChildren().addAll(aLbl, addr, kLbl, key, unlock, lockHint);
-        } else {
-            javafx.scene.control.PasswordField addrHidden = new javafx.scene.control.PasswordField();
-            javafx.scene.control.TextField addrShown = new javafx.scene.control.TextField();
-            javafx.scene.control.PasswordField keyHidden = new javafx.scene.control.PasswordField();
-            javafx.scene.control.TextField keyShown = new javafx.scene.control.TextField();
-            addrShown.textProperty().bindBidirectional(addrHidden.textProperty());
-            keyShown.textProperty().bindBidirectional(keyHidden.textProperty());
-            addrHidden.setText(de.hts.web.WebSettings.server());
-            keyHidden.setText(de.hts.web.WebSettings.key());
-            addrShown.setPromptText("z. B. https://hts-livescoring.de");
-            addrHidden.setPromptText("z. B. https://hts-livescoring.de");
-            for (javafx.scene.control.TextField f : new javafx.scene.control.TextField[]{addrHidden, addrShown, keyHidden, keyShown}) {
-                f.setMaxWidth(520);
-                HBox.setHgrow(f, javafx.scene.layout.Priority.ALWAYS);
-            }
-            javafx.scene.layout.StackPane addrBox = new javafx.scene.layout.StackPane(addrHidden, addrShown);
-            javafx.scene.layout.StackPane keyBox = new javafx.scene.layout.StackPane(keyHidden, keyShown);
-            addrBox.setMaxWidth(520);
-            keyBox.setMaxWidth(520);
-            addrShown.setVisible(false);
-            keyShown.setVisible(false);
-            javafx.scene.control.ToggleButton eye = new javafx.scene.control.ToggleButton("Anzeigen", Icons.of(Icons.EYE, 16));
-            eye.setMinWidth(Region.USE_PREF_SIZE);
-            eye.selectedProperty().addListener((o, was, now) -> {
-                addrShown.setVisible(now);
-                addrHidden.setVisible(!now);
-                keyShown.setVisible(now);
-                keyHidden.setVisible(!now);
-                eye.setText(now ? "Verbergen" : "Anzeigen");
-            });
-            Button saveBtn = new Button("Speichern");
-            saveBtn.getStyleClass().add("navy-pill");
-            saveBtn.setMinWidth(Region.USE_PREF_SIZE);
-            saveBtn.setOnAction(e -> {
-                try {
-                    de.hts.web.WebSettings.set(addrHidden.getText(), keyHidden.getText());
-                    result.setText("Gespeichert (verschlüsselt).");
-                } catch (IllegalStateException ex) {
-                    result.setText(ex.getMessage());
-                }
-            });
-            Button test = new Button("Verbindung testen");
-            test.getStyleClass().add("pill");
-            test.setMinWidth(Region.USE_PREF_SIZE);
-            test.setOnAction(e -> {
-                result.setText("Prüfe …");
-                String a = addrHidden.getText(), k = keyHidden.getText();
-                Thread th = new Thread(() -> {
-                    String err = de.hts.web.Publisher.test(a, k);
-                    javafx.application.Platform.runLater(() -> result.setText(err == null ? "Verbindung in Ordnung." : err));
-                }, "HTS-Verbindungstest");
-                th.setDaemon(true);
-                th.start();
-            });
-            Button lock = new Button("Sperren", Icons.of(Icons.LOCK, 16));
-            lock.getStyleClass().add("pill");
-            lock.setMinWidth(Region.USE_PREF_SIZE);
-            lock.setOnAction(e -> showWebserverForm(false));
-            javafx.scene.layout.FlowPane actions = new javafx.scene.layout.FlowPane(10, 8, saveBtn, test, eye, lock);
-            form.getChildren().addAll(aLbl, addrBox, kLbl, keyBox, actions, result);
+        javafx.scene.control.PasswordField addrHidden = new javafx.scene.control.PasswordField();
+        javafx.scene.control.TextField addrShown = new javafx.scene.control.TextField();
+        javafx.scene.control.PasswordField keyHidden = new javafx.scene.control.PasswordField();
+        javafx.scene.control.TextField keyShown = new javafx.scene.control.TextField();
+        addrShown.textProperty().bindBidirectional(addrHidden.textProperty());
+        keyShown.textProperty().bindBidirectional(keyHidden.textProperty());
+        addrHidden.setText(de.hts.web.WebSettings.server());
+        keyHidden.setText(de.hts.web.WebSettings.key());
+        addrShown.setPromptText("z. B. https://hts-livescoring.de");
+        addrHidden.setPromptText("z. B. https://hts-livescoring.de");
+        for (javafx.scene.control.TextField f : new javafx.scene.control.TextField[]{addrHidden, addrShown, keyHidden, keyShown}) {
+            f.setMaxWidth(520);
+            HBox.setHgrow(f, javafx.scene.layout.Priority.ALWAYS);
         }
+        javafx.scene.layout.StackPane addrBox = new javafx.scene.layout.StackPane(addrHidden, addrShown);
+        javafx.scene.layout.StackPane keyBox = new javafx.scene.layout.StackPane(keyHidden, keyShown);
+        addrBox.setMaxWidth(520);
+        keyBox.setMaxWidth(520);
+        addrShown.setVisible(false);
+        keyShown.setVisible(false);
+        javafx.scene.control.ToggleButton eye = new javafx.scene.control.ToggleButton("Anzeigen", Icons.of(Icons.EYE, 16));
+        eye.setMinWidth(Region.USE_PREF_SIZE);
+        eye.selectedProperty().addListener((o, was, now) -> {
+            addrShown.setVisible(now);
+            addrHidden.setVisible(!now);
+            keyShown.setVisible(now);
+            keyHidden.setVisible(!now);
+            eye.setText(now ? "Verbergen" : "Anzeigen");
+        });
+        Button saveBtn = new Button("Speichern");
+        saveBtn.getStyleClass().add("navy-pill");
+        saveBtn.setMinWidth(Region.USE_PREF_SIZE);
+        saveBtn.setOnAction(e -> {
+            try {
+                de.hts.web.WebSettings.set(addrHidden.getText(), keyHidden.getText());
+                result.setText("Gespeichert (verschlüsselt).");
+            } catch (IllegalStateException ex) {
+                result.setText(ex.getMessage());
+            }
+        });
+        Button test = new Button("Verbindung testen");
+        test.getStyleClass().add("pill");
+        test.setMinWidth(Region.USE_PREF_SIZE);
+        test.setOnAction(e -> {
+            result.setText("Prüfe …");
+            String a = addrHidden.getText(), k = keyHidden.getText();
+            Thread th = new Thread(() -> {
+                String err = de.hts.web.Publisher.test(a, k);
+                javafx.application.Platform.runLater(() -> result.setText(err == null ? "Verbindung in Ordnung." : err));
+            }, "HTS-Verbindungstest");
+            th.setDaemon(true);
+            th.start();
+        });
+        javafx.scene.layout.FlowPane actions = new javafx.scene.layout.FlowPane(10, 8, saveBtn, test, eye);
+        // 1.12.0 (#189/#190): eigener Schlüssel je Verein bzw. Verband – auf der Website beantragen
+        javafx.scene.control.Hyperlink apply = new javafx.scene.control.Hyperlink("Ausrichter-Schlüssel beantragen (im Browser)");
+        apply.setWrapText(true);
+        apply.setOnAction(e -> {
+            String base = de.hts.web.Publisher.normalize(addrHidden.getText().isBlank() ? "https://hts-livescoring.de" : addrHidden.getText());
+            if (base.startsWith("https://") || base.startsWith("http://")) de.hts.HtsApp.openLink(base + "/schluessel");
+        });
+        Label keyHint = new Label("Jeder Verein bzw. Verband bekommt einen eigenen Schlüssel und veröffentlicht damit nur seine eigenen "
+                + "Turniere. Mehrere Rechner des Vereins dürfen denselben Schlüssel benutzen. Den Betreiber-Schlüssel des Servers "
+                + "(der alle Turniere ändern darf) nur auf eigenen Geräten eintragen.");
+        keyHint.getStyleClass().add("hint");
+        keyHint.setWrapText(true);
+        keyHint.setMaxWidth(620);
+        keyHint.setMinHeight(Region.USE_PREF_SIZE);
+        form.getChildren().addAll(aLbl, addrBox, kLbl, keyBox, actions, result, keyHint, apply);
         Label hint = new Label("Veröffentlicht wird je Turnier auf der Seite „Live im Internet“ des Turniers. HTS lädt nur hoch – "
                 + "vom Server kommt nichts zurück. Adresse und Schlüssel bleiben verschlüsselt auf diesem Rechner (an das "
                 + "Benutzerkonto gebunden) und stehen nicht in der Turnierdatei.");
@@ -600,50 +591,6 @@ public final class OverviewView {
         sp.setFitToWidth(true);
         sp.getStyleClass().add("page-scroll");
         root.setCenter(sp);
-    }
-
-    /** 1.7.0 (#141): Admin-Passwort abfragen; true = richtig. */
-    private boolean askAdminPassword() {
-        javafx.scene.control.Dialog<char[]> d = new javafx.scene.control.Dialog<>();
-        d.initOwner(stage);
-        d.setTitle("Webserver entsperren");
-        d.setHeaderText(null);
-        javafx.scene.control.PasswordField pw = new javafx.scene.control.PasswordField();
-        pw.setPrefColumnCount(32);
-        Label info = new Label("Admin-Passwort (" + de.hts.web.AdminPassword.LENGTH + " Zeichen)");
-        Label err = new Label();
-        err.getStyleClass().addAll("publish-state", "publish-error");
-        err.setWrapText(true);
-        err.setMinHeight(Region.USE_PREF_SIZE);
-        long wait = ADMIN.secondsLocked();
-        if (wait > 0) err.setText("Zu viele Fehlversuche – bitte " + wait + " Sekunden warten.");
-        VBox box = new VBox(8, info, pw, err);
-        box.setPadding(new Insets(6, 4, 0, 4));
-        d.getDialogPane().setContent(box);
-        ButtonType ok = new ButtonType("Entsperren", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
-        d.getDialogPane().getButtonTypes().addAll(ok, new ButtonType("Abbrechen", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE));
-        javafx.scene.Node okBtn = d.getDialogPane().lookupButton(ok);
-        final boolean[] passed = {false};
-        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-            de.hts.web.AdminPassword.Result r = ADMIN.check(pw.getText().toCharArray());
-            pw.clear();
-            switch (r) {
-                case OK -> passed[0] = true;
-                case WRONG -> {
-                    long s2 = ADMIN.secondsLocked();
-                    err.setText(s2 > 0 ? "Falsches Passwort. Zu viele Fehlversuche – bitte " + s2 + " Sekunden warten." : "Falsches Passwort.");
-                    ev.consume();
-                }
-                case LOCKED -> {
-                    err.setText("Zu viele Fehlversuche – bitte " + ADMIN.secondsLocked() + " Sekunden warten.");
-                    ev.consume();
-                }
-            }
-        });
-        DialogSizing.fit(d);
-        javafx.application.Platform.runLater(pw::requestFocus);
-        d.showAndWait();
-        return passed[0];
     }
 
     private void showError(String text) {

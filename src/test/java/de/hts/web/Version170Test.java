@@ -34,7 +34,7 @@ import java.util.zip.ZipInputStream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * HTS 1.7.0 – SVG-Logos (#143), verschlüsselte Ablage (#142), Admin-Passwort (#141), Protokoll (#140), Freistellung
+ * HTS 1.7.0 – SVG-Logos (#143), verschlüsselte Ablage (#142), Admin-Passwort (#141, entfallen in 1.12.0 #190), Protokoll (#140), Freistellung
  * 6 × 2 (#145), lesbare Live-Adressen (#147), QR-Aushang (#148).
  */
 class Version170Test {
@@ -108,25 +108,6 @@ class Version170Test {
         if (f.getFileSystem().supportedFileAttributeViews().contains("posix")) {
             assertEquals("rw-------", PosixFilePermissions.toString(Files.getPosixFilePermissions(f)));
         }
-    }
-
-    @Test
-    void adminPasswortNurMitPruefwertUndWartezeit() {
-        long[] now = {1_000_000};
-        AdminPassword a = new AdminPassword(() -> now[0]);
-        assertEquals(AdminPassword.Result.WRONG, a.check("zu kurz".toCharArray()));
-        char[] forty = new char[40];
-        Arrays.fill(forty, 'x');
-        assertEquals(AdminPassword.Result.WRONG, a.check(forty.clone()));
-        assertEquals(AdminPassword.Result.WRONG, a.check(forty.clone()));
-        assertTrue(a.secondsLocked() > 0, "nach 3 Fehlversuchen Wartezeit");
-        assertEquals(AdminPassword.Result.LOCKED, a.check(forty.clone()));
-        now[0] += 16_000;
-        assertEquals(0, a.secondsLocked());
-        char[] pw = forty.clone();
-        a.check(pw);
-        assertEquals('\0', pw[0], "Passwort wird nach der Prüfung gelöscht");
-        assertFalse(AdminPassword.matches(null));
     }
 
     @Test

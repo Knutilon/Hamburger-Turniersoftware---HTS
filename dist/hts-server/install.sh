@@ -170,6 +170,8 @@ retention-days=$RET
 # Größte erlaubte Turnierdatei in MB:
 max-upload-mb=$MAXMB
 site-title=HTS Live-Scoring
+# Verwaltung der Ausrichter-Schlüssel (nur 127.0.0.1, Zugang per SSH-Tunnel; 0 = aus):
+admin-port=8091
 EOF
 fi
 chown root:hts "$ETC/server.properties"; chmod 640 "$ETC/server.properties"

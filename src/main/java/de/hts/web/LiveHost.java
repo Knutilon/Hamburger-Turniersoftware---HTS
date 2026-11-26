@@ -69,7 +69,11 @@ public final class LiveHost {
             .withZone(ZoneId.of("Europe/Berlin"));
 
     /** Einstellungen aus server.properties. */
-    record Config(String bind, int port, Path data, Path content, byte[] keyHash, int retentionDays, int maxUploadMb, String siteTitle) {
+    record Config(String bind, int port, Path data, Path content, byte[] keyHash, int retentionDays, int maxUploadMb, String siteTitle, int adminPort) {
+
+        Config(String bind, int port, Path data, Path content, byte[] keyHash, int retentionDays, int maxUploadMb, String siteTitle) {
+            this(bind, port, data, content, keyHash, retentionDays, maxUploadMb, siteTitle, 0);
+        }
 
         static Config load(Path file) throws IOException {
             Properties p = new Properties();
@@ -86,7 +90,8 @@ public final class LiveHost {
                     HexFormat.of().parseHex(hash),
                     Integer.parseInt(p.getProperty("retention-days", "90").strip()),
                     Integer.parseInt(p.getProperty("max-upload-mb", "25").strip()),
-                    p.getProperty("site-title", "HTS Live-Scoring").strip());
+                    p.getProperty("site-title", "HTS Live-Scoring").strip(),
+                    Integer.parseInt(p.getProperty("admin-port", "8091").strip()));      // 1.12.0 (#189): Verwaltung, 0 = aus
         }
     }
 
@@ -102,6 +107,7 @@ public final class LiveHost {
         volatile String slug = "";                           // 1.7.0 (#147): lesbare Adresse, z. B. Herbstturnier_28_11_2026
         volatile String organizer = "";                      // 1.8.0 (#150): Ausrichter (Kopfzeile X-HTS-Ausrichter)
         volatile String world = "";                          // 1.8.0 (#151): Link zur Turnierwelt
+        volatile String owner = "";                          // 1.12.0 (#189): Kennung des Ausrichter-Schlüssels, leer = Betreiber
         // 1.9.0 (#164): Online-Anmeldung
         volatile String checkinToken = "";
         volatile boolean onlineCheckin;
@@ -129,11 +135,15 @@ public final class LiveHost {
     private volatile long failureWindow = System.currentTimeMillis();
     private HttpServer http;
     private ScheduledExecutorService housekeeping;
+    final OrganizerKeys keys;                                // 1.12.0 (#189)
+    private final KeyRequestLimit requestLimit = new KeyRequestLimit();
+    private KeyAdmin admin;
 
     LiveHost(Config cfg) throws IOException {
         this.cfg = cfg;
         this.turniere = cfg.data().resolve("turniere");
         Files.createDirectories(turniere);
+        this.keys = new OrganizerKeys(cfg.data());
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(turniere)) {
             for (Path d : ds) {
                 String id = d.getFileName().toString();
@@ -174,10 +184,15 @@ public final class LiveHost {
             return t;
         });
         housekeeping.scheduleWithFixedDelay(this::cleanUp, 1, 60, TimeUnit.MINUTES);
+        if (cfg.adminPort() > 0) {                            // 1.12.0 (#189): nur 127.0.0.1, Zugang über SSH-Tunnel
+            admin = new KeyAdmin(this, cfg.adminPort());
+            admin.start();
+        }
     }
 
     void stop() {
         if (http != null) http.stop(1);
+        if (admin != null) admin.stop();
         if (housekeeping != null) housekeeping.shutdownNow();
     }
 
@@ -200,7 +215,7 @@ public final class LiveHost {
                 }
                 return;
             }
-            if (!"GET".equals(method) && !"HEAD".equals(method) && !("POST".equals(method) && path.startsWith("/anmeldung/"))) {
+            if (!"GET".equals(method) && !"HEAD".equals(method) && !("POST".equals(method) && (path.startsWith("/anmeldung/") || path.equals("/schluessel")))) {
                 text(ex, 405, "Nicht erlaubt");
                 return;
             }
@@ -223,6 +238,10 @@ public final class LiveHost {
                 }
                 case "/hts-logo.png" -> {                            // 1.10.0 (#168): großes Logo für „Download HTS“
                     png(ex, "/de/hts/ui/hts-logo.png");
+                    return;
+                }
+                case "/schluessel" -> {                              // 1.12.0 (#189): Ausrichter-Schlüssel beantragen
+                    keyRequest(ex, method);
                     return;
                 }
                 case "/spenden" -> {                                 // 1.8.0 (#153)
@@ -293,11 +312,20 @@ public final class LiveHost {
 
     // --- Schnittstelle für HTS ---------------------------------------------------------------------
 
-    private void api(HttpExchange ex, String method, String rest) throws IOException {
-        if (!authorized(ex)) {
-            text(ex, tooManyFailures() ? 429 : 401, "Schlüssel abgelehnt");
-            return;
+    /** 1.12.0 (#189): wer lädt hoch – Betreiber (Schlüssel aus server.properties) oder ein freigegebener Ausrichter. */
+    record Principal(OrganizerKeys.Key key) {
+        boolean operator() {
+            return key == null;
         }
+
+        String owner() {
+            return key == null ? "" : key.id;
+        }
+    }
+
+    private void api(HttpExchange ex, String method, String rest) throws IOException {
+        Principal who = principal(ex);
+        if (who == null) return;                              // Antwort schon gesendet
         ex.getResponseHeaders().set("X-HTS-Gzip", "1");          // 1.10.0 (#170): HTS darf komprimiert hochladen
         if (rest.equals("status") && "GET".equals(method)) {
             json(ex, 200, "{\"ok\":true,\"server\":\"HTS-Live-Server\",\"version\":" + LiveServer.json(de.hts.HtsApp.VERSION) + "}");
@@ -314,8 +342,17 @@ public final class LiveHost {
             return;
         }
         String sub = parts.length == 2 ? parts[1] : "";
+        Entry own = entries.get(id);
+        if (own != null && !who.operator() && !who.owner().equals(own.owner)) {   // 1.12.0 (#189): nur eigene Turniere
+            text(ex, 403, "Schlüssel abgelehnt: Dieses Turnier gehört einem anderen Ausrichter.");
+            return;
+        }
+        if (own == null && !who.operator() && !"PUT ".equals(method + " " + sub)) {
+            text(ex, 404, "Turnier nicht vorhanden");
+            return;
+        }
         switch (method + " " + sub) {
-            case "PUT " -> putTournament(ex, id);
+            case "PUT " -> putTournament(ex, id, who);
             case "PUT logo" -> putLogo(ex, id);
             case "DELETE " -> {
                 delete(id);
@@ -351,22 +388,47 @@ public final class LiveHost {
         }
     }
 
-    private boolean authorized(HttpExchange ex) {
+    /**
+     * 1.12.0 (#189): Schlüssel prüfen. Betreiber-Schlüssel (Vergleich in konstanter Zeit) oder Ausrichter-Schlüssel; ein
+     * noch nicht freigegebener bzw. gesperrter Ausrichter-Schlüssel bekommt 403 mit verständlicher Meldung.
+     * @return {@code null}, wenn abgelehnt (Antwort ist dann schon gesendet)
+     */
+    private Principal principal(HttpExchange ex) throws IOException {
         String h = ex.getRequestHeaders().getFirst("Authorization");
-        boolean ok = false;
-        if (h != null && h.regionMatches(true, 0, "Bearer ", 0, 7)) {
-            byte[] given = sha256(h.substring(7).strip().getBytes(StandardCharsets.UTF_8));
-            ok = MessageDigest.isEqual(given, cfg.keyHash());   // Vergleich in konstanter Zeit
+        String given = h != null && h.regionMatches(true, 0, "Bearer ", 0, 7) ? h.substring(7).strip() : "";
+        boolean operator = !given.isEmpty() && MessageDigest.isEqual(sha256(given.getBytes(StandardCharsets.UTF_8)), cfg.keyHash());
+        OrganizerKeys.Key k = operator ? null : keys.find(given);
+        if (!operator && (k == null || k.status == OrganizerKeys.Status.ABGELEHNT)) {
+            countFailure();
+            text(ex, tooManyFailures() ? 429 : 401, "Schlüssel abgelehnt");
+            return null;
         }
-        if (!ok) {
-            long now = System.currentTimeMillis();
-            if (now - failureWindow > 60_000) {
-                failureWindow = now;
-                failures.set(0);
-            }
-            failures.incrementAndGet();
+        if (tooManyFailures()) {
+            text(ex, 429, "Zu viele Fehlversuche – bitte eine Minute warten");
+            return null;
         }
-        return ok && !tooManyFailures();
+        if (k != null && k.status == OrganizerKeys.Status.OFFEN) {
+            text(ex, 403, "Schlüssel wartet auf Freigabe");
+            return null;
+        }
+        if (k != null && k.status == OrganizerKeys.Status.GESPERRT) {
+            text(ex, 403, "Schlüssel gesperrt – bitte an den Betreiber von " + cfg.siteTitle() + " wenden");
+            return null;
+        }
+        if (k != null) keys.used(k, System.currentTimeMillis());
+        else lastOperatorUse = System.currentTimeMillis();
+        return new Principal(k);
+    }
+
+    volatile long lastOperatorUse;
+
+    private void countFailure() {
+        long now = System.currentTimeMillis();
+        if (now - failureWindow > 60_000) {
+            failureWindow = now;
+            failures.set(0);
+        }
+        failures.incrementAndGet();
     }
 
     /** Mehr als 30 Fehlversuche je Minute: vorübergehend auch richtige Schlüssel ablehnen (Ratenbremse). */
@@ -374,7 +436,7 @@ public final class LiveHost {
         return System.currentTimeMillis() - failureWindow <= 60_000 && failures.get() > 30;
     }
 
-    private void putTournament(HttpExchange ex, String id) throws IOException {
+    private void putTournament(HttpExchange ex, String id, Principal who) throws IOException {
         byte[] body = readBody(ex, (long) cfg.maxUploadMb() * 1024 * 1024);
         if (body != null && "gzip".equalsIgnoreCase(String.valueOf(ex.getRequestHeaders().getFirst("Content-Encoding")).strip())) {
             body = gunzip(body, (long) cfg.maxUploadMb() * 1024 * 1024);        // 1.10.0 (#170)
@@ -396,6 +458,11 @@ public final class LiveHost {
         }
         Entry e = entries.computeIfAbsent(id, Entry::new);
         synchronized (e.lock) {
+            if (e.updated != 0 && !who.operator() && !who.owner().equals(e.owner)) {   // gleichzeitig angelegt
+                text(ex, 403, "Schlüssel abgelehnt: Dieses Turnier gehört einem anderen Ausrichter.");
+                return;
+            }
+            if (e.updated == 0) e.owner = who.owner();
             Path dir = turniere.resolve(id);
             Files.createDirectories(dir);
             writeAtomic(dir.resolve("turnier.hts"), body);
@@ -405,7 +472,7 @@ public final class LiveHost {
             e.checkinToken = t.getCheckinToken();
             e.onlineCheckin = t.isOnlineCheckin();
             e.checkinUntil = t.getCheckinUntil();
-            e.organizer = organizerOf(ex);
+            e.organizer = who.operator() ? organizerOf(ex) : who.key().org;     // 1.12.0 (#189): Ausrichter aus dem Schlüssel
             String w = Tournament.validWorldUrl(t.getWorldUrl());
             e.world = w == null ? "" : w;
             e.state = stateOf(t);
@@ -668,6 +735,7 @@ public final class LiveHost {
             e.slug = p.getProperty("slug", LiveSlug.of(e.name, e.date));
             e.organizer = p.getProperty("organizer", "");
             e.world = p.getProperty("world", "");
+            e.owner = p.getProperty("owner", "");
             e.checkinToken = p.getProperty("checkin-token", "");
             e.onlineCheckin = Boolean.parseBoolean(p.getProperty("online-checkin", "false"));
             String cu = p.getProperty("checkin-until", "");
@@ -687,6 +755,7 @@ public final class LiveHost {
         p.setProperty("slug", e.slug);
         if (!e.organizer.isEmpty()) p.setProperty("organizer", e.organizer);
         if (!e.world.isEmpty()) p.setProperty("world", e.world);
+        if (!e.owner.isEmpty()) p.setProperty("owner", e.owner);
         if (!e.checkinToken.isEmpty()) p.setProperty("checkin-token", e.checkinToken);
         p.setProperty("online-checkin", String.valueOf(e.onlineCheckin));
         if (e.checkinUntil != null) p.setProperty("checkin-until", e.checkinUntil.toString());
@@ -721,6 +790,23 @@ public final class LiveHost {
                 System.err.println("Aufräumen von " + e.id + " fehlgeschlagen: " + ex.getMessage());
             }
         }
+        try {
+            keys.cleanUp(now);                                // 1.12.0 (#189): abgelehnte Anträge nach 30 Tagen weg
+        } catch (IOException ex) {
+            System.err.println("Ausrichter-Schlüssel: Aufräumen fehlgeschlagen: " + ex.getMessage());
+        }
+        requestLimit.cleanUp(now);
+    }
+
+    /** 1.12.0 (#189): Zahl der Turniere je Schlüssel-Kennung (leer = Betreiber). */
+    Map<String, Integer> tournamentsByOwner() {
+        Map<String, Integer> m = new java.util.HashMap<>();
+        for (Entry e : entries.values()) m.merge(e.owner, 1, Integer::sum);
+        return m;
+    }
+
+    String siteTitle() {
+        return cfg.siteTitle();
     }
 
     // --- Seiten des Servers ------------------------------------------------------------------------
@@ -758,7 +844,8 @@ public final class LiveHost {
     private static String footer() {
         // 1.10.0: Leerzeichen zwischen den Verweisen, damit die Zeile auf dem Handy umbricht
         return "<style>" + HOST_CSS + "</style><footer class=\"legal\"><a href=\"/\">Alle Turniere</a> <a href=\"/impressum\">Impressum</a> "
-                + "<a href=\"/datenschutz\">Datenschutz</a> <a href=\"/spenden\">Spenden</a> <a href=\"/download\">Download HTS</a></footer>";
+                + "<a href=\"/datenschutz\">Datenschutz</a> <a href=\"/spenden\">Spenden</a> <a href=\"/download\">Download HTS</a> "
+                + "<a href=\"/schluessel\">Ausrichter-Schlüssel</a></footer>";
     }
 
     String frame(String title, String body) {
@@ -1030,6 +1117,133 @@ public final class LiveHost {
                 os.write(b);
             }
         }
+    }
+
+    // --- 1.12.0 (#189): Ausrichter-Schlüssel beantragen (Design vom 26.11.2026) ---------------------------
+
+    static final String KEY_CSS = ".kreq{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin-top:6px}"
+            + ".kform{padding:24px 26px;display:flex;flex-direction:column;gap:16px;flex:999 1 460px;min-width:0;margin:0}"
+            + ".kform h1{margin:0 0 6px;font-size:24px}.kform p{margin:0;color:#4a5560;line-height:1.5;font-size:14px}"
+            + ".kl{display:block;font-size:13px;color:#1f2933;margin-bottom:5px;font-weight:600}"
+            + ".kinp{width:100%;min-height:44px;padding:0 12px;border:1px solid #d0d5db;border-radius:10px;background:#fff;font-size:15px;color:#1f2933;box-sizing:border-box;font-family:inherit}"
+            + ".khint{display:block;font-size:12px;color:#6b7280;margin-top:4px}"
+            + ".kchk{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45;cursor:pointer}"
+            + ".kchk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:#187250}"
+            + ".kbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 22px;border-radius:999px;border:0;"
+            + "background:#187250;color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;text-decoration:none}"
+            + ".kbtn.l{background:#fff;color:#1f2933;border:1px solid #d0d5db;font-weight:500}"
+            + ".kside{padding:18px 20px;display:flex;flex-direction:column;gap:10px;flex:1 1 280px;margin:0}"
+            + ".kside ol{margin:0;padding-left:20px;font-size:14px;line-height:1.6;color:#4a5560}.kside span{font-size:13px;color:#6b7280;line-height:1.5}"
+            + ".kerr{background:#fdecec;border:1px solid #f3c2c2;color:#8a1f1f;border-radius:10px;padding:10px 12px;font-size:14px}"
+            + ".khp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}"
+            + ".kkey{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:#f1f3f4;border:1px solid #e4e6ea;border-radius:12px;padding:12px 14px}"
+            + ".kkey code{font-size:18px;font-weight:600;letter-spacing:.5px;overflow-wrap:anywhere;flex:1 1 260px;color:#1f2933}"
+            + ".kwarn{background:#fff7e6;border:1px solid #f1d9a6;border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.5}"
+            + ".kstate{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.chip.pend{background:#fff1d6;color:#7a4b00}"
+            + "@media(max-width:699px){.kform{padding:18px 16px}.kform h1{font-size:21px}.kkey code{font-size:15px}}";
+
+    private void keyRequest(HttpExchange ex, String method) throws IOException {
+        if (!"POST".equals(method)) {
+            html(ex, 200, keyRequestPage(Map.of(), null));
+            return;
+        }
+        byte[] b = readBody(ex, 16 * 1024);
+        Map<String, String> f;
+        try {
+            f = b == null ? Map.of() : LiveServer.parseQuery(new String(b, StandardCharsets.UTF_8));
+        } catch (IllegalArgumentException e) {
+            f = Map.of();
+        }
+        if (!f.getOrDefault("website", "").isEmpty()) {             // verstecktes Feld: nur Programme füllen es aus
+            html(ex, 200, keyRequestPage(Map.of(), null));
+            return;
+        }
+        String org = OrganizerKeys.clean(f.get("verein"), 120);
+        String name = OrganizerKeys.clean(f.get("name"), 100);
+        String email = OrganizerKeys.clean(f.get("email"), 200);
+        String err = null;
+        if (org.length() < 2) err = "Bitte den Namen des Vereins oder Verbands eintragen.";
+        else if (name.length() < 3 || !name.contains(" ")) err = "Bitte Vor- und Nachnamen eintragen.";
+        else if (!OrganizerKeys.validEmail(email)) err = "Bitte eine gültige E-Mail-Adresse eintragen.";
+        else if (!"1".equals(f.get("darf")) || !"1".equals(f.get("datenschutz"))) err = "Bitte beide Häkchen setzen.";
+        if (err != null) {
+            html(ex, 400, keyRequestPage(f, err));
+            return;
+        }
+        if (!requestLimit.allow(clientAddress(ex), System.currentTimeMillis())) {
+            html(ex, 429, keyRequestPage(f, "Gerade sind zu viele Anträge eingegangen. Bitte in einer Stunde noch einmal versuchen."));
+            return;
+        }
+        OrganizerKeys.Request r = keys.request(org, name, email, System.currentTimeMillis());
+        if (r == null) {
+            html(ex, 503, keyRequestPage(f, "Zurzeit können keine weiteren Anträge angenommen werden. Bitte später noch einmal versuchen."));
+            return;
+        }
+        System.err.println("Neuer Antrag auf einen Ausrichter-Schlüssel eingegangen (" + keys.openCount() + " offen).");
+        html(ex, 200, keySentPage(r));
+    }
+
+    /** Adresse der Anfrage für die Ratenbremse: hinter Caddy aus X-Forwarded-For (nur im Arbeitsspeicher, gekürzt). */
+    static String clientAddress(HttpExchange ex) {
+        InetAddress a = ex.getRemoteAddress() == null ? null : ex.getRemoteAddress().getAddress();
+        String ip = a == null ? "" : a.getHostAddress();
+        if (a != null && a.isLoopbackAddress()) {
+            String fwd = ex.getRequestHeaders().getFirst("X-Forwarded-For");
+            if (fwd != null && !fwd.isBlank()) {
+                String[] parts = fwd.split(",");
+                ip = parts[parts.length - 1].strip();
+            }
+        }
+        return ip;
+    }
+
+    String keyRequestPage(Map<String, String> f, String error) {
+        String host = cfg.siteTitle().equals("HTS Live-Scoring") ? "hts-livescoring.de" : cfg.siteTitle();
+        StringBuilder b = new StringBuilder("<style>" + KEY_CSS + "</style><div class=\"kreq\"><form class=\"card kform\" method=\"post\" action=\"/schluessel\">");
+        b.append("<div><h1>Ausrichter-Schlüssel beantragen</h1><p>Für Vereine und Verbände, die ihre Turniere mit HTS live auf ")
+                .append(LiveServer.esc(host)).append(" zeigen möchten.</p></div>");
+        if (error != null) b.append("<div class=\"kerr\" role=\"alert\">").append(LiveServer.esc(error)).append("</div>");
+        b.append(field("verein", "Verein oder Verband", "text", "z. B. TSV Elbinsel oder Hamburger Verband", f, "organization", ""))
+                .append(field("name", "Vor- und Nachname", "text", "z. B. Jana Petersen", f, "name", ""))
+                .append(field("email", "E-Mail-Adresse", "email", "name@verein.de", f, "email",
+                        "<span class=\"khint\">Nur für Rückfragen zum Antrag – wird nicht veröffentlicht.</span>"))
+                .append("<div class=\"khp\" aria-hidden=\"true\"><label>Website <input name=\"website\" tabindex=\"-1\" autocomplete=\"off\"></label></div>")
+                .append("<label class=\"kchk\"><input type=\"checkbox\" name=\"darf\" value=\"1\" required").append("1".equals(f.get("darf")) ? " checked" : "")
+                .append("><span>Ich darf für diesen Verein bzw. Verband Turnierdaten (Namen, Vereine, Ergebnisse der Teilnehmenden) veröffentlichen.</span></label>")
+                .append("<label class=\"kchk\"><input type=\"checkbox\" name=\"datenschutz\" value=\"1\" required").append("1".equals(f.get("datenschutz")) ? " checked" : "")
+                .append("><span>Ich habe die <a href=\"/datenschutz\" target=\"_blank\">Datenschutzerklärung</a> gelesen.</span></label>")
+                .append("<div><button type=\"submit\" class=\"kbtn\">Schlüssel beantragen</button></div></form>")
+                .append("<aside class=\"card kside\"><b>So geht es</b><ol><li>Antrag absenden</li><li>Schlüssel sofort notieren – er wird nur einmal angezeigt</li>")
+                .append("<li>Freigabe abwarten (wir prüfen jeden Antrag)</li><li>In HTS eintragen: Turnierübersicht → „Webserver“</li></ol>")
+                .append("<span>Mit dem Schlüssel veröffentlicht dein Verein oder Verband seine eigenen Turniere hier. Fremde Turniere lassen sich damit nicht ändern.</span></aside></div>");
+        return frame("Ausrichter-Schlüssel beantragen", startTabs(""), b.toString());
+    }
+
+    private static String field(String n, String label, String type, String ph, Map<String, String> f, String auto, String extra) {
+        return "<div><label class=\"kl\" for=\"" + n + "\">" + label + "</label><input class=\"kinp\" id=\"" + n + "\" name=\"" + n + "\" type=\"" + type
+                + "\" required maxlength=\"" + ("verein".equals(n) ? 120 : "name".equals(n) ? 100 : 200) + "\" autocomplete=\"" + auto + "\" placeholder=\""
+                + LiveServer.esc(ph) + "\" value=\"" + LiveServer.esc(f.getOrDefault(n, "")) + "\">" + extra + "</div>";
+    }
+
+    String keySentPage(OrganizerKeys.Request r) {
+        String base = cfg.siteTitle().equals("HTS Live-Scoring") ? "https://hts-livescoring.de" : "die Adresse dieser Seite";
+        String body = "<style>" + KEY_CSS + "</style><section class=\"card kform\" style=\"max-width:760px\">"
+                + "<div class=\"kstate\"><span class=\"chip pend\">wartet auf Freigabe</span><span class=\"muted\">Antrag vom "
+                + STAMP.format(Instant.ofEpochMilli(r.key().requested)) + "</span></div>"
+                + "<div><h1>Danke – dein Antrag ist eingegangen</h1><p>Das ist dein Ausrichter-Schlüssel für <b>" + LiveServer.esc(r.key().org)
+                + "</b>. Er gilt, sobald wir den Antrag freigegeben haben.</p></div>"
+                + "<div class=\"kkey\"><code id=\"key\">" + LiveServer.esc(r.plainKey()) + "</code>"
+                + "<button type=\"button\" class=\"kbtn l\" id=\"copy\">Kopieren</button></div>"
+                + "<div class=\"kwarn\"><b>Nur jetzt sichtbar:</b> Bitte den Schlüssel sofort kopieren oder notieren. Er wird nicht gespeichert "
+                + "und lässt sich nicht noch einmal anzeigen – geht er verloren, einfach neu beantragen.</div>"
+                + "<div><b>In HTS eintragen</b><ol style=\"margin:6px 0 0;padding-left:20px;line-height:1.6;color:#4a5560;font-size:14px\">"
+                + "<li>Turnierübersicht → Reiter „Webserver“</li><li>Adresse: " + LiveServer.esc(base) + " · Schlüssel: wie oben</li>"
+                + "<li>„Verbindung testen“ – bis zur Freigabe steht dort „Schlüssel wartet auf Freigabe“</li></ol></div></section>"
+                + "<script>document.getElementById('copy').onclick=function(){var t=document.getElementById('key').textContent,b=this;"
+                + "function ok(){b.textContent='Kopiert';}if(navigator.clipboard){navigator.clipboard.writeText(t).then(ok,function(){sel();});}else{sel();}"
+                + "function sel(){var r=document.createRange();r.selectNodeContents(document.getElementById('key'));var s=getSelection();s.removeAllRanges();s.addRange(r);"
+                + "b.textContent='Markiert – jetzt Strg+C';}};</script>";
+        return frame("Antrag gesendet", startTabs(""), body);
     }
 
     // --- Antworten ---------------------------------------------------------------------------------

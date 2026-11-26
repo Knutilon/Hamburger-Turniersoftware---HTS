@@ -260,11 +260,6 @@ public final class Publisher implements AutoCloseable {
     private void send(byte[] data) {
         lastAttempt = System.currentTimeMillis();
         try {
-            if (!logoSent) {
-                byte[] png = logo == null ? null : logo.get();
-                if (png != null) request("PUT", "/logo", png, "image/png");
-                logoSent = true;
-            }
             String org;
             try {
                 org = organizerHeader(organizer.get());
@@ -276,6 +271,11 @@ public final class Publisher implements AutoCloseable {
             } else {
                 request("PUT", "", data, "application/octet-stream", org, false);
             }
+            if (!logoSent) {                                  // 1.12.0 (#189): Logo nach der Turnierdatei (Turnier muss schon da sein)
+                byte[] png = logo == null ? null : logo.get();
+                if (png != null) request("PUT", "/logo", png, "image/png");
+                logoSent = true;
+            }
             pending = null;
             lastSuccess = System.currentTimeMillis();
             if (status.state() != State.OK) de.hts.Log.info("Live im Internet: veröffentlicht");
@@ -284,8 +284,20 @@ public final class Publisher implements AutoCloseable {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             pending = data;                                   // letzter Stand bleibt liegen
             if (status.state() != State.ERROR) de.hts.Log.warn("Live im Internet: keine Verbindung (" + e.getMessage() + ")");
-            status = new Status(State.ERROR, lastSuccess, "keine Verbindung – wird nachgeholt");
+            String msg = e.getMessage();
+            status = new Status(State.ERROR, lastSuccess, msg != null && msg.startsWith("Schlüssel") ? msg + " – wird erneut versucht"
+                    : "keine Verbindung – wird nachgeholt");
         }
+    }
+
+    /**
+     * 1.12.0 (#189): verständliche Meldung zu 401/403 – der Server schickt bei Ausrichter-Schlüsseln einen kurzen Text
+     * („Schlüssel wartet auf Freigabe“, „Schlüssel gesperrt …“, „… gehört einem anderen Ausrichter“).
+     */
+    static String keyMessage(int code, String body) {
+        String b = body == null ? "" : body.strip();
+        if (code == 403 && b.startsWith("Schlüssel") && b.length() <= 200 && !b.contains("\n")) return b;
+        return "Schlüssel abgelehnt (HTTP " + code + ")";
     }
 
     private void request(String method, String suffix, byte[] body, String type) throws IOException, InterruptedException {
@@ -319,7 +331,7 @@ public final class Publisher implements AutoCloseable {
         else rb.method(method, HttpRequest.BodyPublishers.noBody());
         HttpResponse<String> r = http.send(rb.build(), HttpResponse.BodyHandlers.ofString());
         if (r.headers().firstValue("X-HTS-Gzip").map("1"::equals).orElse(false)) serverGzip = true;
-        if (r.statusCode() == 401 || r.statusCode() == 403) throw new IOException("Schlüssel abgelehnt (HTTP " + r.statusCode() + ")");
+        if (r.statusCode() == 401 || r.statusCode() == 403) throw new IOException(keyMessage(r.statusCode(), r.body()));
         if (r.statusCode() / 100 != 2) throw new IOException("HTTP " + r.statusCode());
     }
 
@@ -345,8 +357,9 @@ public final class Publisher implements AutoCloseable {
             HttpClient c = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
             HttpRequest r = HttpRequest.newBuilder(URI.create(normalize(base) + "/api/status")).timeout(Duration.ofSeconds(15))
                     .header("Authorization", "Bearer " + (key == null ? "" : key.strip())).GET().build();
-            int code = c.send(r, HttpResponse.BodyHandlers.discarding()).statusCode();
-            if (code == 401 || code == 403) return "Schlüssel abgelehnt (HTTP " + code + ")";
+            HttpResponse<String> resp = c.send(r, HttpResponse.BodyHandlers.ofString());
+            int code = resp.statusCode();
+            if (code == 401 || code == 403) return keyMessage(code, resp.body());
             return code / 100 == 2 ? null : "Server antwortet mit HTTP " + code;
         } catch (IllegalArgumentException e) {
             return "Ungültige Adresse";

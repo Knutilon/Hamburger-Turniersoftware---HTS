@@ -34,6 +34,14 @@ Kurzfassung (Einzelheiten: docs/LIVE-SERVER-ANLEITUNG.md im HTS-Repository)
      sichern die vorherigen Dateien als .bak-<Datum>:
          scp hts-server-VERSION.tar.gz hts-rechtstexte.tar.gz root@hts-livescoring.de:
 
+Ausrichter-Schlüssel (ab 1.12.0)
+  Vereine und Verbände beantragen ihren eigenen Schlüssel auf https://<Ihre Domain>/schluessel. Er gilt erst nach
+  Ihrer Freigabe. Die Verwaltung läuft nur auf dem Server (127.0.0.1:8091) und ist nur über einen SSH-Tunnel
+  erreichbar – auf dem eigenen Rechner (Fenster offen lassen):
+         ssh -L 8091:127.0.0.1:8091 root@hts-livescoring.de
+  dann im Browser: http://localhost:8091/admin (Anträge freigeben/ablehnen, Schlüssel sperren/löschen).
+  Ein Ausrichter-Schlüssel ändert nur die eigenen Turniere; der Schlüssel aus install.sh (Betreiber) darf alles.
+
 Neue Version einspielen
          scp hts-server-VERSION.tar.gz root@hts-livescoring.de:        (ggf. auch hts-rechtstexte.tar.gz)
          ssh root@hts-livescoring.de

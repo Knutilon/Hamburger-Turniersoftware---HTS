@@ -25,6 +25,22 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
+## Neu in 1.12.0
+
+- **Eigener Schlüssel für jeden Verein und Verband:** Auf hts-livescoring.de/schluessel beantragt ein Verein oder
+  Verband mit Name, Vor- und Nachname und E-Mail seinen eigenen Ausrichter-Schlüssel. Der Schlüssel wird einmal
+  angezeigt (Knopf „Kopieren“) und gilt, sobald der Betreiber den Antrag freigegeben hat. Damit veröffentlicht der
+  Verein nur seine eigenen Turniere; der Ausrichtername auf der Startseite kommt aus dem Schlüssel. „Verbindung testen“
+  meldet „Schlüssel wartet auf Freigabe“ bzw. „Schlüssel gesperrt“.
+- **Verwaltung auf dem Server:** Anträge freigeben oder ablehnen, Schlüssel sperren, entsperren und löschen, mit „zuletzt
+  genutzt“ und Zahl der Turniere – nur auf dem Server selbst (127.0.0.1:8091), erreichbar über einen SSH-Tunnel. Der
+  Server speichert nur Prüfwerte der Schlüssel, abgelehnte Anträge verschwinden nach 30 Tagen.
+- **Webserver ohne Admin-Passwort:** Adresse und Schlüssel lassen sich im Reiter „Webserver“ direkt eintragen und
+  testen; mehrere Rechner eines Vereins dürfen denselben Schlüssel benutzen. Sie bleiben verschlüsselt gespeichert und
+  verdeckt angezeigt („Anzeigen“). Link „Ausrichter-Schlüssel beantragen“.
+- **Datenschutzerklärung (Vorlage):** Ausrichter als Verantwortliche für ihre Turnierdaten, neuer Abschnitt „Zugang für
+  Ausrichter“.
+
 ## Neu in 1.11.0
 
 - **Turnierübersicht filtern:** Auf hts-livescoring.de lassen sich laufende und vergangene Turniere nach Veranstalter
@@ -124,8 +140,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   `https://hts-livescoring.de/live/Hamburger_Ranglistenturnier_28_11_2026`.
 - **QR-Code-Aushang:** Auf der Seite „Live im Internet“ (und beim Turnierstart) ein A4-PDF mit großem QR-Code zur
   Live-Seite, Turniername, Datum und Logo des Ausrichters.
-- **Webserver geschützt:** Der Reiter „Webserver“ zeigt Adresse und Schlüssel nur verdeckt; ändern und testen geht erst
-  nach „Entsperren“ mit dem Admin-Passwort. Adresse und Schlüssel liegen verschlüsselt auf dem Rechner (AES-256,
+- **Webserver geschützt:** Der Reiter „Webserver“ zeigt Adresse und Schlüssel nur verdeckt; ändern und testen ging erst
+  nach „Entsperren“ mit dem Admin-Passwort (entfällt seit 1.12.0). Adresse und Schlüssel liegen verschlüsselt auf dem Rechner (AES-256,
   Schlüssel unter Windows an das Benutzerkonto gebunden); alte Einträge werden beim ersten Start übernommen.
 - **Protokoll für die Fehlersuche:** HTS schreibt je Tag ein Protokoll (Ablageordner → „Protokoll“, 30 Tage, ohne Namen
   oder Ergebnisse). Bei einem unerwarteten Fehler speichert HTS das Turnier und bietet „Fehlerbericht speichern“ an;

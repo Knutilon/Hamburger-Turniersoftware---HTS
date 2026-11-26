@@ -167,7 +167,7 @@ class Version1100Test {
             assertTrue(d.contains("href=\"/download\" class=\"on\""), "Reiter aktiv");
             assertTrue(d.contains("target=\"_blank\" rel=\"noopener\""));
             assertFalse(d.contains("← Alle Turniere"), "Reiterseite ohne Zurück-Knopf");
-            assertTrue(d.contains("<a href=\"/download\">Download HTS</a></footer>") && d.contains("Spenden</a> <a"), "Fußzeile, umbrechbar");
+            assertTrue(d.contains("<a href=\"/download\">Download HTS</a> <a href=\"/schluessel\">Ausrichter-Schlüssel</a></footer>") && d.contains("Spenden</a> <a"), "Fußzeile, umbrechbar");
             HttpResponse<byte[]> logo = http.send(HttpRequest.newBuilder(URI.create(s.base() + "/hts-logo.png?v=1")).build(), HttpResponse.BodyHandlers.ofByteArray());
             assertEquals(200, logo.statusCode());
             assertEquals("image/png", logo.headers().firstValue("Content-Type").orElse(""));
