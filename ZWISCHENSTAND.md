@@ -60,6 +60,12 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 2. ADMIN-PASSWORT NEU (Nutzer 26.11.2026): neues 40-stelliges Admin-Passwort erzeugt und dem Nutzer einmal im Chat
    gezeigt; im Code (AdminPassword) nur neuer SALT/HASH. IM CODE BEREITS GEÄNDERT – wirkt ab dem nächsten „kompilieren“.
    Das Passwort selbst steht NIRGENDS (nicht in Code, Doku, Issues, Commits, Zusammenfassungen).
+3. LIVE-SERVER: AUSRICHTER-SCHLÜSSEL SELBST BEANTRAGEN + ADMIN-ANWENDUNG (Issue #189, Nutzer 26.11.2026; Entscheidungen:
+   Freigabe durch Betreiber, Schlüssel einmal auf der Seite, Admin nur über SSH-Tunnel): Antrag mit Verein, E-Mail,
+   vollem Namen (+ Bestätigung Berechtigung/Datenschutz); Schlüssel erst nach Freigabe gültig; Admin-Anwendung auf
+   127.0.0.1 (eigener Port) – Anträge freigeben/ablehnen, Schlüssel sperren/löschen, zuletzt genutzt, Turniere; je
+   Ausrichter-Schlüssel nur eigene Turniere, Ausrichtername aus dem Schlüssel; Betreiber-Schlüssel bleibt; nur
+   Prüfwerte gespeichert; Ratenbremse; Datenschutzerklärung ergänzen. DESIGN AUSSTEHEND.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
