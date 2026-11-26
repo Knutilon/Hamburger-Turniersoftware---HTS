@@ -70,6 +70,10 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Zentral in Tournament.placing/KO-Wertung (Zeilen um 4173 und 4395–4405); Tests mit den alten Texten anpassen.
 5. LIVE-SEITEN: SPIEL UM PLATZ 3 IN DER FINALSPALTE (Issue #181, Nutzer 26.11.2026): IM CODE BEREITS UMGESETZT
    (LiveServer.koTree: .k3 unten in der Finalspalte, .k3.ghost unsichtbar oben, damit das Finale mittig bleibt).
+6. GEWINNSÄTZE 1 BIS 4 (Issue #182, Nutzer 26.11.2026): je Klasse 1, 2, 3 oder 4 Gewinnsätze (Best of 1/3/5/7),
+   Standard 3. Bisher nur 3 oder 4 (PlayingClass.setWinningSets: n == 4 ? 4 : 3). Betrifft ModeDialog, Klassenkopf
+   (DrawView), Ergebnisdialog/Prüfung, Spielzettel (Satzfelder), PDFs, Live-Seiten, Turnierdatei, click-TT
+   Import/Export. Ändern nur ohne Ergebnisse in der Klasse.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
 
