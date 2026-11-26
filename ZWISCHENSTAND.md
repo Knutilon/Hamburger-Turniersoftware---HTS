@@ -64,8 +64,9 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
    Namen nur in der ersten KO-Runde der Phase zeigen (LiveServer.koCard und Liste/matchLine); ab Runde 2 und im Spiel
    um Platz 3 nur Name und Verein.
 4. ENDPLATZIERUNG NUR MIT RUNDE (Issue #180, Nutzer 26.11.2026): In „Ermittelt durch“ (HTS, PDFs, Live-Seiten)
-   „ausgeschieden: “ und „verloren“ weglassen – „Viertelfinale“, „Halbfinale“, „Finale“, „Spiel um Platz 3“
-   (auch ohne „(Sieg)“); „Sieger/in“ bleibt; offenes Platz-3-Spiel: „Halbfinale – Spiel um Platz 3 offen“.
+   „ausgeschieden: “ und „verloren“ weglassen – „Viertelfinale“, „Halbfinale“, „Finale“; Spiel um Platz 3:
+   3. Platz „Sieger/in Spiel um Platz 3“, 4. Platz „Spiel um Platz 3“ (Nutzer 26.11.2026); „Sieger/in“ beim 1. Platz
+   bleibt; offenes Platz-3-Spiel: „Halbfinale – Spiel um Platz 3 offen“.
    Zentral in Tournament.placing/KO-Wertung (Zeilen um 4173 und 4395–4405); Tests mit den alten Texten anpassen.
 
 ## Backlog – NICHT kompilieren (Nutzer 18.11.2026: bei KEINEM „kompilieren“ berücksichtigen, bis ausdrücklich etwas anderes gesagt wird)
