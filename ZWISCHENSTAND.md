@@ -57,9 +57,13 @@ Link zum Release: https://github.com/Knutilon/Hamburger-Turniersoftware---HTS/re
 1. TABLET: TEST AUF ECHTEM GERÄT (Issue #133, offen aus 1.5.0): Die Tablet-Funktionen von 1.5.0 auf einem echten
    Windows-Tablet prüfen (Bildschirmtastatur/TabTip, Antippen, Zoom, Hochformat) – kann nur der Nutzer bzw. jemand mit
    Gerät; Ergebnisse als Bug/Feature melden.
-2. ADMIN-PASSWORT NEU (Nutzer 26.11.2026): neues 40-stelliges Admin-Passwort erzeugt und dem Nutzer einmal im Chat
-   gezeigt; im Code (AdminPassword) nur neuer SALT/HASH. IM CODE BEREITS GEÄNDERT – wirkt ab dem nächsten „kompilieren“.
-   Das Passwort selbst steht NIRGENDS (nicht in Code, Doku, Issues, Commits, Zusammenfassungen).
+2. ADMIN-PASSWORT FÜR DEN WEBSERVER-SCHLÜSSEL ENTFÄLLT (Issue #190, Nutzer 26.11.2026; ersetzt den Punkt
+   „Admin-Passwort neu“): Mit eigenen Ausrichter-Schlüsseln (#189) braucht die Seite „Webserver“ keine Sperre mehr –
+   Adresse und Schlüssel frei eintragen/ändern, „Verbindung testen“ ohne Passwort. Mehrere HTS-Installationen dürfen
+   sich einen Schlüssel teilen. Schlüssel bleibt verschlüsselt gespeichert (SecretStore) und maskiert angezeigt
+   („Anzeigen“). AdminPassword + Dialog entfernen (Version170Test anpassen); Hinweis: Betreiber-Schlüssel nur auf eigenen
+   Geräten. Im #189-Design „Gesendet“ entfällt „→ Entsperren“. (Die bereits geänderten SALT/HASH-Werte werden damit
+   hinfällig.)
 3. LIVE-SERVER: AUSRICHTER-SCHLÜSSEL SELBST BEANTRAGEN + ADMIN-ANWENDUNG (Issue #189, Nutzer 26.11.2026; Entscheidungen:
    Freigabe durch Betreiber, Schlüssel einmal auf der Seite, Admin nur über SSH-Tunnel): Antrag mit Verein, E-Mail,
    vollem Namen (+ Bestätigung Berechtigung/Datenschutz); Schlüssel erst nach Freigabe gültig; Admin-Anwendung auf
